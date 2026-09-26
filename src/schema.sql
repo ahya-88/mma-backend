@@ -238,3 +238,12 @@ CREATE TABLE IF NOT EXISTS RincianAnggaran (
   subtotal    INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_rincian_pengajuan ON RincianAnggaran (pengajuanId);
+
+
+-- ---- Modul Admin / Konfigurasi Terpusat ----
+-- Menyimpan konfigurasi yang sebelumnya hanya hidup di localStorage/frontend.
+CREATE TABLE IF NOT EXISTS AdminConfig (
+  kunci TEXT PRIMARY KEY,
+  nilai TEXT NOT NULL,
+  updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+);
