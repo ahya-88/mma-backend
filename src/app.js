@@ -1,4 +1,5 @@
 require("dotenv").config({ quiet: true });
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 
@@ -26,6 +27,16 @@ app.use("/api/pengasuhan", pengasuhanRoutes);
 app.use("/api/pengajaran", pengajaranRoutes);
 app.use("/api/lptq", lptqRoutes);
 app.use("/api/keuangan", keuanganRoutes);
+
+// Sajikan aplikasi frontend (pesantren-app.html, disalin sebagai public/index.html) dari service
+// backend yang sama — satu URL untuk API dan aplikasi web, tidak perlu hosting frontend terpisah.
+// Aplikasi tambahan (kasir, kiosk, dst.) nanti bisa ditambah sebagai service Railway lain dalam
+// project yang sama, atau folder statis lain di sini.
+const publicDir = path.join(__dirname, "..", "public");
+app.use(express.static(publicDir));
+// Fallback: request GET selain /api/* (mis. refresh di path lain) tetap kembalikan index.html,
+// supaya aplikasi single-page ini tidak pernah menampilkan 404 dari sisi server.
+app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(publicDir, "index.html")));
 
 // Error handler terpusat — CashlessError membawa status HTTP yang sesuai (400/403/404/409),
 // error lain dianggap kesalahan server.

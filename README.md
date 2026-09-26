@@ -215,6 +215,11 @@ Sandbox ini tidak bisa menghasilkan URL publik yang bisa diakses HP wali/BMT sec
 - **Render** — mirip Railway, tapi disk persisten hanya di plan berbayar (bukan free tier).
 - **VPS sendiri** (mis. sudah ada dari Sekretariat/Prisma) — paling fleksibel, tinggal `pm2 start src/app.js`, tidak butuh langkah "volume" karena disk VPS sudah persisten secara default.
 
+### Frontend disajikan dari service backend yang sama (satu URL untuk semuanya)
+Folder `public/index.html` di repo ini **adalah** `pesantren-app.html` — `src/app.js` sudah diatur untuk menyajikannya langsung di path `/` (lihat blok `express.static` + fallback di `app.js`). Artinya **tidak perlu hosting frontend terpisah** (Netlify/Vercel/dst.): begitu backend ini live di Railway, buka saja domain Railway-nya langsung (tanpa `/api`) dan aplikasinya sudah tampil, sudah otomatis tersambung ke API di domain yang sama. Ini sengaja dipilih ketimbang hosting terpisah karena aplikasi tambahan di masa depan (kasir, kiosk saldo, dst.) akan lebih mudah dikelola kalau semuanya berada dalam satu project Railway — tinggal tambah service baru per aplikasi, dan kalau nanti pakai domain sendiri, tiap aplikasi tinggal jadi subdomain (`app.domain.id`, `kasir.domain.id`, dst.) dari domain yang sama, tanpa perlu urus CORS/domain terpisah sama sekali (CORS backend ini sudah dibuka untuk semua origin).
+
+Setiap kali `pesantren-app.jsx` diubah dan di-build ulang jadi `pesantren-app.html`, cukup timpa `public/index.html` dengan hasil build barunya, commit, push — Railway redeploy otomatis.
+
 ### Langkah deploy ke Railway (paling sederhana)
 
 1. **Push folder `backend/` ini ke repo GitHub baru** (bisa privat). Dari folder hasil ekstrak `backend-cashless-mma.zip`:
@@ -230,17 +235,29 @@ Sandbox ini tidak bisa menghasilkan URL publik yang bisa diakses HP wali/BMT sec
    (`.gitignore` sudah menyingkirkan `node_modules/`, `.env`, dan file `*.db` — aman untuk di-push.)
 2. Buat akun di **railway.app** (bisa login pakai GitHub), lalu **New Project → Deploy from GitHub repo** → pilih repo `mma-backend` tadi.
 3. Railway akan otomatis mendeteksi Node.js dan menjalankan `npm install` lalu `npm start` (script ini sudah ditambahkan di `package.json`).
-4. **Tambahkan Volume** (penting — tanpa ini, data akan hilang setiap kali redeploy): di tab **Settings → Volumes** pada service tersebut, klik **New Volume**, mount path isi `/data`.
+4. **Tambahkan Volume** (penting — tanpa ini, data akan hilang setiap kali redeploy): klik kanan di canvas project (atau Ctrl/Cmd+K → "New Volume") → pilih service ini → mount path isi `/data`. (UI terbaru Railway meletakkan ini di canvas, bukan di dalam tab Settings.)
 5. **Set Environment Variables** (tab **Variables**):
    - `DATABASE_PATH` = `/data/cashless.db` (harus sama dengan mount path volume di atas)
-   - `JWT_SECRET` = string acak yang panjang (generate lewat `openssl rand -hex 32` di terminal, atau situs generator password)
+   - `JWT_SECRET` = string acak yang panjang (generate lewat `openssl rand -hex 32` di terminal/Mac/Linux, atau di PowerShell Windows: `-join ((48..57)+(97..122)|Get-Random -Count 40 |%{[char]$_})`)
    - `PORT` boleh dikosongkan — Railway mengisinya otomatis.
 6. Setelah deploy pertama sukses, buka tab **Deployments → View Logs** untuk memastikan muncul `Cashless backend jalan di http://localhost:xxxx` tanpa error.
-7. **Jalankan seed sekali** untuk mengisi akun awal (Admin/BMT/dst.) — di tab service, buka **Settings → klik "..." → Run Command** (atau lewat Railway CLI: `railway run npm run seed`). Sesuaikan `src/seed.js` dulu kalau tidak ingin data contoh (santri/wali demo) ikut masuk ke produksi — lihat bagian "Migrasi data asli" di bawah.
-8. Railway memberi domain publik otomatis di tab **Settings → Networking → Generate Domain**, bentuknya seperti `https://mma-backend-production.up.railway.app`. URL API-nya adalah domain ini + `/api`, contoh: `https://mma-backend-production.up.railway.app/api`.
-9. Tes dari browser/terminal manapun: buka `https://<domain-railway-anda>/api/health` — harus muncul `{"ok":true,"waktu":"..."}`.
+7. **Jalankan seed sekali** untuk mengisi akun awal (Admin/BMT/dst.). **Penting:** `railway run npm run seed` TIDAK bekerja untuk ini — perintah itu jalan di komputer lokal Anda (cuma env var-nya yang dari Railway), bukan di server, jadi tidak akan menulis ke volume production. Yang benar: masuk dulu ke server lewat SSH, baru jalankan seed di sana:
+   ```
+   npm install -g @railway/cli
+   railway login
+   railway link
+   railway ssh
+   ```
+   Setelah masuk ke shell server (prompt berubah jadi format Linux), baru jalankan:
+   ```
+   npm run seed
+   ```
+   lalu `exit` untuk keluar. Sesuaikan `src/seed.js` dulu kalau tidak ingin data contoh (santri/wali demo) ikut masuk ke produksi — lihat bagian "Migrasi data asli" di bawah.
+8. Railway memberi domain publik otomatis di tab **Settings → Networking → Generate Domain**, bentuknya seperti `https://mma-backend-production.up.railway.app`. Karena frontend disajikan dari service yang sama, domain ini langsung membuka aplikasinya; API-nya ada di domain yang sama + `/api`.
+9. Tes dari browser/terminal manapun: buka `https://<domain-railway-anda>/api/health` — harus muncul `{"ok":true,"waktu":"..."}`. Lalu buka domain itu tanpa `/api` — harus langsung muncul halaman login aplikasi.
 
-### Menyambungkan frontend ke backend yang sudah live
+### Kalau tetap ingin frontend di hosting terpisah (opsional, tidak direkomendasikan lagi)
+Cara ini masih bisa dipakai kalau karena alasan tertentu (mis. sudah terlanjur di Netlify) ingin frontend tetap terpisah dari backend:
 Buka `pesantren-app.html` dengan text editor, cari komentar ini di bagian `<head>` (masih teks biasa, belum di-minify):
 ```html
 <!-- Untuk terhubung ke backend yang sudah dideploy, isi baris di bawah SEBELUM tag <script> bundle:
@@ -264,7 +281,3 @@ Kalau nanti pindah ke Postgres (skala besar/multi-server), tinggal ganti `db.js`
 - Ganti `JWT_SECRET` di `.env` produksi (bukan nilai default `dev-secret...`).
 - Aktifkan HTTPS di depan server (lewat platform hosting atau reverse proxy).
 - Endpoint `/santri/:id/saldo-publik` sengaja tanpa autentikasi (untuk kios) — sudah dibatasi hanya mengembalikan info minimal, tapi pertimbangkan rate-limiting per IP kalau dipasang publik, sesuai catatan di `konsep-kasir-pembayaran-cekSaldo.md`.
-#   m m a - b a c k e n d  
- #   m m a - b a c k e n d  
- #   m m a - b a c k e n d  
- 
