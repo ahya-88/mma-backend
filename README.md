@@ -33,26 +33,6 @@ backend/
   package.json
 ```
 
-
-## Admin Full-Stack
-
-Admin/Pimpinan sekarang menggunakan autentikasi backend dan endpoint terproteksi, bukan hanya state frontend.
-
-Endpoint utama:
-- `GET /api/admin/dashboard` — ringkasan + Guru + Wali + Santri + Unit Usaha + konfigurasi.
-- `GET/POST/PUT/DELETE /api/admin/guru` — CRUD akun Guru/Staff.
-- `GET/POST/PUT/DELETE /api/admin/wali` — CRUD akun Wali.
-- `GET/POST/PUT/DELETE /api/admin/santri` — master data Santri; penghapusan dilindungi jika sudah memiliki riwayat.
-- `GET/PUT /api/admin/config/:key` — konfigurasi terpusat seperti `unitUsaha`, `tahunAjaran`, dan `tampilan`.
-
-Semua endpoint Admin membutuhkan JWT dari `/api/auth/login` dan hanya akun Guru dengan `departemen=admin` yang dapat mengaksesnya. Password tidak pernah dikembalikan melalui API; password disimpan sebagai hash bcrypt.
-
-Frontend `public/index.html` juga sudah diarahkan untuk:
-1. login Admin melalui backend,
-2. mengambil data Admin dari `/api/admin/dashboard`,
-3. menyimpan tambah/edit/hapus akun Guru ke backend,
-4. menyimpan konfigurasi Unit Usaha, Tahun Ajaran, dan Tampilan ke backend.
-
 ## Menjalankan secara lokal
 ```bash
 cd backend

@@ -32,11 +32,6 @@ function requireAuth(req, res, next) {
 }
 
 // Hanya staf BMT (Guru dengan departemen "unitusaha" dan unit "BMT") yang boleh lewat.
-function requireAdmin(req, res, next) {
-  if (req.user?.role === "guru" && req.user.departemen === "admin") return next();
-  res.status(403).json({ error: "Hanya admin/pimpinan yang berwenang mengakses endpoint ini." });
-}
-
 function requireBMT(req, res, next) {
   if (req.user?.role === "guru" && req.user.departemen === "unitusaha" && req.user.unit === "BMT") return next();
   res.status(403).json({ error: "Hanya staf BMT yang berwenang mengakses endpoint ini." });
@@ -90,4 +85,4 @@ function requireSekretariat(req, res, next) {
   res.status(403).json({ error: "Hanya staf Sekretariat yang berwenang mengakses endpoint ini." });
 }
 
-module.exports = { login, requireAuth, requireBMT, requireUnitUsaha, requireWali, requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat, requireAnyStaff, requireAdmin, JWT_SECRET };
+module.exports = { login, requireAuth, requireBMT, requireUnitUsaha, requireWali, requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat, requireAnyStaff, JWT_SECRET };
