@@ -48,7 +48,12 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 4000;
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`Cashless backend jalan di http://localhost:${PORT}`));
+  // "0.0.0.0" eksplisit (bukan cuma default) — supaya jelas server ini memang harus menerima
+  // koneksi dari luar container, bukan cuma dari dalam mesin sendiri (localhost/127.0.0.1).
+  // Ini WAJIB di semua PaaS (Railway, Render, Fly.io, dst.): mereka mem-forward trafik publik
+  // ke container lewat 0.0.0.0, jadi kalau server hanya listen di "localhost", trafik dari
+  // luar tidak akan pernah sampai walau proses node-nya tetap terlihat "jalan" di log.
+  app.listen(PORT, "0.0.0.0", () => console.log(`Cashless backend jalan di port ${PORT} (menerima koneksi publik, bukan cuma localhost)`));
 }
 
 module.exports = app;
