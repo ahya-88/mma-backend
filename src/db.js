@@ -28,4 +28,27 @@ for (const col of SANTRI_EXTRA_COLUMNS) {
   }
 }
 
+// Default data ringan untuk tabel Admin yang baru (UnitUsaha, TahunAjaran, Pengaturan.tampilan) —
+// hanya diisi jika tabelnya masih kosong, supaya deployment yang sudah berjalan (mis. produksi di
+// Railway) otomatis mendapat nilai awal yang masuk akal begitu update ini di-deploy, tanpa perlu
+// menjalankan `npm run seed` secara manual. Nilainya sengaja sama dengan seed lama di frontend
+// (UNIT_USAHA_SEED, TAHUN_AJARAN_SEED, default tampilan) supaya tidak terlihat berubah tiba-tiba.
+const crypto = require("crypto");
+if (db.prepare("SELECT COUNT(*) AS n FROM UnitUsaha").get().n === 0) {
+  const insertUnit = db.prepare("INSERT INTO UnitUsaha (id, nama) VALUES (?, ?)");
+  for (const nama of ["Kantin", "Kopel", "Dapur", "BMT"]) insertUnit.run(crypto.randomUUID(), nama);
+}
+if (db.prepare("SELECT COUNT(*) AS n FROM TahunAjaran").get().n === 0) {
+  db.prepare("INSERT INTO TahunAjaran (id, tahunMulai, aktif) VALUES (?, 2026, 1)").run(crypto.randomUUID());
+}
+if (!db.prepare("SELECT 1 FROM Pengaturan WHERE kunci = 'tampilan'").get()) {
+  const tampilanDefault = {
+    logoUrl: "", buildingPhotoUrl: "", namaAplikasi: "Ma'had Mudaiyatul Anwar",
+    warnaPrimer: "#29AAE1", warnaSekunder: "#0C4A6E", warnaAksenBg: "#7C3AED",
+    warnaTeks: "#17242E", warnaTeksMuted: "#5B7C93", warnaBorder: "#CFE3F0",
+    warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora",
+  };
+  db.prepare("INSERT INTO Pengaturan (kunci, nilai) VALUES ('tampilan', ?)").run(JSON.stringify(tampilanDefault));
+}
+
 module.exports = db;
