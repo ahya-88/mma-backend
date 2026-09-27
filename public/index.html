@@ -10,7 +10,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- URL backend live (Railway) — override tanpa build ulang dengan menimpa window.BACKEND_API_BASE
      SEBELUM tag <script> bundle di bawah, kalau backend pindah domain. -->
-<script>window.BACKEND_API_BASE = "https://mma-backend-production.up.railway.app/api";</script>
+<script>window.BACKEND_API_BASE = window.location.origin + "/api";</script>
 <style>
   body { margin: 0; font-family: "Inter", sans-serif; }
   #root { min-height: 100vh; }
