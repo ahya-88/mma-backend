@@ -132,9 +132,9 @@ const hapusTahunAjaran = db.transaction((id) => {
 // ---------------- Tampilan Aplikasi ----------------
 const TAMPILAN_DEFAULT = {
   logoUrl: "", buildingPhotoUrl: "", namaAplikasi: "Ma'had Mudaiyatul Anwar",
-  warnaPrimer: "#10B981", warnaSekunder: "#0F766E", warnaAksenBg: "#F59E0B",
-  warnaTeks: "#14312B", warnaTeksMuted: "#4E7A6C", warnaBorder: "#C9E7D6",
-  warnaLatarHalaman: "#F2FAF6", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora",
+  warnaPrimer: "#29AAE1", warnaSekunder: "#0C4A6E", warnaAksenBg: "#7C3AED",
+  warnaTeks: "#17242E", warnaTeksMuted: "#5B7C93", warnaBorder: "#CFE3F0",
+  warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora",
 };
 
 function ambilTampilan() {
