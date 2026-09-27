@@ -85,4 +85,10 @@ function requireSekretariat(req, res, next) {
   res.status(403).json({ error: "Hanya staf Sekretariat yang berwenang mengakses endpoint ini." });
 }
 
-module.exports = { login, requireAuth, requireBMT, requireUnitUsaha, requireWali, requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat, requireAnyStaff, JWT_SECRET };
+// Staf Admin (untuk akun guru/staf, unit usaha, tahun ajaran, dan tampilan aplikasi).
+function requireAdmin(req, res, next) {
+  if (req.user?.role === "guru" && req.user.departemen === "admin") return next();
+  res.status(403).json({ error: "Hanya staf Admin yang berwenang mengakses endpoint ini." });
+}
+
+module.exports = { login, requireAuth, requireBMT, requireUnitUsaha, requireWali, requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat, requireAdmin, requireAnyStaff, JWT_SECRET };

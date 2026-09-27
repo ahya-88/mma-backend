@@ -1,27 +1,52 @@
 const express = require("express");
 const { requireAuth, requireAdmin } = require("../auth");
-const svc = require("../adminService");
+const admin = require("../adminService");
 
 const router = express.Router();
-router.use(requireAuth, requireAdmin);
 
-router.get("/dashboard", (req,res,next)=>{try{res.json(svc.dashboard());}catch(e){next(e);}});
-router.get("/guru",(req,res,next)=>{try{res.json(svc.listGuru());}catch(e){next(e);}});
-router.post("/guru",(req,res,next)=>{try{res.status(201).json(svc.createGuru(req.body||{}));}catch(e){next(e);}});
-router.put("/guru/:id",(req,res,next)=>{try{res.json(svc.updateGuru(req.params.id,req.body||{}));}catch(e){next(e);}});
-router.delete("/guru/:id",(req,res,next)=>{try{res.json(svc.deleteGuru(req.params.id));}catch(e){next(e);}});
+// ---- Akun Guru/Staf — hanya Admin ----
+router.get("/guru", requireAuth, requireAdmin, (req, res) => res.json(admin.semuaGuru()));
+router.post("/guru", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.status(201).json(admin.buatGuru(req.body || {})); } catch (e) { next(e); }
+});
+router.put("/guru/:id", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.json(admin.editGuru({ id: req.params.id, ...(req.body || {}) })); } catch (e) { next(e); }
+});
+router.put("/guru/:id/password", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.json(admin.editPasswordGuru({ id: req.params.id, password: (req.body || {}).password })); } catch (e) { next(e); }
+});
+router.delete("/guru/:id", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.json(admin.hapusGuru({ id: req.params.id, actingUserId: req.user.id })); } catch (e) { next(e); }
+});
 
-router.get("/wali",(req,res,next)=>{try{res.json(svc.listWali());}catch(e){next(e);}});
-router.post("/wali",(req,res,next)=>{try{res.status(201).json(svc.createWali(req.body||{}));}catch(e){next(e);}});
-router.put("/wali/:id",(req,res,next)=>{try{res.json(svc.updateWali(req.params.id,req.body||{}));}catch(e){next(e);}});
-router.delete("/wali/:id",(req,res,next)=>{try{res.json(svc.deleteWali(req.params.id));}catch(e){next(e);}});
+// ---- Unit Usaha — dibaca oleh siapa pun yang sudah login (dipakai lintas modul: form akun staf,
+// pilihan unit di Unit Usaha, dst.); diubah hanya oleh Admin.
+router.get("/unit-usaha", requireAuth, (req, res) => res.json(admin.semuaUnitUsaha()));
+router.post("/unit-usaha", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.status(201).json(admin.tambahUnitUsaha((req.body || {}).nama)); } catch (e) { next(e); }
+});
+router.delete("/unit-usaha/:id", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.json(admin.hapusUnitUsaha(req.params.id)); } catch (e) { next(e); }
+});
 
-router.get("/santri",(req,res,next)=>{try{res.json(svc.listSantri());}catch(e){next(e);}});
-router.post("/santri",(req,res,next)=>{try{res.status(201).json(svc.upsertSantri(req.body||{}));}catch(e){next(e);}});
-router.put("/santri/:id",(req,res,next)=>{try{res.json(svc.upsertSantri({...req.body,id:req.params.id}));}catch(e){next(e);}});
-router.delete("/santri/:id",(req,res,next)=>{try{res.json(svc.deleteSantri(req.params.id));}catch(e){next(e);}});
+// ---- Tahun Ajaran — dibaca oleh siapa pun yang sudah login (guru maupun wali, dipakai luas untuk
+// pengelompokan rapor/tagihan per tahun ajaran); diubah hanya oleh Admin.
+router.get("/tahun-ajaran", requireAuth, (req, res) => res.json(admin.semuaTahunAjaran()));
+router.post("/tahun-ajaran", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.status(201).json(admin.tambahTahunAjaran((req.body || {}).tahunMulai)); } catch (e) { next(e); }
+});
+router.post("/tahun-ajaran/:id/aktifkan", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.json(admin.aktifkanTahunAjaran(req.params.id)); } catch (e) { next(e); }
+});
+router.delete("/tahun-ajaran/:id", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.json(admin.hapusTahunAjaran(req.params.id)); } catch (e) { next(e); }
+});
 
-router.get("/config/:key",(req,res,next)=>{try{res.json({key:req.params.key,value:svc.getConfig(req.params.key)});}catch(e){next(e);}});
-router.put("/config/:key",(req,res,next)=>{try{res.json({key:req.params.key,value:svc.setConfig(req.params.key,req.body?.value)});}catch(e){next(e);}});
+// ---- Tampilan Aplikasi — pembacaan publik (dipakai layar login sebelum ada sesi) ada di
+// routes/public.js; di sini hanya untuk mengambil ulang di panel Admin sendiri, dan menyimpan.
+router.get("/tampilan", requireAuth, requireAdmin, (req, res) => res.json(admin.ambilTampilan()));
+router.put("/tampilan", requireAuth, requireAdmin, (req, res, next) => {
+  try { res.json(admin.simpanTampilan(req.body || {})); } catch (e) { next(e); }
+});
 
-module.exports=router;
+module.exports = router;

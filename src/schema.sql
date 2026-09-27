@@ -238,3 +238,25 @@ CREATE TABLE IF NOT EXISTS RincianAnggaran (
   subtotal    INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_rincian_pengajuan ON RincianAnggaran (pengajuanId);
+
+-- ---- Modul Admin/Kewenangan ----
+-- Akun Guru/Staf sudah ada di tabel Guru di atas. Tiga tabel berikut menampung sisa data yang
+-- sebelumnya hanya ada sebagai state lokal React di KewenanganPanel (Admin): daftar Unit Usaha,
+-- daftar Tahun Ajaran, dan pengaturan Tampilan Aplikasi (logo/foto/warna/font).
+CREATE TABLE IF NOT EXISTS UnitUsaha (
+  id   TEXT PRIMARY KEY,
+  nama TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS TahunAjaran (
+  id         TEXT PRIMARY KEY,
+  tahunMulai INTEGER NOT NULL UNIQUE,
+  aktif      INTEGER NOT NULL DEFAULT 0
+);
+
+-- Pengaturan generik key-value (JSON di kolom nilai) — dipakai untuk Tampilan Aplikasi, dan bisa
+-- dipakai lagi untuk pengaturan Admin lain di masa depan tanpa migrasi skema baru.
+CREATE TABLE IF NOT EXISTS Pengaturan (
+  kunci TEXT PRIMARY KEY,
+  nilai TEXT NOT NULL
+);
