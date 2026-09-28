@@ -13,6 +13,7 @@ const lptqRoutes = require("./routes/lptq");
 const keuanganRoutes = require("./routes/keuangan");
 const adminRoutes = require("./routes/admin");
 const publicRoutes = require("./routes/public");
+HEAD
 const produkRoutes = require("./routes/produk");
 const { CashlessError } = require("./cashlessService");
 
@@ -32,6 +33,7 @@ app.use("/api/lptq", lptqRoutes);
 app.use("/api/keuangan", keuanganRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/public", publicRoutes);
+HEAD
 app.use("/api/produk", produkRoutes);
 
 // Sajikan aplikasi frontend (pesantren-app.html, disalin sebagai public/index.html) dari service
