@@ -260,7 +260,6 @@ CREATE TABLE IF NOT EXISTS Pengaturan (
   kunci TEXT PRIMARY KEY,
   nilai TEXT NOT NULL
 );
-<<<<<<< HEAD
 
 -- ---- Modul Unit Usaha — Katalog Produk per Bagian ----
 -- Setiap bagian Unit Usaha (Kantin | Kopel | Dapur | BMT, lihat UnitUsaha) mengelola daftar item
@@ -280,5 +279,4 @@ CREATE TABLE IF NOT EXISTS ProdukUnitUsaha (
 CREATE INDEX IF NOT EXISTS idx_produk_unit ON ProdukUnitUsaha (unit);
 -- Barcode wajib unik hanya dalam satu unit yang sama, dan hanya bila diisi (NULL boleh berulang).
 CREATE UNIQUE INDEX IF NOT EXISTS idx_produk_unit_barcode ON ProdukUnitUsaha (unit, barcode) WHERE barcode IS NOT NULL;
-=======
->>>>>>> cb899d9b66f983580191a8952e1d29defdeb9c99
+
