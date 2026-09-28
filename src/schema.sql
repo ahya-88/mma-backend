@@ -260,3 +260,22 @@ CREATE TABLE IF NOT EXISTS Pengaturan (
   kunci TEXT PRIMARY KEY,
   nilai TEXT NOT NULL
 );
+
+-- ---- Modul Unit Usaha — Katalog Produk per Bagian ----
+-- Setiap bagian Unit Usaha (Kantin | Kopel | Dapur | BMT, lihat UnitUsaha) mengelola daftar item
+-- & harganya sendiri lewat dashboard masing-masing. Menggantikan produkList lokal di kasir_mma
+-- (app_state.dart) yang sebelumnya hardcoded di app.
+CREATE TABLE IF NOT EXISTS ProdukUnitUsaha (
+  id         TEXT PRIMARY KEY,
+  unit       TEXT NOT NULL,   -- Kantin | Kopel | Dapur | BMT (samakan dengan UnitUsaha.nama)
+  nama       TEXT NOT NULL,
+  harga      INTEGER NOT NULL,
+  kategori   TEXT,
+  barcode    TEXT,            -- kode batang, khusus dipakai aktif oleh Kopel; unit lain boleh kosong
+  aktif      INTEGER NOT NULL DEFAULT 1, -- 0 = disembunyikan dari kasir tanpa menghapus riwayat
+  createdAt  TEXT NOT NULL DEFAULT (datetime('now')),
+  updatedAt  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_produk_unit ON ProdukUnitUsaha (unit);
+-- Barcode wajib unik hanya dalam satu unit yang sama, dan hanya bila diisi (NULL boleh berulang).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_produk_unit_barcode ON ProdukUnitUsaha (unit, barcode) WHERE barcode IS NOT NULL;

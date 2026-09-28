@@ -13,6 +13,7 @@ const lptqRoutes = require("./routes/lptq");
 const keuanganRoutes = require("./routes/keuangan");
 const adminRoutes = require("./routes/admin");
 const publicRoutes = require("./routes/public");
+const produkRoutes = require("./routes/produk");
 const { CashlessError } = require("./cashlessService");
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/lptq", lptqRoutes);
 app.use("/api/keuangan", keuanganRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/public", publicRoutes);
+app.use("/api/produk", produkRoutes);
 
 // Sajikan aplikasi frontend (pesantren-app.html, disalin sebagai public/index.html) dari service
 // backend yang sama — satu URL untuk API dan aplikasi web, tidak perlu hosting frontend terpisah.
