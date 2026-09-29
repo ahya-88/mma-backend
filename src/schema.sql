@@ -82,9 +82,10 @@ CREATE TABLE IF NOT EXISTS PermintaanBMT (
   id              TEXT PRIMARY KEY,
   santriId        TEXT NOT NULL REFERENCES Santri(id),
   waliId          TEXT NOT NULL REFERENCES Wali(id),
-  jenis           TEXT NOT NULL, -- Ubah Limit Jajan Harian | Ubah Durasi Blokir | Buka Blokir Sekarang
+  jenis           TEXT NOT NULL, -- Ubah Limit Jajan Harian | Ubah Durasi Blokir | Buka Blokir Sekarang | Top Up Saldo
   nilaiDiminta    INTEGER,
   alasan          TEXT NOT NULL,
+  buktiTransfer   TEXT,           -- data URI base64 foto bukti transfer, wajib khusus jenis "Top Up Saldo"
   status          TEXT NOT NULL DEFAULT 'Menunggu', -- Menunggu | Disetujui | Ditolak
   tanggalAjukan   TEXT NOT NULL,
   tanggalDiproses TEXT,
@@ -279,4 +280,3 @@ CREATE TABLE IF NOT EXISTS ProdukUnitUsaha (
 CREATE INDEX IF NOT EXISTS idx_produk_unit ON ProdukUnitUsaha (unit);
 -- Barcode wajib unik hanya dalam satu unit yang sama, dan hanya bila diisi (NULL boleh berulang).
 CREATE UNIQUE INDEX IF NOT EXISTS idx_produk_unit_barcode ON ProdukUnitUsaha (unit, barcode) WHERE barcode IS NOT NULL;
-

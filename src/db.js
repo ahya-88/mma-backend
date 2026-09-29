@@ -28,6 +28,14 @@ for (const col of SANTRI_EXTRA_COLUMNS) {
   }
 }
 
+// PermintaanBMT: kolom buktiTransfer ditambahkan belakangan untuk jenis "Top Up Saldo" (klaim
+// transfer manual wali). Sama seperti kolom biodata Santri di atas, database lama perlu ALTER
+// TABLE manual karena CREATE TABLE IF NOT EXISTS tidak menambah kolom ke tabel yang sudah ada.
+const existingPermintaanCols = db.prepare("PRAGMA table_info(PermintaanBMT)").all().map((c) => c.name);
+if (!existingPermintaanCols.includes("buktiTransfer")) {
+  db.exec("ALTER TABLE PermintaanBMT ADD COLUMN buktiTransfer TEXT");
+}
+
 // Default data ringan untuk tabel Admin yang baru (UnitUsaha, TahunAjaran, Pengaturan.tampilan) —
 // hanya diisi jika tabelnya masih kosong, supaya deployment yang sudah berjalan (mis. produksi di
 // Railway) otomatis mendapat nilai awal yang masuk akal begitu update ini di-deploy, tanpa perlu

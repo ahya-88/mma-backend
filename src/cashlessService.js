@@ -4,7 +4,7 @@ const db = require("./db");
 const DEFAULT_DURASI_BLOKIR_HARI = 1;
 const JENIS_TRANSAKSI_BMT = ["Top Up", "Tarik Tunai"];
 const KATEGORI_TRANSAKSI_BMT = ["Jajan Harian", "Kebutuhan Khusus"];
-const JENIS_PERMINTAAN_BMT = ["Ubah Limit Jajan Harian", "Ubah Durasi Blokir", "Buka Blokir Sekarang"];
+const JENIS_PERMINTAAN_BMT = ["Ubah Limit Jajan Harian", "Ubah Durasi Blokir", "Buka Blokir Sekarang", "Top Up Saldo"];
 
 const uid = () => crypto.randomUUID();
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -165,22 +165,27 @@ function riwayatSantri(santriId) {
   return db.prepare("SELECT * FROM TransaksiCashless WHERE santriId = ? ORDER BY createdAt DESC").all(santriId);
 }
 
-const ajukanPermintaan = db.transaction(({ santriId, waliId, jenis, nilaiDiminta, alasan }) => {
+const ajukanPermintaan = db.transaction(({ santriId, waliId, jenis, nilaiDiminta, alasan, buktiTransfer }) => {
   if (!JENIS_PERMINTAAN_BMT.includes(jenis)) throw new CashlessError(400, "Jenis permintaan tidak valid.");
   if (!alasan || !alasan.trim()) throw new CashlessError(400, "Alasan permintaan wajib diisi.");
   const santri = getSantriRow(santriId);
   if (santri.waliId !== waliId) throw new CashlessError(403, "Santri ini bukan anak dari akun wali yang login.");
   if (jenis !== "Buka Blokir Sekarang" && !nilaiDiminta) throw new CashlessError(400, "Nilai yang diminta wajib diisi.");
+  if (jenis === "Top Up Saldo") {
+    if (Number(nilaiDiminta) <= 0) throw new CashlessError(400, "Nominal top up harus lebih dari 0.");
+    if (!buktiTransfer) throw new CashlessError(400, "Bukti transfer wajib diupload.");
+  }
 
   const permintaan = {
     id: uid(), santriId, waliId, jenis,
     nilaiDiminta: jenis === "Buka Blokir Sekarang" ? null : Number(nilaiDiminta),
-    alasan: alasan.trim(), status: "Menunggu",
+    alasan: alasan.trim(), buktiTransfer: jenis === "Top Up Saldo" ? buktiTransfer : null,
+    status: "Menunggu",
     tanggalAjukan: todayLabel(), tanggalDiproses: null, diprosesOleh: null, catatanBMT: null,
   };
   db.prepare(`
-    INSERT INTO PermintaanBMT (id, santriId, waliId, jenis, nilaiDiminta, alasan, status, tanggalAjukan, tanggalDiproses, diprosesOleh, catatanBMT)
-    VALUES (@id, @santriId, @waliId, @jenis, @nilaiDiminta, @alasan, @status, @tanggalAjukan, @tanggalDiproses, @diprosesOleh, @catatanBMT)
+    INSERT INTO PermintaanBMT (id, santriId, waliId, jenis, nilaiDiminta, alasan, buktiTransfer, status, tanggalAjukan, tanggalDiproses, diprosesOleh, catatanBMT)
+    VALUES (@id, @santriId, @waliId, @jenis, @nilaiDiminta, @alasan, @buktiTransfer, @status, @tanggalAjukan, @tanggalDiproses, @diprosesOleh, @catatanBMT)
   `).run(permintaan);
   return permintaan;
 });
@@ -197,6 +202,15 @@ const prosesPermintaan = db.transaction(({ id, disetujui, diprosesOleh, catatan 
       db.prepare("UPDATE Santri SET durasiBlokirHari = ?, updatedAt = datetime('now') WHERE id = ?").run(p.nilaiDiminta, p.santriId);
     } else if (p.jenis === "Buka Blokir Sekarang") {
       db.prepare("UPDATE Santri SET blokirAktif = 0, updatedAt = datetime('now') WHERE id = ?").run(p.santriId);
+    } else if (p.jenis === "Top Up Saldo") {
+      // BMT sudah mencocokkan bukti transfer dengan mutasi rekening yayasan secara manual di luar
+      // sistem sebelum menyetujui — di sinilah saldo baru benar-benar bertambah (bukan saat wali
+      // mengajukan). Reuse catatTransaksi supaya tercatat juga di riwayat TransaksiCashless.
+      catatTransaksi({
+        santriId: p.santriId, unit: "BMT", jenis: "Top Up",
+        jumlah: p.nilaiDiminta,
+        keterangan: `Top up via transfer manual (disetujui oleh ${diprosesOleh})`,
+      });
     }
   }
   db.prepare(`

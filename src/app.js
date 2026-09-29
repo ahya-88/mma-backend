@@ -18,7 +18,9 @@ const { CashlessError } = require("./cashlessService");
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// Limit dinaikkan dari default 100kb: field foto base64 (biodata Santri, dan sekarang bukti
+// transfer top up saldo di PermintaanBMT) butuh ruang lebih besar dari itu.
+app.use(express.json({ limit: "8mb" }));
 
 app.get("/api/health", (req, res) => res.json({ ok: true, waktu: new Date().toISOString() }));
 
