@@ -15,6 +15,91 @@
   body { margin: 0; font-family: "Inter", sans-serif; }
   #root { min-height: 100vh; }
 </style>
+<style>
+  :root {
+    color-scheme: light;
+    --ui-ink: #1d302d;
+    --ui-line: #dce6e1;
+    --ui-green: #176b56;
+    --ui-focus: rgba(23, 107, 86, 0.2);
+  }
+
+  body {
+    color: var(--ui-ink);
+    background-color: #f4f7f5;
+    background-image: repeating-linear-gradient(
+      135deg,
+      rgba(23, 107, 86, 0.018) 0,
+      rgba(23, 107, 86, 0.018) 1px,
+      transparent 1px,
+      transparent 12px
+    );
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease,
+      box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  #root input:not([type="checkbox"]):not([type="radio"]),
+  #root select,
+  #root textarea {
+    border-color: var(--ui-line) !important;
+    border-radius: 9px !important;
+    background-color: #fff !important;
+    color: var(--ui-ink) !important;
+  }
+
+  #root input::placeholder,
+  #root textarea::placeholder {
+    color: #879590 !important;
+  }
+
+  #root input:focus,
+  #root select:focus,
+  #root textarea:focus {
+    border-color: var(--ui-green) !important;
+    outline: 3px solid var(--ui-focus) !important;
+    outline-offset: 1px;
+    box-shadow: none !important;
+  }
+
+  button {
+    border-radius: 8px;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    outline: 3px solid var(--ui-focus);
+    outline-offset: 2px;
+  }
+
+  #root .glass-card {
+    border-color: rgba(220, 230, 225, 0.9) !important;
+    box-shadow: 0 8px 24px rgba(27, 53, 45, 0.055) !important;
+  }
+
+  table thead {
+    color: #42564f;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
 </head>
 <body>
 <div id="root"></div>
