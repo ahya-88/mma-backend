@@ -21,8 +21,8 @@ router.get("/mine", requireAuth, requireWali, (req, res) => {
 // Wali: ajukan permintaan untuk anaknya sendiri
 router.post("/", requireAuth, requireWali, (req, res, next) => {
   try {
-    const { santriId, jenis, nilaiDiminta, alasan } = req.body || {};
-    const permintaan = ajukanPermintaan({ santriId, waliId: req.user.id, jenis, nilaiDiminta, alasan });
+    const { santriId, jenis, nilaiDiminta, alasan, buktiTransfer } = req.body || {};
+    const permintaan = ajukanPermintaan({ santriId, waliId: req.user.id, jenis, nilaiDiminta, alasan, buktiTransfer });
     res.status(201).json(permintaan);
   } catch (e) { next(e); }
 });
