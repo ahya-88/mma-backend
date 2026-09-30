@@ -13,6 +13,10 @@ const GURU_SEED = [
   { id: "g5", nama: "Bpk. Hendra", username: "hendra", departemen: "administrasi", password: "uang123" },
   { id: "g6", nama: "Bpk. Slamet", username: "slamet.kantin", departemen: "unitusaha", unit: "Kantin", password: "guru123" },
   { id: "g7", nama: "Ibu Fatimah", username: "fatimah.bmt", departemen: "unitusaha", unit: "BMT", password: "guru123" },
+  { id: "g8", nama: "Kasir Kiosk", username: "kiosk", departemen: "unitusaha", unit: "Kopel", password: "kiosk" },
+  { id: "g9", nama: "Staf Unit Usaha", username: "staf", departemen: "unitusaha", unit: "Kopel", password: "staf" },
+  { id: "g10", nama: "Kasir Demo", username: "kasir", departemen: "unitusaha", unit: "BMT", password: "kasir123" },
+  { id: "g11", nama: "BMT Demo", username: "bmt", departemen: "unitusaha", unit: "BMT", password: "bmt" },
 ];
 
 const WALI_SEED = [
@@ -42,4 +46,4 @@ const seed = db.transaction(() => {
 
 seed();
 console.log("Seed selesai:", GURU_SEED.length, "guru,", WALI_SEED.length, "wali,", SANTRI_SEED.length, "santri.");
-console.log("Password login sama seperti di frontend (mis. admin/admin123, fatimah.bmt/guru123, ahmad.ridwan/wali123).");
+console.log("Akun demo untuk kasir: kiosk/kiosk, staf/staf, kasir/kasir123, bmt/bmt, fatimah.bmt/guru123.");
