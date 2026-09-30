@@ -85,6 +85,41 @@
     box-shadow: 0 8px 24px rgba(27, 53, 45, 0.055) !important;
   }
 
+  #root .wali-biodata-card .px-5.pb-5 > .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+  }
+
+  #root .wali-biodata-card .px-5.pb-5 > .grid > p,
+  #root .wali-biodata-card .px-5.pb-5 > .grid > div {
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid #e5ece8;
+    border-radius: 8px;
+    background: #f8faf9;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  #root .wali-biodata-card .px-5.pb-5 > .grid > p > span,
+  #root .wali-biodata-card .px-5.pb-5 > .grid > div > span {
+    display: block;
+    margin-bottom: 2px;
+    color: #64746d !important;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  #root .wali-biodata-card .px-5.pb-5 > .grid > :nth-child(n + 7) {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 420px) {
+    #root .wali-biodata-card .px-5.pb-5 > .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   table thead {
     color: #42564f;
   }
@@ -564,4 +599,25 @@ jspdf/dist/jspdf.es.min.js:
    * ====================================================================
    *)
 */
-</script></body></html>
+</script>
+<script>
+(() => {
+  const root = document.getElementById("root");
+  if (!root) return;
+
+  const markWaliBiodata = () => {
+    root.querySelectorAll("h3").forEach((heading) => {
+      if (heading.textContent.trim() === "Biodata Santri") {
+        heading.closest(".animate-riseIn")?.classList.add("wali-biodata-card");
+      }
+    });
+  };
+
+  new MutationObserver(markWaliBiodata).observe(root, {
+    childList: true,
+    subtree: true,
+  });
+  markWaliBiodata();
+})();
+</script>
+</body></html>

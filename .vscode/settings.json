@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^node -e \"const fs=require\\('fs'\\);const s=fs\\.readFileSync\\('public/index\\.html','utf8'\\);for\\(const term of \\['Info Anak','Data Anak','Profil Santri','dashboard wali','Informasi Anak','Data Santri'\\]\\)\\{let p=-1,n=0;while\\(\\(p=s\\.indexOf\\(term,p\\+1\\)\\)>=0&&n\\+\\+<12\\)console\\.log\\('\\\\nTERM '\\+term\\+' @'\\+p\\+'\\\\n'\\+s\\.slice\\(Math\\.max\\(0,p-220\\),Math\\.min\\(s\\.length,p\\+340\\)\\)\\.replace\\(/\\\\\\\\n/g,' '\\)\\);\\}\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
