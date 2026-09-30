@@ -4,6 +4,48 @@ const { requireAuth } = require("../auth");
 const { getSantriRow, CashlessError } = require("../cashlessService");
 
 const router = express.Router();
+const FACE_INDEX_REFRESH_MS = 30_000;
+let faceIndex = { signature: null, refreshedAt: 0, rows: [] };
+
+function stripBase64Header(value) {
+  const comma = value.indexOf(",");
+  return Buffer.from(comma >= 0 ? value.slice(comma + 1) : value, "base64");
+}
+
+function getFaceIndex() {
+  const now = Date.now();
+  const stats = db.prepare(`
+    SELECT COUNT(*) AS count, COALESCE(MAX(updatedAt), '') AS lastUpdated,
+      COALESCE(SUM(length(foto)), 0) AS totalBytes
+    FROM Santri WHERE foto IS NOT NULL AND foto != ''
+  `).get();
+  const signature = `${stats.count}:${stats.lastUpdated}:${stats.totalBytes}`;
+
+  if (signature === faceIndex.signature && now - faceIndex.refreshedAt < FACE_INDEX_REFRESH_MS) {
+    return faceIndex.rows;
+  }
+
+  const rows = db.prepare(
+    "SELECT id, nama, nis, nisn, kelas, foto FROM Santri WHERE foto IS NOT NULL AND foto != '' ORDER BY nama"
+  ).all();
+  const indexedRows = [];
+
+  for (const row of rows) {
+    try {
+      indexedRows.push({
+        id: row.id,
+        nama: row.nama,
+        nis: row.nis,
+        histogram: buildHistogram(stripBase64Header(row.foto)),
+      });
+    } catch (_) {
+      // Lewati foto rusak agar tidak menggagalkan scan santri lain.
+    }
+  }
+
+  faceIndex = { signature, refreshedAt: now, rows: indexedRows };
+  return indexedRows;
+}
 
 // Hanya staf unit usaha yang boleh mengakses endpoint face (kasir)
 function requireUnitUsaha(req, res, next) {
@@ -44,39 +86,24 @@ router.post("/cocokkan", requireAuth, requireUnitUsaha, (req, res, next) => {
       return res.status(400).json({ error: "fotoBase64 wajib diisi." });
     }
 
-    // Ambil semua santri yang sudah punya foto tersimpan
-    const rows = db.prepare(
-      "SELECT id, nama, nis, nisn, kelas, foto FROM Santri WHERE foto IS NOT NULL AND foto != ''"
-    ).all();
+    const rows = getFaceIndex();
 
     if (rows.length === 0) {
       return res.status(404).json({ error: "Belum ada data foto santri tersimpan. Unggah foto santri di pesantren-app terlebih dahulu." });
     }
 
-    // Ekstrak byte dari base64 (buang header data:image/...;base64,)
-    const stripHeader = (b64) => {
-      const comma = b64.indexOf(",");
-      return Buffer.from(comma >= 0 ? b64.slice(comma + 1) : b64, "base64");
-    };
-
-    const queryBuf = stripHeader(fotoBase64);
+    const queryBuf = stripBase64Header(fotoBase64);
     const queryHist = buildHistogram(queryBuf);
 
     let bestId = null, bestNama = null, bestNis = null, bestScore = -1;
 
     for (const row of rows) {
-      try {
-        const refBuf = stripHeader(row.foto);
-        const refHist = buildHistogram(refBuf);
-        const score = cosineSimilarity(queryHist, refHist);
-        if (score > bestScore) {
-          bestScore = score;
-          bestId = row.id;
-          bestNama = row.nama;
-          bestNis = row.nis;
-        }
-      } catch (_) {
-        // lewati foto yang rusak
+      const score = cosineSimilarity(queryHist, row.histogram);
+      if (score > bestScore) {
+        bestScore = score;
+        bestId = row.id;
+        bestNama = row.nama;
+        bestNis = row.nis;
       }
     }
 
