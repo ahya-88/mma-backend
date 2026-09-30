@@ -26,14 +26,11 @@
 
   body {
     color: var(--ui-ink);
-    background-color: #f4f7f5;
-    background-image: repeating-linear-gradient(
-      135deg,
-      rgba(23, 107, 86, 0.018) 0,
-      rgba(23, 107, 86, 0.018) 1px,
-      transparent 1px,
-      transparent 12px
-    );
+    background-color: #f5f7f3;
+    background-image:
+      radial-gradient(ellipse at 4% 0%, rgba(213, 231, 215, 0.62), transparent 34rem),
+      radial-gradient(ellipse at 96% 18%, rgba(246, 225, 207, 0.48), transparent 28rem),
+      repeating-linear-gradient(135deg, rgba(23, 107, 86, 0.018) 0, rgba(23, 107, 86, 0.018) 1px, transparent 1px, transparent 14px);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -81,8 +78,100 @@
   }
 
   #root .glass-card {
-    border-color: rgba(220, 230, 225, 0.9) !important;
-    box-shadow: 0 8px 24px rgba(27, 53, 45, 0.055) !important;
+    border: 1px solid rgba(215, 226, 218, 0.88) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 253, 0.88) !important;
+    box-shadow: 0 14px 36px rgba(35, 59, 46, 0.075), 0 2px 6px rgba(35, 59, 46, 0.035) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+
+  #root .glass-card:hover {
+    border-color: rgba(23, 107, 86, 0.24) !important;
+    box-shadow: 0 18px 42px rgba(35, 59, 46, 0.1), 0 3px 8px rgba(35, 59, 46, 0.045) !important;
+  }
+
+  #root .glass-dark {
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    background: linear-gradient(145deg, rgba(20, 77, 62, 0.96), rgba(29, 56, 48, 0.96)) !important;
+    box-shadow: 0 22px 48px rgba(22, 48, 39, 0.18) !important;
+  }
+
+  #root .gradient-primary,
+  #root .btn-gradient {
+    background: linear-gradient(128deg, #176b56 0%, #23836a 58%, #3a9277 100%) !important;
+  }
+
+  #root .btn-gradient {
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 8px 18px rgba(23, 107, 86, 0.2) !important;
+  }
+
+  #root .btn-gradient:hover {
+    box-shadow: 0 12px 24px rgba(23, 107, 86, 0.26) !important;
+    transform: translateY(-2px);
+  }
+
+  #root h1,
+  #root h2,
+  #root h3,
+  #root h4 {
+    color: #203a30;
+    text-wrap: balance;
+  }
+
+  #root .hero-panel {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 80% 14%, rgba(225, 185, 119, 0.22), transparent 32%),
+      linear-gradient(145deg, #173c31 0%, #205b49 58%, #397b5d 100%) !important;
+  }
+
+  #root .hero-panel::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    pointer-events: none;
+    opacity: 0.16;
+    background-image: repeating-linear-gradient(135deg, transparent 0 18px, rgba(255, 255, 255, 0.13) 18px 19px, transparent 19px 38px);
+    mask-image: linear-gradient(115deg, transparent 10%, #000 100%);
+  }
+
+  #root button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  #root button:disabled {
+    cursor: not-allowed;
+  }
+
+  #root table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  #root table thead th {
+    background: #f1f5f0;
+    color: #52675c;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  #root table tbody tr {
+    transition: background-color 150ms ease;
+  }
+
+  #root table tbody tr:hover {
+    background-color: rgba(232, 241, 233, 0.62);
+  }
+
+  #root ::selection {
+    color: #173c31;
+    background: #d5e8d9;
   }
 
   #root .wali-biodata-card .px-5.pb-5 > .grid {
