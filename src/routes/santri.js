@@ -52,6 +52,11 @@ router.post("/upsert", requireAuth, requireAnyStaff, (req, res, next) => {
         if (c in body) { sets.push(`${c} = @${c}`); params[c] = body[c] || null; }
       }
       for (const f of Object.keys(biodataToSet)) { sets.push(`${f} = @${f}`); params[f] = biodataToSet[f]; }
+      // Foto berubah -> embedding wajah lama tidak valid lagi; kasir akan menghitung ulang saat sinkronisasi.
+      if ("foto" in biodataToSet) {
+        const lama = db.prepare("SELECT foto FROM Santri WHERE id = ?").get(id);
+        if ((lama?.foto || null) !== (biodataToSet.foto || null)) sets.push("faceEmbedding = NULL");
+      }
       if (riwayatKelasProvided) { sets.push("riwayatKelas = @riwayatKelas"); params.riwayatKelas = riwayatKelasJSON; }
       sets.push("updatedAt = datetime('now')");
       db.prepare(`UPDATE Santri SET ${sets.join(", ")} WHERE id = @id`).run(params);

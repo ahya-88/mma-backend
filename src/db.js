@@ -20,6 +20,7 @@ const SANTRI_EXTRA_COLUMNS = [
   "noDarurat", "catatanKesehatan", "halaqoh", "foto", "namaAyah", "namaIbu",
   "asalSekolah", "programPilihan", "citaCita", "pendidikanSD", "tahunSD",
   "pendidikanSMP", "tahunSMP", "pendidikanSMA", "tahunSMA", "riwayatKelas",
+  "faceEmbedding", // embedding wajah (JSON array 192 float) — dihitung di aplikasi kasir, bukan biodata
 ];
 const existingSantriCols = db.prepare("PRAGMA table_info(Santri)").all().map((c) => c.name);
 for (const col of SANTRI_EXTRA_COLUMNS) {
