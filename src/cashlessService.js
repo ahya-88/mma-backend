@@ -17,9 +17,10 @@ const tambahHariISO = (isoAwal, n) => {
 const formatTanggalISO = (iso) => (iso ? new Date(iso + "T00:00:00").toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : null);
 
 class CashlessError extends Error {
-  constructor(status, message) {
+  constructor(status, message, details = {}) {
     super(message);
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -59,9 +60,12 @@ const SANTRI_BIODATA_FIELDS = [
 ];
 
 // Bentuk objek santri yang aman dikirim ke klien, dengan status blokir/limit yang sudah dihitung.
-function toPublicSantri(santri) {
+function toPublicSantri(santri, includeFoto = false) {
   const biodata = {};
-  for (const f of SANTRI_BIODATA_FIELDS) biodata[f] = santri[f] ?? "";
+  for (const f of SANTRI_BIODATA_FIELDS) {
+    if (f === "foto" && !includeFoto) continue; // Kecualikan string base64 foto raksasa dari daftar publik
+    biodata[f] = santri[f] ?? "";
+  }
   let riwayatKelas = [];
   try { riwayatKelas = santri.riwayatKelas ? JSON.parse(santri.riwayatKelas) : []; } catch { riwayatKelas = []; }
   return {
@@ -75,6 +79,7 @@ function toPublicSantri(santri) {
     limitJajanHarian: santri.limitJajanHarian,
     durasiBlokirHari: santri.durasiBlokirHari || DEFAULT_DURASI_BLOKIR_HARI,
     sisaLimitHariIni: sisaLimitHarian(santri),
+    hasFoto: !!(santri.foto && santri.foto.length > 0),
     blokir: isBlokirAktif(santri) ? {
       aktif: true,
       sejakISO: santri.blokirSejakISO,
@@ -99,7 +104,7 @@ function toSaldoPublik(santri) {
  * tapi otomatis memicu blokir untuk transaksi berikutnya selama durasiBlokirHari (default 1 hari).
  * Top Up selalu boleh; Tarik Tunai ditolak jika status blokir sedang aktif atau saldo tidak cukup.
  */
-const catatTransaksi = db.transaction(({ santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, bulan }) => {
+const catatTransaksiTx = db.transaction(({ santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, bulan, metode, pin, validasiPin, petugasId }) => {
   if (!JENIS_TRANSAKSI_BMT.includes(jenis)) throw new CashlessError(400, "Jenis transaksi tidak valid.");
   jumlah = Number(jumlah);
   if (!jumlah || jumlah <= 0) throw new CashlessError(400, "Jumlah transaksi harus lebih dari 0.");
@@ -109,6 +114,11 @@ const catatTransaksi = db.transaction(({ santriId, unit, jenis, kategori, subKat
 
   if (jenis === "Tarik Tunai") {
     if (!KATEGORI_TRANSAKSI_BMT.includes(kategori)) throw new CashlessError(400, "Kategori transaksi tidak valid.");
+    if (validasiPin) {
+      const { verifikasiPin } = require("./pinService");
+      const pinError = verifikasiPin(santri, pin, { unit, petugasId });
+      if (pinError) return { pinError };
+    }
     if (isBlokirAktif(santri)) {
       throw new CashlessError(409, `Cashless santri ini sedang diblokir sampai ${formatTanggalISO(santri.blokirSampaiISO)} (${santri.blokirAlasan}). Wali dapat mengajukan buka blokir ke BMT.`);
     }
@@ -144,12 +154,13 @@ const catatTransaksi = db.transaction(({ santriId, unit, jenis, kategori, subKat
     id: uid(), santriId, unit, jenis,
     kategori: jenis === "Tarik Tunai" ? kategori : null,
     subKategori: jenis === "Tarik Tunai" && kategori === "Kebutuhan Khusus" ? (subKategori || null) : null,
+    metode: ["qr", "wajah", "manual"].includes(metode) ? metode : null,
     jumlah, keterangan: keterangan || null, saldoSetelah: saldoBaru,
     tanggalISO: todayISO(), tanggalLabel: todayLabel(), bulan: bulan || todayLabel(),
   };
   db.prepare(`
-    INSERT INTO TransaksiCashless (id, santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, saldoSetelah, tanggalISO, tanggalLabel, bulan)
-    VALUES (@id, @santriId, @unit, @jenis, @kategori, @subKategori, @jumlah, @keterangan, @saldoSetelah, @tanggalISO, @tanggalLabel, @bulan)
+    INSERT INTO TransaksiCashless (id, santriId, unit, jenis, kategori, subKategori, metode, jumlah, keterangan, saldoSetelah, tanggalISO, tanggalLabel, bulan)
+    VALUES (@id, @santriId, @unit, @jenis, @kategori, @subKategori, @metode, @jumlah, @keterangan, @saldoSetelah, @tanggalISO, @tanggalLabel, @bulan)
   `).run(transaksi);
 
   return {
@@ -159,6 +170,14 @@ const catatTransaksi = db.transaction(({ santriId, unit, jenis, kategori, subKat
     santri: toPublicSantri(getSantriRow(santriId)),
   };
 });
+
+function catatTransaksi(input) {
+  const hasil = catatTransaksiTx(input);
+  if (hasil.pinError) {
+    throw new CashlessError(hasil.pinError.status, hasil.pinError.message, hasil.pinError.details);
+  }
+  return hasil;
+}
 
 function riwayatSantri(santriId) {
   getSantriRow(santriId); // pastikan ada, lempar 404 jika tidak

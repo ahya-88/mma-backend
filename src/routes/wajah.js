@@ -61,12 +61,25 @@ router.put("/embedding/:id", requireAuth, requireUnitUsaha, (req, res) => {
   const norm = Math.sqrt(embedding.reduce((s, x) => s + x * x, 0));
   if (norm < 1e-6) return res.status(400).json({ error: "embedding tidak valid (norma nol)." });
   const unit = embedding.map((x) => Math.round((x / norm) * 1e6) / 1e6);
-  db.prepare("UPDATE Santri SET faceEmbedding = ? WHERE id = ?").run(JSON.stringify(unit), req.params.id);
+  db.prepare("UPDATE Santri SET faceEmbedding = ?, updatedAt = datetime('now') WHERE id = ?").run(JSON.stringify(unit), req.params.id);
   res.json({ ok: true });
 });
 
 // Semua embedding untuk cache lokal kasir (~2 KB per santri).
 router.get("/embeddings", requireAuth, requireUnitUsaha, (req, res) => {
+  const meta = db.prepare(`
+    SELECT COUNT(*) AS total, MAX(updatedAt) AS lastUpdate
+    FROM Santri WHERE faceEmbedding IS NOT NULL AND faceEmbedding != ''`).get();
+
+  const etag = `W/"emb-${meta.total || 0}-${meta.lastUpdate || 0}"`;
+
+  if (req.headers["if-none-match"] === etag) {
+    return res.status(304).end();
+  }
+
+  res.setHeader("ETag", etag);
+  res.setHeader("Cache-Control", "no-cache, must-revalidate");
+
   const rows = db.prepare(`
     SELECT id, nama, nis, nisn, kelas, faceEmbedding FROM Santri
     WHERE faceEmbedding IS NOT NULL AND faceEmbedding != '' ORDER BY nama`).all();

@@ -58,6 +58,11 @@ CREATE TABLE IF NOT EXISTS Santri (
   pendidikanSMA    TEXT,
   tahunSMA         TEXT,
   riwayatKelas     TEXT,             -- JSON array [{kelas, tanggal}]
+  pinHash          TEXT,
+  pinGagal         INTEGER NOT NULL DEFAULT 0,
+  pinKunciSampai   TEXT,
+  kartuToken       TEXT,
+  kartuTerbit      TEXT,
   updatedAt        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -74,9 +79,19 @@ CREATE TABLE IF NOT EXISTS TransaksiCashless (
   tanggalISO   TEXT NOT NULL,  -- YYYY-MM-DD, dipakai utk hitung limit harian
   tanggalLabel TEXT NOT NULL,  -- format tampilan ala frontend, mis. "16 Sep 2026"
   bulan        TEXT NOT NULL,
+  metode       TEXT,
   createdAt    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_transaksi_santri_tanggal ON TransaksiCashless (santriId, tanggalISO);
+
+CREATE TABLE IF NOT EXISTS LogPin (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  santriId  TEXT NOT NULL REFERENCES Santri(id),
+  unit      TEXT NOT NULL,
+  petugasId TEXT,
+  hasil     TEXT NOT NULL,
+  waktu     TEXT NOT NULL DEFAULT (datetime('now'))
+);
 
 CREATE TABLE IF NOT EXISTS PermintaanBMT (
   id              TEXT PRIMARY KEY,

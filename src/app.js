@@ -2,6 +2,7 @@ require("dotenv").config({ quiet: true });
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 
 const authRoutes = require("./routes/auth");
 const santriRoutes = require("./routes/santri");
@@ -15,10 +16,12 @@ const adminRoutes = require("./routes/admin");
 const publicRoutes = require("./routes/public");
 const produkRoutes = require("./routes/produk");
 const wajahRoutes = require("./routes/wajah");
+const kartuRoutes = require("./routes/kartu");
 const { CashlessError } = require("./cashlessService");
 
 const app = express();
 app.use(cors());
+app.use(compression());
 // Limit dinaikkan dari default 100kb: field foto base64 (biodata Santri, dan sekarang bukti
 // transfer top up saldo di PermintaanBMT) butuh ruang lebih besar dari itu.
 app.use(express.json({ limit: "8mb" }));
@@ -37,6 +40,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/produk", produkRoutes);
 app.use("/api/wajah", wajahRoutes);
+app.use("/api/kartu", kartuRoutes);
 
 // Sajikan aplikasi frontend (pesantren-app.html, disalin sebagai public/index.html) dari service
 // backend yang sama — satu URL untuk API dan aplikasi web, tidak perlu hosting frontend terpisah.
@@ -51,7 +55,7 @@ app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(publicDir, "index
 // Error handler terpusat — CashlessError membawa status HTTP yang sesuai (400/403/404/409),
 // error lain dianggap kesalahan server.
 app.use((err, req, res, next) => {
-  if (err instanceof CashlessError) return res.status(err.status).json({ error: err.message });
+  if (err instanceof CashlessError) return res.status(err.status).json({ error: err.message, ...err.details });
   console.error(err);
   res.status(500).json({ error: "Terjadi kesalahan pada server." });
 });

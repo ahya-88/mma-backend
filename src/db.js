@@ -29,6 +29,31 @@ for (const col of SANTRI_EXTRA_COLUMNS) {
   }
 }
 
+const SANTRI_KARTU_COLUMNS = [
+  ["pinHash", "TEXT"],
+  ["pinGagal", "INTEGER NOT NULL DEFAULT 0"],
+  ["pinKunciSampai", "TEXT"],
+  ["kartuToken", "TEXT"],
+  ["kartuTerbit", "TEXT"],
+];
+const currentSantriCols = db.prepare("PRAGMA table_info(Santri)").all().map((c) => c.name);
+for (const [col, type] of SANTRI_KARTU_COLUMNS) {
+  if (!currentSantriCols.includes(col)) db.exec(`ALTER TABLE Santri ADD COLUMN ${col} ${type}`);
+}
+const existingTransaksiCols = db.prepare("PRAGMA table_info(TransaksiCashless)").all().map((c) => c.name);
+if (!existingTransaksiCols.includes("metode")) {
+  db.exec("ALTER TABLE TransaksiCashless ADD COLUMN metode TEXT");
+}
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_santri_kartu_token ON Santri(kartuToken) WHERE kartuToken IS NOT NULL");
+
+// Indeks performa untuk query & sinkronisasi kilat
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_santri_face_embed ON Santri(faceEmbedding);
+  CREATE INDEX IF NOT EXISTS idx_santri_foto ON Santri(foto);
+  CREATE INDEX IF NOT EXISTS idx_santri_nama ON Santri(nama);
+  CREATE INDEX IF NOT EXISTS idx_santri_nis ON Santri(nis);
+`);
+
 // PermintaanBMT: kolom buktiTransfer ditambahkan belakangan untuk jenis "Top Up Saldo" (klaim
 // transfer manual wali). Sama seperti kolom biodata Santri di atas, database lama perlu ALTER
 // TABLE manual karena CREATE TABLE IF NOT EXISTS tidak menambah kolom ke tabel yang sudah ada.

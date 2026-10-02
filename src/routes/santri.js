@@ -1,7 +1,9 @@
 const express = require("express");
+const crypto = require("crypto");
 const db = require("../db");
 const { requireAuth, requireBMT, requireAnyStaff, requireSekretariat } = require("../auth");
 const { getSantriRow, toPublicSantri, toSaldoPublik, riwayatSantri, CashlessError, SANTRI_BIODATA_FIELDS } = require("../cashlessService");
+const { setPin, terbitkanKartu } = require("../pinService");
 const { riwayatAbsensi, daftarPerizinan, riwayatPelanggaran } = require("../pengasuhanService");
 const { semuaNilai, semuaPrestasi, semuaHafalan, semuaUbudiyah } = require("../akademikService");
 const { tagihanSantri } = require("../keuanganService");
@@ -23,6 +25,35 @@ function assertLihatRaporSantri(req, santri) {
   if (req.user.role === "wali" && santri.waliId === req.user.id) return;
   throw new CashlessError(403, "Tidak berwenang melihat data santri ini.");
 }
+
+router.post("/pin/awal", requireAuth, requireBMT, (req, res, next) => {
+  try {
+    const daftarPin = db.transaction(() => {
+      const belumPunyaPin = db.prepare("SELECT id, nis, nama, kelas FROM Santri WHERE pinHash IS NULL OR pinHash = '' ORDER BY nama").all();
+      return belumPunyaPin.map((santri) => {
+        const pin = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+        setPin(santri.id, pin);
+        return { nis: santri.nis ?? "", nama: santri.nama, kelas: santri.kelas ?? "", pin };
+      });
+    })();
+    res.json(daftarPin);
+  } catch (e) { next(e); }
+});
+
+router.post("/:id/pin", requireAuth, requireBMT, (req, res, next) => {
+  try {
+    getSantriRow(req.params.id);
+    setPin(req.params.id, req.body?.pin);
+    res.json({ diatur: true });
+  } catch (e) { next(e); }
+});
+
+router.post("/:id/kartu/terbitkan", requireAuth, requireBMT, (req, res, next) => {
+  try {
+    const { kartuTerbit } = terbitkanKartu(req.params.id);
+    res.json({ terbit: true, kartuTerbit });
+  } catch (e) { next(e); }
+});
 
 // Buat/perbarui identitas & biodata santri di backend bersama. Terima juga field biodata lengkap
 // (Master Data Santri — Sekretariat) selain nama/kelas/nis/nisn/waliId; TIDAK PERNAH menyentuh
