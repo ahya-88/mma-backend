@@ -2,6 +2,7 @@ require("dotenv").config({ quiet: true });
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 
 const authRoutes = require("./routes/auth");
 const santriRoutes = require("./routes/santri");
@@ -19,6 +20,7 @@ const { CashlessError } = require("./cashlessService");
 
 const app = express();
 app.use(cors());
+app.use(compression());
 // Limit dinaikkan dari default 100kb: field foto base64 (biodata Santri, dan sekarang bukti
 // transfer top up saldo di PermintaanBMT) butuh ruang lebih besar dari itu.
 app.use(express.json({ limit: "8mb" }));

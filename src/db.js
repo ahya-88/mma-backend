@@ -29,6 +29,14 @@ for (const col of SANTRI_EXTRA_COLUMNS) {
   }
 }
 
+// Indeks performa untuk query & sinkronisasi kilat
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_santri_face_embed ON Santri(faceEmbedding);
+  CREATE INDEX IF NOT EXISTS idx_santri_foto ON Santri(foto);
+  CREATE INDEX IF NOT EXISTS idx_santri_nama ON Santri(nama);
+  CREATE INDEX IF NOT EXISTS idx_santri_nis ON Santri(nis);
+`);
+
 // PermintaanBMT: kolom buktiTransfer ditambahkan belakangan untuk jenis "Top Up Saldo" (klaim
 // transfer manual wali). Sama seperti kolom biodata Santri di atas, database lama perlu ALTER
 // TABLE manual karena CREATE TABLE IF NOT EXISTS tidak menambah kolom ke tabel yang sudah ada.

@@ -59,9 +59,12 @@ const SANTRI_BIODATA_FIELDS = [
 ];
 
 // Bentuk objek santri yang aman dikirim ke klien, dengan status blokir/limit yang sudah dihitung.
-function toPublicSantri(santri) {
+function toPublicSantri(santri, includeFoto = false) {
   const biodata = {};
-  for (const f of SANTRI_BIODATA_FIELDS) biodata[f] = santri[f] ?? "";
+  for (const f of SANTRI_BIODATA_FIELDS) {
+    if (f === "foto" && !includeFoto) continue; // Kecualikan string base64 foto raksasa dari daftar publik
+    biodata[f] = santri[f] ?? "";
+  }
   let riwayatKelas = [];
   try { riwayatKelas = santri.riwayatKelas ? JSON.parse(santri.riwayatKelas) : []; } catch { riwayatKelas = []; }
   return {
@@ -75,6 +78,7 @@ function toPublicSantri(santri) {
     limitJajanHarian: santri.limitJajanHarian,
     durasiBlokirHari: santri.durasiBlokirHari || DEFAULT_DURASI_BLOKIR_HARI,
     sisaLimitHariIni: sisaLimitHarian(santri),
+    hasFoto: !!(santri.foto && santri.foto.length > 0),
     blokir: isBlokirAktif(santri) ? {
       aktif: true,
       sejakISO: santri.blokirSejakISO,
