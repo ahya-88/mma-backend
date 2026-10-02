@@ -31,9 +31,31 @@ router.get("/kelola", requireAuth, requireBMT, async (req, res, next) => {
 
 router.post("/resolve", requireAuth, requireUnitUsaha, (req, res, next) => {
   try {
-    const qr = typeof req.body?.token === "string" ? req.body.token : "";
-    const match = qr.match(/^MMA1:([A-Za-z0-9_-]{22})$/);
-    const santri = match ? db.prepare("SELECT * FROM Santri WHERE kartuToken = ?").get(match[1]) : null;
+    const raw = typeof req.body?.token === "string" ? req.body.token.trim() : "";
+    if (!raw) return res.status(400).json({ error: "Token kartu wajib diisi." });
+
+    // Ekstraksi token fleksibel (mendukung "MMA1:<token>", "mma1:<token>", URL, JSON, atau raw token)
+    let token = raw;
+    if (raw.toUpperCase().startsWith("MMA1:")) {
+      token = raw.substring(5).trim();
+    } else if (raw.includes("token=")) {
+      const match = raw.match(/token=([A-Za-z0-9_-]+)/);
+      if (match) token = match[1];
+    } else if (raw.startsWith("{") && raw.endsWith("}")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.token) token = String(parsed.token).trim();
+      } catch (_) {}
+    }
+
+    // Cari santri berdasarkan kartuToken, id, atau nis
+    let santri = db.prepare("SELECT * FROM Santri WHERE kartuToken = ? OR id = ? OR nis = ?").get(token, token, token);
+
+    // Fallback: Jika raw berbeda dari token, coba cari dengan string raw
+    if (!santri && raw !== token) {
+      santri = db.prepare("SELECT * FROM Santri WHERE kartuToken = ?").get(raw);
+    }
+
     if (!santri) return res.status(404).json({ error: "Kartu tidak dikenal." });
 
     const publik = toPublicSantri(santri);
