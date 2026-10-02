@@ -48,6 +48,7 @@ app.use("/api/kartu", kartuRoutes);
 // project yang sama, atau folder statis lain di sini.
 const publicDir = path.join(__dirname, "..", "public");
 app.use(express.static(publicDir));
+app.get("/bmt/qr", (req, res) => res.sendFile(path.join(publicDir, "bmt-qr.html")));
 // Fallback: request GET selain /api/* (mis. refresh di path lain) tetap kembalikan index.html,
 // supaya aplikasi single-page ini tidak pernah menampilkan 404 dari sisi server.
 app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(publicDir, "index.html")));

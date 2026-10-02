@@ -11,6 +11,23 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => 
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
 }[char]));
 
+router.get("/kelola", requireAuth, requireBMT, async (req, res, next) => {
+  try {
+    const santri = db.prepare("SELECT id, nama, kelas, nis, kartuToken, kartuTerbit FROM Santri ORDER BY nama").all();
+    const cards = await Promise.all(santri.map(async (row) => ({
+      id: row.id,
+      nama: row.nama,
+      kelas: row.kelas || "",
+      nis: row.nis || "",
+      kartuTerbit: row.kartuTerbit,
+      qr: row.kartuToken ? await QRCode.toDataURL(`MMA1:${row.kartuToken}`, {
+        width: 220, margin: 1, errorCorrectionLevel: "M",
+      }) : null,
+    })));
+    res.set("Cache-Control", "no-store").json(cards);
+  } catch (e) { next(e); }
+});
+
 router.post("/resolve", requireAuth, requireUnitUsaha, (req, res, next) => {
   try {
     const qr = typeof req.body?.token === "string" ? req.body.token : "";

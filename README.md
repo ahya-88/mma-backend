@@ -69,6 +69,7 @@ Semua endpoint berawalan `/api`. Kirim `Authorization: Bearer <token>` dari hasi
 | POST | `/santri/upsert` | staf mana pun (guru) | sinkronkan identitas dasar santri (dipanggil otomatis sebelum transaksi/perizinan/pelanggaran/nilai/dst diproses) |
 | POST | `/transaksi` | staf Unit Usaha | `{ santriId, jenis?, kategori?, subKategori?, jumlah, keterangan?, pin?, metode? }`; jenis kosong berarti Tarik Tunai/Jajan Harian dan debit memerlukan PIN |
 | POST | `/kartu/resolve` | staf Unit Usaha | `{ token: "MMA1:<kartuToken>" }` → identitas/saldo santri tanpa field rahasia |
+| GET | `/kartu/kelola` | BMT | daftar santri dan QR aktif (PNG data URL), tanpa menyertakan token kartu mentah |
 | GET | `/kartu/cetak` | BMT | HTML siap cetak; gunakan header Authorization, kartu tanpa PIN |
 | POST | `/santri/pin/awal` | BMT | Buat PIN acak untuk semua santri yang belum punya PIN; respons PIN hanya sekali |
 | POST | `/santri/:id/pin` | BMT | `{ pin }` — atur/reset PIN 4–6 digit |
@@ -82,6 +83,8 @@ Semua error dikembalikan sebagai `{ "error": "..." }` dengan status HTTP yang se
 
 #### PIN awal dan cetak kartu
 Login sebagai staf BMT, lalu kirim `POST /api/santri/pin/awal` dengan header `Authorization: Bearer <token>`. Simpan respons PIN secara aman karena hanya dikembalikan sekali; PIN tidak dicetak pada kartu. Untuk mencetak semua kartu, unduh `GET /api/kartu/cetak` menggunakan header Authorization (token tidak pernah diletakkan di URL), buka HTML hasilnya di browser, lalu gunakan Print. Santri yang belum memiliki token akan otomatis mendapat kartu saat halaman cetak dibuat; rotasi melalui `/api/santri/:id/kartu/terbitkan` langsung menonaktifkan QR lama.
+
+Untuk pengelolaan visual QR per santri, buka `/bmt/qr`, masuk dengan akun staf BMT, lalu cari, unduh, cetak, terbitkan, atau ganti QR. Sesi login halaman ini hanya disimpan di `sessionStorage` selama tab terbuka.
 
 ### Kontrak API — Pengasuhan
 Semua endpoint di bawah khusus staf Pengasuhan (`departemen: "pengasuhan"`).
