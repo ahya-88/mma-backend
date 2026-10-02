@@ -67,7 +67,7 @@ Semua endpoint berawalan `/api`. Kirim `Authorization: Bearer <token>` dari hasi
 | GET | `/santri/:id/saldo-publik` | **publik, tanpa token** | untuk kios cek saldo mandiri — info minimal saja |
 | GET | `/santri/:id/rapor-ringkas` | staf mana pun, atau wali pemilik | absensi + perizinan + pelanggaran + nilai + prestasi + hafalan + ubudiyah dalam satu panggilan; **field `tagihan`** juga disertakan tapi **hanya** terisi untuk wali pemilik anak atau staf Administrasi — untuk staf lain, `tagihan` selalu `[]` — sedangkan saldo cashless tetap lewat `/santri/:id` (BMT-atau-wali-pemilik saja) |
 | POST | `/santri/upsert` | staf mana pun (guru) | sinkronkan identitas dasar santri (dipanggil otomatis sebelum transaksi/perizinan/pelanggaran/nilai/dst diproses) |
-| POST | `/transaksi` | staf Unit Usaha | `{ santriId, jenis?, kategori?, subKategori?, jumlah, keterangan?, pin?, metode? }`; jenis kosong berarti Tarik Tunai/Jajan Harian dan debit memerlukan PIN |
+| POST | `/transaksi` | staf Unit Usaha | `{ santriId, jenis?, kategori?, subKategori?, jumlah, keterangan?, pin?, metode? }`; PIN opsional khusus transaksi QR bagi santri yang belum mengatur PIN. Jika PIN sudah diatur, transaksi debit QR tetap wajib memakainya; metode manual/wajah tetap memerlukan PIN. |
 | POST | `/kartu/resolve` | staf Unit Usaha | `{ token: "MMA1:<kartuToken>" }` → identitas/saldo santri tanpa field rahasia |
 | GET | `/kartu/kelola` | BMT | daftar santri dan QR aktif (PNG data URL), tanpa menyertakan token kartu mentah |
 | GET | `/kartu/cetak` | BMT | HTML siap cetak; gunakan header Authorization, kartu tanpa PIN |

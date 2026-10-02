@@ -114,7 +114,8 @@ const catatTransaksiTx = db.transaction(({ santriId, unit, jenis, kategori, subK
 
   if (jenis === "Tarik Tunai") {
     if (!KATEGORI_TRANSAKSI_BMT.includes(kategori)) throw new CashlessError(400, "Kategori transaksi tidak valid.");
-    if (validasiPin) {
+    const qrTanpaPin = metode === "qr" && !santri.pinHash;
+    if (validasiPin && !qrTanpaPin) {
       const { verifikasiPin } = require("./pinService");
       const pinError = verifikasiPin(santri, pin, { unit, petugasId });
       if (pinError) return { pinError };
