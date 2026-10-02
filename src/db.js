@@ -60,4 +60,16 @@ if (!db.prepare("SELECT 1 FROM Pengaturan WHERE kunci = 'tampilan'").get()) {
   db.prepare("INSERT INTO Pengaturan (kunci, nilai) VALUES ('tampilan', ?)").run(JSON.stringify(tampilanDefault));
 }
 
+// Model embedding wajah. Versi lama (proxy luminansi piksel) tidak valid untuk pengenalan wajah
+// sungguhan, jadi semua embedding lama dikosongkan SEKALI saat model berganti; aplikasi kasir
+// (MobileFaceNet + ML Kit) akan menghitung ulang dari foto santri saat sinkronisasi berikutnya.
+const FACE_MODEL = "mfn192-v1";
+const faceModelRow = db.prepare("SELECT nilai FROM Pengaturan WHERE kunci = 'faceModel'").get();
+if (!faceModelRow || faceModelRow.nilai !== FACE_MODEL) {
+  db.prepare("UPDATE Santri SET faceEmbedding = NULL").run();
+  db.prepare(
+    "INSERT INTO Pengaturan (kunci, nilai) VALUES ('faceModel', ?) ON CONFLICT(kunci) DO UPDATE SET nilai = excluded.nilai"
+  ).run(FACE_MODEL);
+}
+
 module.exports = db;
