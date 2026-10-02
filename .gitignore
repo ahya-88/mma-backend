@@ -1,11 +1,14 @@
 node_modules/
 .env
+.env.*
+!.env.example
 *.db
 *.db-wal
 *.db-shm
+*.b64
+data-lama/
 
 railway ssh*
 *.pem
 id_rsa*
 id_ed25519*
-.env
