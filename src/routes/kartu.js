@@ -13,13 +13,14 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => 
 
 router.get("/kelola", requireAuth, requireBMT, async (req, res, next) => {
   try {
-    const santri = db.prepare("SELECT id, nama, kelas, nis, kartuToken, kartuTerbit FROM Santri ORDER BY nama").all();
+    const santri = db.prepare("SELECT id, nama, kelas, nis, kartuToken, kartuTerbit, pinHash FROM Santri ORDER BY nama").all();
     const cards = await Promise.all(santri.map(async (row) => ({
       id: row.id,
       nama: row.nama,
       kelas: row.kelas || "",
       nis: row.nis || "",
       kartuTerbit: row.kartuTerbit,
+      punyaPin: !!row.pinHash,
       qr: row.kartuToken ? await QRCode.toDataURL(`MMA1:${row.kartuToken}`, {
         width: 220, margin: 1, errorCorrectionLevel: "M",
       }) : null,

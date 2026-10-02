@@ -69,7 +69,7 @@ Semua endpoint berawalan `/api`. Kirim `Authorization: Bearer <token>` dari hasi
 | POST | `/santri/upsert` | staf mana pun (guru) | sinkronkan identitas dasar santri (dipanggil otomatis sebelum transaksi/perizinan/pelanggaran/nilai/dst diproses) |
 | POST | `/transaksi` | staf Unit Usaha | `{ santriId, jenis?, kategori?, subKategori?, jumlah, keterangan?, pin?, metode? }`; PIN opsional khusus transaksi QR bagi santri yang belum mengatur PIN. Jika PIN sudah diatur, transaksi debit QR tetap wajib memakainya; metode manual/wajah tetap memerlukan PIN. |
 | POST | `/kartu/resolve` | staf Unit Usaha | `{ token: "MMA1:<kartuToken>" }` → identitas/saldo santri tanpa field rahasia |
-| GET | `/kartu/kelola` | BMT | daftar santri dan QR aktif (PNG data URL), tanpa menyertakan token kartu mentah |
+| GET | `/kartu/kelola` | BMT | daftar santri dan QR aktif (PNG data URL) serta status `punyaPin`; tidak mengirim token kartu mentah atau hash PIN |
 | GET | `/kartu/cetak` | BMT | HTML siap cetak; gunakan header Authorization, kartu tanpa PIN |
 | POST | `/santri/pin/awal` | BMT | Buat PIN acak untuk semua santri yang belum punya PIN; respons PIN hanya sekali |
 | POST | `/santri/:id/pin` | BMT | `{ pin }` — atur/reset PIN 4–6 digit |

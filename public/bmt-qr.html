@@ -18,7 +18,9 @@
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:7px;background:white;color:#223a30;font-weight:600;font-size:13px;text-decoration:none}.btn:hover{border-color:#8da99a;background:#f8fbf8}.btn-primary{border-color:var(--green);background:var(--green);color:white}.btn-primary:hover{background:#215e4c;color:white}.btn-danger{color:#934b3d}.btn-quiet{background:transparent}.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
     .toolbar{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid #dce4dd;border-bottom:1px solid #dce4dd;margin-bottom:18px}.search{position:relative;flex:1;max-width:420px}.search svg{position:absolute;left:12px;top:12px;width:17px;height:17px;color:#78877e;stroke:currentColor;fill:none;stroke-width:1.8}.search input{width:100%;height:42px;padding:0 12px 0 39px;border:1px solid var(--line);border-radius:7px;background:#fff;outline:none}.search input:focus{border-color:#5d907a;box-shadow:0 0 0 3px #174b3d18}.count{color:var(--muted);font-size:13px;margin-left:auto;white-space:nowrap}
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:13px}.qr-card{display:grid;grid-template-columns:minmax(0,1fr) 126px;gap:12px;min-height:172px;padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--paper);box-shadow:0 3px 12px #173d3208}.identity{min-width:0;display:flex;flex-direction:column}.identity h2{font-size:16px;line-height:1.3;margin:2px 0 6px;overflow-wrap:anywhere}.identity p{font-size:12px;color:var(--muted);margin:2px 0}.badge{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:11px;color:#287052;font-size:11px;font-weight:700}.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:#48a675}.badge.off{color:#947346}.badge.off::before{background:#c58b3b}.card-actions{display:flex;gap:7px;margin-top:auto;padding-top:13px}.small-btn{padding:0 9px;min-height:32px;font-size:11px}.qr-box{display:grid;place-items:center;align-content:center;gap:6px;min-width:0}.qr-box img{width:112px;height:112px;object-fit:contain;image-rendering:pixelated}.qr-empty{width:112px;height:112px;display:grid;place-items:center;border:1px dashed #cbd7ce;border-radius:6px;color:#88968d;font-size:11px;text-align:center;padding:10px}.issued{font-size:10px;color:#7b887f;text-align:center}.state{padding:42px 16px;text-align:center;color:var(--muted);font-size:14px}.notice{margin:0 0 16px;padding:11px 13px;border-radius:6px;background:#fff4e4;color:#745426;font-size:12px;line-height:1.5}.error{padding:11px 13px;margin:14px 0;border-radius:6px;background:#fff0ee;color:#98483b;font-size:13px}.login-shell{max-width:430px;margin:6vh auto;padding:0 20px}.login-panel{padding:26px;border:1px solid var(--line);border-radius:9px;background:white;box-shadow:0 12px 36px #173d3212}.login-panel h1{font:600 27px Fraunces,serif;margin:0 0 6px;color:#173d32}.login-panel p{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 22px}.field{display:grid;gap:6px;margin:13px 0}.field label{font-size:12px;font-weight:700}.field input{height:42px;padding:0 11px;border:1px solid var(--line);border-radius:6px}.login-panel .btn{width:100%;margin-top:6px}.hidden{display:none!important}.empty{grid-column:1/-1;padding:50px 16px;text-align:center;color:var(--muted);border-top:1px solid var(--line)}
+    .pin-status{display:inline-flex;align-items:center;gap:6px;margin-top:7px;color:#287052;font-size:11px;font-weight:700}.pin-status::before{content:"";width:7px;height:7px;border-radius:50%;background:#48a675}.pin-status.off{color:#947346}.pin-status.off::before{background:#c58b3b}.pin-form{display:grid;gap:7px;margin-top:10px;max-width:240px}.pin-form label{font-size:11px;font-weight:700}.pin-form input{height:36px;padding:0 9px;border:1px solid var(--line);border-radius:6px;background:white;letter-spacing:.12em}.pin-form .btn{justify-self:start}.pin-message{font-size:11px;color:#287052}.pin-message.error{margin:0;padding:0;background:none;color:#98483b}
     @media(max-width:620px){.topbar{padding:13px 16px}.brand-name{font-size:17px}.brand-mark{width:36px;height:36px}.top-actions .btn span{display:none}.wrap{padding:25px 15px 50px}.heading{align-items:start;flex-direction:column;margin-bottom:18px}.heading h1{font-size:30px}.toolbar{flex-wrap:wrap}.search{max-width:none;flex-basis:100%}.count{margin-left:0}.grid{grid-template-columns:1fr}.qr-card{grid-template-columns:minmax(0,1fr) 105px;padding:13px}.qr-box img,.qr-empty{width:96px;height:96px}.card-actions{flex-wrap:wrap}}
+    @media print{.pin-status,.pin-form,.pin-message{display:none!important}}
     @media print{body{background:white}.topbar,.heading,.toolbar,.notice,.card-actions,.issued,.badge{display:none!important}.wrap{max-width:none;padding:0}.grid{grid-template-columns:repeat(2,85.6mm);gap:4mm}.qr-card{width:85.6mm;height:53.98mm;min-height:0;padding:5mm;border:1px solid #75877d;border-radius:2mm;box-shadow:none;break-inside:avoid}.qr-box img,.qr-empty{width:34mm;height:34mm}.identity h2{font-size:15pt}.identity p{font-size:10pt}.identity{justify-content:center}}
   </style>
 </head>
@@ -38,7 +40,7 @@
     </section>
     <section class="wrap hidden" id="manageView">
       <div class="heading"><div><p class="eyebrow">Kartu cashless</p><h1>QR Code Santri</h1><p>Kelola kartu aktif per santri. QR lama tidak berlaku setelah diterbitkan ulang.</p></div><button class="btn btn-primary" id="printButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/><path d="M17 12h.01"/></svg><span>Cetak kartu</span></button></div>
-      <p class="notice">QR adalah identitas kartu untuk transaksi. Jika kartu hilang, gunakan <strong>Ganti QR</strong> agar kode sebelumnya langsung dinonaktifkan.</p>
+      <p class="notice">PIN bersifat opsional. Santri tanpa PIN dapat bertransaksi dengan QR; setelah PIN diatur, PIN wajib dimasukkan untuk transaksi debit.</p>
       <div id="pageError" class="error hidden" role="alert"></div>
       <div class="toolbar"><label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="searchInput" type="search" placeholder="Cari nama, NIS, atau kelas..." aria-label="Cari santri"></label><span class="count" id="countLabel"></span></div>
       <div class="grid" id="cardGrid" aria-live="polite"><div class="state">Memuat data santri...</div></div>
@@ -105,10 +107,13 @@
           const identity = el("div", "identity");
           identity.append(el("h2", "", row.nama), el("p", "", `Kelas ${row.kelas || "-"}`), el("p", "", `NIS ${row.nis || "-"}`));
           identity.append(el("span", `badge${row.qr ? "" : " off"}`, row.qr ? "QR aktif" : "Belum diterbitkan"));
+          identity.append(el("span", `pin-status${row.punyaPin ? "" : " off"}`, row.punyaPin ? "PIN aktif" : "PIN belum diatur"));
           const actions = el("div", "card-actions");
           actions.append(makeButton(row.qr ? "Ganti QR" : "Terbitkan QR", row.qr ? "btn-danger" : "", "rotate", row.id));
           if (row.qr) actions.append(makeButton("Unduh", "", "download", row.id));
+          actions.append(makeButton(row.punyaPin ? "Ubah PIN" : "Atur PIN", "", "pin", row.id));
           identity.append(actions);
+          if (row.pinNotice) identity.append(el("span", "pin-message", row.pinNotice));
           const preview = el("div", "qr-box");
           if (row.qr) {
             const image = document.createElement("img");
@@ -159,7 +164,33 @@
         if (!button) return;
         const row = santriRows.find((item) => item.id === button.dataset.id);
         if (!row) return;
+        if (button.dataset.action === "pin") {
+          const identity = button.closest(".identity");
+          const existing = identity.querySelector(".pin-form");
+          if (existing) { existing.remove(); return; }
+          const form = el("form", "pin-form");
+          form.dataset.santriId = row.id;
+          const label = el("label", "", row.punyaPin ? "PIN baru (4–6 digit)" : "PIN (4–6 digit)");
+          const input = document.createElement("input");
+          input.type = "password";
+          input.name = "pin";
+          input.inputMode = "numeric";
+          input.pattern = "[0-9]{4,6}";
+          input.minLength = 4;
+          input.maxLength = 6;
+          input.autocomplete = "new-password";
+          input.required = true;
+          input.setAttribute("aria-label", label.textContent);
+          const message = el("span", "pin-message error hidden");
+          const save = el("button", "btn small-btn btn-primary", "Simpan PIN");
+          save.type = "submit";
+          form.append(label, input, message, save);
+          identity.append(form);
+          input.focus();
+          return;
+        }
         if (button.dataset.action === "download") {
+
           const card = button.closest(".qr-card");
           const image = card.querySelector("img");
           const link = document.createElement("a");
@@ -177,6 +208,33 @@
           document.getElementById("pageError").textContent = error.message;
           document.getElementById("pageError").classList.remove("hidden");
           button.disabled = false;
+        }
+      });
+
+      document.getElementById("cardGrid").addEventListener("submit", async (event) => {
+        const form = event.target.closest("form.pin-form");
+        if (!form) return;
+        event.preventDefault();
+        const santri = santriRows.find((row) => row.id === form.dataset.santriId);
+        const input = form.elements.pin;
+        const message = form.querySelector(".pin-message");
+        const save = form.querySelector("button[type=submit]");
+        if (!santri || !/^\d{4,6}$/.test(input.value)) {
+          message.textContent = "PIN harus 4–6 digit angka.";
+          message.classList.remove("hidden");
+          return;
+        }
+        save.disabled = true;
+        try {
+          await request(`/santri/${encodeURIComponent(santri.id)}/pin`, { method: "POST", body: JSON.stringify({ pin: input.value }) });
+          santri.punyaPin = true;
+          santri.pinNotice = "PIN berhasil disimpan.";
+          input.value = "";
+          render();
+        } catch (error) {
+          message.textContent = error.message;
+          message.classList.remove("hidden");
+          save.disabled = false;
         }
       });
 
