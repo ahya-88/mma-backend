@@ -89,12 +89,26 @@ if (!db.prepare("SELECT 1 FROM Pengaturan WHERE kunci = 'tampilan'").get()) {
 // sungguhan, jadi semua embedding lama dikosongkan SEKALI saat model berganti; aplikasi kasir
 // (MobileFaceNet + ML Kit) akan menghitung ulang dari foto santri saat sinkronisasi berikutnya.
 const FACE_MODEL = "mfn192-v2";
+db.FACE_MODEL = FACE_MODEL;
 const faceModelRow = db.prepare("SELECT nilai FROM Pengaturan WHERE kunci = 'faceModel'").get();
-if (!faceModelRow || faceModelRow.nilai !== FACE_MODEL) {
-  db.prepare("UPDATE Santri SET faceEmbedding = NULL").run();
-  db.prepare(
-    "INSERT INTO Pengaturan (kunci, nilai) VALUES ('faceModel', ?) ON CONFLICT(kunci) DO UPDATE SET nilai = excluded.nilai"
-  ).run(FACE_MODEL);
-}
+db.transaction(() => {
+  if (!faceModelRow || faceModelRow.nilai !== FACE_MODEL) {
+    db.prepare("UPDATE Santri SET faceEmbedding = NULL").run();
+    db.prepare(
+      "INSERT INTO Pengaturan (kunci, nilai) VALUES ('faceModel', ?) ON CONFLICT(kunci) DO UPDATE SET nilai = excluded.nilai"
+    ).run(FACE_MODEL);
+  }
+  db.prepare("DELETE FROM FaceTemplate WHERE modelVersion != ?").run(FACE_MODEL);
+  db.prepare(`
+    INSERT INTO FaceTemplate (santriId, embedding, sumber, modelVersion, dibuatOleh, dibuatPada)
+    SELECT s.id, s.faceEmbedding, 'foto', ?, NULL, datetime('now')
+    FROM Santri s
+    WHERE s.faceEmbedding IS NOT NULL AND s.faceEmbedding != ''
+      AND NOT EXISTS (
+        SELECT 1 FROM FaceTemplate f
+        WHERE f.santriId = s.id AND f.sumber = 'foto' AND f.modelVersion = ?
+      )
+  `).run(FACE_MODEL, FACE_MODEL);
+})();
 
 module.exports = db;

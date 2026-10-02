@@ -66,6 +66,31 @@ CREATE TABLE IF NOT EXISTS Santri (
   updatedAt        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS FaceTemplate (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  santriId     TEXT NOT NULL,
+  embedding    TEXT NOT NULL,
+  sumber       TEXT NOT NULL CHECK (sumber IN ('foto', 'kamera')),
+  modelVersion TEXT NOT NULL,
+  dibuatOleh   TEXT,
+  dibuatPada   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_face_template_santri ON FaceTemplate (santriId);
+
+CREATE TABLE IF NOT EXISTS LogWajah (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  waktu          TEXT NOT NULL,
+  petugasId      TEXT,
+  unit           TEXT,
+  terbaikId      TEXT,
+  skorTerbaik    REAL,
+  skorKedua      REAL,
+  dikonfirmasiId TEXT,
+  metode         TEXT,
+  ms             INTEGER,
+  jumlahFrame    INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS TransaksiCashless (
   id           TEXT PRIMARY KEY,
   santriId     TEXT NOT NULL REFERENCES Santri(id),

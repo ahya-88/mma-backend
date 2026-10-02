@@ -79,6 +79,7 @@ router.post("/upsert", requireAuth, requireAnyStaff, (req, res, next) => {
     if (ada) {
       const sets = ["nama = @nama"];
       const params = { id, nama };
+      let fotoWajahBerubah = false;
       for (const c of ["kelas", "nis", "nisn", "waliId"]) {
         if (c in body) { sets.push(`${c} = @${c}`); params[c] = body[c] || null; }
       }
@@ -86,11 +87,17 @@ router.post("/upsert", requireAuth, requireAnyStaff, (req, res, next) => {
       // Foto berubah -> embedding wajah lama tidak valid lagi; kasir akan menghitung ulang saat sinkronisasi.
       if ("foto" in biodataToSet) {
         const lama = db.prepare("SELECT foto FROM Santri WHERE id = ?").get(id);
-        if ((lama?.foto || null) !== (biodataToSet.foto || null)) sets.push("faceEmbedding = NULL");
+        if ((lama?.foto || null) !== (biodataToSet.foto || null)) {
+          sets.push("faceEmbedding = NULL");
+          fotoWajahBerubah = true;
+        }
       }
       if (riwayatKelasProvided) { sets.push("riwayatKelas = @riwayatKelas"); params.riwayatKelas = riwayatKelasJSON; }
       sets.push("updatedAt = datetime('now')");
-      db.prepare(`UPDATE Santri SET ${sets.join(", ")} WHERE id = @id`).run(params);
+      db.transaction(() => {
+        db.prepare(`UPDATE Santri SET ${sets.join(", ")} WHERE id = @id`).run(params);
+        if (fotoWajahBerubah) db.prepare("DELETE FROM FaceTemplate WHERE santriId = ? AND sumber = 'foto'").run(id);
+      })();
     } else {
       const cols = ["id", "nama", "kelas", "nis", "nisn", "waliId", "saldo", ...Object.keys(biodataToSet)];
       const params = {
