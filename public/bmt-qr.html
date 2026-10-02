@@ -47,10 +47,11 @@
   <script>
     (() => {
       const api = `${location.origin}/api`;
+      const embedded = new URLSearchParams(location.search).get("embedded") === "1";
       const loginView = document.getElementById("loginView");
       const manageView = document.getElementById("manageView");
       const tokenKey = "bmtQrSessionToken";
-      let token = sessionStorage.getItem(tokenKey) || "";
+      let token = embedded ? "" : sessionStorage.getItem(tokenKey) || "";
       let santriRows = [];
 
       async function request(path, options = {}) {
@@ -127,7 +128,7 @@
           document.getElementById("pageError").classList.add("hidden");
           render();
         } catch (error) {
-          if (/401|403|BMT/i.test(error.message)) return showLogin(error.message);
+          if (/401|403|BMT/i.test(error.message) && !embedded) return showLogin(error.message);
           document.getElementById("pageError").textContent = error.message;
           document.getElementById("pageError").classList.remove("hidden");
           document.getElementById("cardGrid").replaceChildren(el("div", "state", "Data belum dapat dimuat."));
@@ -198,7 +199,18 @@
       });
       document.getElementById("logoutButton").addEventListener("click", () => showLogin());
 
-      if (token) {
+      if (embedded) {
+        document.querySelector(".topbar").classList.add("hidden");
+        loginView.classList.add("hidden");
+        manageView.classList.remove("hidden");
+        document.getElementById("logoutButton").classList.add("hidden");
+        document.getElementById("cardGrid").replaceChildren(el("div", "state", "Memuat sesi BMT..."));
+        window.addEventListener("message", (event) => {
+          if (event.origin !== location.origin || event.source !== parent || event.data?.type !== "mma-bmt-qr-session" || typeof event.data.token !== "string") return;
+          token = event.data.token;
+          loadCards();
+        });
+      } else if (token) {
         loginView.classList.add("hidden");
         manageView.classList.remove("hidden");
         document.getElementById("logoutButton").classList.remove("hidden");
