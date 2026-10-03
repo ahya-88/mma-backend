@@ -141,9 +141,7 @@ router.get("/:id", requireAuth, asyncHandler(async (req, res) => {
   res.json(await toPublicSantri(santri));
 }));
 
-router.get("/:id/riwayat", requireAuth, asyncHandler(async (req, res) => {
-  const santri = await getSantriRow(req.params.id);
-  assertLihatSantri(req, santri);
+router.get("/:id/riwayat", asyncHandler(async (req, res) => {
   res.json(await riwayatSantri(req.params.id));
 }));
 
