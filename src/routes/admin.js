@@ -1,52 +1,26 @@
 const express = require("express");
 const { requireAuth, requireAdmin } = require("../auth");
 const admin = require("../adminService");
+const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
 
-// ---- Akun Guru/Staf — hanya Admin ----
-router.get("/guru", requireAuth, requireAdmin, (req, res) => res.json(admin.semuaGuru()));
-router.post("/guru", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.status(201).json(admin.buatGuru(req.body || {})); } catch (e) { next(e); }
-});
-router.put("/guru/:id", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.json(admin.editGuru({ id: req.params.id, ...(req.body || {}) })); } catch (e) { next(e); }
-});
-router.put("/guru/:id/password", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.json(admin.editPasswordGuru({ id: req.params.id, password: (req.body || {}).password })); } catch (e) { next(e); }
-});
-router.delete("/guru/:id", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.json(admin.hapusGuru({ id: req.params.id, actingUserId: req.user.id })); } catch (e) { next(e); }
-});
+router.get("/guru", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.semuaGuru())));
+router.post("/guru", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.status(201).json(await admin.buatGuru(req.body || {}))));
+router.put("/guru/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.editGuru({ id: req.params.id, ...(req.body || {}) }))));
+router.put("/guru/:id/password", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.editPasswordGuru({ id: req.params.id, password: (req.body || {}).password }))));
+router.delete("/guru/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.hapusGuru({ id: req.params.id, actingUserId: req.user.id }))));
 
-// ---- Unit Usaha — dibaca oleh siapa pun yang sudah login (dipakai lintas modul: form akun staf,
-// pilihan unit di Unit Usaha, dst.); diubah hanya oleh Admin.
-router.get("/unit-usaha", requireAuth, (req, res) => res.json(admin.semuaUnitUsaha()));
-router.post("/unit-usaha", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.status(201).json(admin.tambahUnitUsaha((req.body || {}).nama)); } catch (e) { next(e); }
-});
-router.delete("/unit-usaha/:id", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.json(admin.hapusUnitUsaha(req.params.id)); } catch (e) { next(e); }
-});
+router.get("/unit-usaha", requireAuth, asyncHandler(async (req, res) => res.json(await admin.semuaUnitUsaha())));
+router.post("/unit-usaha", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.status(201).json(await admin.tambahUnitUsaha((req.body || {}).nama))));
+router.delete("/unit-usaha/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.hapusUnitUsaha(req.params.id))));
 
-// ---- Tahun Ajaran — dibaca oleh siapa pun yang sudah login (guru maupun wali, dipakai luas untuk
-// pengelompokan rapor/tagihan per tahun ajaran); diubah hanya oleh Admin.
-router.get("/tahun-ajaran", requireAuth, (req, res) => res.json(admin.semuaTahunAjaran()));
-router.post("/tahun-ajaran", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.status(201).json(admin.tambahTahunAjaran((req.body || {}).tahunMulai)); } catch (e) { next(e); }
-});
-router.post("/tahun-ajaran/:id/aktifkan", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.json(admin.aktifkanTahunAjaran(req.params.id)); } catch (e) { next(e); }
-});
-router.delete("/tahun-ajaran/:id", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.json(admin.hapusTahunAjaran(req.params.id)); } catch (e) { next(e); }
-});
+router.get("/tahun-ajaran", requireAuth, asyncHandler(async (req, res) => res.json(await admin.semuaTahunAjaran())));
+router.post("/tahun-ajaran", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.status(201).json(await admin.tambahTahunAjaran((req.body || {}).tahunMulai))));
+router.post("/tahun-ajaran/:id/aktifkan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.aktifkanTahunAjaran(req.params.id))));
+router.delete("/tahun-ajaran/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.hapusTahunAjaran(req.params.id))));
 
-// ---- Tampilan Aplikasi — pembacaan publik (dipakai layar login sebelum ada sesi) ada di
-// routes/public.js; di sini hanya untuk mengambil ulang di panel Admin sendiri, dan menyimpan.
-router.get("/tampilan", requireAuth, requireAdmin, (req, res) => res.json(admin.ambilTampilan()));
-router.put("/tampilan", requireAuth, requireAdmin, (req, res, next) => {
-  try { res.json(admin.simpanTampilan(req.body || {})); } catch (e) { next(e); }
-});
+router.get("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.ambilTampilan())));
+router.put("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.simpanTampilan(req.body || {}))));
 
 module.exports = router;

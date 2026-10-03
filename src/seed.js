@@ -1,8 +1,6 @@
-// Seed data — sinkron dengan GURU_SEED/WALI_SEED/SANTRI_SEED di pesantren-app.jsx,
-// supaya akun demo di frontend & backend konsisten.
 require("dotenv").config({ quiet: true });
 const bcrypt = require("bcryptjs");
-const db = require("./db");
+const { query, withTransaction, initializeDatabase } = require("./db");
 
 const GURU_SEED = [
   { id: "g1", nama: "Ustadz Fahmi", username: "fahmi", departemen: "pengasuhan", password: "guru123" },
@@ -30,16 +28,27 @@ const SANTRI_SEED = [
   { id: "s6", nama: "Salman Aziz", kelas: "Tahfidz 2A", waliId: "w3", nis: "2024006", nisn: "0051234566" },
 ];
 
-const insertGuru = db.prepare(`INSERT OR IGNORE INTO Guru (id, nama, username, password, departemen, unit) VALUES (@id, @nama, @username, @password, @departemen, @unit)`);
-const insertWali = db.prepare(`INSERT OR IGNORE INTO Wali (id, nama, hp, username, password) VALUES (@id, @nama, @hp, @username, @password)`);
-const insertSantri = db.prepare(`INSERT OR IGNORE INTO Santri (id, nama, kelas, nis, nisn, waliId, saldo) VALUES (@id, @nama, @kelas, @nis, @nisn, @waliId, 0)`);
+async function seed() {
+  await initializeDatabase();
+  await withTransaction(async () => {
+    for (const guru of GURU_SEED) {
+      await query('INSERT INTO "Guru" ("id", "nama", "username", "password", "departemen", "unit") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
+        [guru.id, guru.nama, guru.username, bcrypt.hashSync(guru.password, 10), guru.departemen, guru.unit || null]);
+    }
+    for (const wali of WALI_SEED) {
+      await query('INSERT INTO "Wali" ("id", "nama", "hp", "username", "password") VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING',
+        [wali.id, wali.nama, wali.hp, wali.username, bcrypt.hashSync(wali.password, 10)]);
+    }
+    for (const santri of SANTRI_SEED) {
+      await query('INSERT INTO "Santri" ("id", "nama", "kelas", "nis", "nisn", "waliId", "saldo") VALUES ($1, $2, $3, $4, $5, $6, 0) ON CONFLICT DO NOTHING',
+        [santri.id, santri.nama, santri.kelas, santri.nis, santri.nisn, santri.waliId]);
+    }
+  });
+  console.log("Seed selesai:", GURU_SEED.length, "guru,", WALI_SEED.length, "wali,", SANTRI_SEED.length, "santri.");
+  console.log("Password login sama seperti di frontend (mis. admin/admin123, fatimah.bmt/guru123, ahmad.ridwan/wali123).");
+}
 
-const seed = db.transaction(() => {
-  for (const g of GURU_SEED) insertGuru.run({ ...g, unit: g.unit || null, password: bcrypt.hashSync(g.password, 10) });
-  for (const w of WALI_SEED) insertWali.run({ ...w, password: bcrypt.hashSync(w.password, 10) });
-  for (const s of SANTRI_SEED) insertSantri.run(s);
+seed().catch((error) => {
+  console.error("Seed gagal:", error);
+  process.exitCode = 1;
 });
-
-seed();
-console.log("Seed selesai:", GURU_SEED.length, "guru,", WALI_SEED.length, "wali,", SANTRI_SEED.length, "santri.");
-console.log("Password login sama seperti di frontend (mis. admin/admin123, fatimah.bmt/guru123, ahmad.ridwan/wali123).");

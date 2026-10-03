@@ -3,6 +3,8 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const compression = require("compression");
+const { query, initializeDatabase } = require("./db");
+const asyncHandler = require("./asyncHandler");
 
 const authRoutes = require("./routes/auth");
 const santriRoutes = require("./routes/santri");
@@ -22,11 +24,22 @@ const { CashlessError } = require("./cashlessService");
 const app = express();
 app.use(cors());
 app.use(compression());
-// Limit dinaikkan dari default 100kb: field foto base64 (biodata Santri, dan sekarang bukti
-// transfer top up saldo di PermintaanBMT) butuh ruang lebih besar dari itu.
-app.use(express.json({ limit: "8mb" }));
+// Keep the existing larger limit for other modules; Top Up only needs enough room for a
+// 1.5 MB image encoded as base64 plus its JSON envelope.
+const standardJsonParser = express.json({ limit: "8mb" });
+const topUpJsonParser = express.json({ limit: "2.1mb" });
+app.use((req, res, next) => (
+  req.path.startsWith("/api/permintaan") ? topUpJsonParser : standardJsonParser
+)(req, res, next));
 
-app.get("/api/health", (req, res) => res.json({ ok: true, waktu: new Date().toISOString() }));
+app.get("/api/health", asyncHandler(async (req, res) => {
+  try {
+    await query("SELECT 1");
+    res.json({ ok: true, waktu: new Date().toISOString() });
+  } catch (_) {
+    res.status(503).json({ ok: false, waktu: new Date().toISOString() });
+  }
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/santri", santriRoutes);
@@ -57,6 +70,9 @@ app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(publicDir, "index
 // error lain dianggap kesalahan server.
 app.use((err, req, res, next) => {
   if (err instanceof CashlessError) return res.status(err.status).json({ error: err.message, ...err.details });
+  if (req.path.startsWith("/api/permintaan") && err.type === "entity.too.large") {
+    return res.status(400).json({ error: "Ukuran bukti transfer maksimal 1,5 MB setelah decode." });
+  }
   console.error(err);
   res.status(500).json({ error: "Terjadi kesalahan pada server." });
 });
@@ -68,7 +84,12 @@ if (require.main === module) {
   // Ini WAJIB di semua PaaS (Railway, Render, Fly.io, dst.): mereka mem-forward trafik publik
   // ke container lewat 0.0.0.0, jadi kalau server hanya listen di "localhost", trafik dari
   // luar tidak akan pernah sampai walau proses node-nya tetap terlihat "jalan" di log.
-  app.listen(PORT, "0.0.0.0", () => console.log(`Cashless backend jalan di port ${PORT} (menerima koneksi publik, bukan cuma localhost)`));
+  initializeDatabase().then(() => {
+    app.listen(PORT, "0.0.0.0", () => console.log(`Cashless backend jalan di port ${PORT} (menerima koneksi publik, bukan cuma localhost)`));
+  }).catch((error) => {
+    console.error("Gagal menginisialisasi PostgreSQL:", error);
+    process.exitCode = 1;
+  });
 }
 
 module.exports = app;

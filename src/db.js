@@ -1,114 +1,147 @@
-const path = require("path");
 const fs = require("fs");
-const Database = require("better-sqlite3");
-
-const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, "..", "cashless.db");
-const db = new Database(DB_PATH);
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
-
-// Jalankan schema.sql sekali saat startup (idempoten — semua statement pakai IF NOT EXISTS).
-const schema = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf-8");
-db.exec(schema);
-
-// Migrasi ringan: CREATE TABLE IF NOT EXISTS tidak menambah kolom baru ke tabel yang sudah ada
-// di database lama. Untuk kolom biodata Santri yang ditambahkan belakangan, tambahkan secara
-// manual & idempoten lewat ALTER TABLE bila database yang dipakai (cashless.db yang sudah ada)
-// belum punya kolom tersebut.
-const SANTRI_EXTRA_COLUMNS = [
-  "jenisKelamin", "tempatLahir", "tanggalLahir", "alamat", "asrama", "golDarah",
-  "noDarurat", "catatanKesehatan", "halaqoh", "foto", "namaAyah", "namaIbu",
-  "asalSekolah", "programPilihan", "citaCita", "pendidikanSD", "tahunSD",
-  "pendidikanSMP", "tahunSMP", "pendidikanSMA", "tahunSMA", "riwayatKelas",
-  "faceEmbedding", // embedding wajah (JSON array 192 float) — dihitung di aplikasi kasir, bukan biodata
-];
-const existingSantriCols = db.prepare("PRAGMA table_info(Santri)").all().map((c) => c.name);
-for (const col of SANTRI_EXTRA_COLUMNS) {
-  if (!existingSantriCols.includes(col)) {
-    db.exec(`ALTER TABLE Santri ADD COLUMN ${col} TEXT`);
-  }
-}
-
-const SANTRI_KARTU_COLUMNS = [
-  ["pinHash", "TEXT"],
-  ["pinGagal", "INTEGER NOT NULL DEFAULT 0"],
-  ["pinKunciSampai", "TEXT"],
-  ["kartuToken", "TEXT"],
-  ["kartuTerbit", "TEXT"],
-];
-const currentSantriCols = db.prepare("PRAGMA table_info(Santri)").all().map((c) => c.name);
-for (const [col, type] of SANTRI_KARTU_COLUMNS) {
-  if (!currentSantriCols.includes(col)) db.exec(`ALTER TABLE Santri ADD COLUMN ${col} ${type}`);
-}
-const existingTransaksiCols = db.prepare("PRAGMA table_info(TransaksiCashless)").all().map((c) => c.name);
-if (!existingTransaksiCols.includes("metode")) {
-  db.exec("ALTER TABLE TransaksiCashless ADD COLUMN metode TEXT");
-}
-db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_santri_kartu_token ON Santri(kartuToken) WHERE kartuToken IS NOT NULL");
-
-// Indeks performa untuk query & sinkronisasi kilat
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_santri_face_embed ON Santri(faceEmbedding);
-  CREATE INDEX IF NOT EXISTS idx_santri_foto ON Santri(foto);
-  CREATE INDEX IF NOT EXISTS idx_santri_nama ON Santri(nama);
-  CREATE INDEX IF NOT EXISTS idx_santri_nis ON Santri(nis);
-`);
-
-// PermintaanBMT: kolom buktiTransfer ditambahkan belakangan untuk jenis "Top Up Saldo" (klaim
-// transfer manual wali). Sama seperti kolom biodata Santri di atas, database lama perlu ALTER
-// TABLE manual karena CREATE TABLE IF NOT EXISTS tidak menambah kolom ke tabel yang sudah ada.
-const existingPermintaanCols = db.prepare("PRAGMA table_info(PermintaanBMT)").all().map((c) => c.name);
-if (!existingPermintaanCols.includes("buktiTransfer")) {
-  db.exec("ALTER TABLE PermintaanBMT ADD COLUMN buktiTransfer TEXT");
-}
-
-// Default data ringan untuk tabel Admin yang baru (UnitUsaha, TahunAjaran, Pengaturan.tampilan) —
-// hanya diisi jika tabelnya masih kosong, supaya deployment yang sudah berjalan (mis. produksi di
-// Railway) otomatis mendapat nilai awal yang masuk akal begitu update ini di-deploy, tanpa perlu
-// menjalankan `npm run seed` secara manual. Nilainya sengaja sama dengan seed lama di frontend
-// (UNIT_USAHA_SEED, TAHUN_AJARAN_SEED, default tampilan) supaya tidak terlihat berubah tiba-tiba.
+const path = require("path");
 const crypto = require("crypto");
-if (db.prepare("SELECT COUNT(*) AS n FROM UnitUsaha").get().n === 0) {
-  const insertUnit = db.prepare("INSERT INTO UnitUsaha (id, nama) VALUES (?, ?)");
-  for (const nama of ["Kantin", "Kopel", "Dapur", "BMT"]) insertUnit.run(crypto.randomUUID(), nama);
-}
-if (db.prepare("SELECT COUNT(*) AS n FROM TahunAjaran").get().n === 0) {
-  db.prepare("INSERT INTO TahunAjaran (id, tahunMulai, aktif) VALUES (?, 2026, 1)").run(crypto.randomUUID());
-}
-if (!db.prepare("SELECT 1 FROM Pengaturan WHERE kunci = 'tampilan'").get()) {
-  const tampilanDefault = {
-    logoUrl: "", buildingPhotoUrl: "", namaAplikasi: "Ma'had Mudaiyatul Anwar",
-    warnaPrimer: "#29AAE1", warnaSekunder: "#0C4A6E", warnaAksenBg: "#7C3AED",
-    warnaTeks: "#17242E", warnaTeksMuted: "#5B7C93", warnaBorder: "#CFE3F0",
-    warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora",
-  };
-  db.prepare("INSERT INTO Pengaturan (kunci, nilai) VALUES ('tampilan', ?)").run(JSON.stringify(tampilanDefault));
-}
+const { AsyncLocalStorage } = require("async_hooks");
+const { Pool, types } = require("pg");
+const { decodeBuktiTransfer } = require("./topupEvidence");
 
-// Model embedding wajah. Versi lama (proxy luminansi piksel) tidak valid untuk pengenalan wajah
-// sungguhan, jadi semua embedding lama dikosongkan SEKALI saat model berganti; aplikasi kasir
-// (MobileFaceNet + ML Kit) akan menghitung ulang dari foto santri saat sinkronisasi berikutnya.
-const FACE_MODEL = "mfn192-v2";
-db.FACE_MODEL = FACE_MODEL;
-const faceModelRow = db.prepare("SELECT nilai FROM Pengaturan WHERE kunci = 'faceModel'").get();
-db.transaction(() => {
-  if (!faceModelRow || faceModelRow.nilai !== FACE_MODEL) {
-    db.prepare("UPDATE Santri SET faceEmbedding = NULL").run();
-    db.prepare(
-      "INSERT INTO Pengaturan (kunci, nilai) VALUES ('faceModel', ?) ON CONFLICT(kunci) DO UPDATE SET nilai = excluded.nilai"
-    ).run(FACE_MODEL);
+types.setTypeParser(20, (value) => Number(value));
+
+const connectionUrl = process.env.DATABASE_URL;
+if (!connectionUrl) throw new Error("DATABASE_URL wajib diisi.");
+const host = new URL(connectionUrl).hostname;
+const isLocal = ["localhost", "127.0.0.1", "::1"].includes(host);
+const pool = new Pool({
+  connectionString: connectionUrl,
+  max: 10,
+  ssl: isLocal ? false : { rejectUnauthorized: false },
+});
+const transactionContext = new AsyncLocalStorage();
+
+const query = (text, params = []) => {
+  const client = transactionContext.getStore();
+  return (client || pool).query(text, params);
+};
+
+const queryOne = async (text, params = []) => (await query(text, params)).rows[0] || null;
+const queryAll = async (text, params = []) => (await query(text, params)).rows;
+
+async function withTransaction(callback) {
+  const currentClient = transactionContext.getStore();
+  if (currentClient) return callback(currentClient);
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await transactionContext.run(client, () => callback(client));
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
-  db.prepare("DELETE FROM FaceTemplate WHERE modelVersion != ?").run(FACE_MODEL);
-  db.prepare(`
-    INSERT INTO FaceTemplate (santriId, embedding, sumber, modelVersion, dibuatOleh, dibuatPada)
-    SELECT s.id, s.faceEmbedding, 'foto', ?, NULL, datetime('now')
-    FROM Santri s
-    WHERE s.faceEmbedding IS NOT NULL AND s.faceEmbedding != ''
-      AND NOT EXISTS (
-        SELECT 1 FROM FaceTemplate f
-        WHERE f.santriId = s.id AND f.sumber = 'foto' AND f.modelVersion = ?
-      )
-  `).run(FACE_MODEL, FACE_MODEL);
-})();
+}
 
-module.exports = db;
+const FACE_MODEL = "mfn192-v2";
+const TAMPILAN_DEFAULT = {
+  logoUrl: "", buildingPhotoUrl: "", namaAplikasi: "Ma'had Mudaiyatul Anwar",
+  warnaPrimer: "#29AAE1", warnaSekunder: "#0C4A6E", warnaAksenBg: "#7C3AED",
+  warnaTeks: "#17242E", warnaTeksMuted: "#5B7C93", warnaBorder: "#CFE3F0",
+  warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora",
+};
+const PENGATURAN_TOPUP_DEFAULT = {
+  wajibReferensiMutasi: false,
+  buktiDiDaftar: true,
+  persetujuanKeduaAktif: false,
+  maxPermintaanMenunggu: 3,
+  nominalMinimum: 10000,
+  nominalMaksimum: 5000000,
+  batasPersetujuanTunggal: 1000000,
+  nomorRekening: "",
+};
+
+async function initializeDatabase() {
+  const schema = fs.readFileSync(path.join(__dirname, "schema.pg.sql"), "utf8");
+  await pool.query(schema);
+
+  await withTransaction(async (client) => {
+    await client.query(
+      'INSERT INTO "Pengaturan" ("kunci", "nilai") VALUES ($1, $2) ON CONFLICT ("kunci") DO NOTHING',
+      ["topup", JSON.stringify(PENGATURAN_TOPUP_DEFAULT)],
+    );
+    const unitCount = await client.query('SELECT COUNT(*) AS "n" FROM "UnitUsaha"');
+    if (Number(unitCount.rows[0].n) === 0) {
+      for (const nama of ["Kantin", "Kopel", "Dapur", "BMT"]) {
+        await client.query('INSERT INTO "UnitUsaha" ("id", "nama") VALUES ($1, $2) ON CONFLICT ("nama") DO NOTHING',
+          [crypto.randomUUID(), nama]);
+      }
+    }
+    const yearCount = await client.query('SELECT COUNT(*) AS "n" FROM "TahunAjaran"');
+    if (Number(yearCount.rows[0].n) === 0) {
+      await client.query('INSERT INTO "TahunAjaran" ("id", "tahunMulai", "aktif") VALUES ($1, $2, 1) ON CONFLICT ("tahunMulai") DO NOTHING', [crypto.randomUUID(), 2026]);
+    }
+    await client.query(
+      'INSERT INTO "Pengaturan" ("kunci", "nilai") VALUES ($1, $2) ON CONFLICT ("kunci") DO NOTHING',
+      ["tampilan", JSON.stringify(TAMPILAN_DEFAULT)],
+    );
+
+    const faceModel = await client.query('SELECT "nilai" FROM "Pengaturan" WHERE "kunci" = $1', ["faceModel"]);
+    if (!faceModel.rowCount || faceModel.rows[0].nilai !== FACE_MODEL) {
+      await client.query('UPDATE "Santri" SET "faceEmbedding" = NULL');
+      await client.query(
+        'INSERT INTO "Pengaturan" ("kunci", "nilai") VALUES ($1, $2) ON CONFLICT ("kunci") DO UPDATE SET "nilai" = EXCLUDED."nilai"',
+        ["faceModel", FACE_MODEL],
+      );
+    }
+    await client.query('DELETE FROM "FaceTemplate" WHERE "modelVersion" != $1', [FACE_MODEL]);
+    await client.query(`
+      INSERT INTO "FaceTemplate" ("santriId", "embedding", "sumber", "modelVersion", "dibuatOleh", "dibuatPada")
+      SELECT s."id", s."faceEmbedding", 'foto', $1, NULL,
+        to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+      FROM "Santri" s
+      WHERE s."faceEmbedding" IS NOT NULL AND s."faceEmbedding" != ''
+        AND NOT EXISTS (
+          SELECT 1 FROM "FaceTemplate" f
+          WHERE f."santriId" = s."id" AND f."sumber" = 'foto' AND f."modelVersion" = $1
+        )
+    `, [FACE_MODEL]);
+  });
+
+  await backfillBuktiHash();
+}
+
+async function backfillBuktiHash() {
+  await withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('mma-backfill-topup-proof-hash'))");
+    const rows = await client.query(`
+    SELECT "id", "buktiTransfer" FROM "PermintaanBMT"
+    WHERE "jenis" = 'Top Up Saldo' AND "status" <> 'Ditolak'
+      AND "buktiHash" IS NULL AND "buktiTransfer" IS NOT NULL
+    ORDER BY "createdAt", "id"
+    `);
+    for (const row of rows.rows) {
+      try {
+        const { hash } = await decodeBuktiTransfer(row.buktiTransfer);
+        await client.query(`
+          UPDATE "PermintaanBMT" p SET "buktiHash" = $1
+          WHERE p."id" = $2 AND p."buktiHash" IS NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM "PermintaanBMT" existing
+              WHERE existing."buktiHash" = $1 AND existing."id" <> p."id"
+                AND existing."jenis" = 'Top Up Saldo' AND existing."status" <> 'Ditolak'
+            )
+        `, [hash, row.id]);
+      } catch (error) {
+        if (error instanceof Error && /bukti transfer|Format bukti/i.test(error.message)) continue;
+        throw error;
+      }
+    }
+  });
+}
+
+module.exports = {
+  pool, query, queryOne, queryAll, withTransaction, initializeDatabase,
+  FACE_MODEL, TAMPILAN_DEFAULT, PENGATURAN_TOPUP_DEFAULT,
+};

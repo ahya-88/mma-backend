@@ -1,17 +1,17 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const db = require("./db");
+const { queryOne } = require("./db");
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-jangan-dipakai-di-produksi";
 const JWT_EXPIRES_IN = "12h";
 
-function login(username, password) {
-  const guru = db.prepare("SELECT * FROM Guru WHERE username = ?").get(username);
+async function login(username, password) {
+  const guru = await queryOne('SELECT * FROM "Guru" WHERE "username" = $1', [username]);
   if (guru && bcrypt.compareSync(password, guru.password)) {
     const payload = { role: "guru", id: guru.id, nama: guru.nama, departemen: guru.departemen, unit: guru.unit };
     return { token: jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN }), user: payload };
   }
-  const wali = db.prepare("SELECT * FROM Wali WHERE username = ?").get(username);
+  const wali = await queryOne('SELECT * FROM "Wali" WHERE "username" = $1', [username]);
   if (wali && bcrypt.compareSync(password, wali.password)) {
     const payload = { role: "wali", id: wali.id, nama: wali.nama };
     return { token: jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN }), user: payload };

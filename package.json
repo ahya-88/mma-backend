@@ -7,18 +7,24 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "node src/app.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "test": "node --test test/topupEvidence.test.js",
+    "test:integration": "node test/topup.integration.js",
+    "migrate:sqlite": "node scripts/pindah-data.js"
   },
   "dependencies": {
     "@vladmandic/human": "^3.3.6",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^13.0.3",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
     "qrcode": "^1.5.4",
     "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^13.0.3"
   }
 }
