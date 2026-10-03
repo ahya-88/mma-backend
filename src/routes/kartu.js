@@ -25,7 +25,7 @@ router.get("/kelola", requireAuth, requireBMT, asyncHandler(async (req, res) => 
   res.set("Cache-Control", "no-store").json(cards);
 }));
 
-router.post("/resolve", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
+router.post("/resolve", asyncHandler(async (req, res) => {
   const raw = typeof req.body?.token === "string" ? req.body.token.trim() : "";
   if (!raw) return res.status(400).json({ error: "Token kartu wajib diisi." });
 

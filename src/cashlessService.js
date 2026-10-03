@@ -24,7 +24,7 @@ class CashlessError extends Error {
 }
 
 async function getSantriRow(santriId, lock = false) {
-  const row = await queryOne(`SELECT * FROM "Santri" WHERE "id" = $1${lock ? " FOR UPDATE" : ""}`, [santriId]);
+  const row = await queryOne(`SELECT * FROM "Santri" WHERE ("id" = $1 OR "nis" = $1 OR "kartuToken" = $1)${lock ? " FOR UPDATE" : ""}`, [santriId]);
   if (!row) throw new CashlessError(404, "Santri tidak ditemukan.");
   return row;
 }
