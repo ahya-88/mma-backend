@@ -97,13 +97,26 @@ CREATE TABLE IF NOT EXISTS "TransaksiCashless" (
   "jumlah" BIGINT NOT NULL,
   "keterangan" TEXT,
   "saldoSetelah" BIGINT NOT NULL,
+  "saldoSebelum" BIGINT,
+  "saldoSesudah" BIGINT,
+  "idempotencyKey" TEXT,
   "tanggalISO" TEXT NOT NULL,
   "tanggalLabel" TEXT NOT NULL,
   "bulan" TEXT NOT NULL,
   "metode" TEXT,
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
+ALTER TABLE "TransaksiCashless" ADD COLUMN IF NOT EXISTS "idempotencyKey" TEXT;
+ALTER TABLE "TransaksiCashless" ADD COLUMN IF NOT EXISTS "saldoSebelum" BIGINT;
+ALTER TABLE "TransaksiCashless" ADD COLUMN IF NOT EXISTS "saldoSesudah" BIGINT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_transaksi_idempotency_key ON "TransaksiCashless" ("idempotencyKey");
 CREATE INDEX IF NOT EXISTS idx_transaksi_santri_tanggal ON "TransaksiCashless" ("santriId", "tanggalISO");
+
+CREATE TABLE IF NOT EXISTS "TransaksiCashlessIdempotency" (
+  "idempotencyKey" TEXT PRIMARY KEY,
+  "response" JSONB,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
 
 CREATE TABLE IF NOT EXISTS "LogPin" (
   "id" BIGSERIAL PRIMARY KEY,

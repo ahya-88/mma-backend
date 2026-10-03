@@ -7,7 +7,7 @@ const { Pool } = require("pg");
 const TABLES = [
   "Wali", "Guru", "UnitUsaha", "TahunAjaran", "Pengaturan", "AdminConfig", "Santri",
   "PengajuanAnggaran", "ProdukUnitUsaha", "FaceTemplate", "LogWajah",
-  "TransaksiCashless", "LogPin", "PermintaanBMT", "Absensi", "Perizinan",
+  "TransaksiCashless", "TransaksiCashlessIdempotency", "LogPin", "PermintaanBMT", "Absensi", "Perizinan",
   "Pelanggaran", "Nilai", "Prestasi", "Hafalan", "PenilaianUbudiyah",
   "Tagihan", "Cashflow", "RincianAnggaran",
 ];

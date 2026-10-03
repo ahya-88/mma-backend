@@ -92,11 +92,29 @@ async function toSaldoPublik(santri) {
   return { nama: pub.nama, saldo: pub.saldo, limitJajanHarian: pub.limitJajanHarian, sisaLimitHariIni: pub.sisaLimitHariIni, blokir: pub.blokir };
 }
 
-async function catatTransaksiTx({ santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, bulan, metode, pin, validasiPin, petugasId }) {
+function markIdempotentReplay(response) {
+  Object.defineProperty(response, "idempotentReplay", { value: true });
+  return response;
+}
+
+async function catatTransaksiTx({ santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, bulan, metode, pin, validasiPin, petugasId, idempotencyKey }) {
   return withTransaction(async () => {
     if (!JENIS_TRANSAKSI_BMT.includes(jenis)) throw new CashlessError(400, "Jenis transaksi tidak valid.");
     jumlah = Number(jumlah);
     if (!jumlah || jumlah <= 0) throw new CashlessError(400, "Jumlah transaksi harus lebih dari 0.");
+    if (idempotencyKey != null && (typeof idempotencyKey !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idempotencyKey))) {
+      throw new CashlessError(400, "idempotencyKey harus berupa UUID.");
+    }
+
+    if (idempotencyKey) {
+      const reservation = await query(`INSERT INTO "TransaksiCashlessIdempotency" ("idempotencyKey")
+        VALUES ($1) ON CONFLICT ("idempotencyKey") DO NOTHING RETURNING "idempotencyKey"`, [idempotencyKey]);
+      if (!reservation.rowCount) {
+        const previous = await queryOne('SELECT "response" FROM "TransaksiCashlessIdempotency" WHERE "idempotencyKey" = $1', [idempotencyKey]);
+        if (!previous?.response) throw new Error("Respons idempotensi belum tersedia setelah konflik kunci.");
+        return markIdempotentReplay({ ...previous.response });
+      }
+    }
 
     const santri = await getSantriRow(santriId, true);
     const saldoSekarang = Number(santri.saldo || 0);
@@ -106,7 +124,10 @@ async function catatTransaksiTx({ santriId, unit, jenis, kategori, subKategori, 
       if (validasiPin && !qrTanpaPin) {
         const { verifikasiPin } = require("./pinService");
         const pinError = await verifikasiPin(santri, pin, { unit, petugasId });
-        if (pinError) return { pinError };
+        if (pinError) {
+          if (idempotencyKey) await query('DELETE FROM "TransaksiCashlessIdempotency" WHERE "idempotencyKey" = $1', [idempotencyKey]);
+          return { pinError };
+        }
       }
       if (isBlokirAktif(santri)) {
         throw new CashlessError(409, `Cashless santri ini sedang diblokir sampai ${formatTanggalISO(santri.blokirSampaiISO)} (${santri.blokirAlasan}). Wali dapat mengajukan buka blokir ke BMT.`);
@@ -147,17 +168,23 @@ async function catatTransaksiTx({ santriId, unit, jenis, kategori, subKategori, 
       tanggalISO: todayISO(), tanggalLabel: todayLabel(), bulan: bulan || todayLabel(),
     };
     await query(`
-      INSERT INTO "TransaksiCashless" ("id", "santriId", "unit", "jenis", "kategori", "subKategori", "metode", "jumlah", "keterangan", "saldoSetelah", "tanggalISO", "tanggalLabel", "bulan")
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      INSERT INTO "TransaksiCashless" ("id", "santriId", "unit", "jenis", "kategori", "subKategori", "metode", "jumlah", "keterangan", "saldoSetelah", "tanggalISO", "tanggalLabel", "bulan", "idempotencyKey", "saldoSebelum", "saldoSesudah")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     `, [transaksi.id, transaksi.santriId, transaksi.unit, transaksi.jenis, transaksi.kategori, transaksi.subKategori, transaksi.metode,
-      transaksi.jumlah, transaksi.keterangan, transaksi.saldoSetelah, transaksi.tanggalISO, transaksi.tanggalLabel, transaksi.bulan]);
+      transaksi.jumlah, transaksi.keterangan, transaksi.saldoSetelah, transaksi.tanggalISO, transaksi.tanggalLabel, transaksi.bulan,
+      idempotencyKey || null, saldoSekarang, saldoBaru]);
 
-    return {
+    const response = {
       transaksi,
       lewatLimit,
       pesan: lewatLimit ? `Transaksi tercatat, namun melebihi limit jajan harian. Cashless santri otomatis diblokir sampai ${formatTanggalISO(blokirBaru.sampaiISO)}.` : null,
       santri: await toPublicSantri(await getSantriRow(santriId)),
     };
+    if (idempotencyKey) {
+      await query('UPDATE "TransaksiCashlessIdempotency" SET "response" = $1::jsonb WHERE "idempotencyKey" = $2',
+        [JSON.stringify(response), idempotencyKey]);
+    }
+    return response;
   });
 }
 
@@ -169,7 +196,40 @@ async function catatTransaksi(input) {
 
 async function riwayatSantri(santriId) {
   await getSantriRow(santriId);
-  return queryAll('SELECT * FROM "TransaksiCashless" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
+  return queryAll(`SELECT "id", "santriId", "unit", "jenis", "kategori", "subKategori", "jumlah", "keterangan", "saldoSetelah",
+    "tanggalISO", "tanggalLabel", "bulan", "metode", "createdAt" FROM "TransaksiCashless" WHERE "santriId" = $1 ORDER BY "createdAt" DESC`, [santriId]);
+}
+
+async function auditSaldo() {
+  const rows = await queryAll(`
+    WITH ordered AS (
+      SELECT "santriId", "id", "createdAt", "jenis", "jumlah", "saldoSetelah", "saldoSebelum", "saldoSesudah",
+        ROW_NUMBER() OVER (PARTITION BY "santriId" ORDER BY "createdAt", "id") AS rn
+      FROM "TransaksiCashless"
+    ), first_complete AS (
+      SELECT "santriId", MIN(rn) FILTER (WHERE "saldoSebelum" IS NOT NULL AND "saldoSesudah" IS NOT NULL) AS first_rn
+      FROM ordered GROUP BY "santriId"
+    ), ledger AS (
+      SELECT o."santriId",
+        CASE WHEN f.first_rn IS NULL THEN
+          (ARRAY_AGG(COALESCE(o."saldoSesudah", o."saldoSetelah") ORDER BY o.rn DESC))[1]
+        ELSE
+          (ARRAY_AGG(o."saldoSebelum" ORDER BY o.rn) FILTER (WHERE o.rn = f.first_rn))[1]
+          + COALESCE(SUM(CASE WHEN o."jenis" = 'Top Up' THEN o."jumlah" WHEN o."jenis" = 'Tarik Tunai' THEN -o."jumlah" ELSE 0 END)
+            FILTER (WHERE o.rn >= f.first_rn), 0)
+        END AS "saldoLedger"
+      FROM ordered o JOIN first_complete f ON f."santriId" = o."santriId"
+      GROUP BY o."santriId", f.first_rn
+    )
+    SELECT s."id", s."nama", s."saldo", COALESCE(l."saldoLedger", 0)::BIGINT AS "saldoLedger",
+      s."saldo" - COALESCE(l."saldoLedger", 0)::BIGINT AS "selisih"
+    FROM "Santri" s LEFT JOIN ledger l ON l."santriId" = s."id"
+    ORDER BY s."nama"
+  `);
+  const tidakCocok = rows.filter((row) => Number(row.selisih) !== 0).map((row) => ({
+    id: row.id, nama: row.nama, saldo: Number(row.saldo), saldoLedger: Number(row.saldoLedger), selisih: Number(row.selisih),
+  }));
+  return { jumlahSantri: rows.length, jumlahTidakCocok: tidakCocok.length, tidakCocok };
 }
 
 async function ajukanPermintaan({ santriId, waliId, jenis, nilaiDiminta, alasan, buktiTransfer }) {
@@ -235,5 +295,5 @@ module.exports = {
   DEFAULT_DURASI_BLOKIR_HARI, JENIS_TRANSAKSI_BMT, KATEGORI_TRANSAKSI_BMT, JENIS_PERMINTAAN_BMT,
   uid, todayISO, todayLabel, tambahHariISO, formatTanggalISO,
   getSantriRow, terpakaiHariIni, sisaLimitHarian, isBlokirAktif, toPublicSantri, toSaldoPublik, SANTRI_BIODATA_FIELDS,
-  catatTransaksi, riwayatSantri, ajukanPermintaan, prosesPermintaan, daftarPermintaan,
+  catatTransaksi, riwayatSantri, auditSaldo, ajukanPermintaan, prosesPermintaan, daftarPermintaan,
 };
