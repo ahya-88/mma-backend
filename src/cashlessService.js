@@ -89,7 +89,17 @@ async function toPublicSantri(santri, includeFoto = false) {
 
 async function toSaldoPublik(santri) {
   const pub = await toPublicSantri(santri);
-  return { nama: pub.nama, saldo: pub.saldo, limitJajanHarian: pub.limitJajanHarian, sisaLimitHariIni: pub.sisaLimitHariIni, blokir: pub.blokir };
+  return {
+    id: pub.id,
+    nis: pub.nis,
+    nisn: pub.nisn,
+    nama: pub.nama,
+    kelas: pub.kelas,
+    saldo: pub.saldo,
+    limitJajanHarian: pub.limitJajanHarian,
+    sisaLimitHariIni: pub.sisaLimitHariIni,
+    blokir: pub.blokir,
+  };
 }
 
 function markIdempotentReplay(response) {

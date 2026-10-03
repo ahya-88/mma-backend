@@ -28,20 +28,50 @@ router.get("/kelola", requireAuth, requireBMT, asyncHandler(async (req, res) => 
 router.post("/resolve", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
   const raw = typeof req.body?.token === "string" ? req.body.token.trim() : "";
   if (!raw) return res.status(400).json({ error: "Token kartu wajib diisi." });
-  let token = raw;
-  if (raw.toUpperCase().startsWith("MMA1:")) token = raw.substring(5).trim();
-  else if (raw.includes("token=")) {
-    const match = raw.match(/token=([A-Za-z0-9_-]+)/);
-    if (match) token = match[1];
-  } else if (raw.startsWith("{") && raw.endsWith("}")) {
+
+  const kandidat = new Set();
+  kandidat.add(raw);
+
+  // 1. Ekstrak JSON BMT
+  if ((raw.startsWith("{") && raw.endsWith("}")) || (raw.includes("{") && raw.includes("}"))) {
     try {
-      const parsed = JSON.parse(raw);
-      if (parsed.token) token = String(parsed.token).trim();
+      const start = raw.indexOf("{");
+      const end = raw.lastIndexOf("}");
+      if (start !== -1 && end > start) {
+        const parsed = JSON.parse(raw.substring(start, end + 1));
+        const keys = ["token", "nis", "nisn", "id", "santri_id", "santriId", "id_santri", "no_kartu", "noKartu", "card_id", "cardId", "code", "kode", "nomor", "uuid"];
+        for (const k of keys) {
+          if (parsed[k]) kandidat.add(String(parsed[k]).trim());
+        }
+      }
     } catch (_) {}
   }
 
-  let santri = await queryOne('SELECT * FROM "Santri" WHERE "kartuToken" = $1 OR "id" = $1 OR "nis" = $1', [token]);
-  if (!santri && raw !== token) santri = await queryOne('SELECT * FROM "Santri" WHERE "kartuToken" = $1', [raw]);
+  // 2. Ekstrak URL Query Parameters
+  if (raw.includes("://") || raw.includes("?") || raw.includes("&")) {
+    try {
+      const match = raw.match(/(?:token|nis|id|santri_id|card|code|no)=([A-Za-z0-9_-]+)/i);
+      if (match) kandidat.add(match[1].trim());
+    } catch (_) {}
+  }
+
+  // 3. Ekstrak Prefix BMT
+  const prefixes = ["MMA1:", "MMA:", "BMT:", "BMT-", "KARTU:", "KARTU-", "CARD:", "CARD-", "SANTRI:", "SANTRI-", "NIS:", "NIS-", "ID:", "ID-"];
+  for (const p of prefixes) {
+    if (raw.toUpperCase().startsWith(p.toUpperCase())) {
+      kandidat.add(raw.substring(p.length).trim());
+    }
+  }
+
+  const tokenList = Array.from(kandidat).filter(Boolean);
+  let santri = null;
+  if (tokenList.length > 0) {
+    santri = await queryOne(
+      'SELECT * FROM "Santri" WHERE "kartuToken" = ANY($1) OR "id" = ANY($1) OR "nis" = ANY($1) OR "nisn" = ANY($1) LIMIT 1',
+      [tokenList]
+    );
+  }
+
   if (!santri) return res.status(404).json({ error: "Kartu tidak dikenal." });
 
   const publik = await toPublicSantri(santri);
