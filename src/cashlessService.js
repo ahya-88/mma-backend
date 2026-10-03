@@ -1,18 +1,17 @@
 const crypto = require("crypto");
-const db = require("./db");
+const { query, queryOne, queryAll, withTransaction } = require("./db");
 
 const DEFAULT_DURASI_BLOKIR_HARI = 1;
 const JENIS_TRANSAKSI_BMT = ["Top Up", "Tarik Tunai"];
 const KATEGORI_TRANSAKSI_BMT = ["Jajan Harian", "Kebutuhan Khusus"];
 const JENIS_PERMINTAAN_BMT = ["Ubah Limit Jajan Harian", "Ubah Durasi Blokir", "Buka Blokir Sekarang", "Top Up Saldo"];
-
 const uid = () => crypto.randomUUID();
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const todayLabel = () => new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 const tambahHariISO = (isoAwal, n) => {
-  const d = new Date(isoAwal + "T00:00:00");
-  d.setDate(d.getDate() + Number(n || 0));
-  return d.toISOString().slice(0, 10);
+  const date = new Date(isoAwal + "T00:00:00");
+  date.setDate(date.getDate() + Number(n || 0));
+  return date.toISOString().slice(0, 10);
 };
 const formatTanggalISO = (iso) => (iso ? new Date(iso + "T00:00:00").toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : null);
 
@@ -24,34 +23,31 @@ class CashlessError extends Error {
   }
 }
 
-function getSantriRow(santriId) {
-  const s = db.prepare("SELECT * FROM Santri WHERE id = ?").get(santriId);
-  if (!s) throw new CashlessError(404, "Santri tidak ditemukan.");
-  return s;
+async function getSantriRow(santriId, lock = false) {
+  const row = await queryOne(`SELECT * FROM "Santri" WHERE "id" = $1${lock ? " FOR UPDATE" : ""}`, [santriId]);
+  if (!row) throw new CashlessError(404, "Santri tidak ditemukan.");
+  return row;
 }
 
-// Hanya transaksi kategori "Jajan Harian" (atau tanpa kategori — dianggap Jajan Harian) yang dihitung ke limit harian.
-function terpakaiHariIni(santriId) {
-  const row = db.prepare(`
-    SELECT COALESCE(SUM(jumlah), 0) AS total FROM TransaksiCashless
-    WHERE santriId = ? AND tanggalISO = ? AND jenis = 'Tarik Tunai'
-      AND (kategori IS NULL OR kategori = 'Jajan Harian')
-  `).get(santriId, todayISO());
-  return row.total;
+async function terpakaiHariIni(santriId) {
+  const row = await queryOne(`
+    SELECT COALESCE(SUM("jumlah"), 0) AS "total" FROM "TransaksiCashless"
+    WHERE "santriId" = $1 AND "tanggalISO" = $2 AND "jenis" = 'Tarik Tunai'
+      AND ("kategori" IS NULL OR "kategori" = 'Jajan Harian')
+  `, [santriId, todayISO()]);
+  return Number(row.total);
 }
 
-function sisaLimitHarian(santri) {
+async function sisaLimitHarian(santri) {
   const limit = santri.limitJajanHarian || 0;
-  if (!limit) return null; // tidak dibatasi
-  return Math.max(0, limit - terpakaiHariIni(santri.id));
+  if (!limit) return null;
+  return Math.max(0, Number(limit) - await terpakaiHariIni(santri.id));
 }
 
 function isBlokirAktif(santri) {
   return !!(santri.blokirAktif && santri.blokirSampaiISO && santri.blokirSampaiISO >= todayISO());
 }
 
-// Field biodata lengkap (Master Data Santri — Sekretariat). Dipisah dari field cashless/inti
-// supaya mudah dipakai ulang oleh toPublicSantri di bawah maupun endpoint list/upsert di santri.js.
 const SANTRI_BIODATA_FIELDS = [
   "jenisKelamin", "tempatLahir", "tanggalLahir", "alamat", "asrama", "golDarah",
   "noDarurat", "catatanKesehatan", "halaqoh", "foto", "namaAyah", "namaIbu",
@@ -59,12 +55,11 @@ const SANTRI_BIODATA_FIELDS = [
   "pendidikanSMP", "tahunSMP", "pendidikanSMA", "tahunSMA",
 ];
 
-// Bentuk objek santri yang aman dikirim ke klien, dengan status blokir/limit yang sudah dihitung.
-function toPublicSantri(santri, includeFoto = false) {
+async function toPublicSantri(santri, includeFoto = false) {
   const biodata = {};
-  for (const f of SANTRI_BIODATA_FIELDS) {
-    if (f === "foto" && !includeFoto) continue; // Kecualikan string base64 foto raksasa dari daftar publik
-    biodata[f] = santri[f] ?? "";
+  for (const field of SANTRI_BIODATA_FIELDS) {
+    if (field === "foto" && !includeFoto) continue;
+    biodata[field] = santri[field] ?? "";
   }
   let riwayatKelas = [];
   try { riwayatKelas = santri.riwayatKelas ? JSON.parse(santri.riwayatKelas) : []; } catch { riwayatKelas = []; }
@@ -78,7 +73,7 @@ function toPublicSantri(santri, includeFoto = false) {
     saldo: santri.saldo,
     limitJajanHarian: santri.limitJajanHarian,
     durasiBlokirHari: santri.durasiBlokirHari || DEFAULT_DURASI_BLOKIR_HARI,
-    sisaLimitHariIni: sisaLimitHarian(santri),
+    sisaLimitHariIni: await sisaLimitHarian(santri),
     hasFoto: !!(santri.foto && santri.foto.length > 0),
     blokir: isBlokirAktif(santri) ? {
       aktif: true,
@@ -92,159 +87,147 @@ function toPublicSantri(santri, includeFoto = false) {
   };
 }
 
-// Info minimal untuk kios cek saldo mandiri (Bagian C dokumen konsep) — tanpa data pribadi sensitif.
-function toSaldoPublik(santri) {
-  const pub = toPublicSantri(santri);
+async function toSaldoPublik(santri) {
+  const pub = await toPublicSantri(santri);
   return { nama: pub.nama, saldo: pub.saldo, limitJajanHarian: pub.limitJajanHarian, sisaLimitHariIni: pub.sisaLimitHariIni, blokir: pub.blokir };
 }
 
-/**
- * Catat transaksi Top Up / Tarik Tunai.
- * Skema: Tarik Tunai kategori "Jajan Harian" yang melewati limit tetap diproses,
- * tapi otomatis memicu blokir untuk transaksi berikutnya selama durasiBlokirHari (default 1 hari).
- * Top Up selalu boleh; Tarik Tunai ditolak jika status blokir sedang aktif atau saldo tidak cukup.
- */
-const catatTransaksiTx = db.transaction(({ santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, bulan, metode, pin, validasiPin, petugasId }) => {
-  if (!JENIS_TRANSAKSI_BMT.includes(jenis)) throw new CashlessError(400, "Jenis transaksi tidak valid.");
-  jumlah = Number(jumlah);
-  if (!jumlah || jumlah <= 0) throw new CashlessError(400, "Jumlah transaksi harus lebih dari 0.");
+async function catatTransaksiTx({ santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, bulan, metode, pin, validasiPin, petugasId }) {
+  return withTransaction(async () => {
+    if (!JENIS_TRANSAKSI_BMT.includes(jenis)) throw new CashlessError(400, "Jenis transaksi tidak valid.");
+    jumlah = Number(jumlah);
+    if (!jumlah || jumlah <= 0) throw new CashlessError(400, "Jumlah transaksi harus lebih dari 0.");
 
-  const santri = getSantriRow(santriId);
-  const saldoSekarang = santri.saldo || 0;
-
-  if (jenis === "Tarik Tunai") {
-    if (!KATEGORI_TRANSAKSI_BMT.includes(kategori)) throw new CashlessError(400, "Kategori transaksi tidak valid.");
-    const qrTanpaPin = metode === "qr" && !santri.pinHash;
-    if (validasiPin && !qrTanpaPin) {
-      const { verifikasiPin } = require("./pinService");
-      const pinError = verifikasiPin(santri, pin, { unit, petugasId });
-      if (pinError) return { pinError };
+    const santri = await getSantriRow(santriId, true);
+    const saldoSekarang = Number(santri.saldo || 0);
+    if (jenis === "Tarik Tunai") {
+      if (!KATEGORI_TRANSAKSI_BMT.includes(kategori)) throw new CashlessError(400, "Kategori transaksi tidak valid.");
+      const qrTanpaPin = metode === "qr" && !santri.pinHash;
+      if (validasiPin && !qrTanpaPin) {
+        const { verifikasiPin } = require("./pinService");
+        const pinError = await verifikasiPin(santri, pin, { unit, petugasId });
+        if (pinError) return { pinError };
+      }
+      if (isBlokirAktif(santri)) {
+        throw new CashlessError(409, `Cashless santri ini sedang diblokir sampai ${formatTanggalISO(santri.blokirSampaiISO)} (${santri.blokirAlasan}). Wali dapat mengajukan buka blokir ke BMT.`);
+      }
+      if (jumlah > saldoSekarang) throw new CashlessError(400, `Saldo santri tidak cukup. Saldo saat ini: ${saldoSekarang}`);
     }
-    if (isBlokirAktif(santri)) {
-      throw new CashlessError(409, `Cashless santri ini sedang diblokir sampai ${formatTanggalISO(santri.blokirSampaiISO)} (${santri.blokirAlasan}). Wali dapat mengajukan buka blokir ke BMT.`);
+
+    let lewatLimit = false;
+    let blokirBaru = null;
+    if (jenis === "Tarik Tunai" && kategori === "Jajan Harian" && Number(santri.limitJajanHarian)) {
+      const terpakaiSetelah = await terpakaiHariIni(santriId) + jumlah;
+      if (terpakaiSetelah > Number(santri.limitJajanHarian)) {
+        lewatLimit = true;
+        const durasi = Number(santri.durasiBlokirHari) || DEFAULT_DURASI_BLOKIR_HARI;
+        blokirBaru = {
+          sejakISO: todayISO(),
+          sampaiISO: tambahHariISO(todayISO(), durasi),
+          alasan: `Melebihi limit jajan harian (${santri.limitJajanHarian}/hari)`,
+        };
+      }
     }
-    if (jumlah > saldoSekarang) {
-      throw new CashlessError(400, `Saldo santri tidak cukup. Saldo saat ini: ${saldoSekarang}`);
+
+    const saldoBaru = jenis === "Top Up" ? saldoSekarang + jumlah : saldoSekarang - jumlah;
+    const now = `to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
+    if (blokirBaru) {
+      await query(`UPDATE "Santri" SET "saldo" = $1, "updatedAt" = ${now}, "blokirAktif" = 1, "blokirSejakISO" = $2, "blokirSampaiISO" = $3, "blokirAlasan" = $4 WHERE "id" = $5`,
+        [saldoBaru, blokirBaru.sejakISO, blokirBaru.sampaiISO, blokirBaru.alasan, santriId]);
+    } else {
+      await query(`UPDATE "Santri" SET "saldo" = $1, "updatedAt" = ${now} WHERE "id" = $2`, [saldoBaru, santriId]);
     }
-  }
 
-  let lewatLimit = false;
-  let blokirBaru = null;
-  if (jenis === "Tarik Tunai" && kategori === "Jajan Harian" && Number(santri.limitJajanHarian)) {
-    const terpakaiSetelah = terpakaiHariIni(santriId) + jumlah;
-    if (terpakaiSetelah > Number(santri.limitJajanHarian)) {
-      lewatLimit = true;
-      const durasi = Number(santri.durasiBlokirHari) || DEFAULT_DURASI_BLOKIR_HARI;
-      blokirBaru = {
-        sejakISO: todayISO(),
-        sampaiISO: tambahHariISO(todayISO(), durasi),
-        alasan: `Melebihi limit jajan harian (${santri.limitJajanHarian}/hari)`,
-      };
-    }
-  }
+    const transaksi = {
+      id: uid(), santriId, unit, jenis,
+      kategori: jenis === "Tarik Tunai" ? kategori : null,
+      subKategori: jenis === "Tarik Tunai" && kategori === "Kebutuhan Khusus" ? (subKategori || null) : null,
+      metode: ["qr", "wajah", "manual"].includes(metode) ? metode : null,
+      jumlah, keterangan: keterangan || null, saldoSetelah: saldoBaru,
+      tanggalISO: todayISO(), tanggalLabel: todayLabel(), bulan: bulan || todayLabel(),
+    };
+    await query(`
+      INSERT INTO "TransaksiCashless" ("id", "santriId", "unit", "jenis", "kategori", "subKategori", "metode", "jumlah", "keterangan", "saldoSetelah", "tanggalISO", "tanggalLabel", "bulan")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    `, [transaksi.id, transaksi.santriId, transaksi.unit, transaksi.jenis, transaksi.kategori, transaksi.subKategori, transaksi.metode,
+      transaksi.jumlah, transaksi.keterangan, transaksi.saldoSetelah, transaksi.tanggalISO, transaksi.tanggalLabel, transaksi.bulan]);
 
-  const saldoBaru = jenis === "Top Up" ? saldoSekarang + jumlah : saldoSekarang - jumlah;
+    return {
+      transaksi,
+      lewatLimit,
+      pesan: lewatLimit ? `Transaksi tercatat, namun melebihi limit jajan harian. Cashless santri otomatis diblokir sampai ${formatTanggalISO(blokirBaru.sampaiISO)}.` : null,
+      santri: await toPublicSantri(await getSantriRow(santriId)),
+    };
+  });
+}
 
-  db.prepare(`
-    UPDATE Santri SET saldo = ?, updatedAt = datetime('now')
-      ${blokirBaru ? ", blokirAktif = 1, blokirSejakISO = ?, blokirSampaiISO = ?, blokirAlasan = ?" : ""}
-    WHERE id = ?
-  `).run(...(blokirBaru ? [saldoBaru, blokirBaru.sejakISO, blokirBaru.sampaiISO, blokirBaru.alasan, santriId] : [saldoBaru, santriId]));
-
-  const transaksi = {
-    id: uid(), santriId, unit, jenis,
-    kategori: jenis === "Tarik Tunai" ? kategori : null,
-    subKategori: jenis === "Tarik Tunai" && kategori === "Kebutuhan Khusus" ? (subKategori || null) : null,
-    metode: ["qr", "wajah", "manual"].includes(metode) ? metode : null,
-    jumlah, keterangan: keterangan || null, saldoSetelah: saldoBaru,
-    tanggalISO: todayISO(), tanggalLabel: todayLabel(), bulan: bulan || todayLabel(),
-  };
-  db.prepare(`
-    INSERT INTO TransaksiCashless (id, santriId, unit, jenis, kategori, subKategori, metode, jumlah, keterangan, saldoSetelah, tanggalISO, tanggalLabel, bulan)
-    VALUES (@id, @santriId, @unit, @jenis, @kategori, @subKategori, @metode, @jumlah, @keterangan, @saldoSetelah, @tanggalISO, @tanggalLabel, @bulan)
-  `).run(transaksi);
-
-  return {
-    transaksi,
-    lewatLimit,
-    pesan: lewatLimit ? `Transaksi tercatat, namun melebihi limit jajan harian. Cashless santri otomatis diblokir sampai ${formatTanggalISO(blokirBaru.sampaiISO)}.` : null,
-    santri: toPublicSantri(getSantriRow(santriId)),
-  };
-});
-
-function catatTransaksi(input) {
-  const hasil = catatTransaksiTx(input);
-  if (hasil.pinError) {
-    throw new CashlessError(hasil.pinError.status, hasil.pinError.message, hasil.pinError.details);
-  }
+async function catatTransaksi(input) {
+  const hasil = await catatTransaksiTx(input);
+  if (hasil.pinError) throw new CashlessError(hasil.pinError.status, hasil.pinError.message, hasil.pinError.details);
   return hasil;
 }
 
-function riwayatSantri(santriId) {
-  getSantriRow(santriId); // pastikan ada, lempar 404 jika tidak
-  return db.prepare("SELECT * FROM TransaksiCashless WHERE santriId = ? ORDER BY createdAt DESC").all(santriId);
+async function riwayatSantri(santriId) {
+  await getSantriRow(santriId);
+  return queryAll('SELECT * FROM "TransaksiCashless" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
 }
 
-const ajukanPermintaan = db.transaction(({ santriId, waliId, jenis, nilaiDiminta, alasan, buktiTransfer }) => {
-  if (!JENIS_PERMINTAAN_BMT.includes(jenis)) throw new CashlessError(400, "Jenis permintaan tidak valid.");
-  if (!alasan || !alasan.trim()) throw new CashlessError(400, "Alasan permintaan wajib diisi.");
-  const santri = getSantriRow(santriId);
-  if (santri.waliId !== waliId) throw new CashlessError(403, "Santri ini bukan anak dari akun wali yang login.");
-  if (jenis !== "Buka Blokir Sekarang" && !nilaiDiminta) throw new CashlessError(400, "Nilai yang diminta wajib diisi.");
-  if (jenis === "Top Up Saldo") {
-    if (Number(nilaiDiminta) <= 0) throw new CashlessError(400, "Nominal top up harus lebih dari 0.");
-    if (!buktiTransfer) throw new CashlessError(400, "Bukti transfer wajib diupload.");
-  }
-
-  const permintaan = {
-    id: uid(), santriId, waliId, jenis,
-    nilaiDiminta: jenis === "Buka Blokir Sekarang" ? null : Number(nilaiDiminta),
-    alasan: alasan.trim(), buktiTransfer: jenis === "Top Up Saldo" ? buktiTransfer : null,
-    status: "Menunggu",
-    tanggalAjukan: todayLabel(), tanggalDiproses: null, diprosesOleh: null, catatanBMT: null,
-  };
-  db.prepare(`
-    INSERT INTO PermintaanBMT (id, santriId, waliId, jenis, nilaiDiminta, alasan, buktiTransfer, status, tanggalAjukan, tanggalDiproses, diprosesOleh, catatanBMT)
-    VALUES (@id, @santriId, @waliId, @jenis, @nilaiDiminta, @alasan, @buktiTransfer, @status, @tanggalAjukan, @tanggalDiproses, @diprosesOleh, @catatanBMT)
-  `).run(permintaan);
-  return permintaan;
-});
-
-const prosesPermintaan = db.transaction(({ id, disetujui, diprosesOleh, catatan }) => {
-  const p = db.prepare("SELECT * FROM PermintaanBMT WHERE id = ?").get(id);
-  if (!p) throw new CashlessError(404, "Permintaan tidak ditemukan.");
-  if (p.status !== "Menunggu") throw new CashlessError(409, "Permintaan ini sudah diproses sebelumnya.");
-
-  if (disetujui) {
-    if (p.jenis === "Ubah Limit Jajan Harian") {
-      db.prepare("UPDATE Santri SET limitJajanHarian = ?, updatedAt = datetime('now') WHERE id = ?").run(p.nilaiDiminta, p.santriId);
-    } else if (p.jenis === "Ubah Durasi Blokir") {
-      db.prepare("UPDATE Santri SET durasiBlokirHari = ?, updatedAt = datetime('now') WHERE id = ?").run(p.nilaiDiminta, p.santriId);
-    } else if (p.jenis === "Buka Blokir Sekarang") {
-      db.prepare("UPDATE Santri SET blokirAktif = 0, updatedAt = datetime('now') WHERE id = ?").run(p.santriId);
-    } else if (p.jenis === "Top Up Saldo") {
-      // BMT sudah mencocokkan bukti transfer dengan mutasi rekening yayasan secara manual di luar
-      // sistem sebelum menyetujui — di sinilah saldo baru benar-benar bertambah (bukan saat wali
-      // mengajukan). Reuse catatTransaksi supaya tercatat juga di riwayat TransaksiCashless.
-      catatTransaksi({
-        santriId: p.santriId, unit: "BMT", jenis: "Top Up",
-        jumlah: p.nilaiDiminta,
-        keterangan: `Top up via transfer manual (disetujui oleh ${diprosesOleh})`,
-      });
+async function ajukanPermintaan({ santriId, waliId, jenis, nilaiDiminta, alasan, buktiTransfer }) {
+  return withTransaction(async () => {
+    if (!JENIS_PERMINTAAN_BMT.includes(jenis)) throw new CashlessError(400, "Jenis permintaan tidak valid.");
+    if (!alasan || !alasan.trim()) throw new CashlessError(400, "Alasan permintaan wajib diisi.");
+    const santri = await getSantriRow(santriId);
+    if (santri.waliId !== waliId) throw new CashlessError(403, "Santri ini bukan anak dari akun wali yang login.");
+    if (jenis !== "Buka Blokir Sekarang" && !nilaiDiminta) throw new CashlessError(400, "Nilai yang diminta wajib diisi.");
+    if (jenis === "Top Up Saldo") {
+      if (Number(nilaiDiminta) <= 0) throw new CashlessError(400, "Nominal top up harus lebih dari 0.");
+      if (!buktiTransfer) throw new CashlessError(400, "Bukti transfer wajib diupload.");
     }
-  }
-  db.prepare(`
-    UPDATE PermintaanBMT SET status = ?, tanggalDiproses = ?, diprosesOleh = ?, catatanBMT = ? WHERE id = ?
-  `).run(disetujui ? "Disetujui" : "Ditolak", todayLabel(), diprosesOleh, catatan || null, id);
+    const permintaan = {
+      id: uid(), santriId, waliId, jenis,
+      nilaiDiminta: jenis === "Buka Blokir Sekarang" ? null : Number(nilaiDiminta),
+      alasan: alasan.trim(), buktiTransfer: jenis === "Top Up Saldo" ? buktiTransfer : null,
+      status: "Menunggu", tanggalAjukan: todayLabel(), tanggalDiproses: null, diprosesOleh: null, catatanBMT: null,
+    };
+    await query(`
+      INSERT INTO "PermintaanBMT" ("id", "santriId", "waliId", "jenis", "nilaiDiminta", "alasan", "buktiTransfer", "status", "tanggalAjukan", "tanggalDiproses", "diprosesOleh", "catatanBMT")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `, [permintaan.id, permintaan.santriId, permintaan.waliId, permintaan.jenis, permintaan.nilaiDiminta, permintaan.alasan,
+      permintaan.buktiTransfer, permintaan.status, permintaan.tanggalAjukan, permintaan.tanggalDiproses, permintaan.diprosesOleh, permintaan.catatanBMT]);
+    return permintaan;
+  });
+}
 
-  return db.prepare("SELECT * FROM PermintaanBMT WHERE id = ?").get(id);
-});
+async function prosesPermintaan({ id, disetujui, diprosesOleh, catatan }) {
+  return withTransaction(async () => {
+    const permintaan = await queryOne('SELECT * FROM "PermintaanBMT" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!permintaan) throw new CashlessError(404, "Permintaan tidak ditemukan.");
+    if (permintaan.status !== "Menunggu") throw new CashlessError(409, "Permintaan ini sudah diproses sebelumnya.");
 
-function daftarPermintaan(status) {
-  if (status && status !== "Semua") {
-    return db.prepare("SELECT * FROM PermintaanBMT WHERE status = ? ORDER BY createdAt DESC").all(status);
-  }
-  return db.prepare("SELECT * FROM PermintaanBMT ORDER BY createdAt DESC").all();
+    if (disetujui) {
+      const now = `to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
+      if (permintaan.jenis === "Ubah Limit Jajan Harian") {
+        await query(`UPDATE "Santri" SET "limitJajanHarian" = $1, "updatedAt" = ${now} WHERE "id" = $2`, [permintaan.nilaiDiminta, permintaan.santriId]);
+      } else if (permintaan.jenis === "Ubah Durasi Blokir") {
+        await query(`UPDATE "Santri" SET "durasiBlokirHari" = $1, "updatedAt" = ${now} WHERE "id" = $2`, [permintaan.nilaiDiminta, permintaan.santriId]);
+      } else if (permintaan.jenis === "Buka Blokir Sekarang") {
+        await query(`UPDATE "Santri" SET "blokirAktif" = 0, "updatedAt" = ${now} WHERE "id" = $1`, [permintaan.santriId]);
+      } else if (permintaan.jenis === "Top Up Saldo") {
+        await catatTransaksiTx({
+          santriId: permintaan.santriId, unit: "BMT", jenis: "Top Up", jumlah: permintaan.nilaiDiminta,
+          keterangan: `Top up via transfer manual (disetujui oleh ${diprosesOleh})`,
+        });
+      }
+    }
+    await query('UPDATE "PermintaanBMT" SET "status" = $1, "tanggalDiproses" = $2, "diprosesOleh" = $3, "catatanBMT" = $4 WHERE "id" = $5',
+      [disetujui ? "Disetujui" : "Ditolak", todayLabel(), diprosesOleh, catatan || null, id]);
+    return queryOne('SELECT * FROM "PermintaanBMT" WHERE "id" = $1', [id]);
+  });
+}
+
+async function daftarPermintaan(status) {
+  if (status && status !== "Semua") return queryAll('SELECT * FROM "PermintaanBMT" WHERE "status" = $1 ORDER BY "createdAt" DESC', [status]);
+  return queryAll('SELECT * FROM "PermintaanBMT" ORDER BY "createdAt" DESC');
 }
 
 module.exports = {

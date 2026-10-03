@@ -3,6 +3,8 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const compression = require("compression");
+const { query, initializeDatabase } = require("./db");
+const asyncHandler = require("./asyncHandler");
 
 const authRoutes = require("./routes/auth");
 const santriRoutes = require("./routes/santri");
@@ -26,7 +28,14 @@ app.use(compression());
 // transfer top up saldo di PermintaanBMT) butuh ruang lebih besar dari itu.
 app.use(express.json({ limit: "8mb" }));
 
-app.get("/api/health", (req, res) => res.json({ ok: true, waktu: new Date().toISOString() }));
+app.get("/api/health", asyncHandler(async (req, res) => {
+  try {
+    await query("SELECT 1");
+    res.json({ ok: true, waktu: new Date().toISOString() });
+  } catch (_) {
+    res.status(503).json({ ok: false, waktu: new Date().toISOString() });
+  }
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/santri", santriRoutes);
@@ -68,7 +77,12 @@ if (require.main === module) {
   // Ini WAJIB di semua PaaS (Railway, Render, Fly.io, dst.): mereka mem-forward trafik publik
   // ke container lewat 0.0.0.0, jadi kalau server hanya listen di "localhost", trafik dari
   // luar tidak akan pernah sampai walau proses node-nya tetap terlihat "jalan" di log.
-  app.listen(PORT, "0.0.0.0", () => console.log(`Cashless backend jalan di port ${PORT} (menerima koneksi publik, bukan cuma localhost)`));
+  initializeDatabase().then(() => {
+    app.listen(PORT, "0.0.0.0", () => console.log(`Cashless backend jalan di port ${PORT} (menerima koneksi publik, bukan cuma localhost)`));
+  }).catch((error) => {
+    console.error("Gagal menginisialisasi PostgreSQL:", error);
+    process.exitCode = 1;
+  });
 }
 
 module.exports = app;

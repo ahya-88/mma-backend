@@ -3,26 +3,23 @@ const { requireAuth, requirePengajaran } = require("../auth");
 const { catatNilai, semuaNilai, hapusNilai, catatPrestasi, semuaPrestasi, hapusPrestasi } = require("../akademikService");
 
 const router = express.Router();
+const asyncHandler = require("../asyncHandler");
 router.use(requireAuth, requirePengajaran);
 
-router.get("/nilai", (req, res, next) => { try { res.json(semuaNilai()); } catch (e) { next(e); } });
-router.post("/nilai", (req, res, next) => {
-  try {
+router.get("/nilai", asyncHandler(async (req, res) => res.json(await semuaNilai())));
+router.post("/nilai", asyncHandler(async (req, res) => {
     const { santriId, mapel, nilai } = req.body || {};
     if (!santriId) return res.status(400).json({ error: "santriId wajib diisi." });
-    res.status(201).json(catatNilai({ santriId, mapel, nilai, dicatatOleh: req.user.nama }));
-  } catch (e) { next(e); }
-});
-router.delete("/nilai/:id", (req, res, next) => { try { res.json(hapusNilai(req.params.id)); } catch (e) { next(e); } });
+    res.status(201).json(await catatNilai({ santriId, mapel, nilai, dicatatOleh: req.user.nama }));
+}));
+router.delete("/nilai/:id", asyncHandler(async (req, res) => res.json(await hapusNilai(req.params.id))));
 
-router.get("/prestasi", (req, res, next) => { try { res.json(semuaPrestasi()); } catch (e) { next(e); } });
-router.post("/prestasi", (req, res, next) => {
-  try {
+router.get("/prestasi", asyncHandler(async (req, res) => res.json(await semuaPrestasi())));
+router.post("/prestasi", asyncHandler(async (req, res) => {
     const { santriId, judul, tingkat } = req.body || {};
     if (!santriId) return res.status(400).json({ error: "santriId wajib diisi." });
-    res.status(201).json(catatPrestasi({ santriId, judul, tingkat, dicatatOleh: req.user.nama }));
-  } catch (e) { next(e); }
-});
-router.delete("/prestasi/:id", (req, res, next) => { try { res.json(hapusPrestasi(req.params.id)); } catch (e) { next(e); } });
+    res.status(201).json(await catatPrestasi({ santriId, judul, tingkat, dicatatOleh: req.user.nama }));
+}));
+router.delete("/prestasi/:id", asyncHandler(async (req, res) => res.json(await hapusPrestasi(req.params.id))));
 
 module.exports = router;

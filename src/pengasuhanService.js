@@ -1,104 +1,105 @@
 const crypto = require("crypto");
-const db = require("./db");
+const { query, queryOne, queryAll, withTransaction } = require("./db");
 const { CashlessError, getSantriRow, todayISO, todayLabel } = require("./cashlessService");
 
 const uid = () => crypto.randomUUID();
 const STATUS_ABSENSI = ["Hadir", "Sakit", "Izin", "Alpa"];
 const STATUS_PERIZINAN = ["Menunggu", "Disetujui", "Ditolak", "Selesai"];
 
-// ---- Absensi ----
-const catatAbsensi = db.transaction(({ santriId, tanggalISO, status, keterangan, dicatatOleh }) => {
-  getSantriRow(santriId); // validasi santri ada, lempar 404 jika tidak
-  if (!STATUS_ABSENSI.includes(status)) throw new CashlessError(400, "Status absensi tidak valid.");
-  const tanggal = tanggalISO || todayISO();
-  // Satu santri hanya boleh punya satu catatan absensi per tanggal — timpa jika sudah ada (koreksi).
-  const ada = db.prepare("SELECT id FROM Absensi WHERE santriId = ? AND tanggalISO = ?").get(santriId, tanggal);
-  if (ada) {
-    db.prepare("UPDATE Absensi SET status = ?, keterangan = ?, dicatatOleh = ? WHERE id = ?").run(status, keterangan || null, dicatatOleh || null, ada.id);
-    return db.prepare("SELECT * FROM Absensi WHERE id = ?").get(ada.id);
-  }
-  const row = { id: uid(), santriId, tanggalISO: tanggal, status, keterangan: keterangan || null, dicatatOleh: dicatatOleh || null };
-  db.prepare(`INSERT INTO Absensi (id, santriId, tanggalISO, status, keterangan, dicatatOleh) VALUES (@id, @santriId, @tanggalISO, @status, @keterangan, @dicatatOleh)`).run(row);
-  return db.prepare("SELECT * FROM Absensi WHERE id = ?").get(row.id);
-});
+async function catatAbsensi({ santriId, tanggalISO, status, keterangan, dicatatOleh }) {
+  return withTransaction(async () => {
+    await getSantriRow(santriId, true);
+    if (!STATUS_ABSENSI.includes(status)) throw new CashlessError(400, "Status absensi tidak valid.");
+    const tanggal = tanggalISO || todayISO();
+    const ada = await queryOne('SELECT "id" FROM "Absensi" WHERE "santriId" = $1 AND "tanggalISO" = $2 FOR UPDATE', [santriId, tanggal]);
+    if (ada) {
+      await query('UPDATE "Absensi" SET "status" = $1, "keterangan" = $2, "dicatatOleh" = $3 WHERE "id" = $4',
+        [status, keterangan || null, dicatatOleh || null, ada.id]);
+      return queryOne('SELECT * FROM "Absensi" WHERE "id" = $1', [ada.id]);
+    }
+    const row = { id: uid(), santriId, tanggalISO: tanggal, status, keterangan: keterangan || null, dicatatOleh: dicatatOleh || null };
+    await query('INSERT INTO "Absensi" ("id", "santriId", "tanggalISO", "status", "keterangan", "dicatatOleh") VALUES ($1, $2, $3, $4, $5, $6)',
+      [row.id, row.santriId, row.tanggalISO, row.status, row.keterangan, row.dicatatOleh]);
+    return queryOne('SELECT * FROM "Absensi" WHERE "id" = $1', [row.id]);
+  });
+}
 
-function riwayatAbsensi(santriId) {
-  getSantriRow(santriId);
-  const rows = db.prepare("SELECT * FROM Absensi WHERE santriId = ? ORDER BY tanggalISO DESC").all(santriId);
-  const rekap = Object.fromEntries(STATUS_ABSENSI.map((s) => [s, rows.filter((r) => r.status === s).length]));
+async function riwayatAbsensi(santriId) {
+  await getSantriRow(santriId);
+  const rows = await queryAll('SELECT * FROM "Absensi" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC', [santriId]);
+  const rekap = Object.fromEntries(STATUS_ABSENSI.map((status) => [status, rows.filter((row) => row.status === status).length]));
   return { rows, rekap };
 }
 
-// Snapshot absensi seluruh santri pada satu tanggal (untuk UI ambil-absen harian per kelas).
-function absensiPadaTanggal(tanggalISO) {
-  return db.prepare("SELECT * FROM Absensi WHERE tanggalISO = ?").all(tanggalISO || todayISO());
+const absensiPadaTanggal = (tanggalISO) => queryAll('SELECT * FROM "Absensi" WHERE "tanggalISO" = $1', [tanggalISO || todayISO()]);
+
+async function ajukanPerizinan({ santriId, jenis, tanggalKeluar, tanggalKembali, alasan, diajukanOleh }) {
+  return withTransaction(async () => {
+    await getSantriRow(santriId);
+    if (!jenis || !tanggalKeluar) throw new CashlessError(400, "Jenis izin dan tanggal keluar wajib diisi.");
+    const row = {
+      id: uid(), santriId, jenis, tanggalKeluar, tanggalKembali: tanggalKembali || null, alasan: alasan || null,
+      status: "Menunggu", diajukanOleh: diajukanOleh || null, disetujuiOleh: null, tanggalProses: null,
+    };
+    await query('INSERT INTO "Perizinan" ("id", "santriId", "jenis", "tanggalKeluar", "tanggalKembali", "alasan", "status", "diajukanOleh", "disetujuiOleh", "tanggalProses") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+      [row.id, row.santriId, row.jenis, row.tanggalKeluar, row.tanggalKembali, row.alasan, row.status, row.diajukanOleh, row.disetujuiOleh, row.tanggalProses]);
+    return queryOne('SELECT * FROM "Perizinan" WHERE "id" = $1', [row.id]);
+  });
 }
 
-// ---- Perizinan ----
-const ajukanPerizinan = db.transaction(({ santriId, jenis, tanggalKeluar, tanggalKembali, alasan, diajukanOleh }) => {
-  getSantriRow(santriId);
-  if (!jenis || !tanggalKeluar) throw new CashlessError(400, "Jenis izin dan tanggal keluar wajib diisi.");
-  const row = {
-    id: uid(), santriId, jenis, tanggalKeluar, tanggalKembali: tanggalKembali || null, alasan: alasan || null,
-    status: "Menunggu", diajukanOleh: diajukanOleh || null, disetujuiOleh: null, tanggalProses: null,
-  };
-  db.prepare(`
-    INSERT INTO Perizinan (id, santriId, jenis, tanggalKeluar, tanggalKembali, alasan, status, diajukanOleh, disetujuiOleh, tanggalProses)
-    VALUES (@id, @santriId, @jenis, @tanggalKeluar, @tanggalKembali, @alasan, @status, @diajukanOleh, @disetujuiOleh, @tanggalProses)
-  `).run(row);
-  return db.prepare("SELECT * FROM Perizinan WHERE id = ?").get(row.id);
-});
+async function prosesPerizinan({ id, statusBaru, disetujuiOleh }) {
+  return withTransaction(async () => {
+    if (!STATUS_PERIZINAN.includes(statusBaru)) throw new CashlessError(400, "Status perizinan tidak valid.");
+    const perizinan = await queryOne('SELECT * FROM "Perizinan" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!perizinan) throw new CashlessError(404, "Data perizinan tidak ditemukan.");
+    await query('UPDATE "Perizinan" SET "status" = $1, "disetujuiOleh" = $2, "tanggalProses" = $3 WHERE "id" = $4',
+      [statusBaru, disetujuiOleh || null, todayLabel(), id]);
+    return queryOne('SELECT * FROM "Perizinan" WHERE "id" = $1', [id]);
+  });
+}
 
-const prosesPerizinan = db.transaction(({ id, statusBaru, disetujuiOleh }) => {
-  if (!STATUS_PERIZINAN.includes(statusBaru)) throw new CashlessError(400, "Status perizinan tidak valid.");
-  const p = db.prepare("SELECT * FROM Perizinan WHERE id = ?").get(id);
-  if (!p) throw new CashlessError(404, "Data perizinan tidak ditemukan.");
-  db.prepare("UPDATE Perizinan SET status = ?, disetujuiOleh = ?, tanggalProses = ? WHERE id = ?").run(statusBaru, disetujuiOleh || null, todayLabel(), id);
-  return db.prepare("SELECT * FROM Perizinan WHERE id = ?").get(id);
-});
-
-function daftarPerizinan({ santriId, status } = {}) {
-  let sql = "SELECT * FROM Perizinan WHERE 1=1";
+async function daftarPerizinan({ santriId, status } = {}) {
+  const conditions = [];
   const params = [];
-  if (santriId) { sql += " AND santriId = ?"; params.push(santriId); }
-  if (status && status !== "Semua") { sql += " AND status = ?"; params.push(status); }
-  sql += " ORDER BY createdAt DESC";
-  return db.prepare(sql).all(...params);
+  if (santriId) { params.push(santriId); conditions.push(`"santriId" = $${params.length}`); }
+  if (status && status !== "Semua") { params.push(status); conditions.push(`"status" = $${params.length}`); }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  return queryAll(`SELECT * FROM "Perizinan" ${where} ORDER BY "createdAt" DESC`, params);
 }
 
-// ---- Pelanggaran ----
-const catatPelanggaran = db.transaction(({ santriId, jenis, poin, tanggalISO, keterangan, dicatatOleh }) => {
-  getSantriRow(santriId);
-  if (!jenis) throw new CashlessError(400, "Jenis pelanggaran wajib diisi.");
-  const row = { id: uid(), santriId, jenis, poin: Number(poin) || 0, tanggalISO: tanggalISO || todayISO(), keterangan: keterangan || null, dicatatOleh: dicatatOleh || null };
-  db.prepare(`INSERT INTO Pelanggaran (id, santriId, jenis, poin, tanggalISO, keterangan, dicatatOleh) VALUES (@id, @santriId, @jenis, @poin, @tanggalISO, @keterangan, @dicatatOleh)`).run(row);
-  return db.prepare("SELECT * FROM Pelanggaran WHERE id = ?").get(row.id);
-});
-
-function riwayatPelanggaran(santriId) {
-  getSantriRow(santriId);
-  const rows = db.prepare("SELECT * FROM Pelanggaran WHERE santriId = ? ORDER BY createdAt DESC").all(santriId);
-  const totalPoin = rows.reduce((a, r) => a + r.poin, 0);
-  return { rows, totalPoin };
+async function catatPelanggaran({ santriId, jenis, poin, tanggalISO, keterangan, dicatatOleh }) {
+  return withTransaction(async () => {
+    await getSantriRow(santriId);
+    if (!jenis) throw new CashlessError(400, "Jenis pelanggaran wajib diisi.");
+    const row = { id: uid(), santriId, jenis, poin: Number(poin) || 0, tanggalISO: tanggalISO || todayISO(), keterangan: keterangan || null, dicatatOleh: dicatatOleh || null };
+    await query('INSERT INTO "Pelanggaran" ("id", "santriId", "jenis", "poin", "tanggalISO", "keterangan", "dicatatOleh") VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [row.id, row.santriId, row.jenis, row.poin, row.tanggalISO, row.keterangan, row.dicatatOleh]);
+    return queryOne('SELECT * FROM "Pelanggaran" WHERE "id" = $1', [row.id]);
+  });
 }
 
-function semuaPelanggaran() {
-  return db.prepare("SELECT * FROM Pelanggaran ORDER BY createdAt DESC").all();
+async function riwayatPelanggaran(santriId) {
+  await getSantriRow(santriId);
+  const rows = await queryAll('SELECT * FROM "Pelanggaran" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
+  return { rows, totalPoin: rows.reduce((total, row) => total + Number(row.poin), 0) };
 }
 
-const hapusPelanggaran = db.transaction((id) => {
-  const row = db.prepare("SELECT * FROM Pelanggaran WHERE id = ?").get(id);
-  if (!row) throw new CashlessError(404, "Data pelanggaran tidak ditemukan.");
-  db.prepare("DELETE FROM Pelanggaran WHERE id = ?").run(id);
-  return row;
-});
+const semuaPelanggaran = () => queryAll('SELECT * FROM "Pelanggaran" ORDER BY "createdAt" DESC');
 
-// ---- Profil ringkas untuk panel Pengasuhan (Master Data Santri) ----
-function profilPengasuhan(santriId) {
-  const santri = getSantriRow(santriId);
-  const { rekap } = riwayatAbsensi(santriId);
-  const { totalPoin } = riwayatPelanggaran(santriId);
-  const perizinanAktif = db.prepare("SELECT * FROM Perizinan WHERE santriId = ? AND status IN ('Menunggu','Disetujui') ORDER BY createdAt DESC").all(santriId);
+async function hapusPelanggaran(id) {
+  return withTransaction(async () => {
+    const row = await queryOne('SELECT * FROM "Pelanggaran" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row) throw new CashlessError(404, "Data pelanggaran tidak ditemukan.");
+    await query('DELETE FROM "Pelanggaran" WHERE "id" = $1', [id]);
+    return row;
+  });
+}
+
+async function profilPengasuhan(santriId) {
+  const santri = await getSantriRow(santriId);
+  const { rekap } = await riwayatAbsensi(santriId);
+  const { totalPoin } = await riwayatPelanggaran(santriId);
+  const perizinanAktif = await queryAll('SELECT * FROM "Perizinan" WHERE "santriId" = $1 AND "status" IN (\'Menunggu\', \'Disetujui\') ORDER BY "createdAt" DESC', [santriId]);
   return { santri: { id: santri.id, nama: santri.nama, kelas: santri.kelas, nis: santri.nis, nisn: santri.nisn }, rekapAbsensi: rekap, totalPoinPelanggaran: totalPoin, perizinanAktif };
 }
 
