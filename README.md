@@ -7,6 +7,17 @@ Sesuai rekomendasi roadmap sebelumnya (`roadmap-super-app-mma.md`): **satu backe
 ## Database PostgreSQL
 Backend memakai PostgreSQL melalui paket `pg`. Isi `DATABASE_URL` dengan connection string PostgreSQL; koneksi ke host selain localhost memakai SSL. Skema idempoten ada di `src/schema.pg.sql`, dan nama kolom camelCase dipertahankan menggunakan identifier SQL bertanda kutip.
 
+### Keamanan Top Up Saldo
+Skema Top Up yang baru diterapkan otomatis saat backend mulai; seluruh perubahan memakai `IF NOT EXISTS` dan aman dijalankan ulang. Startup juga mengisi hash bukti lama yang valid dan belum memiliki hash. Pengaturan disimpan pada key `topup` di tabel `Pengaturan`; default menjaga perilaku aplikasi lama (`wajibReferensiMutasi=false`, `buktiDiDaftar=true`, dan `persetujuanKeduaAktif=false`), sementara batas nominal Rp 10.000–Rp 5.000.000 dan maksimum 3 permintaan menunggu langsung berlaku.
+
+Staf BMT/Admin dapat membaca dan mengubah pengaturan melalui `GET/PUT /api/permintaan/pengaturan`; hanya kunci yang dikenal yang diterima. Mengaktifkan `wajibReferensiMutasi` atau `persetujuanKeduaAktif` mengubah persyaratan proses persetujuan. Untuk transisi UI, biarkan `buktiDiDaftar=true` sampai frontend mengambil foto dari `GET /api/permintaan/:id/bukti`; setelah itu pengaturan dapat diubah ke `false`, dan endpoint daftar hanya menyertakan `adaBukti`.
+
+Audit tersedia pada `GET /api/permintaan/audit` dengan filter `aksi`, `dari`, `sampai`, `page`, dan `limit`. Laporan rekonsiliasi tersedia pada `GET /api/permintaan/laporan/topup-harian?tanggalISO=YYYY-MM-DD`. Persetujuan lama tetap dapat mengirim hanya `{ disetujui: true }` selama referensi tidak diwajibkan; field `nominalDisetujui` bersifat opsional dan default-nya `nilaiDiminta`. Penolakan Top Up wajib mengisi `catatan`.
+
+Migrasi produksi dilakukan otomatis setelah deploy melalui `src/schema.pg.sql` dan `initializeDatabase()`. Sebelum deploy, ambil backup PostgreSQL. Pastikan akun database aplikasi berhak membuat/alter tabel dan indeks. Hash bukti lama yang format/tipe/ukurannya tidak valid dilewati; bukti ganda lama hanya memberi hash pada permintaan aktif paling awal agar indeks unik dapat dibuat tanpa menghapus atau mengubah permintaan historis.
+
+Tes unit foto dapat dijalankan dengan `npm test`. Tes integrasi menyentuh database dan membersihkan fixture setelah selesai; jalankan `npm run test:integration` hanya dengan `TOPUP_TEST_DATABASE_URL` yang menunjuk ke database test/staging terisolasi, bukan database produksi.
+
 ## Struktur
 ```
 backend/

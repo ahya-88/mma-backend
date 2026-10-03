@@ -8,6 +8,8 @@
     "start": "node src/app.js",
     "dev": "node src/app.js",
     "seed": "node src/seed.js",
+    "test": "node --test test/topupEvidence.test.js",
+    "test:integration": "node test/topup.integration.js",
     "migrate:sqlite": "node scripts/pindah-data.js"
   },
   "dependencies": {

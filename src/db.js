@@ -3,6 +3,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { AsyncLocalStorage } = require("async_hooks");
 const { Pool, types } = require("pg");
+const { decodeBuktiTransfer } = require("./topupEvidence");
 
 types.setTypeParser(20, (value) => Number(value));
 
@@ -50,12 +51,26 @@ const TAMPILAN_DEFAULT = {
   warnaTeks: "#17242E", warnaTeksMuted: "#5B7C93", warnaBorder: "#CFE3F0",
   warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora",
 };
+const PENGATURAN_TOPUP_DEFAULT = {
+  wajibReferensiMutasi: false,
+  buktiDiDaftar: true,
+  persetujuanKeduaAktif: false,
+  maxPermintaanMenunggu: 3,
+  nominalMinimum: 10000,
+  nominalMaksimum: 5000000,
+  batasPersetujuanTunggal: 1000000,
+  nomorRekening: "",
+};
 
 async function initializeDatabase() {
   const schema = fs.readFileSync(path.join(__dirname, "schema.pg.sql"), "utf8");
   await pool.query(schema);
 
   await withTransaction(async (client) => {
+    await client.query(
+      'INSERT INTO "Pengaturan" ("kunci", "nilai") VALUES ($1, $2) ON CONFLICT ("kunci") DO NOTHING',
+      ["topup", JSON.stringify(PENGATURAN_TOPUP_DEFAULT)],
+    );
     const unitCount = await client.query('SELECT COUNT(*) AS "n" FROM "UnitUsaha"');
     if (Number(unitCount.rows[0].n) === 0) {
       for (const nama of ["Kantin", "Kopel", "Dapur", "BMT"]) {
@@ -93,6 +108,40 @@ async function initializeDatabase() {
         )
     `, [FACE_MODEL]);
   });
+
+  await backfillBuktiHash();
 }
 
-module.exports = { pool, query, queryOne, queryAll, withTransaction, initializeDatabase, FACE_MODEL, TAMPILAN_DEFAULT };
+async function backfillBuktiHash() {
+  await withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('mma-backfill-topup-proof-hash'))");
+    const rows = await client.query(`
+    SELECT "id", "buktiTransfer" FROM "PermintaanBMT"
+    WHERE "jenis" = 'Top Up Saldo' AND "status" <> 'Ditolak'
+      AND "buktiHash" IS NULL AND "buktiTransfer" IS NOT NULL
+    ORDER BY "createdAt", "id"
+    `);
+    for (const row of rows.rows) {
+      try {
+        const { hash } = await decodeBuktiTransfer(row.buktiTransfer);
+        await client.query(`
+          UPDATE "PermintaanBMT" p SET "buktiHash" = $1
+          WHERE p."id" = $2 AND p."buktiHash" IS NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM "PermintaanBMT" existing
+              WHERE existing."buktiHash" = $1 AND existing."id" <> p."id"
+                AND existing."jenis" = 'Top Up Saldo' AND existing."status" <> 'Ditolak'
+            )
+        `, [hash, row.id]);
+      } catch (error) {
+        if (error instanceof Error && /bukti transfer|Format bukti/i.test(error.message)) continue;
+        throw error;
+      }
+    }
+  });
+}
+
+module.exports = {
+  pool, query, queryOne, queryAll, withTransaction, initializeDatabase,
+  FACE_MODEL, TAMPILAN_DEFAULT, PENGATURAN_TOPUP_DEFAULT,
+};

@@ -142,6 +142,30 @@ CREATE TABLE IF NOT EXISTS "PermintaanBMT" (
   "catatanBMT" TEXT,
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
+ALTER TABLE "PermintaanBMT" ADD COLUMN IF NOT EXISTS "buktiHash" TEXT;
+ALTER TABLE "PermintaanBMT" ADD COLUMN IF NOT EXISTS "nominalDisetujui" BIGINT;
+ALTER TABLE "PermintaanBMT" ADD COLUMN IF NOT EXISTS "referensiMutasi" TEXT;
+ALTER TABLE "PermintaanBMT" ADD COLUMN IF NOT EXISTS "diprosesPada" TEXT;
+ALTER TABLE "PermintaanBMT" ADD COLUMN IF NOT EXISTS "perluPersetujuanKedua" BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE "PermintaanBMT" ADD COLUMN IF NOT EXISTS "diprosesPertamaOleh" TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_permintaan_bukti_hash_unique
+  ON "PermintaanBMT" ("buktiHash")
+  WHERE "jenis" = 'Top Up Saldo' AND "status" <> 'Ditolak' AND "buktiHash" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_permintaan_santri_wali_status
+  ON "PermintaanBMT" ("santriId", "waliId", "status");
+
+CREATE TABLE IF NOT EXISTS "AuditLog" (
+  "id" TEXT PRIMARY KEY,
+  "waktu" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "aktorId" TEXT,
+  "aktorRole" TEXT NOT NULL,
+  "aksi" TEXT NOT NULL,
+  "targetTipe" TEXT NOT NULL,
+  "targetId" TEXT,
+  "detail" JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+CREATE INDEX IF NOT EXISTS idx_audit_waktu ON "AuditLog" ("waktu");
+CREATE INDEX IF NOT EXISTS idx_audit_aksi_waktu ON "AuditLog" ("aksi", "waktu");
 
 CREATE TABLE IF NOT EXISTS "Absensi" (
   "id" TEXT PRIMARY KEY,

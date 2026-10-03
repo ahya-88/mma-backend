@@ -24,9 +24,13 @@ const { CashlessError } = require("./cashlessService");
 const app = express();
 app.use(cors());
 app.use(compression());
-// Limit dinaikkan dari default 100kb: field foto base64 (biodata Santri, dan sekarang bukti
-// transfer top up saldo di PermintaanBMT) butuh ruang lebih besar dari itu.
-app.use(express.json({ limit: "8mb" }));
+// Keep the existing larger limit for other modules; Top Up only needs enough room for a
+// 1.5 MB image encoded as base64 plus its JSON envelope.
+const standardJsonParser = express.json({ limit: "8mb" });
+const topUpJsonParser = express.json({ limit: "2.1mb" });
+app.use((req, res, next) => (
+  req.path.startsWith("/api/permintaan") ? topUpJsonParser : standardJsonParser
+)(req, res, next));
 
 app.get("/api/health", asyncHandler(async (req, res) => {
   try {
@@ -66,6 +70,9 @@ app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(publicDir, "index
 // error lain dianggap kesalahan server.
 app.use((err, req, res, next) => {
   if (err instanceof CashlessError) return res.status(err.status).json({ error: err.message, ...err.details });
+  if (req.path.startsWith("/api/permintaan") && err.type === "entity.too.large") {
+    return res.status(400).json({ error: "Ukuran bukti transfer maksimal 1,5 MB setelah decode." });
+  }
   console.error(err);
   res.status(500).json({ error: "Terjadi kesalahan pada server." });
 });
