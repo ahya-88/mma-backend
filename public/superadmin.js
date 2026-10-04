@@ -12,7 +12,7 @@
 
   const navGroups = [
     { title: "Ringkasan", links: [["dashboard", "Dashboard", "⌂"]] },
-    { title: "Data Pesantren", links: [["santri", "Data santri", "♙"], ["wali", "Akun wali", "♧"], ["guru", "Akun staf", "♟"]] },
+    { title: "Data Pesantren", links: [["santri", "Data santri", "♙"], ["wali", "Akun wali", "♧"], ["kelengkapan", "Kelengkapan data", "▧"], ["guru", "Akun staf", "♟"]] },
     { title: "Pengasuhan", links: [["absensi", "Absensi", "◷"], ["perizinan", "Perizinan", "↗"], ["pelanggaran", "Pelanggaran", "⚑"]] },
     { title: "Pendidikan", links: [["nilai", "Nilai", "▤"], ["prestasi", "Prestasi", "✦"], ["hafalan", "Hafalan", "⌁"], ["ubudiyah", "Ubudiyah", "◉"]] },
     { title: "Keuangan & Cashless", links: [["tagihan", "Tagihan", "＄"], ["cashflow", "Arus kas", "↕"], ["anggaran", "Anggaran", "▧"], ["permintaan", "Permintaan BMT", "◌"], ["transaksi", "Audit saldo", "⇄"]] },
@@ -88,8 +88,14 @@
   }
 
   function renderNavigation() {
+    const isSekretary = user?.departemen === "sekretariat";
+    const sekretariatKeys = new Set(["dashboard", "santri", "wali", "kelengkapan"]);
+
     navigation.innerHTML = navGroups.map((group) => {
-      const links = superAdminAccess ? group.links : group.links.filter(([key]) => adminNavigation.has(key));
+      const links = superAdminAccess
+        ? group.links
+        : group.links.filter(([key]) => sekretariatKeys.has(key) || (isSekretary ? false : adminNavigation.has(key)));
+
       if (!links.length) return "";
       return `
       <div class="nav-group">
@@ -136,12 +142,14 @@
     const config = tablePages[key];
     if (config.auditSaldo) return renderAuditSaldo(config);
     setTitle(config.title);
-    const actions = config.actions === "santri" || superAdminAccess ? config.actions : undefined;
-    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Pemantauan lintas modul</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "santri" ? '<a id="download-template-button" class="button" href="/api/admin/impor/template" download="Template_Impor_Santri_MMA.csv">📄 Unduh Template</a><button id="import-excel-button" class="button primary" type="button">📥 Impor Excel</button><input type="file" id="excel-file-input" accept=".csv,.xlsx,.xls,.txt" hidden>' : ""}${key === "guru" && superAdminAccess ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah akun</button>' : ""}${key === "unit" ? '<button id="add-unit-button" class="button primary" type="button">+ Tambah unit</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
+    const isSekretary = user?.departemen === "sekretariat";
+    const actions = config.actions === "santri" || superAdminAccess || isSekretary ? config.actions : undefined;
+    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">${isSekretary && !superAdminAccess ? "Sekretariat & Master Data" : "Pemantauan lintas modul"}</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "santri" ? '<button id="download-template-button" class="button" type="button">📄 Unduh Template</button><button id="import-excel-button" class="button primary" type="button">📥 Impor Excel</button><input type="file" id="excel-file-input" accept=".csv,.xlsx,.xls,.txt" hidden>' : ""}${key === "guru" && superAdminAccess ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah akun</button>' : ""}${key === "unit" ? '<button id="add-unit-button" class="button primary" type="button">+ Tambah unit</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
 
     content.querySelector("#refresh-button")?.addEventListener("click", () => renderTable(key));
     content.querySelector("#add-staff-button")?.addEventListener("click", createStaff);
     content.querySelector("#add-unit-button")?.addEventListener("click", createUnit);
+    content.querySelector("#download-template-button")?.addEventListener("click", downloadTemplateFile);
     content.querySelector("#import-excel-button")?.addEventListener("click", handleImportExcel);
 
     try {
@@ -166,6 +174,38 @@
       const state = content.querySelector("#table-state");
       if (state) state.outerHTML = `<div class="panel-card empty-state">${escapeHtml(error.message)}</div>`;
     }
+  }
+
+  function downloadTemplateFile() {
+    showNotice("Menyiapkan berkas template impor CSV...");
+    fetch("/api/admin/impor/template", {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Gagal mengambil template dari server.");
+        return res.blob();
+      })
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Template_Impor_Santri_MMA.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        showNotice("Template impor CSV berhasil diunduh.");
+      })
+      .catch(() => {
+        const a = document.createElement("a");
+        a.href = "/api/public/template-impor";
+        a.download = "Template_Impor_Santri_MMA.csv";
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showNotice("Mengunduh berkas template via saluran publik...");
+      });
   }
 
   function handleImportExcel() {
@@ -767,11 +807,17 @@
   }
 
   function navigate(key) {
-    if (!superAdminAccess && !adminNavigation.has(key)) key = "dashboard";
+    const isSekretary = user?.departemen === "sekretariat";
+    const sekretariatKeys = new Set(["dashboard", "santri", "wali", "kelengkapan"]);
+    if (!superAdminAccess && !isSekretary && !adminNavigation.has(key)) key = "dashboard";
+    if (isSekretary && !superAdminAccess && !sekretariatKeys.has(key)) key = "dashboard";
+
     selectedKey = key;
     renderNavigation();
     setSidebarOpen(false);
     if (location.hash !== `#${key}`) history.replaceState(null, "", `#${key}`);
+
+    if (key === "kelengkapan") return renderKelengkapanData();
     if (tablePages[key]) return renderTable(key);
     if (key === "dashboard") return loadDashboard();
     if (key === "tahun" || key === "tampilan") return renderSettings(key);
@@ -779,6 +825,51 @@
     if (key === "health") return renderHealth();
     if (key === "wajah") return renderFaces();
     return loadDashboard();
+  }
+
+  async function renderKelengkapanData() {
+    setTitle("Kelengkapan Data Santri");
+    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Sekretariat &amp; Master Data</p><h1>Kelengkapan Data Santri</h1><p>Pemantauan status wali, akun aktif, foto biometrik, dan NISN per kelas.</p></div><button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div><div id="table-state" class="loading-state">Mengambil statistik kelengkapan data...</div>`;
+
+    content.querySelector("#refresh-button")?.addEventListener("click", renderKelengkapanData);
+
+    try {
+      const data = await api("/api/admin/kelengkapan-data");
+      const perKelasHtml = data.perKelas.map((row) => `
+        <tr>
+          <td><strong>${escapeHtml(row.kelas)}</strong></td>
+          <td>${number.format(row.total)} santri</td>
+          <td>${number.format(row.adaWali)} (${row.persenWali}%)</td>
+          <td>${number.format(row.waliAktif)} (${row.persenWaliAktif}%)</td>
+          <td>${number.format(row.adaFoto)} (${row.persenFoto}%)</td>
+          <td>${number.format(row.dataLengkap)} (${row.persenDataLengkap}%)</td>
+        </tr>
+      `).join("") || '<tr><td colspan="6" class="empty-state">Belum ada data santri terdaftar.</td></tr>';
+
+      content.querySelector("#table-state").outerHTML = `
+        <div class="metric-grid">
+          ${metric("Total santri", number.format(data.totalSantri), "Data santri terdaftar", "santri")}
+          ${metric("Total wali", number.format(data.totalWali), "Akun wali terhubung", "wali")}
+          ${metric("Data belum lengkap", number.format(data.totalSantriBelumLengkap), "Belum ada wali / foto / NISN", "")}
+          ${metric("Wali belum aktif", number.format(data.totalWaliBelumAktivasi), "Belum ganti sandi awal", "")}
+        </div>
+        <div class="panel-card" style="margin-bottom: 20px;">
+          <div class="panel-title"><h2>Statistik Kelengkapan Data per Kelas</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Kelas</th><th>Jumlah Santri</th><th>Punya Wali</th><th>Wali Aktif</th><th>Punya Foto</th><th>Data Lengkap</th></tr>
+              </thead>
+              <tbody>${perKelasHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      showNotice(error.message, true);
+      const state = content.querySelector("#table-state");
+      if (state) state.outerHTML = `<div class="panel-card empty-state">${escapeHtml(error.message)}</div>`;
+    }
   }
 
   function setSidebarOpen(isOpen) {
@@ -794,28 +885,45 @@
   async function startApp() {
     try {
       const profile = await api("/api/admin/akses");
-      if (!["admin", "superadmin"].includes(profile.jenisAkun)) throw new Error("Akun ini tidak memiliki akses ke dashboard Superadmin.");
-      superAdminAccess = true; // Admin sudah dilebur ke Superadmin: semua yang berhak masuk mendapat akses penuh.
+      const isSekretary = profile?.departemen === "sekretariat";
+      const isSuper = ["admin", "superadmin"].includes(profile?.jenisAkun) || profile?.departemen === "admin";
+
+      if (!isSuper && !isSekretary) {
+        throw new Error("Akun ini tidak memiliki akses ke dashboard pengelolaan.");
+      }
+
+      superAdminAccess = isSuper;
+      user = profile;
+      sessionStorage.setItem(USER_KEY, JSON.stringify(profile));
+
       const expectedPath = superAdminAccess ? "/superadmin" : "/admin";
-      if (location.pathname !== expectedPath) {
+      if (location.pathname !== "/superadmin" && location.pathname !== "/admin") {
         window.location.replace(expectedPath);
         return;
       }
-      const years = await api("/api/admin/tahun-ajaran");
-      user = profile;
-      sessionStorage.setItem(USER_KEY, JSON.stringify(profile));
+
+      const years = await api("/api/admin/tahun-ajaran").catch(() => []);
       appShell.hidden = false;
-      document.getElementById("user-name").textContent = profile?.nama || "Admin";
+      document.getElementById("user-name").textContent = profile?.nama || "Pengguna";
+
       const brand = document.querySelector(".brand");
       brand.href = superAdminAccess ? "/superadmin" : "/admin";
-      brand.setAttribute("aria-label", superAdminAccess ? "Dashboard Superadmin" : "Dashboard Admin");
-      brand.querySelector("strong").textContent = superAdminAccess ? "MA Superadmin" : "MA Admin";
-      brand.querySelector("small").textContent = superAdminAccess ? "SUPERADMIN" : "ADMIN";
-      document.querySelector(".sidebar-footer").lastChild.textContent = superAdminAccess ? " Sistem operasional" : " Dashboard operasional · baca";
-      const active = years.find((year) => year.aktif);
-      document.getElementById("academic-year").textContent = active ? `Tahun ajaran ${active.tahunMulai}/${Number(active.tahunMulai) + 1}` : "Tahun ajaran belum aktif";
+      brand.setAttribute("aria-label", superAdminAccess ? "Dashboard Superadmin" : "Dashboard Sekretariat");
+      brand.querySelector("strong").textContent = superAdminAccess ? "MA Superadmin" : "MA Sekretariat";
+      brand.querySelector("small").textContent = superAdminAccess ? "SUPERADMIN" : "SEKRETARIAT";
+      document.querySelector(".sidebar-footer").lastChild.textContent = superAdminAccess ? " Sistem operasional" : " Panel Sekretariat";
+
+      const active = Array.isArray(years) ? years.find((year) => year.aktif) : null;
+      document.getElementById("academic-year").textContent = active ? `Tahun ajaran ${active.tahunMulai}/${Number(active.tahunMulai) + 1}` : "Tahun ajaran aktif";
+
+      renderNavigation();
+
       const requested = location.hash.slice(1);
-      const allowedKeys = navGroups.flatMap((group) => group.links.map(([key]) => key)).filter((key) => superAdminAccess || adminNavigation.has(key));
+      const sekretariatKeys = new Set(["dashboard", "santri", "wali", "kelengkapan"]);
+      const allowedKeys = superAdminAccess
+        ? navGroups.flatMap((group) => group.links.map(([key]) => key))
+        : navGroups.flatMap((group) => group.links.map(([key]) => key)).filter((key) => sekretariatKeys.has(key));
+
       navigate(allowedKeys.includes(requested) ? requested : "dashboard");
     } catch (error) {
       if (token) showNotice(error.message, true);
