@@ -347,16 +347,18 @@
 
   async function renderUnitKeuanganPage(config) {
     setTitle(config.title);
-    content.innerHTML = `<div id="superadmin-unit-keuangan-host"></div>`;
+    content.innerHTML = `<div id="superadmin-unit-keuangan-host" style="min-height: 500px;"></div>`;
     const host = content.querySelector("#superadmin-unit-keuangan-host");
-    if (window.renderUnitKeuanganWorkspace) {
-      window.renderUnitKeuanganWorkspace(host);
-    } else {
-      host.innerHTML = `<div class="loading-state">Memuat antarmuka keuangan unit usaha...</div>`;
-      setTimeout(() => {
-        if (window.renderUnitKeuanganWorkspace) window.renderUnitKeuanganWorkspace(host);
-      }, 500);
-    }
+    const tryRender = (attempts = 0) => {
+      if (window.renderUnitKeuanganWorkspace) {
+        window.renderUnitKeuanganWorkspace(host);
+      } else if (attempts < 20) {
+        setTimeout(() => tryRender(attempts + 1), 100);
+      } else {
+        host.innerHTML = `<div class="panel-card empty-state">Gagal memuat antarmuka keuangan unit usaha. Silakan muat ulang halaman.</div>`;
+      }
+    };
+    tryRender();
   }
 
   function actionButtons(type, row) {
