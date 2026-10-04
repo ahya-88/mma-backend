@@ -33,16 +33,31 @@ if (!Number.isSafeInteger(trustProxyHops) || trustProxyHops < 0 || trustProxyHop
   throw new Error("TRUST_PROXY_HOPS harus berupa bilangan bulat antara 0 dan 5.");
 }
 app.set("trust proxy", trustProxyHops);
+const defaultOrigins = [
+  "http://localhost",
+  "https://localhost",
+  "capacitor://localhost",
+  "ionic://localhost",
+  "http://127.0.0.1",
+  "https://mma.up.railway.app",
+];
 const corsOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const allowedOrigins = [...new Set([...defaultOrigins, ...corsOrigins])];
+
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || corsOrigins.includes(origin)) return callback(null, true);
-    return callback(null, false);
+    if (!origin || allowedOrigins.includes(origin) || /localhost|capacitor|railway\.app|ionic/i.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true);
   },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Idempotency-Key"],
 }));
 app.use(compression());
 app.use("/api", rateLimit({
