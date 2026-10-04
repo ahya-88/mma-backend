@@ -61,6 +61,13 @@ require.cache[dbModulePath] = {
 
 const impor = require("../src/imporService");
 
+test("FASE 2: Pembuatan Berkas Template CSV Impor Santri", () => {
+  const csv = impor.buatTemplateImporCSV();
+  assert.ok(csv.includes("nama,nis,nisn,kelas,jenisKelamin"), "Header memuat kolom dasar santri");
+  assert.ok(csv.includes("namaWali,hpWali"), "Header memuat kolom wali santri");
+  assert.ok(csv.includes("Ahmad Ridwan"), "Memuat contoh baris data santri 1");
+});
+
 test("FASE 2: Dry-run Impor Excel memvalidasi baris kosong dan duplikat NIS/NISN", async () => {
   await assert.rejects(async () => {
     await impor.prosesDryRunImpor([]);
@@ -111,7 +118,6 @@ test("FASE 2: Rekonsiliasi Saldo Awal Menolak Selisih Nominal", async () => {
     { nis: "2001", nominal: 100000 },
     { nis: "9901", nominal: 150000 },
   ];
-  // Total input = 250.000, target kas = 200.000 (Selisih 50.000 -> Harus Ditolak)
   await assert.rejects(async () => {
     await impor.rekonsiliasiSaldoDanTagihan({
       batchId: "batch-1",

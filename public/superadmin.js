@@ -137,11 +137,12 @@
     if (config.auditSaldo) return renderAuditSaldo(config);
     setTitle(config.title);
     const actions = config.actions === "santri" || superAdminAccess ? config.actions : undefined;
-    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Pemantauan lintas modul</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "guru" && superAdminAccess ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah akun</button>' : ""}${key === "unit" ? '<button id="add-unit-button" class="button primary" type="button">+ Tambah unit</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
+    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Pemantauan lintas modul</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "santri" ? '<a id="download-template-button" class="button" href="/api/admin/impor/template" download="Template_Impor_Santri_MMA.csv">📄 Unduh Template</a><button id="import-excel-button" class="button primary" type="button">📥 Impor Excel</button><input type="file" id="excel-file-input" accept=".csv,.xlsx,.xls,.txt" hidden>' : ""}${key === "guru" && superAdminAccess ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah akun</button>' : ""}${key === "unit" ? '<button id="add-unit-button" class="button primary" type="button">+ Tambah unit</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
 
     content.querySelector("#refresh-button")?.addEventListener("click", () => renderTable(key));
     content.querySelector("#add-staff-button")?.addEventListener("click", createStaff);
     content.querySelector("#add-unit-button")?.addEventListener("click", createUnit);
+    content.querySelector("#import-excel-button")?.addEventListener("click", handleImportExcel);
 
     try {
       const records = getRecords(await api(config.url));
@@ -165,6 +166,115 @@
       const state = content.querySelector("#table-state");
       if (state) state.outerHTML = `<div class="panel-card empty-state">${escapeHtml(error.message)}</div>`;
     }
+  }
+
+  function handleImportExcel() {
+    const fileInput = content.querySelector("#excel-file-input");
+    if (!fileInput) return;
+
+    fileInput.onchange = async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target?.result || "";
+        const rows = parseCSV(text);
+
+        if (!rows.length) {
+          showNotice("Gagal membaca file impor. Pastikan berkas memiliki baris data.", true);
+          return;
+        }
+
+        try {
+          showNotice("Memeriksa validitas data impor (dry-run)...");
+          const dryRun = await api("/api/admin/impor/dry-run", {
+            method: "POST",
+            body: JSON.stringify({ rows }),
+          });
+
+          if (!dryRun.valid) {
+            const errorList = dryRun.detailGagal.map((d) => `Baris ${d.baris} (${d.nama}): ${d.alasan}`).join("\n");
+            alert(`⚠️ Validasi Impor Gagal (${dryRun.jumlahGagal} baris bermasalah):\n\n${errorList}`);
+            showNotice(`Impor dibatalkan: ${dryRun.jumlahGagal} baris tidak valid.`, true);
+            return;
+          }
+
+          const confirmMsg = `📊 Laporan Pra-Impor:\n- Total Baris: ${dryRun.totalBaris}\n- Santri Baru: ${dryRun.jumlahBaru}\n- Update Santri Lama: ${dryRun.jumlahUpdate}\n\nLanjutkan eksekusi impor data santri & pembuatan akun wali otomatis?`;
+          if (!window.confirm(confirmMsg)) {
+            showNotice("Impor dibatalkan oleh pengguna.");
+            return;
+          }
+
+          const namaBatch = window.prompt("Nama Batch Impor (misal: Kelas 7A Angkatan 2026):", `Impor Kelas ${rows[0]?.kelas || "Baru"} ${new Date().toLocaleDateString("id-ID")}`);
+          if (namaBatch === null) return;
+
+          showNotice("Mengimpor data santri dan memproses akun wali...");
+          const res = await api("/api/admin/impor/eksekusi", {
+            method: "POST",
+            body: JSON.stringify({ namaBatch: namaBatch || "Impor Santri", rows }),
+          });
+
+          showNotice(`✅ Berhasil mengimpor ${res.totalSantri} santri dan memproses ${res.totalWaliBaru} akun wali baru!`);
+          await renderTable("santri");
+        } catch (err) {
+          showNotice(err.message, true);
+        } finally {
+          fileInput.value = "";
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+    };
+
+    fileInput.click();
+  }
+
+  function parseCSV(text) {
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 2) return [];
+
+    const parseLine = (line) => {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if ((char === ',' || char === ';') && !inQuotes) {
+          result.push(current.trim().replace(/^"|"$/g, ''));
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim().replace(/^"|"$/g, ''));
+      return result;
+    };
+
+    const headers = parseLine(lines[0]).map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const rows = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseLine(lines[i]);
+      if (!values.some((v) => v !== "")) continue;
+      const rowObj = {};
+      headers.forEach((h, idx) => {
+        let key = h;
+        if (["namasantri", "nama_santri", "namalengkap", "nama"].includes(h)) key = "nama";
+        else if (["nis", "noinduk", "nomorinduk"].includes(h)) key = "nis";
+        else if (["nisn", "nomorinduknasional"].includes(h)) key = "nisn";
+        else if (["kelas", "rombonganbelajar"].includes(h)) key = "kelas";
+        else if (["jeniskelamin", "jk", "gender"].includes(h)) key = "jenisKelamin";
+        else if (["namawali", "nama_wali", "namaayah", "namaibu"].includes(h)) key = "namaWali";
+        else if (["hpwali", "hp_wali", "nohp", "nodarurat", "handphone"].includes(h)) key = "hpWali";
+        else if (["tanggallahir", "tanggal_lahir"].includes(h)) key = "tanggalLahir";
+        else if (["tempatlahir", "tempat_lahir"].includes(h)) key = "tempatLahir";
+        rowObj[key] = values[idx] || "";
+      });
+      rows.push(rowObj);
+    }
+    return rows;
   }
 
   async function renderAuditSaldo(config) {

@@ -26,6 +26,27 @@ function validTanggal(isoStr) {
   return /^\d{4}-\d{2}-\d{2}$/.test(isoStr.trim());
 }
 
+function buatTemplateImporCSV() {
+  const headers = [
+    "nama", "nis", "nisn", "kelas", "jenisKelamin",
+    "tempatLahir", "tanggalLahir", "alamat", "asrama",
+    "namaWali", "hpWali"
+  ];
+  const contohBaris1 = [
+    "Ahmad Ridwan", "1001", "0012345678", "7A", "L",
+    "Jakarta", "2012-05-15", "Jl. Pondok No. 1", "Asrama Sunan Giri",
+    "Bpk. Ridwan", "081234567890"
+  ];
+  const contohBaris2 = [
+    "Siti Fatimah", "1002", "0087654321", "7B", "P",
+    "Surabaya", "2012-08-20", "Jl. Pesantren No. 5", "Asrama Khadijah",
+    "Ibu Fatimah", "081987654321"
+  ];
+
+  const toCSVRow = (arr) => arr.map((item) => `"${String(item).replace(/"/g, '""')}"`).join(",");
+  return [headers.join(","), toCSVRow(contohBaris1), toCSVRow(contohBaris2)].join("\r\n");
+}
+
 async function prosesDryRunImpor(rows) {
   if (!Array.isArray(rows) || !rows.length) {
     throw new CashlessError(400, "Data impor kosong. Sediakan minimal satu baris data.");
@@ -83,7 +104,6 @@ async function prosesDryRunImpor(rows) {
     }
   }
 
-  // Cek duplikat terhadap database yang sudah ada
   const existingNis = await queryAll('SELECT "nis" FROM "Santri" WHERE "nis" IS NOT NULL AND "nis" != \'\'');
   const existingNisSet = new Set(existingNis.map((r) => r.nis));
   const existingNisn = await queryAll('SELECT "nisn" FROM "Santri" WHERE "nisn" IS NOT NULL AND "nisn" != \'\'');
@@ -139,7 +159,6 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
       const namaWali = (baris.namaWali || baris.namaAyah || baris.namaIbu || "").trim();
       const hpWali = (baris.hpWali || baris.noDarurat || "").trim() || null;
 
-      // 1. Provision / Link Wali secara idempotent
       let waliId = null;
       if (namaWali) {
         let existingWali = await queryOne('SELECT * FROM "Wali" WHERE "nama" = $1 AND ("hp" = $2 OR "hp" IS NULL)', [namaWali, hpWali]);
@@ -167,7 +186,6 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
         }
       }
 
-      // 2. Upsert Santri berdasarkan NIS
       const existingSantri = await queryOne('SELECT * FROM "Santri" WHERE "nis" = $1 OR ("nisn" IS NOT NULL AND "nisn" = $2)', [nis, nisn]);
       const santriId = existingSantri ? existingSantri.id : uid();
 
@@ -224,7 +242,6 @@ async function rollbackBatchImpor(batchId, aktorId) {
     const batch = await queryOne('SELECT * FROM "BatchImpor" WHERE "id" = $1 FOR UPDATE', [batchId]);
     if (!batch) throw new CashlessError(404, "Batch impor tidak ditemukan.");
 
-    // Cek apakah ada santri yang memiliki transaksi cashless
     const adaTransaksi = await queryOne(
       'SELECT COUNT(*) AS "n" FROM "TransaksiCashless" t JOIN "Santri" s ON t."santriId" = s."id" WHERE s."importBatchId" = $1',
       [batchId],
@@ -426,7 +443,6 @@ async function bersihkanDataDemo({ konfirmasi, aktorId }) {
   }
 
   return withTransaction(async () => {
-    // Hapus santri demo (tanpa NIS resmi) dan data terkaitnya
     const santriDemo = await queryAll('SELECT "id" FROM "Santri" WHERE "nis" IS NULL OR "nis" = \'\' OR "nis" LIKE \'DEMO%\'');
     const ids = santriDemo.map((s) => s.id);
 
@@ -451,6 +467,7 @@ async function bersihkanDataDemo({ konfirmasi, aktorId }) {
 }
 
 module.exports = {
+  buatTemplateImporCSV,
   prosesDryRunImpor,
   eksekusiImporBatch,
   rollbackBatchImpor,

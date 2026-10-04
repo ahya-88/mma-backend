@@ -56,6 +56,13 @@ router.get("/audit", requireAuth, requireAdmin, asyncHandler(async (req, res) =>
 }));
 
 // ---- FASE 2: Endpoint Impor Bertahap, Provisioning Akun, & Kelengkapan Data ----
+router.get("/impor/template", requireAuth, asyncHandler(async (req, res) => {
+  const csvContent = impor.buatTemplateImporCSV();
+  res.set("Content-Type", "text/csv; charset=utf-8");
+  res.set("Content-Disposition", 'attachment; filename="Template_Impor_Santri_MMA.csv"');
+  res.send(csvContent);
+}));
+
 router.post("/impor/dry-run", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
   const rows = req.body?.rows || [];
   res.json(await impor.prosesDryRunImpor(rows));
