@@ -243,12 +243,27 @@ CREATE TABLE IF NOT EXISTS Cashflow (
   tanggalISO  TEXT NOT NULL,
   jenis       TEXT NOT NULL, -- Masuk | Keluar
   kategori    TEXT NOT NULL,
+  unit        TEXT,
   jumlah      INTEGER NOT NULL,
   keterangan  TEXT,
   dicatatOleh TEXT,
   createdAt   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_cashflow_bulan ON Cashflow (bulan);
+CREATE INDEX IF NOT EXISTS idx_cashflow_unit ON Cashflow (unit);
+
+CREATE TABLE IF NOT EXISTS TransaksiUnitUsaha (
+  id          TEXT PRIMARY KEY,
+  jenis       TEXT NOT NULL, -- Dana Masuk | Dana Keluar | Transfer Antar Bagian
+  unitAsal    TEXT,
+  unitTujuan  TEXT,
+  jumlah      INTEGER NOT NULL,
+  keterangan  TEXT,
+  dicatatOleh TEXT,
+  tanggalISO  TEXT NOT NULL,
+  bulan       TEXT NOT NULL,
+  createdAt   TEXT NOT NULL DEFAULT (datetime('now'))
+);
 
 CREATE TABLE IF NOT EXISTS PengajuanAnggaran (
   id                  TEXT PRIMARY KEY,

@@ -1,6 +1,7 @@
 const express = require("express");
-const { requireAuth, requireUnitUsaha, isSuperAdmin } = require("../auth");
+const { requireAuth, requireBMT, requireUnitUsaha, isSuperAdmin } = require("../auth");
 const { catatTransaksi, auditSaldo, sinkronisasiOfflineKasir } = require("../cashlessService");
+const { catatTransaksiUnitUsaha, semuaTransaksiUnitUsaha, hapusTransaksiUnitUsaha, laporanCashflowUnitUsaha } = require("../keuanganService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
@@ -12,6 +13,34 @@ router.get("/audit-saldo", requireAuth, asyncHandler(async (req, res) => {
   res.json(await auditSaldo());
 }));
 
+// ---- Endpoint Transaksi Unit Usaha (Pengaturan & Cashflow BMT / Admin Unit Usaha) ----
+router.get("/unit-usaha", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
+  const isAdmin = isSuperAdmin(req.user);
+  const isBMT = req.user?.role === "guru" && req.user.departemen === "unitusaha" && req.user.unit === "BMT";
+  const selectedUnit = isAdmin || isBMT ? req.query.unit : req.user.unit;
+  res.json(await semuaTransaksiUnitUsaha({ unit: selectedUnit }));
+}));
+
+router.get("/unit-usaha/laporan", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
+  const isAdmin = isSuperAdmin(req.user);
+  const isBMT = req.user?.role === "guru" && req.user.departemen === "unitusaha" && req.user.unit === "BMT";
+  const selectedUnit = isAdmin || isBMT ? req.query.unit : req.user.unit;
+  res.json(await laporanCashflowUnitUsaha({ unit: selectedUnit }));
+}));
+
+router.post("/unit-usaha", requireAuth, requireBMT, asyncHandler(async (req, res) => {
+  const { jenis, unitAsal, unitTujuan, jumlah, keterangan } = req.body || {};
+  res.status(201).json(await catatTransaksiUnitUsaha({
+    jenis, unitAsal, unitTujuan, jumlah, keterangan,
+    dicatatOleh: req.user.nama, aktorId: req.user.id,
+  }));
+}));
+
+router.delete("/unit-usaha/:id", requireAuth, requireBMT, asyncHandler(async (req, res) => {
+  res.json(await hapusTransaksiUnitUsaha(req.params.id, req.user.id));
+}));
+
+// ---- Endpoint Transaksi Cashless Santri ----
 router.post("/", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
   const { santriId, jenis: jenisInput, kategori: kategoriInput, subKategori, jumlah, keterangan, bulan, pin, metode, idempotencyKey } = req.body || {};
   if (!santriId || !jumlah) return res.status(400).json({ error: "santriId dan jumlah wajib diisi." });

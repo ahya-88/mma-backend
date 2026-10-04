@@ -25,10 +25,10 @@ router.post("/tagihan/:id/bayar", asyncHandler(async (req, res) => {
   res.status(201).json(await catatPembayaran({ tagihanId: req.params.id, jumlahBayar, dicatatOleh: req.user.nama, aktorId: req.user.id }));
 }));
 
-router.get("/cashflow", asyncHandler(async (req, res) => res.json(await semuaCashflow())));
+router.get("/cashflow", asyncHandler(async (req, res) => res.json(await semuaCashflow(req.query.unit))));
 router.post("/cashflow", asyncHandler(async (req, res) => {
-  const { bulan, jenis, kategori, jumlah, keterangan } = req.body || {};
-  res.status(201).json(await catatCashflow({ bulan, jenis, kategori, jumlah, keterangan, dicatatOleh: req.user.nama, aktorId: req.user.id }));
+  const { bulan, jenis, kategori, unit, jumlah, keterangan } = req.body || {};
+  res.status(201).json(await catatCashflow({ bulan, jenis, kategori, unit, jumlah, keterangan, dicatatOleh: req.user.nama, aktorId: req.user.id }));
 }));
 router.delete("/cashflow/:id", asyncHandler(async (req, res) => res.json(await hapusCashflow(req.params.id, req.user.id))));
 

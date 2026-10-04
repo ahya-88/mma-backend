@@ -4,7 +4,12 @@ const { CashlessError, getSantriRow, todayISO } = require("./cashlessService");
 
 const uid = () => crypto.randomUUID();
 const JENIS_TAGIHAN = ["Syahriyah", "Uang Pangkal", "Seragam", "Kegiatan/Kitab", "Kesehatan", "Lainnya"];
-const KATEGORI_CASHFLOW = ["Pembayaran Santri", "Infaq/Donasi", "Bantuan Pemerintah", "Operasional", "Gaji/Honor", "Konsumsi", "Perbaikan/Maintenance", "Lainnya"];
+const KATEGORI_CASHFLOW = [
+  "Pembayaran Santri", "Infaq/Donasi", "Bantuan Pemerintah", "Operasional",
+  "Gaji/Honor", "Konsumsi", "Perbaikan/Maintenance", "Lainnya",
+  "Unit Usaha - Dana Masuk", "Unit Usaha - Dana Keluar", "Unit Usaha - Transfer Antar Bagian"
+];
+const JENIS_TRANSAKSI_UNIT = ["Dana Masuk", "Dana Keluar", "Transfer Antar Bagian"];
 const STATUS_ANGGARAN = ["Diajukan", "Disetujui", "Ditolak", "Direalisasikan"];
 
 async function catatAuditKeuangan({ aktorId, aksi, targetTipe, targetId, detail }) {
@@ -90,22 +95,224 @@ async function catatPembayaran({ tagihanId, jumlahBayar, dicatatOleh, aktorId })
   });
 }
 
-async function catatCashflow({ bulan, jenis, kategori, jumlah, keterangan, dicatatOleh, aktorId }) {
+async function catatCashflow({ bulan, jenis, kategori, unit, jumlah, keterangan, dicatatOleh, aktorId }) {
   return withTransaction(async () => {
     if (!bulan || !jenis || !kategori || !jumlah) throw new CashlessError(400, "Bulan, jenis, kategori, dan jumlah wajib diisi.");
     if (!["Masuk", "Keluar"].includes(jenis)) throw new CashlessError(400, "Jenis cashflow harus Masuk atau Keluar.");
     if (!KATEGORI_CASHFLOW.includes(kategori)) throw new CashlessError(400, "Kategori cashflow tidak valid.");
-    const row = { id: uid(), bulan, tanggalISO: todayISO(), jenis, kategori, jumlah: Number(jumlah), keterangan: keterangan || null, dicatatOleh: dicatatOleh || null };
-    await query('INSERT INTO "Cashflow" ("id", "bulan", "tanggalISO", "jenis", "kategori", "jumlah", "keterangan", "dicatatOleh") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-      [row.id, row.bulan, row.tanggalISO, row.jenis, row.kategori, row.jumlah, row.keterangan, row.dicatatOleh]);
+    const row = { id: uid(), bulan, tanggalISO: todayISO(), jenis, kategori, unit: unit || null, jumlah: Number(jumlah), keterangan: keterangan || null, dicatatOleh: dicatatOleh || null };
+    await query('INSERT INTO "Cashflow" ("id", "bulan", "tanggalISO", "jenis", "kategori", "unit", "jumlah", "keterangan", "dicatatOleh") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+      [row.id, row.bulan, row.tanggalISO, row.jenis, row.kategori, row.unit, row.jumlah, row.keterangan, row.dicatatOleh]);
     await catatAuditKeuangan({
       aktorId, aksi: "keuangan.cashflow_recorded", targetTipe: "Cashflow", targetId: row.id,
-      detail: { jenis, kategori, jumlah: row.jumlah },
+      detail: { jenis, kategori, unit: row.unit, jumlah: row.jumlah },
     });
     return row;
   });
 }
-const semuaCashflow = () => queryAll('SELECT * FROM "Cashflow" ORDER BY "createdAt" DESC');
+
+const semuaCashflow = (unit) => {
+  if (unit && unit !== "Semua") {
+    return queryAll('SELECT * FROM "Cashflow" WHERE "unit" = $1 ORDER BY "createdAt" DESC', [unit]);
+  }
+  return queryAll('SELECT * FROM "Cashflow" ORDER BY "createdAt" DESC');
+};
+
+async function catatTransaksiUnitUsaha({ jenis, unitAsal, unitTujuan, jumlah, keterangan, dicatatOleh, aktorId }) {
+  return withTransaction(async () => {
+    if (!jenis || !JENIS_TRANSAKSI_UNIT.includes(jenis)) {
+      throw new CashlessError(400, "Jenis transaksi unit usaha harus Dana Masuk, Dana Keluar, atau Transfer Antar Bagian.");
+    }
+    const nominal = Number(jumlah);
+    if (!nominal || nominal <= 0) {
+      throw new CashlessError(400, "Jumlah transaksi unit usaha harus lebih dari 0.");
+    }
+
+    if (jenis === "Dana Masuk") {
+      if (!unitTujuan || !unitTujuan.trim()) throw new CashlessError(400, "Unit tujuan wajib dipilih untuk Dana Masuk.");
+      unitAsal = null;
+      unitTujuan = unitTujuan.trim();
+    } else if (jenis === "Dana Keluar") {
+      if (!unitAsal || !unitAsal.trim()) throw new CashlessError(400, "Unit asal wajib dipilih untuk Dana Keluar / Pencairan Saldo.");
+      unitAsal = unitAsal.trim();
+      unitTujuan = null;
+    } else if (jenis === "Transfer Antar Bagian") {
+      if (!unitAsal || !unitAsal.trim() || !unitTujuan || !unitTujuan.trim()) {
+        throw new CashlessError(400, "Unit asal dan unit tujuan wajib dipilih untuk Transfer Antar Bagian.");
+      }
+      unitAsal = unitAsal.trim();
+      unitTujuan = unitTujuan.trim();
+      if (unitAsal === unitTujuan) {
+        throw new CashlessError(400, "Unit asal dan unit tujuan tidak boleh sama.");
+      }
+    }
+
+    const tISO = todayISO();
+    const bulan = tISO.slice(0, 7);
+    const tx = {
+      id: uid(),
+      jenis,
+      unitAsal: unitAsal || null,
+      unitTujuan: unitTujuan || null,
+      jumlah: nominal,
+      keterangan: keterangan || null,
+      dicatatOleh: dicatatOleh || null,
+      tanggalISO: tISO,
+      bulan,
+    };
+
+    await query(
+      `INSERT INTO "TransaksiUnitUsaha" ("id", "jenis", "unitAsal", "unitTujuan", "jumlah", "keterangan", "dicatatOleh", "tanggalISO", "bulan")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [tx.id, tx.jenis, tx.unitAsal, tx.unitTujuan, tx.jumlah, tx.keterangan, tx.dicatatOleh, tx.tanggalISO, tx.bulan]
+    );
+
+    const cashflowsCreated = [];
+
+    if (jenis === "Dana Masuk") {
+      const c1 = {
+        id: uid(),
+        bulan,
+        tanggalISO: tISO,
+        jenis: "Masuk",
+        kategori: "Unit Usaha - Dana Masuk",
+        unit: unitTujuan,
+        jumlah: nominal,
+        keterangan: `[${unitTujuan}] Dana Masuk: ${keterangan || 'Penambahan Saldo/Modal'}`,
+        dicatatOleh: dicatatOleh || null,
+      };
+      await query(
+        `INSERT INTO "Cashflow" ("id", "bulan", "tanggalISO", "jenis", "kategori", "unit", "jumlah", "keterangan", "dicatatOleh")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [c1.id, c1.bulan, c1.tanggalISO, c1.jenis, c1.kategori, c1.unit, c1.jumlah, c1.keterangan, c1.dicatatOleh]
+      );
+      cashflowsCreated.push(c1);
+    } else if (jenis === "Dana Keluar") {
+      const c1 = {
+        id: uid(),
+        bulan,
+        tanggalISO: tISO,
+        jenis: "Keluar",
+        kategori: "Unit Usaha - Dana Keluar",
+        unit: unitAsal,
+        jumlah: nominal,
+        keterangan: `[${unitAsal}] Dana Keluar/Pencairan: ${keterangan || 'Pencairan Saldo/Pengeluaran'}`,
+        dicatatOleh: dicatatOleh || null,
+      };
+      await query(
+        `INSERT INTO "Cashflow" ("id", "bulan", "tanggalISO", "jenis", "kategori", "unit", "jumlah", "keterangan", "dicatatOleh")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [c1.id, c1.bulan, c1.tanggalISO, c1.jenis, c1.kategori, c1.unit, c1.jumlah, c1.keterangan, c1.dicatatOleh]
+      );
+      cashflowsCreated.push(c1);
+    } else if (jenis === "Transfer Antar Bagian") {
+      const cOut = {
+        id: uid(),
+        bulan,
+        tanggalISO: tISO,
+        jenis: "Keluar",
+        kategori: "Unit Usaha - Transfer Antar Bagian",
+        unit: unitAsal,
+        jumlah: nominal,
+        keterangan: `[${unitAsal}] Transfer Keluar ke ${unitTujuan}: ${keterangan || 'Transfer Antar Bagian'}`,
+        dicatatOleh: dicatatOleh || null,
+      };
+      const cIn = {
+        id: uid(),
+        bulan,
+        tanggalISO: tISO,
+        jenis: "Masuk",
+        kategori: "Unit Usaha - Transfer Antar Bagian",
+        unit: unitTujuan,
+        jumlah: nominal,
+        keterangan: `[${unitTujuan}] Transfer Masuk dari ${unitAsal}: ${keterangan || 'Transfer Antar Bagian'}`,
+        dicatatOleh: dicatatOleh || null,
+      };
+      await query(
+        `INSERT INTO "Cashflow" ("id", "bulan", "tanggalISO", "jenis", "kategori", "unit", "jumlah", "keterangan", "dicatatOleh")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [cOut.id, cOut.bulan, cOut.tanggalISO, cOut.jenis, cOut.kategori, cOut.unit, cOut.jumlah, cOut.keterangan, cOut.dicatatOleh]
+      );
+      await query(
+        `INSERT INTO "Cashflow" ("id", "bulan", "tanggalISO", "jenis", "kategori", "unit", "jumlah", "keterangan", "dicatatOleh")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [cIn.id, cIn.bulan, cIn.tanggalISO, cIn.jenis, cIn.kategori, cIn.unit, cIn.jumlah, cIn.keterangan, cIn.dicatatOleh]
+      );
+      cashflowsCreated.push(cOut, cIn);
+    }
+
+    await catatAuditKeuangan({
+      aktorId,
+      aksi: "transaksi_unit_usaha.created",
+      targetTipe: "TransaksiUnitUsaha",
+      targetId: tx.id,
+      detail: { jenis, unitAsal, unitTujuan, jumlah: nominal },
+    });
+
+    return { transaksi: tx, cashflows: cashflowsCreated };
+  });
+}
+
+async function semuaTransaksiUnitUsaha({ unit } = {}) {
+  if (unit && unit !== "Semua") {
+    return queryAll(
+      'SELECT * FROM "TransaksiUnitUsaha" WHERE "unitAsal" = $1 OR "unitTujuan" = $1 ORDER BY "createdAt" DESC',
+      [unit]
+    );
+  }
+  return queryAll('SELECT * FROM "TransaksiUnitUsaha" ORDER BY "createdAt" DESC');
+}
+
+async function hapusTransaksiUnitUsaha(id, aktorId) {
+  return withTransaction(async () => {
+    const row = await queryOne('SELECT * FROM "TransaksiUnitUsaha" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row) throw new CashlessError(404, "Data transaksi unit usaha tidak ditemukan.");
+    await query('DELETE FROM "TransaksiUnitUsaha" WHERE "id" = $1', [id]);
+    await catatAuditKeuangan({
+      aktorId,
+      aksi: "transaksi_unit_usaha.deleted",
+      targetTipe: "TransaksiUnitUsaha",
+      targetId: id,
+      detail: { jenis: row.jenis, unitAsal: row.unitAsal, unitTujuan: row.unitTujuan, jumlah: Number(row.jumlah) },
+    });
+    return row;
+  });
+}
+
+async function laporanCashflowUnitUsaha({ unit } = {}) {
+  const unitsList = await queryAll('SELECT "nama" FROM "UnitUsaha" ORDER BY "nama"');
+  const unitNames = unitsList.length ? unitsList.map((u) => u.nama) : ["Kantin", "Kopel", "Dapur", "BMT"];
+
+  const transactions = await semuaTransaksiUnitUsaha({ unit });
+  const cashflows = await semuaCashflow(unit && unit !== "Semua" ? unit : undefined);
+
+  const ringkasan = {};
+  for (const name of unitNames) {
+    ringkasan[name] = { unit: name, totalMasuk: 0, totalKeluar: 0, netSaldo: 0 };
+  }
+
+  for (const cf of cashflows) {
+    const uName = cf.unit;
+    if (uName) {
+      if (!ringkasan[uName]) ringkasan[uName] = { unit: uName, totalMasuk: 0, totalKeluar: 0, netSaldo: 0 };
+      const amt = Number(cf.jumlah || 0);
+      if (cf.jenis === "Masuk") {
+        ringkasan[uName].totalMasuk += amt;
+      } else if (cf.jenis === "Keluar") {
+        ringkasan[uName].totalKeluar += amt;
+      }
+      ringkasan[uName].netSaldo = ringkasan[uName].totalMasuk - ringkasan[uName].totalKeluar;
+    }
+  }
+
+  return {
+    unit: unit || "Semua",
+    unitsAvailable: unitNames,
+    ringkasan,
+    transaksiList: transactions.map((t) => ({ ...t, jumlah: Number(t.jumlah) })),
+    cashflowList: cashflows.map((c) => ({ ...c, jumlah: Number(c.jumlah) })),
+  };
+}
 
 async function hapusCashflow(id, aktorId) {
   return withTransaction(async () => {
@@ -209,8 +416,9 @@ async function realisasikanAnggaran({ id, jumlahRealisasi, dicatatOleh }) {
 }
 
 module.exports = {
-  JENIS_TAGIHAN, KATEGORI_CASHFLOW, STATUS_ANGGARAN, statusTagihan,
+  JENIS_TAGIHAN, KATEGORI_CASHFLOW, JENIS_TRANSAKSI_UNIT, STATUS_ANGGARAN, statusTagihan,
   buatTagihan, semuaTagihan, tagihanSantri, hapusTagihan, editTagihanNominal, catatPembayaran,
   catatCashflow, semuaCashflow, hapusCashflow,
+  catatTransaksiUnitUsaha, semuaTransaksiUnitUsaha, hapusTransaksiUnitUsaha, laporanCashflowUnitUsaha,
   ajukanAnggaran, semuaPengajuan, hapusPengajuan, setujuiAnggaran, tolakAnggaran, realisasikanAnggaran,
 };

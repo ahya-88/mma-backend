@@ -293,12 +293,30 @@ CREATE TABLE IF NOT EXISTS "Cashflow" (
   "tanggalISO" TEXT NOT NULL,
   "jenis" TEXT NOT NULL,
   "kategori" TEXT NOT NULL,
+  "unit" TEXT,
   "jumlah" BIGINT NOT NULL,
   "keterangan" TEXT,
   "dicatatOleh" TEXT,
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
+ALTER TABLE "Cashflow" ADD COLUMN IF NOT EXISTS "unit" TEXT;
 CREATE INDEX IF NOT EXISTS idx_cashflow_bulan ON "Cashflow" ("bulan");
+CREATE INDEX IF NOT EXISTS idx_cashflow_unit ON "Cashflow" ("unit");
+
+CREATE TABLE IF NOT EXISTS "TransaksiUnitUsaha" (
+  "id" TEXT PRIMARY KEY,
+  "jenis" TEXT NOT NULL,
+  "unitAsal" TEXT,
+  "unitTujuan" TEXT,
+  "jumlah" BIGINT NOT NULL,
+  "keterangan" TEXT,
+  "dicatatOleh" TEXT,
+  "tanggalISO" TEXT NOT NULL,
+  "bulan" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+CREATE INDEX IF NOT EXISTS idx_transaksi_unit_asal ON "TransaksiUnitUsaha" ("unitAsal");
+CREATE INDEX IF NOT EXISTS idx_transaksi_unit_tujuan ON "TransaksiUnitUsaha" ("unitTujuan");
 
 CREATE TABLE IF NOT EXISTS "PengajuanAnggaran" (
   "id" TEXT PRIMARY KEY,
