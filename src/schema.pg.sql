@@ -372,6 +372,35 @@ CREATE INDEX IF NOT EXISTS idx_santri_foto_present ON "Santri" ("id") WHERE "fot
 CREATE INDEX IF NOT EXISTS idx_santri_nama ON "Santri" ("nama");
 CREATE INDEX IF NOT EXISTS idx_santri_nis ON "Santri" ("nis");
 
+-- ---- Modul Impor Data Bertahap & Provisioning (FASE 2) ----
+CREATE TABLE IF NOT EXISTS "BatchImpor" (
+  "id" TEXT PRIMARY KEY,
+  "namaBatch" TEXT NOT NULL,
+  "sumber" TEXT NOT NULL DEFAULT 'excel',
+  "jumlahSantri" INTEGER NOT NULL DEFAULT 0,
+  "jumlahWali" INTEGER NOT NULL DEFAULT 0,
+  "status" TEXT NOT NULL DEFAULT 'Berhasil',
+  "dibuatOleh" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "RekonsiliasiImpor" (
+  "id" TEXT PRIMARY KEY,
+  "batchId" TEXT NOT NULL REFERENCES "BatchImpor"("id"),
+  "tipe" TEXT NOT NULL,
+  "totalNominalInput" BIGINT NOT NULL,
+  "totalNominalTerproses" BIGINT NOT NULL,
+  "jumlahRecord" INTEGER NOT NULL,
+  "selisih" BIGINT NOT NULL DEFAULT 0,
+  "status" TEXT NOT NULL,
+  "catatan" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "statusAkun" TEXT NOT NULL DEFAULT 'Belum Aktivasi';
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "importBatchId" TEXT REFERENCES "BatchImpor"("id");
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "importBatchId" TEXT REFERENCES "BatchImpor"("id");
+
 -- Admin dilebur ke Superadmin (keputusan 4 Okt 2026): akun lama berjenis 'admin' menjadi 'superadmin'.
 -- Idempotent: setelah dijalankan sekali, tidak ada baris 'admin' tersisa. Setiap akun yang dimigrasikan dicatat di AuditLog.
 INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")

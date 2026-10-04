@@ -1,6 +1,7 @@
 const express = require("express");
-const { requireAuth, requireAdmin, requirePasswordResetAuthority, requireDashboardAdmin, jenisAkunEfektif } = require("../auth");
+const { requireAuth, requireAdmin, requirePasswordResetAuthority, requireDashboardAdmin, requireSekretariat, jenisAkunEfektif } = require("../auth");
 const admin = require("../adminService");
+const impor = require("../imporService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
@@ -52,6 +53,49 @@ router.get("/audit", requireAuth, requireAdmin, asyncHandler(async (req, res) =>
     return res.status(400).json({ error: "page harus minimal 1 dan limit harus antara 1 sampai 100." });
   }
   res.json(await admin.daftarAuditSuperadmin({ page, limit }));
+}));
+
+// ---- FASE 2: Endpoint Impor Bertahap, Provisioning Akun, & Kelengkapan Data ----
+router.post("/impor/dry-run", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
+  const rows = req.body?.rows || [];
+  res.json(await impor.prosesDryRunImpor(rows));
+}));
+
+router.post("/impor/eksekusi", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
+  const { namaBatch, rows } = req.body || {};
+  res.status(201).json(await impor.eksekusiImporBatch({
+    namaBatch, rows: rows || [], aktorId: req.user.id, aktorNama: req.user.nama,
+  }));
+}));
+
+router.post("/impor/rollback/:batchId", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await impor.rollbackBatchImpor(req.params.batchId, req.user.id));
+}));
+
+router.post("/wali/provision-batch", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
+  const { santriIds, batchId } = req.body || {};
+  res.json(await impor.provisionAkunWali({ santriIds, batchId, aktorId: req.user.id }));
+}));
+
+router.post("/wali/tautkan-anak", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
+  const { santriId, waliId } = req.body || {};
+  res.json(await impor.tautkanAnakKeWali({ santriId, waliId, aktorId: req.user.id }));
+}));
+
+router.post("/impor/rekonsiliasi", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
+  const { batchId, tipe, items, totalKasTarget } = req.body || {};
+  res.json(await impor.rekonsiliasiSaldoDanTagihan({
+    batchId, tipe, items, totalKasTarget, aktorId: req.user.id, dicatatOleh: req.user.nama,
+  }));
+}));
+
+router.get("/kelengkapan-data", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
+  res.json(await impor.kelengkapanDataSekretariat());
+}));
+
+router.post("/bersihkan-demo", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { konfirmasi } = req.body || {};
+  res.json(await impor.bersihkanDataDemo({ konfirmasi: !!konfirmasi, aktorId: req.user.id }));
 }));
 
 module.exports = router;
