@@ -1,7 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("../db");
-const { requireAuth, requireBMT, requireAnyStaff, requireSekretariat, isSuperAdmin } = require("../auth");
+const { requireAuth, requireBMT, requireAnyStaff, requireSekretariat, isSuperAdmin, isOperationalAdmin } = require("../auth");
 const { getSantriRow, toPublicSantri, toSaldoPublik, riwayatSantri, CashlessError, SANTRI_BIODATA_FIELDS } = require("../cashlessService");
 const { setPin, terbitkanKartu } = require("../pinService");
 const { riwayatAbsensi, daftarPerizinan, riwayatPelanggaran } = require("../pengasuhanService");
@@ -13,14 +13,14 @@ const router = express.Router();
 const isBMT = (user) => user?.role === "guru" && user.departemen === "unitusaha" && user.unit === "BMT";
 
 function assertLihatSantri(req, santri) {
-  if (isSuperAdmin(req.user)) return;
+  if (isSuperAdmin(req.user) || isOperationalAdmin(req.user)) return;
   if (isBMT(req.user)) return;
   if (req.user.role === "wali" && santri.waliId === req.user.id) return;
   throw new CashlessError(403, "Tidak berwenang melihat data santri ini.");
 }
 
 function assertLihatRaporSantri(req, santri) {
-  if (isSuperAdmin(req.user)) return;
+  if (isSuperAdmin(req.user) || isOperationalAdmin(req.user)) return;
   if (req.user.role === "guru") return;
   if (req.user.role === "wali" && santri.waliId === req.user.id) return;
   throw new CashlessError(403, "Tidak berwenang melihat data santri ini.");
@@ -35,19 +35,34 @@ router.post("/pin/awal", requireAuth, requireBMT, asyncHandler(async (req, res) 
       await setPin(santri.id, pin);
       daftar.push({ nis: santri.nis ?? "", nama: santri.nama, kelas: santri.kelas ?? "", pin });
     }
+    await query(`INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
+      VALUES ($1, $2, $3, 'auth.initial_pins_generated', 'SantriBatch', NULL, $4::jsonb)`,
+    [crypto.randomUUID(), req.user.id, req.user.role, JSON.stringify({ jumlah: daftar.length })]);
     return daftar;
   });
   res.json(daftarPin);
 }));
 
 router.post("/:id/pin", requireAuth, requireBMT, asyncHandler(async (req, res) => {
-  await getSantriRow(req.params.id);
-  await setPin(req.params.id, req.body?.pin);
+  const santri = await getSantriRow(req.params.id);
+  await withTransaction(async () => {
+    await setPin(santri.id, req.body?.pin);
+    await query(`INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
+      VALUES ($1, $2, $3, 'auth.student_pin_reset', 'Santri', $4, '{}'::jsonb)`,
+    [crypto.randomUUID(), req.user.id, req.user.role, santri.id]);
+  });
   res.json({ diatur: true });
 }));
 
 router.post("/:id/kartu/terbitkan", requireAuth, requireBMT, asyncHandler(async (req, res) => {
-  const { kartuTerbit } = await terbitkanKartu(req.params.id);
+  const santri = await getSantriRow(req.params.id);
+  const { kartuTerbit } = await withTransaction(async () => {
+    const issued = await terbitkanKartu(santri.id);
+    await query(`INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
+      VALUES ($1, $2, $3, 'cashless.student_card_issued', 'Santri', $4, '{}'::jsonb)`,
+    [crypto.randomUUID(), req.user.id, req.user.role, santri.id]);
+    return issued;
+  });
   res.json({ terbit: true, kartuTerbit });
 }));
 
@@ -121,9 +136,15 @@ router.get("/", requireAuth, requireAnyStaff, asyncHandler(async (req, res) => {
 
 router.delete("/:id", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
   try {
-    await getSantriRow(req.params.id);
-    await query('DELETE FROM "Santri" WHERE "id" = $1', [req.params.id]);
-    res.json({ id: req.params.id, deleted: true });
+    const santri = await withTransaction(async () => {
+      const row = await getSantriRow(req.params.id, true);
+      await query('DELETE FROM "Santri" WHERE "id" = $1', [row.id]);
+      await query(`INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
+        VALUES ($1, $2, $3, 'data.santri_deleted', 'Santri', $4, '{}'::jsonb)`,
+      [crypto.randomUUID(), req.user.id, req.user.role, row.id]);
+      return row;
+    });
+    res.json({ id: santri.id, deleted: true });
   } catch (error) {
     if (error instanceof CashlessError) throw error;
     if (error && error.code === "23503") return res.status(409).json({ error: "Santri tidak bisa dihapus karena masih memiliki riwayat data terkait (transaksi, nilai, absensi, dsb.)." });
@@ -143,12 +164,16 @@ router.get("/:id", requireAuth, asyncHandler(async (req, res) => {
   res.json(await toPublicSantri(santri));
 }));
 
-router.get("/:id/riwayat", asyncHandler(async (req, res) => {
+router.get("/:id/riwayat", requireAuth, asyncHandler(async (req, res) => {
+  const santri = await getSantriRow(req.params.id);
+  assertLihatSantri(req, santri);
   res.json(await riwayatSantri(req.params.id));
 }));
 
-router.get("/:id/saldo-publik", asyncHandler(async (req, res) => {
-  res.json(await toSaldoPublik(await getSantriRow(req.params.id)));
+router.get("/:id/saldo-publik", requireAuth, asyncHandler(async (req, res) => {
+  const santri = await getSantriRow(req.params.id);
+  assertLihatSantri(req, santri);
+  res.json(await toSaldoPublik(santri));
 }));
 
 router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
@@ -158,7 +183,7 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
     riwayatAbsensi(req.params.id), riwayatPelanggaran(req.params.id), daftarPerizinan({ santriId: req.params.id }),
     semuaNilai(), semuaPrestasi(), semuaHafalan(), semuaUbudiyah(),
   ]);
-  const bolehLihatTagihan = isSuperAdmin(req.user) || req.user.role === "wali" || (req.user.role === "guru" && req.user.departemen === "administrasi");
+  const bolehLihatTagihan = isSuperAdmin(req.user) || isOperationalAdmin(req.user) || req.user.role === "wali" || (req.user.role === "guru" && req.user.departemen === "administrasi");
   res.json({
     absensi: absensi.rows,
     rekapAbsensi: absensi.rekap,

@@ -43,6 +43,6 @@ router.post("/pelanggaran", asyncHandler(async (req, res) => {
 router.get("/pelanggaran/:santriId", asyncHandler(async (req, res) => res.json(await riwayatPelanggaran(req.params.santriId))));
 // Daftar semua pelanggaran lintas santri (untuk tampilan rekap satu departemen).
 router.get("/pelanggaran", asyncHandler(async (req, res) => res.json(await semuaPelanggaran())));
-router.delete("/pelanggaran/:id", asyncHandler(async (req, res) => res.json(await hapusPelanggaran(req.params.id))));
+router.delete("/pelanggaran/:id", asyncHandler(async (req, res) => res.json(await hapusPelanggaran(req.params.id, req.user.id))));
 
 module.exports = router;

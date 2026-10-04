@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("../db");
 const { requireAuth, requireBMT, requireUnitUsaha } = require("../auth");
 const asyncHandler = require("../asyncHandler");
+const { recordAudit } = require("../auditLog");
 
 const router = express.Router();
 const EMB_DIM = 192;
@@ -137,7 +138,16 @@ router.post("/:santriId/template", requireAuth, requireBMT, asyncHandler(async (
 
 router.delete("/:santriId/template", requireAuth, requireBMT, asyncHandler(async (req, res) => {
   if (req.query.sumber !== "kamera") return res.status(400).json({ error: "sumber yang dapat dihapus hanya 'kamera'." });
-  const result = await query('DELETE FROM "FaceTemplate" WHERE "santriId" = $1 AND "sumber" = \'kamera\'', [req.params.santriId]);
+  const result = await withTransaction(async () => {
+    const deleted = await query('DELETE FROM "FaceTemplate" WHERE "santriId" = $1 AND "sumber" = \'kamera\'', [req.params.santriId]);
+    if (deleted.rowCount) {
+      await recordAudit({
+        actorId: req.user.id, actorRole: req.user.role, action: "privacy.face_templates_deleted",
+        targetType: "Santri", targetId: req.params.santriId, detail: { jumlah: deleted.rowCount },
+      });
+    }
+    return deleted;
+  });
   res.json({ ok: true, dihapus: result.rowCount });
 }));
 

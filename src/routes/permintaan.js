@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireAuth, requireBMT, requireWali } = require("../auth");
+const { requireAuth, requireBMT, requireWali, isSuperAdmin } = require("../auth");
 const {
   ajukanPermintaan, prosesPermintaan, daftarPermintaan, daftarPermintaanWali,
   ambilBuktiTransfer, getPengaturanTopUp, simpanPengaturanTopUp, daftarAudit, laporanTopUpHarian,
@@ -16,9 +16,7 @@ function tanggalISOValid(tanggal) {
 }
 
 function requireBMTorAdmin(req, res, next) {
-  if (req.user?.role === "guru" && (
-    (req.user.departemen === "unitusaha" && req.user.unit === "BMT") || req.user.departemen === "admin"
-  )) return next();
+  if (isSuperAdmin(req.user) || (req.user?.role === "guru" && req.user.departemen === "unitusaha" && req.user.unit === "BMT")) return next();
   res.status(403).json({ error: "Hanya staf BMT atau Admin yang berwenang mengakses endpoint ini." });
 }
 

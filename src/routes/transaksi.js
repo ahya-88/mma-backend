@@ -1,14 +1,14 @@
 const express = require("express");
-const { requireAuth, requireUnitUsaha } = require("../auth");
+const { requireAuth, requireUnitUsaha, isSuperAdmin, isOperationalAdmin } = require("../auth");
 const { catatTransaksi, auditSaldo } = require("../cashlessService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
 
 router.get("/audit-saldo", requireAuth, asyncHandler(async (req, res) => {
-  const isAdmin = req.user?.role === "guru" && req.user.departemen === "admin";
+  const isAdmin = isSuperAdmin(req.user) || isOperationalAdmin(req.user);
   const isBMT = req.user?.role === "guru" && req.user.departemen === "unitusaha" && req.user.unit === "BMT";
-  if (!isAdmin && !isBMT) return res.status(403).json({ error: "Hanya staf BMT atau Admin yang berwenang mengakses audit saldo." });
+  if (!isAdmin && !isBMT) return res.status(403).json({ error: "Hanya akun Admin, Superadmin, atau staf BMT yang berwenang mengakses audit saldo." });
   res.json(await auditSaldo());
 }));
 

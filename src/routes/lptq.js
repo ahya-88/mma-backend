@@ -12,7 +12,7 @@ router.post("/hafalan", asyncHandler(async (req, res) => {
     if (!santriId) return res.status(400).json({ error: "santriId wajib diisi." });
     res.status(201).json(await catatHafalan({ santriId, juz, dicatatOleh: req.user.nama }));
 }));
-router.delete("/hafalan/:id", asyncHandler(async (req, res) => res.json(await hapusHafalan(req.params.id))));
+router.delete("/hafalan/:id", asyncHandler(async (req, res) => res.json(await hapusHafalan(req.params.id, req.user.id))));
 
 router.get("/ubudiyah", asyncHandler(async (req, res) => res.json(await semuaUbudiyah())));
 router.post("/ubudiyah", asyncHandler(async (req, res) => {
@@ -20,6 +20,6 @@ router.post("/ubudiyah", asyncHandler(async (req, res) => {
     if (!santriId) return res.status(400).json({ error: "santriId wajib diisi." });
     res.status(201).json(await catatUbudiyah({ santriId, jenis, materi, predikat, catatan, dicatatOleh: req.user.nama }));
 }));
-router.delete("/ubudiyah/:id", asyncHandler(async (req, res) => res.json(await hapusUbudiyah(req.params.id))));
+router.delete("/ubudiyah/:id", asyncHandler(async (req, res) => res.json(await hapusUbudiyah(req.params.id, req.user.id))));
 
 module.exports = router;

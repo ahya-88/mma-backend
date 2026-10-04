@@ -3,6 +3,9 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const compression = require("compression");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const { isProduction } = require("./environment");
 const { query, initializeDatabase } = require("./db");
 const asyncHandler = require("./asyncHandler");
 
@@ -22,8 +25,33 @@ const kartuRoutes = require("./routes/kartu");
 const { CashlessError } = require("./cashlessService");
 
 const app = express();
-app.use(cors());
+if (process.env.DEMO_MODE === "true" && (isProduction() || !["development", "test"].includes(process.env.NODE_ENV))) {
+  throw new Error("DEMO_MODE hanya boleh aktif dengan NODE_ENV=development atau test.");
+}
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+if (!Number.isSafeInteger(trustProxyHops) || trustProxyHops < 0 || trustProxyHops > 5) {
+  throw new Error("TRUST_PROXY_HOPS harus berupa bilangan bulat antara 0 dan 5.");
+}
+app.set("trust proxy", trustProxyHops);
+const corsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || corsOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+}));
 app.use(compression());
+app.use("/api", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Terlalu banyak permintaan. Silakan coba lagi nanti." },
+}));
 // Keep the existing larger limit for other modules; Top Up only needs enough room for a
 // 1.5 MB image encoded as base64 plus its JSON envelope.
 const standardJsonParser = express.json({ limit: "8mb" });
@@ -61,6 +89,7 @@ app.use("/api/kartu", kartuRoutes);
 // project yang sama, atau folder statis lain di sini.
 const publicDir = path.join(__dirname, "..", "public");
 app.use(express.static(publicDir));
+app.get("/admin", (req, res) => res.sendFile(path.join(publicDir, "superadmin.html")));
 app.get("/superadmin", (req, res) => res.sendFile(path.join(publicDir, "superadmin.html")));
 app.get("/bmt/qr", (req, res) => res.sendFile(path.join(publicDir, "bmt-qr.html")));
 // Fallback: request GET selain /api/* (mis. refresh di path lain) tetap kembalikan index.html,

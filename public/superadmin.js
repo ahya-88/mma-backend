@@ -7,6 +7,7 @@
   const notice = document.getElementById("notice");
   const number = new Intl.NumberFormat("id-ID");
   const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
+  const adminNavigation = new Set(["dashboard", "santri", "absensi", "perizinan", "pelanggaran", "nilai", "prestasi", "hafalan", "ubudiyah", "tagihan", "cashflow", "anggaran", "permintaan", "transaksi", "unit", "produk", "health"]);
 
   const navGroups = [
     { title: "Ringkasan", links: [["dashboard", "Dashboard", "⌂"]] },
@@ -20,8 +21,8 @@
 
   const tablePages = {
     santri: { title: "Data Santri", description: "Biodata dan informasi operasional santri.", url: "/api/santri", columns: [["nama", "Nama"], ["nis", "NIS"], ["nisn", "NISN"], ["kelas", "Kelas"], ["asrama", "Asrama"], ["halaqoh", "Halaqoh"], ["waliId", "ID Wali"], ["saldo", "Saldo"]], actions: "santri" },
-    wali: { title: "Akun Wali", description: "Daftar akun wali santri; kata sandi tidak pernah ditampilkan.", url: "/api/admin/wali", columns: [["nama", "Nama"], ["username", "Username"], ["hp", "Nomor HP"], ["createdAt", "Dibuat"]] },
-    guru: { title: "Akun Staf", description: "Akun guru/staf dan penempatan departemen.", url: "/api/admin/guru", columns: [["nama", "Nama"], ["username", "Username"], ["departemen", "Departemen"], ["unit", "Unit"], ["createdAt", "Dibuat"]], actions: "guru" },
+    wali: { title: "Akun Wali", description: "Daftar akun wali santri; kata sandi tidak pernah ditampilkan.", url: "/api/admin/wali", columns: [["nama", "Nama"], ["username", "Username"], ["hp", "Nomor HP"], ["createdAt", "Dibuat"]], actions: "wali" },
+    guru: { title: "Akun Staf", description: "Akun staf, Admin, dan Superadmin beserta departemen.", url: "/api/admin/guru", columns: [["nama", "Nama"], ["username", "Username"], ["jenisAkun", "Jenis akun"], ["departemen", "Departemen"], ["unit", "Unit"], ["createdAt", "Dibuat"]], actions: "guru" },
     absensi: { title: "Absensi", description: "Rekap absensi santri dan status kehadiran.", url: "/api/pengasuhan/absensi", columns: [["tanggalISO", "Tanggal"], ["santriId", "ID Santri"], ["status", "Status"], ["keterangan", "Keterangan"], ["dicatatOleh", "Petugas"]] },
     perizinan: { title: "Perizinan", description: "Tinjau permohonan dan status izin santri.", url: "/api/pengasuhan/perizinan", columns: [["createdAt", "Diajukan"], ["santriId", "ID Santri"], ["jenis", "Jenis"], ["tanggalKeluar", "Keluar"], ["tanggalKembali", "Kembali"], ["alasan", "Alasan"], ["status", "Status"]], actions: "perizinan" },
     pelanggaran: { title: "Pelanggaran", description: "Catatan pelanggaran dan poin pembinaan.", url: "/api/pengasuhan/pelanggaran", columns: [["tanggalISO", "Tanggal"], ["santriId", "ID Santri"], ["jenis", "Jenis"], ["poin", "Poin"], ["keterangan", "Keterangan"], ["dicatatOleh", "Petugas"]] },
@@ -41,6 +42,7 @@
 
   let token = sessionStorage.getItem(TOKEN_KEY) || "";
   let user = null;
+  let superAdminAccess = false;
   let selectedKey = "dashboard";
   let noticeTimer;
 
@@ -85,19 +87,23 @@
   }
 
   function renderNavigation() {
-    navigation.innerHTML = navGroups.map((group) => `
+    navigation.innerHTML = navGroups.map((group) => {
+      const links = superAdminAccess ? group.links : group.links.filter(([key]) => adminNavigation.has(key));
+      if (!links.length) return "";
+      return `
       <div class="nav-group">
         <p class="nav-heading">${escapeHtml(group.title)}</p>
-        ${group.links.map(([key, label, icon]) => `
+        ${links.map(([key, label, icon]) => `
           <a class="nav-link${key === selectedKey ? " active" : ""}" href="#${key}" data-view="${key}">
             <span class="nav-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span>
           </a>`).join("")}
-      </div>`).join("");
+      </div>`;
+    }).join("");
   }
 
   function setTitle(title) {
     document.getElementById("current-section").textContent = title;
-    document.title = `${title} — Panel Superadmin`;
+    document.title = `${title} — Dashboard ${superAdminAccess ? "Superadmin" : "Admin"}`;
   }
 
   function formatCell(key, value) {
@@ -129,12 +135,13 @@
     const config = tablePages[key];
     if (config.auditSaldo) return renderAuditSaldo(config);
     setTitle(config.title);
-    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Pemantauan lintas modul</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "guru" ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah staf</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
+    const actions = config.actions === "santri" || superAdminAccess ? config.actions : undefined;
+    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Pemantauan lintas modul</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "guru" && superAdminAccess ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah akun</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
     try {
       const records = getRecords(await api(config.url));
       content.querySelector("#table-state").outerHTML = `
         <div class="table-toolbar"><input id="table-search" class="search-input" type="search" placeholder="Cari pada ${escapeHtml(config.title.toLowerCase())}..." aria-label="Cari data"><span id="table-count" class="table-count"></span></div>
-        <div class="table-wrap"><table><thead><tr>${config.columns.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join("")}${config.actions ? "<th>Tindakan</th>" : ""}</tr></thead><tbody id="table-body"></tbody></table></div>`;
+        <div class="table-wrap"><table><thead><tr>${config.columns.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join("")}${actions ? "<th>Tindakan</th>" : ""}</tr></thead><tbody id="table-body"></tbody></table></div>`;
       const searchInput = content.querySelector("#table-search");
       const draw = () => {
         const queryText = searchInput.value.trim().toLocaleLowerCase("id");
@@ -142,7 +149,7 @@
         content.querySelector("#table-count").textContent = `${number.format(filtered.length)} dari ${number.format(records.length)} data`;
         content.querySelector("#table-body").innerHTML = filtered.length ? filtered.map((row) => `
           <tr>${config.columns.map(([field]) => `<td>${field === "status" ? badge(formatCell(field, row[field])) : escapeHtml(formatCell(field, row[field]))}</td>`).join("")}
-          ${config.actions ? `<td>${actionButtons(config.actions, row)}</td>` : ""}</tr>`).join("") : `<tr><td colspan="${config.columns.length + (config.actions ? 1 : 0)}"><div class="empty-state">Tidak ada data yang cocok.</div></td></tr>`;
+          ${actions ? `<td>${actionButtons(actions, row)}</td>` : ""}</tr>`).join("") : `<tr><td colspan="${config.columns.length + (actions ? 1 : 0)}"><div class="empty-state">Tidak ada data yang cocok.</div></td></tr>`;
       };
       searchInput.addEventListener("input", draw);
       draw();
@@ -185,7 +192,8 @@
   function actionButtons(type, row) {
     if (type === "produk") return `<button class="button small" data-action="produk-toggle" data-id="${escapeHtml(row.id)}" data-status="${row.aktif ? "1" : "0"}">${row.aktif ? "Nonaktifkan" : "Aktifkan"}</button>`;
     if (type === "santri") return `<button class="button small" data-action="santri-detail" data-id="${escapeHtml(row.id)}">Profil</button>`;
-    if (type === "guru") return `<div class="action-cell"><button class="button small" data-action="staff-edit" data-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.nama)}" data-username="${escapeHtml(row.username)}" data-department="${escapeHtml(row.departemen)}" data-unit="${escapeHtml(row.unit)}">Edit</button><button class="button small" data-action="staff-password" data-id="${escapeHtml(row.id)}">Reset sandi</button><button class="button small danger" data-action="staff-delete" data-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.nama)}">Hapus</button></div>`;
+    if (type === "guru") return `<div class="action-cell"><button class="button small" data-action="staff-edit" data-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.nama)}" data-username="${escapeHtml(row.username)}" data-kind="${escapeHtml(row.jenisAkun)}" data-department="${escapeHtml(row.departemen)}" data-unit="${escapeHtml(row.unit)}">Edit</button><button class="button small" data-action="staff-password" data-id="${escapeHtml(row.id)}">Reset sandi</button><button class="button small danger" data-action="staff-delete" data-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.nama)}">Hapus</button></div>`;
+    if (type === "wali") return `<button class="button small" data-action="wali-password" data-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.nama)}">Reset sandi</button>`;
     if (row.status !== "Menunggu" && row.status !== "Diajukan") return "—";
     if (type === "topup") return `<div class="action-cell">${row.adaBukti ? `<button class="button small" data-action="topup-evidence" data-id="${escapeHtml(row.id)}">Bukti</button>` : ""}<button class="button small" data-action="topup-approve" data-id="${escapeHtml(row.id)}">Setujui</button><button class="button small danger" data-action="topup-reject" data-id="${escapeHtml(row.id)}">Tolak</button></div>`;
     if (type === "anggaran") return `<div class="action-cell"><button class="button small" data-action="budget-approve" data-id="${escapeHtml(row.id)}">Setujui</button><button class="button small danger" data-action="budget-reject" data-id="${escapeHtml(row.id)}">Tolak</button></div>`;
@@ -195,6 +203,7 @@
   async function performAction(action, id, status) {
     if (action === "santri-detail") return renderSantriProfile(id);
     if (action.startsWith("staff-")) return manageStaff(action, id);
+    if (action === "wali-password") return manageWaliPassword(id);
     if (action === "topup-evidence") {
       const tab = window.open("about:blank", "_blank");
       if (!tab) {
@@ -270,13 +279,17 @@
         if (nama === null) return;
         const username = window.prompt("Username:", button?.dataset.username || "");
         if (username === null) return;
-        const departemen = window.prompt("Departemen (admin, pengasuhan, pengajaran, lptq, administrasi, unitusaha, sekretariat):", button?.dataset.department || "");
+        const jenisAkun = window.prompt("Jenis akun (staf, admin, superadmin):", button?.dataset.kind || "staf")?.trim().toLowerCase();
+        if (!jenisAkun) return;
+        const departemen = jenisAkun === "staf"
+          ? window.prompt("Departemen (pengasuhan, pengajaran, lptq, administrasi, unitusaha, sekretariat):", button?.dataset.department === "admin" ? "pengasuhan" : button?.dataset.department || "")
+          : "admin";
         if (departemen === null) return;
         const unit = departemen === "unitusaha" ? window.prompt("Nama unit usaha:", button?.dataset.unit || "") : "";
         if (unit === null) return;
         await api(`/api/admin/guru/${encodeURIComponent(id)}`, {
           method: "PUT",
-          body: JSON.stringify({ nama, username, departemen, unit }),
+          body: JSON.stringify({ nama, username, departemen, unit, jenisAkun }),
         });
         showNotice("Akun staf berhasil diperbarui.");
       }
@@ -286,21 +299,45 @@
     }
   }
 
+  async function manageWaliPassword(id) {
+    const button = content.querySelector(`[data-action="wali-password"][data-id="${CSS.escape(id)}"]`);
+    const password = window.prompt(`Kata sandi sementara untuk ${button?.dataset.name || "wali"} (minimal 12 karakter):`);
+    if (password === null) return;
+    if (password.length < 12) {
+      showNotice("Kata sandi sementara minimal 12 karakter.", true);
+      return;
+    }
+    try {
+      await api(`/api/admin/wali/${encodeURIComponent(id)}/password`, {
+        method: "PUT",
+        body: JSON.stringify({ password }),
+      });
+      showNotice("Kata sandi direset. Wali wajib menggantinya saat login berikutnya.");
+      await renderTable("wali");
+    } catch (error) {
+      showNotice(error.message, true);
+    }
+  }
+
   async function createStaff() {
-    const nama = window.prompt("Nama staf:");
+    const nama = window.prompt("Nama akun:");
     if (!nama?.trim()) return;
     const username = window.prompt("Username:");
     if (!username?.trim()) return;
     const password = window.prompt("Kata sandi awal:");
     if (!password) return;
-    const departemen = window.prompt("Departemen (admin, pengasuhan, pengajaran, lptq, administrasi, unitusaha, sekretariat):", "pengasuhan");
+    const jenisAkun = window.prompt("Jenis akun (staf, admin, superadmin):", "staf")?.trim().toLowerCase();
+    if (!jenisAkun) return;
+    const departemen = jenisAkun === "staf"
+      ? window.prompt("Departemen (pengasuhan, pengajaran, lptq, administrasi, unitusaha, sekretariat):", "pengasuhan")
+      : "admin";
     if (!departemen) return;
     const unit = departemen === "unitusaha" ? window.prompt("Nama unit usaha:") : "";
     if (unit === null) return;
     try {
       await api("/api/admin/guru", {
         method: "POST",
-        body: JSON.stringify({ nama: nama.trim(), username: username.trim(), password, departemen, unit }),
+        body: JSON.stringify({ nama: nama.trim(), username: username.trim(), password, departemen, unit, jenisAkun }),
       });
       showNotice("Akun staf berhasil dibuat.");
       await renderTable("guru");
@@ -336,7 +373,7 @@
   }
 
   function renderDashboard(data) {
-    setTitle("Ringkasan");
+    setTitle(superAdminAccess ? "Ringkasan Superadmin" : "Ringkasan Admin");
     const cards = data.kartu;
     const chartMax = Math.max(1, ...data.cashflowTujuhHari.map((item) => Math.abs(Number(item.neto))));
     const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
@@ -348,29 +385,39 @@
     const classMax = Math.max(1, ...data.perKelas.map((item) => Number(item.jumlah)));
     const classes = data.perKelas.length ? data.perKelas.map((item) => `<div class="class-row"><span>${escapeHtml(item.kelas)}</span><div class="progress-track"><div class="progress-fill" style="width:${Math.max(3, Math.round(Number(item.jumlah) / classMax * 100))}%"></div></div><strong>${number.format(item.jumlah)}</strong></div>`).join("") : `<p class="empty-state">Data kelas belum tersedia.</p>`;
     const activity = data.aktivitas.length ? data.aktivitas.map((item) => `<tr><td>${escapeHtml(item.waktu)}</td><td>${escapeHtml(item.aktorRole)}</td><td>${escapeHtml(item.aksi)}</td><td>${escapeHtml(item.targetTipe)}${item.targetId ? ` · ${escapeHtml(item.targetId)}` : ""}</td></tr>`).join("") : `<tr><td colspan="4" class="empty-state">Belum ada log aktivitas.</td></tr>`;
+    const overviewMetrics = [
+      metric("Santri", number.format(cards.santri), "Data aktif dalam sistem", "santri"),
+      ...(superAdminAccess ? [
+        metric("Akun wali", number.format(cards.wali), "Terdaftar", "wali"),
+        metric("Akun staf", number.format(cards.guru), "Seluruh departemen", "guru"),
+      ] : []),
+      metric("Absensi hari ini", number.format(cards.absensiHariIni), "Catatan masuk hari ini", "absensi"),
+      metric("Izin menunggu", number.format(cards.izinMenunggu), "Perlu ditinjau", "perizinan"),
+      metric("Permintaan BMT", number.format(cards.topupMenunggu), "Menunggu keputusan", "permintaan"),
+      metric("Anggaran diajukan", number.format(cards.anggaranMenunggu), "Menunggu keputusan", "anggaran"),
+      metric("Tunggakan tagihan", rupiah.format(cards.nominalTunggakan), `${number.format(cards.tagihanMenunggak)} tagihan belum lunas`, "tagihan"),
+    ].join("");
+    const quickMetrics = [
+      metric("Transaksi cashless", number.format(cards.jumlahTransaksiCashless), `${rupiah.format(cards.nominalTransaksiCashless)} total nominal`, "transaksi"),
+      ...(superAdminAccess ? [
+        metric("Template wajah", number.format(cards.faceTemplates), "Data template tersimpan", "wajah"),
+        metric("Log aktivitas", number.format(data.aktivitas.length), "Aktivitas terbaru", "audit"),
+      ] : []),
+      metric("Status layanan", data.statusLayanan ? "Normal" : "Gangguan", "Pemeriksaan database", "health"),
+    ].join("");
     content.innerHTML = `
-      <div class="page-heading"><div><p class="eyebrow">Ikhtisar pesantren</p><h1>Selamat datang, ${escapeHtml(user?.nama || "Admin")}</h1><p>Ringkasan operasional lintas modul · diperbarui ${escapeHtml(new Date(data.diperbaruiPada).toLocaleString("id-ID"))}</p></div><button id="refresh-button" class="button" type="button">↻ Perbarui data</button></div>
+      <div class="page-heading"><div><p class="eyebrow">${superAdminAccess ? "Ikhtisar sistem menyeluruh" : "Dashboard operasional"}</p><h1>Selamat datang, ${escapeHtml(user?.nama || "Admin")}</h1><p>${superAdminAccess ? "Ringkasan lintas modul, konfigurasi, dan tata kelola sistem" : "Ringkasan operasional lintas modul · akses hanya-baca"} · diperbarui ${escapeHtml(new Date(data.diperbaruiPada).toLocaleString("id-ID"))}</p></div><button id="refresh-button" class="button" type="button">↻ Perbarui data</button></div>
       <div class="metric-grid">
-        ${metric("Santri", number.format(cards.santri), "Data aktif dalam sistem", "santri")}
-        ${metric("Akun wali", number.format(cards.wali), "Terdaftar", "wali")}
-        ${metric("Akun staf", number.format(cards.guru), "Seluruh departemen", "guru")}
-        ${metric("Absensi hari ini", number.format(cards.absensiHariIni), "Catatan masuk hari ini", "absensi")}
-        ${metric("Izin menunggu", number.format(cards.izinMenunggu), "Perlu ditinjau", "perizinan")}
-        ${metric("Permintaan BMT", number.format(cards.topupMenunggu), "Menunggu keputusan", "permintaan")}
-        ${metric("Anggaran diajukan", number.format(cards.anggaranMenunggu), "Menunggu keputusan", "anggaran")}
-        ${metric("Tunggakan tagihan", rupiah.format(cards.nominalTunggakan), `${number.format(cards.tagihanMenunggak)} tagihan belum lunas`, "tagihan")}
+        ${overviewMetrics}
       </div>
       <div class="dashboard-grid">
         <section class="panel-card"><div class="panel-title"><h2>Ringkasan arus kas</h2><span>7 hari terakhir · neto harian</span></div><div class="chart">${chart}</div></section>
         <section class="panel-card"><div class="panel-title"><h2>Komposisi santri per kelas</h2><span>${number.format(cards.santri)} santri</span></div><div class="class-list">${classes}</div></section>
       </div>
       <div class="quick-grid">
-        ${metric("Transaksi cashless", number.format(cards.jumlahTransaksiCashless), `${rupiah.format(cards.nominalTransaksiCashless)} total nominal`, "transaksi")}
-        ${metric("Template wajah", number.format(cards.faceTemplates), "Data template tersimpan", "wajah")}
-        ${metric("Status layanan", data.statusLayanan ? "Normal" : "Gangguan", "Pemeriksaan database", "health")}
-        ${metric("Log aktivitas", number.format(data.aktivitas.length), "Aktivitas terbaru", "audit")}
+        ${quickMetrics}
       </div>
-      <section class="panel-card" style="margin-top:14px"><div class="panel-title"><h2>Aktivitas terbaru</h2><a class="button small" href="#audit" data-view="audit">Lihat semua</a></div><div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Aktor</th><th>Aksi</th><th>Target</th></tr></thead><tbody>${activity}</tbody></table></div></section>`;
+      ${superAdminAccess ? `<section class="panel-card" style="margin-top:14px"><div class="panel-title"><h2>Aktivitas terbaru</h2><a class="button small" href="#audit" data-view="audit">Lihat semua</a></div><div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Aktor</th><th>Aksi</th><th>Target</th></tr></thead><tbody>${activity}</tbody></table></div></section>` : ""}`;
     content.querySelector("#refresh-button").addEventListener("click", loadDashboard);
     content.querySelectorAll("[data-open]").forEach((button) => {
       if (button.dataset.open) button.addEventListener("click", () => navigate(button.dataset.open));
@@ -492,6 +539,7 @@
   }
 
   function navigate(key) {
+    if (!superAdminAccess && !adminNavigation.has(key)) key = "dashboard";
     selectedKey = key;
     renderNavigation();
     setSidebarOpen(false);
@@ -518,16 +566,29 @@
   async function startApp() {
     try {
       const profile = await api("/api/admin/akses");
-      if (profile.departemen !== "admin") throw new Error("Hanya akun Admin yang dapat membuka panel Superadmin.");
+      if (!["admin", "superadmin"].includes(profile.jenisAkun)) throw new Error("Akun ini tidak memiliki akses ke dashboard Admin.");
+      superAdminAccess = profile.jenisAkun === "superadmin";
+      const expectedPath = superAdminAccess ? "/superadmin" : "/admin";
+      if (location.pathname !== expectedPath) {
+        window.location.replace(expectedPath);
+        return;
+      }
       const years = await api("/api/admin/tahun-ajaran");
       user = profile;
       sessionStorage.setItem(USER_KEY, JSON.stringify(profile));
       appShell.hidden = false;
       document.getElementById("user-name").textContent = profile?.nama || "Admin";
+      const brand = document.querySelector(".brand");
+      brand.href = superAdminAccess ? "/superadmin" : "/admin";
+      brand.setAttribute("aria-label", superAdminAccess ? "Dashboard Superadmin" : "Dashboard Admin");
+      brand.querySelector("strong").textContent = superAdminAccess ? "MA Superadmin" : "MA Admin";
+      brand.querySelector("small").textContent = superAdminAccess ? "SUPERADMIN" : "ADMIN";
+      document.querySelector(".sidebar-footer").lastChild.textContent = superAdminAccess ? " Sistem operasional" : " Dashboard operasional · baca";
       const active = years.find((year) => year.aktif);
       document.getElementById("academic-year").textContent = active ? `Tahun ajaran ${active.tahunMulai}/${Number(active.tahunMulai) + 1}` : "Tahun ajaran belum aktif";
       const requested = location.hash.slice(1);
-      navigate([...navGroups.flatMap((group) => group.links.map(([key]) => key))].includes(requested) ? requested : "dashboard");
+      const allowedKeys = navGroups.flatMap((group) => group.links.map(([key]) => key)).filter((key) => superAdminAccess || adminNavigation.has(key));
+      navigate(allowedKeys.includes(requested) ? requested : "dashboard");
     } catch (error) {
       if (token) showNotice(error.message, true);
       signOut();

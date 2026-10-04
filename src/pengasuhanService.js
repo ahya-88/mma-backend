@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("./db");
 const { CashlessError, getSantriRow, todayISO, todayLabel } = require("./cashlessService");
+const { recordAudit } = require("./auditLog");
 
 const uid = () => crypto.randomUUID();
 const STATUS_ABSENSI = ["Hadir", "Sakit", "Izin", "Alpa"];
@@ -86,11 +87,12 @@ async function riwayatPelanggaran(santriId) {
 
 const semuaPelanggaran = () => queryAll('SELECT * FROM "Pelanggaran" ORDER BY "createdAt" DESC');
 
-async function hapusPelanggaran(id) {
+async function hapusPelanggaran(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Pelanggaran" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data pelanggaran tidak ditemukan.");
     await query('DELETE FROM "Pelanggaran" WHERE "id" = $1', [id]);
+    await recordAudit({ actorId, actorRole: "guru", action: "data.pelanggaran_deleted", targetType: "Pelanggaran", targetId: id });
     return row;
   });
 }

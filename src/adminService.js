@@ -4,7 +4,8 @@ const { query, queryOne, queryAll, withTransaction, TAMPILAN_DEFAULT } = require
 const { CashlessError } = require("./cashlessService");
 
 const uid = () => crypto.randomUUID();
-const DEPARTEMEN_VALID = ["admin", "pengasuhan", "pengajaran", "lptq", "administrasi", "unitusaha", "sekretariat"];
+const DEPARTEMEN_VALID = ["pengasuhan", "pengajaran", "lptq", "administrasi", "unitusaha", "sekretariat"];
+const JENIS_AKUN_VALID = ["staf", "admin", "superadmin"];
 
 function toPublicGuru(row) {
   if (!row) return row;
@@ -22,44 +23,98 @@ async function semuaGuru() {
   return (await queryAll('SELECT * FROM "Guru" ORDER BY "departemen", "nama"')).map(toPublicGuru);
 }
 
-async function buatGuru({ nama, username, password, departemen, unit }) {
+async function buatGuru({ nama, username, password, departemen, unit, jenisAkun = "staf", actingUserId }) {
   if (!nama || !username || !password) throw new CashlessError(400, "Nama, username, dan kata sandi wajib diisi.");
-  if (!DEPARTEMEN_VALID.includes(departemen)) throw new CashlessError(400, "Departemen tidak valid.");
+  if (typeof password !== "string" || password.length < 12) throw new CashlessError(400, "Kata sandi awal minimal 12 karakter.");
+  if (!JENIS_AKUN_VALID.includes(jenisAkun)) throw new CashlessError(400, "Jenis akun tidak valid.");
+  if (jenisAkun !== "staf") departemen = "admin";
+  if (jenisAkun === "staf" && departemen === "admin") throw new CashlessError(400, "Departemen admin hanya untuk akun Admin atau Superadmin.");
+  if (departemen !== "admin" && !DEPARTEMEN_VALID.includes(departemen)) throw new CashlessError(400, "Departemen tidak valid.");
   if (departemen === "unitusaha" && !unit) throw new CashlessError(400, "Pilih bagian Unit Usaha (Kantin/Kopel/Dapur/BMT, dst.).");
-  await assertUsernameTersedia(username);
   const row = {
-    id: uid(), nama, username, password: bcrypt.hashSync(password, 10),
-    departemen, unit: departemen === "unitusaha" ? unit : null,
+    id: uid(), nama, username, password: bcrypt.hashSync(password, 12),
+    departemen, unit: departemen === "unitusaha" ? unit : null, jenisAkun,
   };
-  await query(
-    'INSERT INTO "Guru" ("id", "nama", "username", "password", "departemen", "unit") VALUES ($1, $2, $3, $4, $5, $6)',
-    [row.id, row.nama, row.username, row.password, row.departemen, row.unit],
-  );
+  await withTransaction(async () => {
+    await assertUsernameTersedia(username);
+    await query(
+      'INSERT INTO "Guru" ("id", "nama", "username", "password", "departemen", "unit", "jenisAkun") VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [row.id, row.nama, row.username, row.password, row.departemen, row.unit, row.jenisAkun],
+    );
+    await catatAuditAdmin({
+      aktorId: actingUserId, aksi: "admin.staff_created", targetTipe: "Guru", targetId: row.id,
+      detail: { username: row.username, departemen: row.departemen, jenisAkun: row.jenisAkun },
+    });
+  });
   return toPublicGuru(row);
 }
 
-async function editGuru({ id, nama, username, departemen, unit }) {
+async function editGuru({ id, nama, username, departemen, unit, jenisAkun, actingUserId }) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1', [id]);
     if (!row) throw new CashlessError(404, "Akun tidak ditemukan.");
     if (username && username !== row.username) await assertUsernameTersedia(username, id);
-    const depFinal = departemen || row.departemen;
-    if (!DEPARTEMEN_VALID.includes(depFinal)) throw new CashlessError(400, "Departemen tidak valid.");
+    const kindFinal = jenisAkun || row.jenisAkun || (row.departemen === "admin" ? "superadmin" : "staf");
+    if (!JENIS_AKUN_VALID.includes(kindFinal)) throw new CashlessError(400, "Jenis akun tidak valid.");
+    const depFinal = kindFinal !== "staf" ? "admin" : (departemen || row.departemen);
+    if (kindFinal === "staf" && depFinal === "admin") throw new CashlessError(400, "Departemen admin hanya untuk akun Admin atau Superadmin.");
+    if (depFinal !== "admin" && !DEPARTEMEN_VALID.includes(depFinal)) throw new CashlessError(400, "Departemen tidak valid.");
     const unitFinal = depFinal === "unitusaha" ? (unit || row.unit) : null;
     if (depFinal === "unitusaha" && !unitFinal) throw new CashlessError(400, "Pilih bagian Unit Usaha (Kantin/Kopel/Dapur/BMT, dst.).");
+    const oldKind = row.jenisAkun || (row.departemen === "admin" ? "superadmin" : "staf");
+    if (oldKind === "superadmin" && kindFinal !== "superadmin") {
+      const count = Number((await queryOne('SELECT COUNT(*) AS "n" FROM "Guru" WHERE "jenisAkun" = \'superadmin\'')).n);
+      if (count <= 1) throw new CashlessError(400, "Tidak bisa menurunkan akun Superadmin terakhir.");
+    }
     await query(
-      'UPDATE "Guru" SET "nama" = $1, "username" = $2, "departemen" = $3, "unit" = $4 WHERE "id" = $5',
-      [nama || row.nama, username || row.username, depFinal, unitFinal, id],
+      'UPDATE "Guru" SET "nama" = $1, "username" = $2, "departemen" = $3, "unit" = $4, "jenisAkun" = $5 WHERE "id" = $6',
+      [nama || row.nama, username || row.username, depFinal, unitFinal, kindFinal, id],
     );
+    await catatAuditAdmin({
+      aktorId: actingUserId, aksi: "admin.staff_updated", targetTipe: "Guru", targetId: id,
+      detail: { departemenSebelum: row.departemen, departemenSesudah: depFinal, jenisAkunSebelum: oldKind, jenisAkunSesudah: kindFinal },
+    });
     return toPublicGuru(await queryOne('SELECT * FROM "Guru" WHERE "id" = $1', [id]));
   });
 }
 
-async function editPasswordGuru({ id, password }) {
-  if (!password) throw new CashlessError(400, "Kata sandi baru wajib diisi.");
-  const row = await queryOne('SELECT "id" FROM "Guru" WHERE "id" = $1', [id]);
-  if (!row) throw new CashlessError(404, "Akun tidak ditemukan.");
-  await query('UPDATE "Guru" SET "password" = $1 WHERE "id" = $2', [bcrypt.hashSync(password, 10), id]);
+async function catatAuditAdmin({ aktorId, aksi, targetTipe, targetId, detail = {} }) {
+  await query(
+    `INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
+     VALUES ($1, $2, 'guru', $3, $4, $5, $6::jsonb)`,
+    [uid(), aktorId, aksi, targetTipe, targetId, JSON.stringify(detail)],
+  );
+}
+
+function assertPasswordResetLayak(password) {
+  if (typeof password !== "string" || password.length < 12) {
+    throw new CashlessError(400, "Kata sandi baru minimal 12 karakter.");
+  }
+}
+
+async function editPasswordGuru({ id, password, actingUserId }) {
+  assertPasswordResetLayak(password);
+  const passwordHash = bcrypt.hashSync(password, 12);
+  await withTransaction(async () => {
+    const row = await queryOne('SELECT "id" FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row) throw new CashlessError(404, "Akun tidak ditemukan.");
+    await query(`UPDATE "Guru" SET "password" = $1, "mustChangePassword" = TRUE,
+      "loginFailedAttempts" = 0, "loginLockedUntil" = NULL, "sessionVersion" = "sessionVersion" + 1 WHERE "id" = $2`, [passwordHash, id]);
+    await catatAuditAdmin({ aktorId: actingUserId, aksi: "auth.password_reset", targetId: id, targetTipe: "Guru" });
+  });
+  return { id, updated: true };
+}
+
+async function editPasswordWali({ id, password, actingUserId }) {
+  assertPasswordResetLayak(password);
+  const passwordHash = bcrypt.hashSync(password, 12);
+  await withTransaction(async () => {
+    const row = await queryOne('SELECT "id" FROM "Wali" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row) throw new CashlessError(404, "Akun wali tidak ditemukan.");
+    await query(`UPDATE "Wali" SET "password" = $1, "mustChangePassword" = TRUE,
+      "loginFailedAttempts" = 0, "loginLockedUntil" = NULL, "sessionVersion" = "sessionVersion" + 1 WHERE "id" = $2`, [passwordHash, id]);
+    await catatAuditAdmin({ aktorId: actingUserId, aksi: "auth.password_reset", targetId: id, targetTipe: "Wali" });
+  });
   return { id, updated: true };
 }
 
@@ -68,11 +123,13 @@ async function hapusGuru({ id, actingUserId }) {
     const row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Akun tidak ditemukan.");
     if (id === actingUserId) throw new CashlessError(400, "Tidak bisa menghapus akun sendiri yang sedang dipakai untuk login ini.");
-    if (row.departemen === "admin") {
-      const jumlahAdmin = (await queryOne('SELECT COUNT(*) AS "n" FROM "Guru" WHERE "departemen" = \'admin\'')).n;
-      if (Number(jumlahAdmin) <= 1) throw new CashlessError(400, "Tidak bisa menghapus admin terakhir — sistem membutuhkan minimal satu akun Admin.");
+    const jenisAkun = row.jenisAkun || (row.departemen === "admin" ? "superadmin" : "staf");
+    if (jenisAkun === "superadmin") {
+      const jumlahSuperadmin = (await queryOne('SELECT COUNT(*) AS "n" FROM "Guru" WHERE "jenisAkun" = \'superadmin\'')).n;
+      if (Number(jumlahSuperadmin) <= 1) throw new CashlessError(400, "Tidak bisa menghapus Superadmin terakhir — sistem membutuhkan minimal satu akun Superadmin.");
     }
     await query('DELETE FROM "Guru" WHERE "id" = $1', [id]);
+    await catatAuditAdmin({ aktorId: actingUserId, aksi: "admin.staff_deleted", targetTipe: "Guru", targetId: id });
     return { id, deleted: true };
   });
 }
@@ -90,13 +147,14 @@ async function tambahUnitUsaha(namaMentah) {
   });
 }
 
-async function hapusUnitUsaha(id) {
+async function hapusUnitUsaha(id, actingUserId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "UnitUsaha" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Unit usaha tidak ditemukan.");
     const dipakai = Number((await queryOne('SELECT COUNT(*) AS "n" FROM "Guru" WHERE "departemen" = \'unitusaha\' AND "unit" = $1', [row.nama])).n);
     if (dipakai > 0) throw new CashlessError(409, "Unit usaha ini masih dipakai oleh akun staf — pindahkan akun tersebut ke unit lain dahulu.");
     await query('DELETE FROM "UnitUsaha" WHERE "id" = $1', [id]);
+    await catatAuditAdmin({ aktorId: actingUserId, aksi: "admin.business_unit_deleted", targetTipe: "UnitUsaha", targetId: id });
     return row;
   });
 }
@@ -126,11 +184,12 @@ async function aktifkanTahunAjaran(id) {
   });
 }
 
-async function hapusTahunAjaran(id) {
+async function hapusTahunAjaran(id, actingUserId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "TahunAjaran" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Tahun ajaran tidak ditemukan.");
     await query('DELETE FROM "TahunAjaran" WHERE "id" = $1', [id]);
+    await catatAuditAdmin({ aktorId: actingUserId, aksi: "admin.school_year_deleted", targetTipe: "TahunAjaran", targetId: id });
     return row;
   });
 }
@@ -230,7 +289,7 @@ async function ubahStatusProduk({ id, aktif }) {
 }
 
 module.exports = {
-  semuaGuru, buatGuru, editGuru, editPasswordGuru, hapusGuru,
+  semuaGuru, buatGuru, editGuru, editPasswordGuru, editPasswordWali, hapusGuru,
   semuaUnitUsaha, tambahUnitUsaha, hapusUnitUsaha,
   semuaTahunAjaran, tambahTahunAjaran, aktifkanTahunAjaran, hapusTahunAjaran,
   ambilTampilan, simpanTampilan, ringkasanSuperadmin, daftarWali, daftarKartuSuperadmin,

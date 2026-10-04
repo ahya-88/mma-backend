@@ -208,6 +208,14 @@ async function catatTransaksiTx({ santriId, unit, jenis, kategori, subKategori, 
     `, [transaksi.id, transaksi.santriId, transaksi.unit, transaksi.jenis, transaksi.kategori, transaksi.subKategori, transaksi.metode,
       transaksi.jumlah, transaksi.keterangan, transaksi.saldoSetelah, transaksi.tanggalISO, transaksi.tanggalLabel, transaksi.bulan,
       idempotencyKey || null, saldoSekarang, saldoBaru]);
+    await catatAuditTx({
+      aktorId: petugasId,
+      aktorRole: "guru",
+      aksi: "cashless.transaction_recorded",
+      targetTipe: "Santri",
+      targetId: santriId,
+      detail: { transaksiId: transaksi.id, unit, jenis, kategori: transaksi.kategori, jumlah, saldoSebelum: saldoSekarang, saldoSesudah: saldoBaru },
+    });
 
     const response = {
       transaksi,

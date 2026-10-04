@@ -7,11 +7,17 @@ const JENIS_TAGIHAN = ["Syahriyah", "Uang Pangkal", "Seragam", "Kegiatan/Kitab",
 const KATEGORI_CASHFLOW = ["Pembayaran Santri", "Infaq/Donasi", "Bantuan Pemerintah", "Operasional", "Gaji/Honor", "Konsumsi", "Perbaikan/Maintenance", "Lainnya"];
 const STATUS_ANGGARAN = ["Diajukan", "Disetujui", "Ditolak", "Direalisasikan"];
 
+async function catatAuditKeuangan({ aktorId, aksi, targetTipe, targetId, detail }) {
+  await query(`INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
+    VALUES ($1, $2, 'guru', $3, $4, $5, $6::jsonb)`,
+  [uid(), aktorId || null, aksi, targetTipe, targetId || null, JSON.stringify(detail || {})]);
+}
+
 function statusTagihan(tagihan) {
   return (tagihan.jumlahDibayar || 0) >= tagihan.jumlah ? "Lunas" : (tagihan.jumlahDibayar || 0) > 0 ? "Sebagian" : "Belum Lunas";
 }
 
-async function buatTagihan({ santriIds, jenis, jumlah, bulan, dicatatOleh }) {
+async function buatTagihan({ santriIds, jenis, jumlah, bulan, dicatatOleh, aktorId }) {
   return withTransaction(async () => {
     if (!Array.isArray(santriIds) || !santriIds.length) throw new CashlessError(400, "Minimal satu santri tujuan tagihan wajib diisi.");
     if (!jenis || !jumlah || !bulan) throw new CashlessError(400, "Jenis, jumlah, dan bulan tagihan wajib diisi.");
@@ -23,6 +29,10 @@ async function buatTagihan({ santriIds, jenis, jumlah, bulan, dicatatOleh }) {
         [row.id, row.santriId, row.jenis, row.jumlah, row.bulan, row.jumlahDibayar, row.tanggalBayarISO, row.dicatatOleh]);
       dibuat.push(row);
     }
+    await catatAuditKeuangan({
+      aktorId, aksi: "keuangan.tagihan_created", targetTipe: "Tagihan", targetId: dibuat[0].id,
+      detail: { jumlahTagihan: dibuat.length, jenis, jumlah: Number(jumlah), bulan },
+    });
     return dibuat;
   });
 }
@@ -30,16 +40,17 @@ async function buatTagihan({ santriIds, jenis, jumlah, bulan, dicatatOleh }) {
 const semuaTagihan = () => queryAll('SELECT * FROM "Tagihan" ORDER BY "createdAt" DESC');
 const tagihanSantri = (santriId) => queryAll('SELECT * FROM "Tagihan" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
 
-async function hapusTagihan(id) {
+async function hapusTagihan(id, aktorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Tagihan" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data tagihan tidak ditemukan.");
     await query('DELETE FROM "Tagihan" WHERE "id" = $1', [id]);
+    await catatAuditKeuangan({ aktorId, aksi: "keuangan.tagihan_deleted", targetTipe: "Tagihan", targetId: id, detail: {} });
     return row;
   });
 }
 
-async function editTagihanNominal({ id, jumlah, jumlahDibayar }) {
+async function editTagihanNominal({ id, jumlah, jumlahDibayar, aktorId }) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Tagihan" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data tagihan tidak ditemukan.");
@@ -48,11 +59,15 @@ async function editTagihanNominal({ id, jumlah, jumlahDibayar }) {
     if (!jumlah || jumlahDibayar < 0) throw new CashlessError(400, "Jumlah tagihan/dibayar tidak valid.");
     const dibayarBaru = Math.min(jumlahDibayar, jumlah);
     await query('UPDATE "Tagihan" SET "jumlah" = $1, "jumlahDibayar" = $2 WHERE "id" = $3', [jumlah, dibayarBaru, id]);
+    await catatAuditKeuangan({
+      aktorId, aksi: "keuangan.tagihan_amount_changed", targetTipe: "Tagihan", targetId: id,
+      detail: { jumlahLama: Number(row.jumlah), jumlahBaru: jumlah, dibayarLama: Number(row.jumlahDibayar || 0), dibayarBaru },
+    });
     return queryOne('SELECT * FROM "Tagihan" WHERE "id" = $1', [id]);
   });
 }
 
-async function catatPembayaran({ tagihanId, jumlahBayar, dicatatOleh }) {
+async function catatPembayaran({ tagihanId, jumlahBayar, dicatatOleh, aktorId }) {
   return withTransaction(async () => {
     const tagihan = await queryOne('SELECT * FROM "Tagihan" WHERE "id" = $1 FOR UPDATE', [tagihanId]);
     if (!tagihan) throw new CashlessError(404, "Data tagihan tidak ditemukan.");
@@ -67,11 +82,15 @@ async function catatPembayaran({ tagihanId, jumlahBayar, dicatatOleh }) {
     };
     await query('INSERT INTO "Cashflow" ("id", "bulan", "tanggalISO", "jenis", "kategori", "jumlah", "keterangan", "dicatatOleh") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
       [cashflow.id, cashflow.bulan, cashflow.tanggalISO, cashflow.jenis, cashflow.kategori, cashflow.jumlah, cashflow.keterangan, cashflow.dicatatOleh]);
+    await catatAuditKeuangan({
+      aktorId, aksi: "keuangan.tagihan_payment_recorded", targetTipe: "Tagihan", targetId: tagihanId,
+      detail: { jumlahBayar, jumlahDibayarSebelumnya: Number(tagihan.jumlahDibayar || 0), jumlahDibayar: dibayarBaru },
+    });
     return { tagihan: await queryOne('SELECT * FROM "Tagihan" WHERE "id" = $1', [tagihanId]), cashflow };
   });
 }
 
-async function catatCashflow({ bulan, jenis, kategori, jumlah, keterangan, dicatatOleh }) {
+async function catatCashflow({ bulan, jenis, kategori, jumlah, keterangan, dicatatOleh, aktorId }) {
   return withTransaction(async () => {
     if (!bulan || !jenis || !kategori || !jumlah) throw new CashlessError(400, "Bulan, jenis, kategori, dan jumlah wajib diisi.");
     if (!["Masuk", "Keluar"].includes(jenis)) throw new CashlessError(400, "Jenis cashflow harus Masuk atau Keluar.");
@@ -79,16 +98,21 @@ async function catatCashflow({ bulan, jenis, kategori, jumlah, keterangan, dicat
     const row = { id: uid(), bulan, tanggalISO: todayISO(), jenis, kategori, jumlah: Number(jumlah), keterangan: keterangan || null, dicatatOleh: dicatatOleh || null };
     await query('INSERT INTO "Cashflow" ("id", "bulan", "tanggalISO", "jenis", "kategori", "jumlah", "keterangan", "dicatatOleh") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
       [row.id, row.bulan, row.tanggalISO, row.jenis, row.kategori, row.jumlah, row.keterangan, row.dicatatOleh]);
+    await catatAuditKeuangan({
+      aktorId, aksi: "keuangan.cashflow_recorded", targetTipe: "Cashflow", targetId: row.id,
+      detail: { jenis, kategori, jumlah: row.jumlah },
+    });
     return row;
   });
 }
 const semuaCashflow = () => queryAll('SELECT * FROM "Cashflow" ORDER BY "createdAt" DESC');
 
-async function hapusCashflow(id) {
+async function hapusCashflow(id, aktorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Cashflow" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data cashflow tidak ditemukan.");
     await query('DELETE FROM "Cashflow" WHERE "id" = $1', [id]);
+    await catatAuditKeuangan({ aktorId, aksi: "keuangan.cashflow_deleted", targetTipe: "Cashflow", targetId: id, detail: {} });
     return row;
   });
 }
@@ -131,13 +155,14 @@ async function ajukanAnggaran({ namaKegiatan, unitPengaju, ketuaBagianNama, kate
   });
 }
 
-async function hapusPengajuan(id) {
+async function hapusPengajuan(id, aktorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "PengajuanAnggaran" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data pengajuan anggaran tidak ditemukan.");
     if (!["Diajukan", "Ditolak"].includes(row.status)) throw new CashlessError(409, "Hanya pengajuan berstatus Diajukan atau Ditolak yang boleh dihapus.");
     await query('DELETE FROM "RincianAnggaran" WHERE "pengajuanId" = $1', [id]);
     await query('DELETE FROM "PengajuanAnggaran" WHERE "id" = $1', [id]);
+    await catatAuditKeuangan({ aktorId, aksi: "keuangan.budget_request_deleted", targetTipe: "PengajuanAnggaran", targetId: id, detail: {} });
     return row;
   });
 }

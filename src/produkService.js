@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("./db");
 const { CashlessError } = require("./cashlessService");
+const { recordAudit } = require("./auditLog");
 
 const uid = () => crypto.randomUUID();
 const semuaProdukUnit = (unit) => queryAll('SELECT * FROM "ProdukUnitUsaha" WHERE "unit" = $1 ORDER BY "kategori", "nama"', [unit]);
@@ -41,11 +42,12 @@ async function editProduk({ id, unit, nama, harga, kategori, barcode, aktif }) {
   });
 }
 
-async function hapusProduk(id) {
+async function hapusProduk(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "ProdukUnitUsaha" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Produk tidak ditemukan.");
     await query('DELETE FROM "ProdukUnitUsaha" WHERE "id" = $1', [id]);
+    await recordAudit({ actorId, actorRole: "guru", action: "data.product_deleted", targetType: "ProdukUnitUsaha", targetId: id });
     return { ok: true };
   });
 }

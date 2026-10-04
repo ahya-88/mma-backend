@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("./db");
 const { CashlessError, getSantriRow, todayISO } = require("./cashlessService");
+const { recordAudit } = require("./auditLog");
 
 const uid = () => crypto.randomUUID();
 const PREDIKAT_LIST = ["Sangat Baik", "Baik", "Cukup", "Perlu Bimbingan"];
@@ -16,11 +17,12 @@ async function catatNilai({ santriId, mapel, nilai, dicatatOleh }) {
   });
 }
 const semuaNilai = () => queryAll('SELECT * FROM "Nilai" ORDER BY "createdAt" DESC');
-async function hapusNilai(id) {
+async function hapusNilai(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Nilai" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data nilai tidak ditemukan.");
     await query('DELETE FROM "Nilai" WHERE "id" = $1', [id]);
+    await recordAudit({ actorId, actorRole: "guru", action: "data.nilai_deleted", targetType: "Nilai", targetId: id });
     return row;
   });
 }
@@ -36,11 +38,12 @@ async function catatPrestasi({ santriId, judul, tingkat, dicatatOleh }) {
   });
 }
 const semuaPrestasi = () => queryAll('SELECT * FROM "Prestasi" ORDER BY "createdAt" DESC');
-async function hapusPrestasi(id) {
+async function hapusPrestasi(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Prestasi" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data prestasi tidak ditemukan.");
     await query('DELETE FROM "Prestasi" WHERE "id" = $1', [id]);
+    await recordAudit({ actorId, actorRole: "guru", action: "data.prestasi_deleted", targetType: "Prestasi", targetId: id });
     return row;
   });
 }
@@ -56,11 +59,12 @@ async function catatHafalan({ santriId, juz, dicatatOleh }) {
   });
 }
 const semuaHafalan = () => queryAll('SELECT * FROM "Hafalan" ORDER BY "createdAt" DESC');
-async function hapusHafalan(id) {
+async function hapusHafalan(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Hafalan" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data hafalan tidak ditemukan.");
     await query('DELETE FROM "Hafalan" WHERE "id" = $1', [id]);
+    await recordAudit({ actorId, actorRole: "guru", action: "data.hafalan_deleted", targetType: "Hafalan", targetId: id });
     return row;
   });
 }
@@ -77,11 +81,12 @@ async function catatUbudiyah({ santriId, jenis, materi, predikat, catatan, dicat
   });
 }
 const semuaUbudiyah = () => queryAll('SELECT * FROM "PenilaianUbudiyah" ORDER BY "createdAt" DESC');
-async function hapusUbudiyah(id) {
+async function hapusUbudiyah(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "PenilaianUbudiyah" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Data penilaian ubudiyah tidak ditemukan.");
     await query('DELETE FROM "PenilaianUbudiyah" WHERE "id" = $1', [id]);
+    await recordAudit({ actorId, actorRole: "guru", action: "data.ubudiyah_deleted", targetType: "PenilaianUbudiyah", targetId: id });
     return row;
   });
 }

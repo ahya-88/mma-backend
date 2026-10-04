@@ -4,8 +4,18 @@ CREATE TABLE IF NOT EXISTS "Wali" (
   "hp" TEXT,
   "username" TEXT NOT NULL UNIQUE,
   "password" TEXT NOT NULL,
+  "mustChangePassword" BOOLEAN NOT NULL DEFAULT TRUE,
+  "loginFailedAttempts" INTEGER NOT NULL DEFAULT 0,
+  "loginLockedUntil" TEXT,
+  "sessionVersion" INTEGER NOT NULL DEFAULT 0,
+  "passwordChangedAt" TEXT,
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "loginFailedAttempts" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "loginLockedUntil" TEXT;
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "sessionVersion" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "passwordChangedAt" TEXT;
 
 CREATE TABLE IF NOT EXISTS "Guru" (
   "id" TEXT PRIMARY KEY,
@@ -14,8 +24,21 @@ CREATE TABLE IF NOT EXISTS "Guru" (
   "password" TEXT NOT NULL,
   "departemen" TEXT NOT NULL,
   "unit" TEXT,
+  "jenisAkun" TEXT NOT NULL DEFAULT 'staf',
+  "mustChangePassword" BOOLEAN NOT NULL DEFAULT TRUE,
+  "loginFailedAttempts" INTEGER NOT NULL DEFAULT 0,
+  "loginLockedUntil" TEXT,
+  "sessionVersion" INTEGER NOT NULL DEFAULT 0,
+  "passwordChangedAt" TEXT,
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
+ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "jenisAkun" TEXT NOT NULL DEFAULT 'staf';
+ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "loginFailedAttempts" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "loginLockedUntil" TEXT;
+ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "sessionVersion" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "passwordChangedAt" TEXT;
+UPDATE "Guru" SET "jenisAkun" = 'superadmin' WHERE "departemen" = 'admin' AND "jenisAkun" = 'staf';
 
 CREATE TABLE IF NOT EXISTS "Santri" (
   "id" TEXT PRIMARY KEY,

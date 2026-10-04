@@ -7,6 +7,12 @@ Sesuai rekomendasi roadmap sebelumnya (`roadmap-super-app-mma.md`): **satu backe
 ## Database PostgreSQL
 Backend memakai PostgreSQL melalui paket `pg`. Isi `DATABASE_URL` dengan connection string PostgreSQL; koneksi ke host selain localhost memakai SSL. Skema idempoten ada di `src/schema.pg.sql`, dan nama kolom camelCase dipertahankan menggunakan identifier SQL bertanda kutip.
 
+## Keamanan dan backup
+Login memakai bcrypt, JWT dua jam, lockout setelah lima kegagalan selama 15 menit, Helmet, CORS allowlist, dan rate limit. Akun lama yang melewati migrasi skema diwajibkan mengganti sandi saat login berikutnya; koordinasikan perubahan ini sebelum deploy. Semua endpoint riwayat/saldo santri dan resolusi QR kartu memerlukan token serta pemeriksaan peran/pemilik.
+
+Set `JWT_SECRET`, `CORS_ORIGINS`, dan `TRUST_PROXY_HOPS` melalui secret/config store hosting. Jangan aktifkan `DEMO_MODE` di produksi. Prosedur backup/PITR, dump harian terpisah, restore drill, dan checklist perlindungan data anak dijelaskan di [docs/security-operations.md](./docs/security-operations.md). Belum ada provider backup yang dikonfigurasi atau diuji dari repository ini.
+Database kosong dapat membuat akun Superadmin pertama melalui `npm run bootstrap:admin`; proses satu-kali ini menolak database yang sudah memiliki akun staf dan mewajibkan sandi awal diganti saat login. Gunakan hanya setelah backup dan dengan variabel rahasia di lingkungan proses, bukan sebagai argumen command line.
+
 ### Keamanan Top Up Saldo
 Skema Top Up yang baru diterapkan otomatis saat backend mulai; seluruh perubahan memakai `IF NOT EXISTS` dan aman dijalankan ulang. Startup juga mengisi hash bukti lama yang valid dan belum memiliki hash. Pengaturan disimpan pada key `topup` di tabel `Pengaturan`; default menjaga perilaku aplikasi lama (`wajibReferensiMutasi=false`, `buktiDiDaftar=true`, dan `persetujuanKeduaAktif=false`), sementara batas nominal Rp 10.000–Rp 5.000.000 dan maksimum 3 permintaan menunggu langsung berlaku.
 
@@ -50,8 +56,10 @@ backend/
 ```bash
 cd backend
 npm install
-cp .env.example .env
+Copy-Item .env.example .env
 # isi DATABASE_URL dan JWT_SECRET di .env
+$env:NODE_ENV="development"
+$env:DEMO_MODE="true"   # hanya untuk database lokal/staging yang terisolasi
 npm run seed
 npm start                   # jalan di http://localhost:4000
 ```
@@ -59,36 +67,30 @@ Cek: `curl http://localhost:4000/api/health` → `{"ok":true, ...}`. Endpoint in
 
 ## Panel Superadmin
 
-Panel tersedia di `http://localhost:4000/superadmin` setelah backend berjalan. Login dilakukan melalui halaman utama `http://localhost:4000` bersama akun lain; setelah login berhasil, akun dengan departemen `admin` otomatis diarahkan ke panel. Tidak ada halaman atau kredensial login terpisah. Token sesi yang sama diteruskan di `sessionStorage` dan diverifikasi kembali pada endpoint yang dilindungi. Keluar dari panel akan kembali ke halaman login utama. Akun Admin dapat membaca modul lintas departemen, sedangkan pencatatan transaksi kasir tetap dibatasi untuk staf Unit Usaha.
+Dashboard Admin tersedia di `http://localhost:4000/admin` dan dashboard Superadmin di `http://localhost:4000/superadmin`. Keduanya memakai halaman login utama yang sama; setelah login, jenis akun menentukan dashboard tujuan. Akun Admin mendapat akses baca lintas modul operasional, sedangkan perubahan data, persetujuan, pengelolaan akun/role, konfigurasi, dan audit sistem tetap khusus Superadmin atau staf modul yang berwenang. Perbedaan akses ditegakkan oleh API, bukan hanya tampilan menu. Akun Admin tidak dapat melakukan transaksi kasir.
 
-Panel merangkum santri, wali, staf, absensi, tunggakan, permintaan BMT, anggaran, cashflow, unit usaha, produk, kartu, statistik verifikasi wajah, tahun ajaran, tampilan aplikasi, status layanan, dan log audit. Panel juga menyediakan persetujuan perizinan/top-up/anggaran, aktivasi tahun ajaran, pengubahan tampilan, serta pengaktifan/nonaktifkan produk. Endpoint ringkasan, daftar wali/permintaan/kartu, akses panel, audit, dan status produk di `/api/admin/*` memerlukan akun Admin; daftar kartu panel hanya memuat status dan tidak menyertakan token/QR. Endpoint `/api/wajah/embeddings` hanya tersedia bagi staf Unit Usaha yang terautentikasi; nilai embedding tidak ditampilkan di panel.
+Dashboard Superadmin memuat ringkasan dan pengelolaan akun, konfigurasi, persetujuan, dan audit. Dashboard Admin menampilkan ringkasan serta daftar baca-saja untuk data operasional lintas modul; menu akun, kartu/biometrik, konfigurasi, dan audit sistem tidak tersedia bagi Admin. Pengelolaan akun selain reset sandi memerlukan Superadmin. Endpoint reset sandi Guru/Wali menerima Admin, Superadmin, atau Sekretariat, mewajibkan perubahan sandi saat login berikutnya, dan mencabut sesi sebelumnya. Pada database lama, akun yang sebelumnya memakai departemen `admin` otomatis dimigrasikan sebagai Superadmin.
 
-## Akun demo (sama seperti frontend)
-| Username | Password | Peran |
-|---|---|---|
-| admin | admin123 | Admin |
-| fahmi | guru123 | Staf Pengasuhan |
-| nadia | guru123 | Staf Pengajaran |
-| hilmi.lptq | guru123 | Staf LPTQ |
-| hendra | uang123 | Staf Administrasi/Keuangan |
-| fatimah.bmt | guru123 | Staf BMT |
-| slamet.kantin | guru123 | Staf Kantin |
-| ahmad.ridwan | wali123 | Wali (anak: Abdul Malik/s1, Umar Faruq/s3) |
+## Akun demo (lokal saja)
+Seed akun demo hanya berjalan jika `DEMO_MODE=true` di lingkungan non-production. Akun tidak boleh digunakan untuk data nyata; setiap akun seed wajib mengganti kata sandi pada login pertama. Kredensial demo disediakan hanya untuk menguji database lokal/staging terisolasi.
+
+Jangan dokumentasikan atau gunakan kredensial ini di production. Fixture dan akun contoh tercantum di `src/seed.js`; pasangan kredensial seed yang lama diblokir saat environment produksi terdeteksi.
 
 ## Kontrak API
-Semua endpoint berawalan `/api`. Kirim `Authorization: Bearer <token>` dari hasil login, kecuali endpoint kios.
+Semua endpoint berawalan `/api`. Kirim `Authorization: Bearer <token>` dari hasil login; health check, login, dan konfigurasi tampilan non-sensitif untuk layar masuk dapat diakses publik.
 
 | Method | Endpoint | Peran | Keterangan |
 |---|---|---|---|
-| POST | `/auth/login` | publik | `{ username, password }` → `{ token, user }` |
+| POST | `/auth/login` | publik, dibatasi rate limit | `{ username, password }` → `{ token, user }`; akun awal/reset wajib ganti sandi melalui endpoint berikutnya |
+| POST | `/auth/change-password` | token ganti sandi atau sesi aktif | `{ currentPassword?, newPassword }`; minimum 12 karakter, token sesi baru dikembalikan |
 | GET | `/santri/me-anak` | wali | daftar anak sendiri + saldo/limit/blokir |
 | GET | `/santri/:id` | BMT atau wali pemilik | detail 1 santri |
 | GET | `/santri/:id/riwayat` | BMT atau wali pemilik | riwayat transaksi lintas unit |
-| GET | `/santri/:id/saldo-publik` | **publik, tanpa token** | untuk kios cek saldo mandiri — info minimal saja |
+| GET | `/santri/:id/saldo-publik` | staf berwenang atau wali pemilik | informasi saldo minimum |
 | GET | `/santri/:id/rapor-ringkas` | staf mana pun, atau wali pemilik | absensi + perizinan + pelanggaran + nilai + prestasi + hafalan + ubudiyah dalam satu panggilan; **field `tagihan`** juga disertakan tapi **hanya** terisi untuk wali pemilik anak atau staf Administrasi — untuk staf lain, `tagihan` selalu `[]` — sedangkan saldo cashless tetap lewat `/santri/:id` (BMT-atau-wali-pemilik saja) |
 | POST | `/santri/upsert` | staf mana pun (guru) | sinkronkan identitas dasar santri (dipanggil otomatis sebelum transaksi/perizinan/pelanggaran/nilai/dst diproses) |
 | POST | `/transaksi` | staf Unit Usaha | `{ santriId, jenis?, kategori?, subKategori?, jumlah, keterangan?, pin?, metode? }`; PIN opsional khusus transaksi QR bagi santri yang belum mengatur PIN. Jika PIN sudah diatur, transaksi debit QR tetap wajib memakainya; metode manual/wajah tetap memerlukan PIN. |
-| POST | `/kartu/resolve` | staf Unit Usaha | `{ token: "MMA1:<kartuToken>" }` → identitas/saldo santri tanpa field rahasia |
+| POST | `/kartu/resolve` | staf Unit Usaha terautentikasi | `{ token: "MMA1:<kartuToken>" }` → identitas/saldo santri tanpa field rahasia |
 | GET | `/kartu/kelola` | BMT | daftar santri dan QR aktif (PNG data URL) serta status `punyaPin`; tidak mengirim token kartu mentah atau hash PIN |
 | GET | `/kartu/cetak` | BMT | HTML siap cetak; gunakan header Authorization, kartu tanpa PIN |
 | POST | `/santri/pin/awal` | BMT | Buat PIN acak untuk semua santri yang belum punya PIN; respons PIN hanya sekali |
@@ -179,7 +181,7 @@ Biodata lengkap (tempat/tanggal lahir, alamat, orang tua, riwayat pendidikan, `r
 - Transaksi berikutnya ditolak (409) selama blokir aktif.
 - Kategori Kebutuhan Khusus **tidak** dihitung ke limit harian (nominal besar tidak memicu blokir).
 - Wali mengajukan Buka Blokir Sekarang → BMT menyetujui → blokir langsung nonaktif, transaksi lanjut normal.
-- Riwayat lintas unit & endpoint saldo publik (kios) mengembalikan data yang benar.
+- Riwayat lintas unit dan saldo hanya dapat dibaca oleh staf yang berwenang atau wali pemilik santri.
 - Batasan akses: wali lain tidak bisa lihat anak orang lain (403), staf non-BMT tidak bisa akses endpoint Permintaan (403), request tanpa token ditolak (401).
 
 ### Modul Pengasuhan — sudah diuji
@@ -243,7 +245,7 @@ Sudah diuji dengan tujuh test integrasi penuh (server backend nyata + frontend j
 Gunakan hosting Node.js dan PostgreSQL terkelola atau server PostgreSQL yang dapat diakses dari aplikasi. Set `DATABASE_URL`, `JWT_SECRET`, dan `PORT` pada environment hosting; tidak diperlukan volume berkas database.
 
 ### Frontend disajikan dari service backend yang sama (satu URL untuk semuanya)
-Folder `public/index.html` di repo ini **adalah** `pesantren-app.html` — `src/app.js` sudah diatur untuk menyajikannya langsung di path `/` (lihat blok `express.static` + fallback di `app.js`). Artinya **tidak perlu hosting frontend terpisah** (Netlify/Vercel/dst.): begitu backend ini live di Railway, buka saja domain Railway-nya langsung (tanpa `/api`) dan aplikasinya sudah tampil, sudah otomatis tersambung ke API di domain yang sama. Ini sengaja dipilih ketimbang hosting terpisah karena aplikasi tambahan di masa depan (kasir, kiosk saldo, dst.) akan lebih mudah dikelola kalau semuanya berada dalam satu project Railway — tinggal tambah service baru per aplikasi, dan kalau nanti pakai domain sendiri, tiap aplikasi tinggal jadi subdomain (`app.domain.id`, `kasir.domain.id`, dst.) dari domain yang sama, tanpa perlu urus CORS/domain terpisah sama sekali (CORS backend ini sudah dibuka untuk semua origin).
+Folder `public/index.html` di repo ini **adalah** `pesantren-app.html` — `src/app.js` sudah diatur untuk menyajikannya langsung di path `/` (lihat blok `express.static` + fallback di `app.js`). Artinya **tidak perlu hosting frontend terpisah** (Netlify/Vercel/dst.): begitu backend ini live di Railway, buka saja domain Railway-nya langsung (tanpa `/api`) dan aplikasinya sudah tampil, sudah otomatis tersambung ke API di domain yang sama. Jika nanti frontend tambahan memakai origin terpisah, masukkan origin HTTPS yang tepat ke `CORS_ORIGINS`; CORS tidak lagi terbuka untuk semua origin.
 
 Setiap kali `pesantren-app.jsx` diubah dan di-build ulang jadi `pesantren-app.html`, cukup timpa `public/index.html` dengan hasil build barunya, commit, push — Railway redeploy otomatis.
 
@@ -266,9 +268,10 @@ Setiap kali `pesantren-app.jsx` diubah dan di-build ulang jadi `pesantren-app.ht
    - `DATABASE_URL` = connection string PostgreSQL/Neon dengan SSL, misalnya format `postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require`
    - `JWT_SECRET` = string acak yang panjang (generate lewat `openssl rand -hex 32` di terminal/Mac/Linux, atau di PowerShell Windows: `-join ((48..57)+(97..122)|Get-Random -Count 40 |%{[char]$_})`)
    - `PORT` boleh dikosongkan — Railway mengisinya otomatis.
-5. Saat deploy, aplikasi menjalankan skema dan seed default `UnitUsaha`, `TahunAjaran`, serta `Pengaturan` secara idempoten. Jalankan `npm run seed` hanya bila akun demo dibutuhkan.
-6. Railway memberi domain publik otomatis di tab **Settings → Networking → Generate Domain**, bentuknya seperti `https://mma-backend-production.up.railway.app`. Karena frontend disajikan dari service yang sama, domain ini langsung membuka aplikasinya; API-nya ada di domain yang sama + `/api`.
-7. Tes `https://<domain-railway-anda>/api/health`; harus mengembalikan HTTP 200 dan `{"ok":true,"waktu":"..."}` ketika database sehat.
+5. Saat deploy, aplikasi menjalankan skema dan seed default `UnitUsaha`, `TahunAjaran`, serta `Pengaturan` secara idempoten. Jangan jalankan `npm run seed` pada deployment produksi.
+6. Set `NODE_ENV=production`, `DEMO_MODE=false`, `CORS_ORIGINS` ke origin frontend HTTPS yang tepat, dan `TRUST_PROXY_HOPS=1` bila hanya ada satu reverse proxy tepercaya di depan Railway. Pastikan akun Superadmin yang sudah ada dapat login dengan sandi non-demo sebelum deployment; pasangan kredensial seed lama diblokir pada production. Untuk database kosong, ikuti prosedur bootstrap Superadmin setelah backup.
+7. Railway memberi domain publik otomatis di tab **Settings → Networking → Generate Domain**, bentuknya seperti `https://mma-backend-production.up.railway.app`. Karena frontend disajikan dari service yang sama, domain ini langsung membuka aplikasinya; API-nya ada di domain yang sama + `/api`.
+8. Tes `https://<domain-railway-anda>/api/health`; harus mengembalikan HTTP 200 dan `{"ok":true,"waktu":"..."}` ketika database sehat.
 
 ### Kalau tetap ingin frontend di hosting terpisah (opsional, tidak direkomendasikan lagi)
 Cara ini masih bisa dipakai kalau karena alasan tertentu (mis. sudah terlanjur di Netlify) ingin frontend tetap terpisah dari backend:
@@ -292,6 +295,7 @@ Simpan, lalu `pesantren-app.html` ini sudah bisa langsung dipakai — tinggal di
 Untuk verifikasi setelah migrasi, gunakan endpoint `/api/health` dan uji login, transaksi kasir, serta saldo hasil migrasi.
 
 ## Keamanan sebelum dipakai sungguhan
-- Ganti `JWT_SECRET` di `.env` produksi (bukan nilai default `dev-secret...`).
-- Aktifkan HTTPS di depan server (lewat platform hosting atau reverse proxy).
-- Endpoint `/santri/:id/saldo-publik` sengaja tanpa autentikasi (untuk kios) — sudah dibatasi hanya mengembalikan info minimal, tapi pertimbangkan rate-limiting per IP kalau dipasang publik, sesuai catatan di `konsep-kasir-pembayaran-cekSaldo.md`.
+- Tetapkan secret acak `JWT_SECRET` (minimal 32 karakter), `NODE_ENV=production`, CORS allowlist, dan jumlah proxy tepercaya. Jangan gunakan akun/kata sandi demo.
+- Aktifkan HTTPS di depan server (lewat platform hosting atau reverse proxy). Pastikan pengaturan PITR, backup eksternal, dan restore drill benar-benar sudah dikonfigurasi oleh operator.
+- Endpoint `/santri/:id/saldo-publik` dan `/kartu/resolve` tidak lagi publik. `/kartu/resolve` memerlukan token staf Unit Usaha agar respons identitas/saldo tidak dapat diambil anonim.
+- Lihat [docs/security-operations.md](./docs/security-operations.md) untuk langkah deploy dan pemulihan operasional; seluruh status provider tetap perlu diverifikasi secara terpisah.

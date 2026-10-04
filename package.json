@@ -8,7 +8,8 @@
     "start": "node src/app.js",
     "dev": "node src/app.js",
     "seed": "node src/seed.js",
-    "test": "node --test test/topupEvidence.test.js",
+    "bootstrap:admin": "node scripts/bootstrap-admin.js",
+    "test": "node --test test/*.test.js",
     "test:integration": "node test/topup.integration.js",
     "migrate:sqlite": "node scripts/pindah-data.js"
   },
@@ -19,6 +20,8 @@
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
+    "express-rate-limit": "7.5.0",
+    "helmet": "8.1.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
     "qrcode": "^1.5.4",

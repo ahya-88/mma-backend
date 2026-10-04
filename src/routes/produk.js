@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireAuth, requireUnitUsaha, requireAdmin } = require("../auth");
+const { requireAuth, requireUnitUsaha, requireAdmin, requireDashboardAdmin } = require("../auth");
 const produk = require("../produkService");
 const asyncHandler = require("../asyncHandler");
 
@@ -13,7 +13,7 @@ function assertUnitSendiri(req, res, next) {
 }
 
 // ---- Admin: lihat seluruh katalog lintas unit ----
-router.get("/", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await produk.semuaProdukSemuaUnit())));
+router.get("/", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => res.json(await produk.semuaProdukSemuaUnit())));
 
 // ---- Katalog unit sendiri (staf unit usaha) ----
 router.get("/saya", requireAuth, requireUnitUsaha, assertUnitSendiri, asyncHandler(async (req, res) => res.json(await produk.semuaProdukUnit(req.user.unit))));
@@ -28,7 +28,7 @@ router.put("/:id", requireAuth, requireUnitUsaha, assertUnitSendiri, asyncHandle
     res.json(await produk.editProduk({ id: req.params.id, unit: req.user.unit, nama, harga, kategori, barcode, aktif }));
 }));
 
-router.delete("/:id", requireAuth, requireUnitUsaha, assertUnitSendiri, asyncHandler(async (req, res) => res.json(await produk.hapusProduk(req.params.id))));
+router.delete("/:id", requireAuth, requireUnitUsaha, assertUnitSendiri, asyncHandler(async (req, res) => res.json(await produk.hapusProduk(req.params.id, req.user.id))));
 
 // ---- Lookup oleh scanner fisik di layar kasir (mode keyboard wedge) ----
 // GET, bukan cuma dibaca dari /saya, karena kasir mem-fetch tepat 1 kode setelah scan+Enter,
