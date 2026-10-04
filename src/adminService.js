@@ -2,10 +2,18 @@ const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const { query, queryOne, queryAll, withTransaction, TAMPILAN_DEFAULT } = require("./db");
 const { CashlessError } = require("./cashlessService");
+const { PASSWORD_MIN_LENGTH, isPasswordLayak } = require("./passwordPolicy");
 
 const uid = () => crypto.randomUUID();
 const DEPARTEMEN_VALID = ["pengasuhan", "pengajaran", "lptq", "administrasi", "unitusaha", "sekretariat"];
-const JENIS_AKUN_VALID = ["staf", "admin", "superadmin"];
+// Admin sudah dilebur ke Superadmin: jenis akun yang bisa dibuat hanya "staf" atau "superadmin".
+const JENIS_AKUN_VALID = ["staf", "superadmin"];
+const jenisEfektif = (row) => (row.jenisAkun === "admin" ? "superadmin" : row.jenisAkun) || (row.departemen === "admin" ? "superadmin" : "staf");
+
+function assertJenisAkunValid(jenisAkun) {
+  if (jenisAkun === "admin") throw new CashlessError(400, "Jenis akun Admin sudah dilebur ke Superadmin. Pilih staf atau superadmin.");
+  if (!JENIS_AKUN_VALID.includes(jenisAkun)) throw new CashlessError(400, "Jenis akun tidak valid.");
+}
 
 function toPublicGuru(row) {
   if (!row) return row;
@@ -25,10 +33,10 @@ async function semuaGuru() {
 
 async function buatGuru({ nama, username, password, departemen, unit, jenisAkun = "staf", actingUserId }) {
   if (!nama || !username || !password) throw new CashlessError(400, "Nama, username, dan kata sandi wajib diisi.");
-  if (typeof password !== "string" || password.length < 12) throw new CashlessError(400, "Kata sandi awal minimal 12 karakter.");
-  if (!JENIS_AKUN_VALID.includes(jenisAkun)) throw new CashlessError(400, "Jenis akun tidak valid.");
+  if (!isPasswordLayak(password)) throw new CashlessError(400, `Kata sandi awal minimal ${PASSWORD_MIN_LENGTH} karakter.`);
+  assertJenisAkunValid(jenisAkun);
   if (jenisAkun !== "staf") departemen = "admin";
-  if (jenisAkun === "staf" && departemen === "admin") throw new CashlessError(400, "Departemen admin hanya untuk akun Admin atau Superadmin.");
+  if (jenisAkun === "staf" && departemen === "admin") throw new CashlessError(400, "Departemen admin hanya untuk akun Superadmin.");
   if (departemen !== "admin" && !DEPARTEMEN_VALID.includes(departemen)) throw new CashlessError(400, "Departemen tidak valid.");
   if (departemen === "unitusaha" && !unit) throw new CashlessError(400, "Pilih bagian Unit Usaha (Kantin/Kopel/Dapur/BMT, dst.).");
   const row = {
@@ -54,14 +62,14 @@ async function editGuru({ id, nama, username, departemen, unit, jenisAkun, actin
     const row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1', [id]);
     if (!row) throw new CashlessError(404, "Akun tidak ditemukan.");
     if (username && username !== row.username) await assertUsernameTersedia(username, id);
-    const kindFinal = jenisAkun || row.jenisAkun || (row.departemen === "admin" ? "superadmin" : "staf");
-    if (!JENIS_AKUN_VALID.includes(kindFinal)) throw new CashlessError(400, "Jenis akun tidak valid.");
+    const kindFinal = jenisAkun || jenisEfektif(row);
+    assertJenisAkunValid(kindFinal);
     const depFinal = kindFinal !== "staf" ? "admin" : (departemen || row.departemen);
-    if (kindFinal === "staf" && depFinal === "admin") throw new CashlessError(400, "Departemen admin hanya untuk akun Admin atau Superadmin.");
+    if (kindFinal === "staf" && depFinal === "admin") throw new CashlessError(400, "Departemen admin hanya untuk akun Superadmin.");
     if (depFinal !== "admin" && !DEPARTEMEN_VALID.includes(depFinal)) throw new CashlessError(400, "Departemen tidak valid.");
     const unitFinal = depFinal === "unitusaha" ? (unit || row.unit) : null;
     if (depFinal === "unitusaha" && !unitFinal) throw new CashlessError(400, "Pilih bagian Unit Usaha (Kantin/Kopel/Dapur/BMT, dst.).");
-    const oldKind = row.jenisAkun || (row.departemen === "admin" ? "superadmin" : "staf");
+    const oldKind = jenisEfektif(row);
     if (oldKind === "superadmin" && kindFinal !== "superadmin") {
       const count = Number((await queryOne('SELECT COUNT(*) AS "n" FROM "Guru" WHERE "jenisAkun" = \'superadmin\'')).n);
       if (count <= 1) throw new CashlessError(400, "Tidak bisa menurunkan akun Superadmin terakhir.");
@@ -87,8 +95,8 @@ async function catatAuditAdmin({ aktorId, aksi, targetTipe, targetId, detail = {
 }
 
 function assertPasswordResetLayak(password) {
-  if (typeof password !== "string" || password.length < 12) {
-    throw new CashlessError(400, "Kata sandi baru minimal 12 karakter.");
+  if (!isPasswordLayak(password)) {
+    throw new CashlessError(400, `Kata sandi baru minimal ${PASSWORD_MIN_LENGTH} karakter.`);
   }
 }
 
@@ -123,7 +131,7 @@ async function hapusGuru({ id, actingUserId }) {
     const row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Akun tidak ditemukan.");
     if (id === actingUserId) throw new CashlessError(400, "Tidak bisa menghapus akun sendiri yang sedang dipakai untuk login ini.");
-    const jenisAkun = row.jenisAkun || (row.departemen === "admin" ? "superadmin" : "staf");
+    const jenisAkun = jenisEfektif(row);
     if (jenisAkun === "superadmin") {
       const jumlahSuperadmin = (await queryOne('SELECT COUNT(*) AS "n" FROM "Guru" WHERE "jenisAkun" = \'superadmin\'')).n;
       if (Number(jumlahSuperadmin) <= 1) throw new CashlessError(400, "Tidak bisa menghapus Superadmin terakhir — sistem membutuhkan minimal satu akun Superadmin.");

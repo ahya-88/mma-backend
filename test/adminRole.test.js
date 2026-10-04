@@ -3,12 +3,15 @@ process.env.DATABASE_URL ||= "postgres://test:test@127.0.0.1:5432/test";
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  isSuperAdmin, isOperationalAdmin, requireDashboardAdmin, requireAdmin,
+  isSuperAdmin, jenisAkunEfektif, requireDashboardAdmin, requireAdmin,
   requireAnyStaff, requirePengasuhan, requireBMT, requirePasswordResetAuthority,
 } = require("../src/auth");
 
-const admin = { role: "guru", id: "admin", departemen: "admin", jenisAkun: "admin" };
+// Admin sudah dilebur ke Superadmin (4 Okt 2026). Akun lama berjenis "admin" harus
+// diperlakukan persis seperti Superadmin, termasuk sebelum migrasi database berjalan.
+const legacyAdmin = { role: "guru", id: "admin", departemen: "admin", jenisAkun: "admin" };
 const superadmin = { role: "guru", id: "superadmin", departemen: "admin", jenisAkun: "superadmin" };
+const staf = { role: "guru", id: "staf", departemen: "pengasuhan", jenisAkun: "staf" };
 
 function invoke(middleware, user, method = "GET") {
   let nextCalled = false;
@@ -22,35 +25,38 @@ function invoke(middleware, user, method = "GET") {
   return { nextCalled, statusCode, body };
 }
 
-test("classifies separate Admin and Superadmin identities", () => {
-  assert.equal(isOperationalAdmin(admin), true);
-  assert.equal(isSuperAdmin(admin), false);
+test("legacy Admin accounts are treated as Superadmin", () => {
+  assert.equal(jenisAkunEfektif(legacyAdmin), "superadmin");
+  assert.equal(jenisAkunEfektif(superadmin), "superadmin");
+  assert.equal(jenisAkunEfektif({ role: "guru", departemen: "admin" }), "superadmin");
+  assert.equal(jenisAkunEfektif(staf), "staf");
+  assert.equal(isSuperAdmin(legacyAdmin), true);
   assert.equal(isSuperAdmin(superadmin), true);
-  assert.equal(isSuperAdmin({ role: "guru", departemen: "admin" }), true);
+  assert.equal(isSuperAdmin(staf), false);
+  assert.equal(isSuperAdmin({ role: "wali", id: "w" }), false);
 });
 
-test("Admin can open the dashboard but cannot access Superadmin management", () => {
-  assert.equal(invoke(requireDashboardAdmin, admin).nextCalled, true);
-  assert.equal(invoke(requireAdmin, admin).statusCode, 403);
-  assert.equal(invoke(requireAdmin, superadmin).nextCalled, true);
+test("legacy Admin gets the full Superadmin surface, including writes", () => {
+  for (const user of [legacyAdmin, superadmin]) {
+    assert.equal(invoke(requireDashboardAdmin, user).nextCalled, true);
+    assert.equal(invoke(requireAdmin, user).nextCalled, true);
+    assert.equal(invoke(requirePengasuhan, user, "POST").nextCalled, true);
+    assert.equal(invoke(requireAnyStaff, user, "POST").nextCalled, true);
+    assert.equal(invoke(requireBMT, user).nextCalled, true);
+  }
 });
 
-test("Admin can read cross-department data but cannot write it", () => {
-  assert.equal(invoke(requirePengasuhan, admin, "GET").nextCalled, true);
-  assert.equal(invoke(requirePengasuhan, admin, "POST").statusCode, 403);
-  assert.equal(invoke(requireAnyStaff, admin, "GET").nextCalled, true);
-  assert.equal(invoke(requireAnyStaff, admin, "POST").statusCode, 403);
+test("regular staff and guardians still cannot reach Superadmin management", () => {
+  assert.equal(invoke(requireAdmin, staf).statusCode, 403);
+  assert.equal(invoke(requireDashboardAdmin, staf).statusCode, 403);
+  assert.equal(invoke(requireAdmin, { role: "wali", id: "w" }).statusCode, 403);
+  assert.equal(invoke(requirePengasuhan, { ...staf, departemen: "lptq" }).statusCode, 403);
 });
 
-test("Admin is not granted BMT-only access", () => {
-  assert.equal(invoke(requireBMT, admin).statusCode, 403);
-  assert.equal(invoke(requireBMT, superadmin).nextCalled, true);
-});
-
-test("password reset is limited to Admin, Superadmin, and Sekretariat", () => {
+test("password reset is limited to Superadmin (incl. legacy Admin) and Sekretariat", () => {
   const sekretariat = { role: "guru", id: "sekretariat", departemen: "sekretariat" };
   const pengasuhan = { role: "guru", id: "pengasuhan", departemen: "pengasuhan" };
-  assert.equal(invoke(requirePasswordResetAuthority, admin).nextCalled, true);
+  assert.equal(invoke(requirePasswordResetAuthority, legacyAdmin).nextCalled, true);
   assert.equal(invoke(requirePasswordResetAuthority, superadmin).nextCalled, true);
   assert.equal(invoke(requirePasswordResetAuthority, sekretariat).nextCalled, true);
   assert.equal(invoke(requirePasswordResetAuthority, pengasuhan).statusCode, 403);

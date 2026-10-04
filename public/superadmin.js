@@ -5,6 +5,7 @@
   const content = document.getElementById("content");
   const navigation = document.getElementById("navigation");
   const notice = document.getElementById("notice");
+  const PASSWORD_MIN_LENGTH = 6; // sama dengan src/passwordPolicy.js
   const number = new Intl.NumberFormat("id-ID");
   const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
   const adminNavigation = new Set(["dashboard", "santri", "absensi", "perizinan", "pelanggaran", "nilai", "prestasi", "hafalan", "ubudiyah", "tagihan", "cashflow", "anggaran", "permintaan", "transaksi", "unit", "produk", "health"]);
@@ -22,7 +23,7 @@
   const tablePages = {
     santri: { title: "Data Santri", description: "Biodata dan informasi operasional santri.", url: "/api/santri", columns: [["nama", "Nama"], ["nis", "NIS"], ["nisn", "NISN"], ["kelas", "Kelas"], ["asrama", "Asrama"], ["halaqoh", "Halaqoh"], ["waliId", "ID Wali"], ["saldo", "Saldo"]], actions: "santri" },
     wali: { title: "Akun Wali", description: "Daftar akun wali santri; kata sandi tidak pernah ditampilkan.", url: "/api/admin/wali", columns: [["nama", "Nama"], ["username", "Username"], ["hp", "Nomor HP"], ["createdAt", "Dibuat"]], actions: "wali" },
-    guru: { title: "Akun Staf", description: "Akun staf, Admin, dan Superadmin beserta departemen.", url: "/api/admin/guru", columns: [["nama", "Nama"], ["username", "Username"], ["jenisAkun", "Jenis akun"], ["departemen", "Departemen"], ["unit", "Unit"], ["createdAt", "Dibuat"]], actions: "guru" },
+    guru: { title: "Akun Staf", description: "Akun staf dan Superadmin beserta departemen.", url: "/api/admin/guru", columns: [["nama", "Nama"], ["username", "Username"], ["jenisAkun", "Jenis akun"], ["departemen", "Departemen"], ["unit", "Unit"], ["createdAt", "Dibuat"]], actions: "guru" },
     absensi: { title: "Absensi", description: "Rekap absensi santri dan status kehadiran.", url: "/api/pengasuhan/absensi", columns: [["tanggalISO", "Tanggal"], ["santriId", "ID Santri"], ["status", "Status"], ["keterangan", "Keterangan"], ["dicatatOleh", "Petugas"]] },
     perizinan: { title: "Perizinan", description: "Tinjau permohonan dan status izin santri.", url: "/api/pengasuhan/perizinan", columns: [["createdAt", "Diajukan"], ["santriId", "ID Santri"], ["jenis", "Jenis"], ["tanggalKeluar", "Keluar"], ["tanggalKembali", "Kembali"], ["alasan", "Alasan"], ["status", "Status"]], actions: "perizinan" },
     pelanggaran: { title: "Pelanggaran", description: "Catatan pelanggaran dan poin pembinaan.", url: "/api/pengasuhan/pelanggaran", columns: [["tanggalISO", "Tanggal"], ["santriId", "ID Santri"], ["jenis", "Jenis"], ["poin", "Poin"], ["keterangan", "Keterangan"], ["dicatatOleh", "Petugas"]] },
@@ -35,7 +36,7 @@
     anggaran: { title: "Pengajuan Anggaran", description: "Status pengajuan, persetujuan, dan realisasi anggaran.", url: "/api/keuangan/anggaran", columns: [["namaKegiatan", "Kegiatan"], ["unitPengaju", "Unit"], ["kategori", "Kategori"], ["bulanRencana", "Periode"], ["totalAnggaran", "Diajukan"], ["realisasiJumlah", "Realisasi"], ["status", "Status"]] },
     permintaan: { title: "Permintaan BMT", description: "Permohonan wali yang diproses oleh BMT.", url: "/api/admin/permintaan", columns: [["tanggalAjukan", "Tanggal"], ["santriId", "ID Santri"], ["jenis", "Jenis"], ["nilaiDiminta", "Nilai"], ["alasan", "Alasan"], ["status", "Status"]], actions: "topup" },
     transaksi: { title: "Audit Saldo Cashless", description: "Santri dengan saldo tersimpan yang tidak sesuai dengan ledger transaksi.", auditSaldo: true },
-    unit: { title: "Unit Usaha", description: "Unit usaha terdaftar di sistem.", url: "/api/admin/unit-usaha", columns: [["nama", "Nama unit"], ["id", "ID"]] },
+    unit: { title: "Unit Usaha", description: "Unit usaha terdaftar di sistem. Bagian baru langsung tersedia sebagai pilihan saat menambah akun staf.", url: "/api/admin/unit-usaha", columns: [["nama", "Nama unit"], ["id", "ID"]], actions: "unit" },
     produk: { title: "Katalog Produk", description: "Produk per unit, harga, dan status tampil di kasir.", url: "/api/produk", columns: [["unit", "Unit"], ["nama", "Produk"], ["kategori", "Kategori"], ["harga", "Harga"], ["barcode", "Barcode"], ["aktif", "Aktif"]], actions: "produk" },
     kartu: { title: "Kartu Santri", description: "Status penerbitan kartu dan kesiapan PIN.", url: "/api/admin/kartu", columns: [["nama", "Nama"], ["nis", "NIS"], ["kelas", "Kelas"], ["kartuTerbit", "Diterbitkan"], ["punyaPin", "PIN tersedia"]] },
   };
@@ -136,7 +137,7 @@
     if (config.auditSaldo) return renderAuditSaldo(config);
     setTitle(config.title);
     const actions = config.actions === "santri" || superAdminAccess ? config.actions : undefined;
-    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Pemantauan lintas modul</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "guru" && superAdminAccess ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah akun</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
+    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Pemantauan lintas modul</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "guru" && superAdminAccess ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah akun</button>' : ""}${key === "unit" ? '<button id="add-unit-button" class="button primary" type="button">+ Tambah unit</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
     try {
       const records = getRecords(await api(config.url));
       content.querySelector("#table-state").outerHTML = `
@@ -155,6 +156,7 @@
       draw();
       content.querySelector("#refresh-button").addEventListener("click", () => renderTable(key));
       content.querySelector("#add-staff-button")?.addEventListener("click", createStaff);
+      content.querySelector("#add-unit-button")?.addEventListener("click", createUnit);
       content.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => performAction(button.dataset.action, button.dataset.id, button.dataset.status)));
     } catch (error) {
       showNotice(error.message, true);
@@ -190,6 +192,7 @@
   }
 
   function actionButtons(type, row) {
+    if (type === "unit") return `<button class="button small danger" data-action="unit-delete" data-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.nama)}">Hapus</button>`;
     if (type === "produk") return `<button class="button small" data-action="produk-toggle" data-id="${escapeHtml(row.id)}" data-status="${row.aktif ? "1" : "0"}">${row.aktif ? "Nonaktifkan" : "Aktifkan"}</button>`;
     if (type === "santri") return `<button class="button small" data-action="santri-detail" data-id="${escapeHtml(row.id)}">Profil</button>`;
     if (type === "guru") return `<div class="action-cell"><button class="button small" data-action="staff-edit" data-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.nama)}" data-username="${escapeHtml(row.username)}" data-kind="${escapeHtml(row.jenisAkun)}" data-department="${escapeHtml(row.departemen)}" data-unit="${escapeHtml(row.unit)}">Edit</button><button class="button small" data-action="staff-password" data-id="${escapeHtml(row.id)}">Reset sandi</button><button class="button small danger" data-action="staff-delete" data-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.nama)}">Hapus</button></div>`;
@@ -204,6 +207,7 @@
     if (action === "santri-detail") return renderSantriProfile(id);
     if (action.startsWith("staff-")) return manageStaff(action, id);
     if (action === "wali-password") return manageWaliPassword(id);
+    if (action === "unit-delete") return deleteUnit(id);
     if (action === "topup-evidence") {
       const tab = window.open("about:blank", "_blank");
       if (!tab) {
@@ -270,8 +274,12 @@
         await api(`/api/admin/guru/${encodeURIComponent(id)}`, { method: "DELETE" });
         showNotice("Akun staf berhasil dihapus.");
       } else if (action === "staff-password") {
-        const password = window.prompt("Masukkan kata sandi baru:");
+        const password = window.prompt(`Masukkan kata sandi baru (minimal ${PASSWORD_MIN_LENGTH} karakter):`);
         if (!password) return;
+        if (password.length < PASSWORD_MIN_LENGTH) {
+          showNotice(`Kata sandi minimal ${PASSWORD_MIN_LENGTH} karakter.`, true);
+          return;
+        }
         await api(`/api/admin/guru/${encodeURIComponent(id)}/password`, { method: "PUT", body: JSON.stringify({ password }) });
         showNotice("Kata sandi berhasil diperbarui.");
       } else {
@@ -279,7 +287,7 @@
         if (nama === null) return;
         const username = window.prompt("Username:", button?.dataset.username || "");
         if (username === null) return;
-        const jenisAkun = window.prompt("Jenis akun (staf, admin, superadmin):", button?.dataset.kind || "staf")?.trim().toLowerCase();
+        const jenisAkun = window.prompt("Jenis akun (staf, superadmin):", button?.dataset.kind === "admin" ? "superadmin" : button?.dataset.kind || "staf")?.trim().toLowerCase();
         if (!jenisAkun) return;
         const departemen = jenisAkun === "staf"
           ? window.prompt("Departemen (pengasuhan, pengajaran, lptq, administrasi, unitusaha, sekretariat):", button?.dataset.department === "admin" ? "pengasuhan" : button?.dataset.department || "")
@@ -301,10 +309,10 @@
 
   async function manageWaliPassword(id) {
     const button = content.querySelector(`[data-action="wali-password"][data-id="${CSS.escape(id)}"]`);
-    const password = window.prompt(`Kata sandi sementara untuk ${button?.dataset.name || "wali"} (minimal 12 karakter):`);
+    const password = window.prompt(`Kata sandi sementara untuk ${button?.dataset.name || "wali"} (minimal ${PASSWORD_MIN_LENGTH} karakter):`);
     if (password === null) return;
-    if (password.length < 12) {
-      showNotice("Kata sandi sementara minimal 12 karakter.", true);
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      showNotice(`Kata sandi sementara minimal ${PASSWORD_MIN_LENGTH} karakter.`, true);
       return;
     }
     try {
@@ -319,14 +327,42 @@
     }
   }
 
+  async function createUnit() {
+    const nama = window.prompt("Nama bagian/unit usaha baru, mis. Toko Buku:");
+    if (!nama?.trim()) return;
+    try {
+      await api("/api/admin/unit-usaha", { method: "POST", body: JSON.stringify({ nama: nama.trim() }) });
+      showNotice("Unit usaha berhasil ditambahkan.");
+      await renderTable("unit");
+    } catch (error) {
+      showNotice(error.message, true);
+    }
+  }
+
+  async function deleteUnit(id) {
+    const button = content.querySelector(`[data-action="unit-delete"][data-id="${CSS.escape(id)}"]`);
+    if (!window.confirm(`Hapus unit usaha ${button?.dataset.name || ""}?`)) return;
+    try {
+      await api(`/api/admin/unit-usaha/${encodeURIComponent(id)}`, { method: "DELETE" });
+      showNotice("Unit usaha berhasil dihapus.");
+      await renderTable("unit");
+    } catch (error) {
+      showNotice(error.message, true);
+    }
+  }
+
   async function createStaff() {
     const nama = window.prompt("Nama akun:");
     if (!nama?.trim()) return;
     const username = window.prompt("Username:");
     if (!username?.trim()) return;
-    const password = window.prompt("Kata sandi awal:");
+    const password = window.prompt(`Kata sandi awal (minimal ${PASSWORD_MIN_LENGTH} karakter):`);
     if (!password) return;
-    const jenisAkun = window.prompt("Jenis akun (staf, admin, superadmin):", "staf")?.trim().toLowerCase();
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      showNotice(`Kata sandi minimal ${PASSWORD_MIN_LENGTH} karakter.`, true);
+      return;
+    }
+    const jenisAkun = window.prompt("Jenis akun (staf, superadmin):", "staf")?.trim().toLowerCase();
     if (!jenisAkun) return;
     const departemen = jenisAkun === "staf"
       ? window.prompt("Departemen (pengasuhan, pengajaran, lptq, administrasi, unitusaha, sekretariat):", "pengasuhan")
@@ -447,7 +483,7 @@
     try {
       const data = await api(isYears ? "/api/admin/tahun-ajaran" : "/api/admin/tampilan");
       if (isYears) {
-        content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Konfigurasi sistem</p><h1>${title}</h1><p>Tahun ajaran aktif dan riwayat pengaturan tahun.</p></div><div class="action-cell"><button id="add-year-button" class="button primary" type="button">+ Tambah tahun</button><button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div class="table-wrap"><table><thead><tr><th>Tahun mulai</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>${data.map((row) => `<tr><td>${escapeHtml(row.tahunMulai)}</td><td>${badge(row.aktif ? "Aktif" : "Tidak aktif")}</td><td>${row.aktif ? "—" : `<button class="button small" data-activate-year="${escapeHtml(row.id)}" type="button">Aktifkan</button>`}</td></tr>`).join("") || '<tr><td colspan="3" class="empty-state">Belum ada tahun ajaran.</td></tr>'}</tbody></table></div>`;
+        content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Konfigurasi sistem</p><h1>${title}</h1><p>Tahun ajaran aktif dan riwayat pengaturan tahun.</p></div><div class="action-cell"><button id="add-year-button" class="button primary" type="button">+ Tambah tahun</button><button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div class="table-wrap"><table><thead><tr><th>Tahun mulai</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>${data.map((row) => `<tr><td>${escapeHtml(row.tahunMulai)}</td><td>${badge(row.aktif ? "Aktif" : "Tidak aktif")}</td><td>${row.aktif ? "—" : `<div class="action-cell"><button class="button small" data-activate-year="${escapeHtml(row.id)}" type="button">Aktifkan</button><button class="button small danger" data-delete-year="${escapeHtml(row.id)}" data-year-label="${escapeHtml(row.tahunMulai)}" type="button">Hapus</button></div>`}</td></tr>`).join("") || '<tr><td colspan="3" class="empty-state">Belum ada tahun ajaran.</td></tr>'}</tbody></table></div>`;
         content.querySelector("#refresh-button").addEventListener("click", () => renderSettings(key));
         content.querySelector("#add-year-button").addEventListener("click", async () => {
           const year = window.prompt("Masukkan tahun mulai ajaran, misalnya 2027:");
@@ -460,6 +496,16 @@
             showNotice(error.message, true);
           }
         });
+        content.querySelectorAll("[data-delete-year]").forEach((button) => button.addEventListener("click", async () => {
+          if (!window.confirm(`Hapus tahun ajaran ${button.dataset.yearLabel}?`)) return;
+          try {
+            await api(`/api/admin/tahun-ajaran/${encodeURIComponent(button.dataset.deleteYear)}`, { method: "DELETE" });
+            showNotice("Tahun ajaran berhasil dihapus.");
+            await renderSettings(key);
+          } catch (error) {
+            showNotice(error.message, true);
+          }
+        }));
         content.querySelectorAll("[data-activate-year]").forEach((button) => button.addEventListener("click", async () => {
           if (!window.confirm("Aktifkan tahun ajaran ini? Tahun ajaran aktif saat ini akan diganti.")) return;
           try {
@@ -471,27 +517,97 @@
           }
         }));
       } else {
-        content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Konfigurasi sistem</p><h1>${title}</h1><p>Perubahan diterapkan ke tampilan aplikasi setelah disimpan.</p></div><button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div><form id="appearance-form" class="panel-card"><div class="settings-grid">${Object.entries(data).map(([name, value]) => {
-          const isColor = /^#[0-9a-f]{6}$/i.test(String(value || ""));
-          return `<label class="setting-item"><strong>${escapeHtml(name)}</strong><input name="${escapeHtml(name)}" type="${isColor ? "color" : "text"}" value="${escapeHtml(value)}" ${isColor ? "" : 'maxlength="500"'}></label>`;
-        }).join("")}</div><div class="action-cell" style="justify-content:flex-end;margin-top:15px"><button class="button primary" type="submit">Simpan tampilan</button></div></form>`;
-        content.querySelector("#refresh-button").addEventListener("click", () => renderSettings(key));
-        content.querySelector("#appearance-form").addEventListener("submit", async (event) => {
-          event.preventDefault();
-          const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-          try {
-            await api("/api/admin/tampilan", { method: "PUT", body: JSON.stringify(values) });
-            showNotice("Pengaturan tampilan berhasil disimpan.");
-            await renderSettings(key);
-          } catch (error) {
-            showNotice(error.message, true);
-          }
-        });
+        renderAppearanceForm(data, key, title);
       }
     } catch (error) {
       showNotice(error.message, true);
       content.innerHTML = `<div class="panel-card empty-state">${escapeHtml(error.message)}</div>`;
     }
+  }
+
+  const FONT_JUDUL = ["Fraunces", "Playfair Display", "Merriweather", "Poppins", "Lora"];
+  const FONT_ISI = ["Inter", "Poppins", "Nunito", "Lato", "Source Sans 3"];
+  const GAYA_BACKGROUND = [["aurora", "Aurora Berwarna"], ["gradient", "Gradasi Halus"], ["polos", "Polos Minimal"]];
+  const COLOR_GROUPS = [
+    ["Warna tema", [["warnaPrimer", "Warna Utama"], ["warnaSekunder", "Warna Gelap"], ["warnaAksenBg", "Aksen Latar"]]],
+    ["Warna teks & latar halaman", [["warnaTeks", "Teks Utama"], ["warnaTeksMuted", "Teks Sekunder"], ["warnaBorder", "Border / Garis"], ["warnaLatarHalaman", "Latar Halaman"]]],
+  ];
+  // Batas ukuran agar layar login (yang memuat tampilan ini) tetap ringan untuk ribuan wali.
+  const IMAGE_LIMITS = { logoUrl: 1024 * 1024, buildingPhotoUrl: 2 * 1024 * 1024 };
+
+  function renderAppearanceForm(data, key, title) {
+    const values = { ...data };
+    const colorValue = (name) => (/^#[0-9a-f]{6}$/i.test(String(values[name] || "")) ? values[name] : "#000000");
+    const selectField = (name, label, options) => {
+      const list = options.some(([value]) => value === values[name]) || !values[name] ? options : [...options, [values[name], values[name]]];
+      return `<label class="setting-item"><strong>${escapeHtml(label)}</strong><select name="${name}">${list.map(([value, text]) => `<option value="${escapeHtml(value)}"${values[name] === value ? " selected" : ""}>${escapeHtml(text)}</option>`).join("")}</select></label>`;
+    };
+    const imageField = (name, label) => `<div class="setting-item" data-image-field="${name}"><strong>${escapeHtml(label)}</strong><div class="image-preview"><img alt="Pratinjau ${escapeHtml(label)}"${values[name] ? ` src="${escapeHtml(values[name])}"` : " hidden"}><span class="image-note">${values[name] ? "Gambar kustom" : "Memakai gambar bawaan"}</span></div><input type="file" accept="image/*" data-image-input="${name}"><button type="button" class="button small" data-image-reset="${name}"${values[name] ? "" : " hidden"}>Pakai bawaan</button></div>`;
+    content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Konfigurasi sistem</p><h1>${title}</h1><p>Berlaku untuk seluruh aplikasi (layar login, sidebar, tombol, dsb). Dokumen resmi cetak (Rapor, Kwitansi, Surat, Kop Surat) tidak terpengaruh.</p></div><button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div>
+      <form id="appearance-form" class="panel-card"><div class="settings-grid">
+        <p class="setting-section">Identitas aplikasi</p>
+        ${imageField("logoUrl", "Logo Aplikasi")}${imageField("buildingPhotoUrl", "Foto Gedung / Latar Login")}
+        <label class="setting-item"><strong>Nama Aplikasi</strong><input name="namaAplikasi" type="text" maxlength="120" value="${escapeHtml(values.namaAplikasi)}"></label>
+        ${COLOR_GROUPS.map(([heading, fields]) => `<p class="setting-section">${escapeHtml(heading)}</p>${fields.map(([name, label]) => `<label class="setting-item"><strong>${escapeHtml(label)}</strong><input name="${name}" type="color" value="${colorValue(name)}"></label>`).join("")}`).join("")}
+        <p class="setting-section">Font &amp; gaya background</p>
+        ${selectField("fontJudul", "Font Judul", FONT_JUDUL.map((font) => [font, font]))}${selectField("fontIsi", "Font Isi", FONT_ISI.map((font) => [font, font]))}${selectField("gayaBackground", "Gaya Background", GAYA_BACKGROUND)}
+      </div><div class="action-cell action-end"><button id="reset-appearance" class="button" type="button">Kembalikan ke Bawaan</button><button class="button primary" type="submit">Simpan Pengaturan Tampilan</button></div></form>`;
+
+    const form = content.querySelector("#appearance-form");
+    content.querySelector("#refresh-button").addEventListener("click", () => renderSettings(key));
+
+    const syncImage = (name) => {
+      const holder = form.querySelector(`[data-image-field="${name}"]`);
+      const image = holder.querySelector("img");
+      if (values[name]) image.src = values[name]; else image.removeAttribute("src");
+      image.hidden = !values[name];
+      holder.querySelector(".image-note").textContent = values[name] ? "Gambar kustom" : "Memakai gambar bawaan";
+      holder.querySelector("[data-image-reset]").hidden = !values[name];
+    };
+    form.querySelectorAll("[data-image-input]").forEach((input) => input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const name = input.dataset.imageInput;
+      if (!file.type.startsWith("image/")) {
+        showNotice("File harus berupa gambar.", true);
+        input.value = "";
+        return;
+      }
+      if (file.size > IMAGE_LIMITS[name]) {
+        showNotice(`Ukuran gambar maksimal ${IMAGE_LIMITS[name] / 1024 / 1024} MB agar layar login tetap cepat dimuat.`, true);
+        input.value = "";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => { values[name] = String(reader.result); syncImage(name); };
+      reader.onerror = () => showNotice("Gambar tidak dapat dibaca.", true);
+      reader.readAsDataURL(file);
+    }));
+    form.querySelectorAll("[data-image-reset]").forEach((button) => button.addEventListener("click", () => {
+      const name = button.dataset.imageReset;
+      values[name] = "";
+      const input = form.querySelector(`[data-image-input="${name}"]`);
+      if (input) input.value = "";
+      syncImage(name);
+    }));
+
+    const save = async (payload, message) => {
+      try {
+        await api("/api/admin/tampilan", { method: "PUT", body: JSON.stringify(payload) });
+        showNotice(message);
+        if (selectedKey === key) await renderSettings(key); // jangan menimpa halaman lain bila pengguna sudah berpindah menu
+      } catch (error) {
+        showNotice(error.message, true);
+      }
+    };
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      save({ ...values, ...Object.fromEntries(new FormData(form).entries()) }, "Pengaturan tampilan tersimpan. Aplikasi memakainya saat dimuat ulang.");
+    });
+    content.querySelector("#reset-appearance").addEventListener("click", () => {
+      if (!window.confirm("Kembalikan seluruh tampilan ke pengaturan bawaan?")) return;
+      save({}, "Tampilan dikembalikan ke pengaturan bawaan.");
+    });
   }
 
   async function renderHealth() {
@@ -566,8 +682,8 @@
   async function startApp() {
     try {
       const profile = await api("/api/admin/akses");
-      if (!["admin", "superadmin"].includes(profile.jenisAkun)) throw new Error("Akun ini tidak memiliki akses ke dashboard Admin.");
-      superAdminAccess = profile.jenisAkun === "superadmin";
+      if (!["admin", "superadmin"].includes(profile.jenisAkun)) throw new Error("Akun ini tidak memiliki akses ke dashboard Superadmin.");
+      superAdminAccess = true; // Admin sudah dilebur ke Superadmin: semua yang berhak masuk mendapat akses penuh.
       const expectedPath = superAdminAccess ? "/superadmin" : "/admin";
       if (location.pathname !== expectedPath) {
         window.location.replace(expectedPath);

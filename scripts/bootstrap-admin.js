@@ -1,6 +1,7 @@
 require("dotenv").config({ quiet: true });
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const { PASSWORD_MIN_LENGTH, isPasswordLayak } = require("../src/passwordPolicy");
 const { query, queryOne, withTransaction, initializeDatabase, pool } = require("../src/db");
 
 async function bootstrapAdmin() {
@@ -12,8 +13,8 @@ async function bootstrapAdmin() {
   if (!BOOTSTRAP_ADMIN_NAME?.trim() || !BOOTSTRAP_ADMIN_USERNAME?.trim()) {
     throw new Error("BOOTSTRAP_ADMIN_NAME and BOOTSTRAP_ADMIN_USERNAME are required.");
   }
-  if (typeof BOOTSTRAP_ADMIN_PASSWORD !== "string" || BOOTSTRAP_ADMIN_PASSWORD.length < 12) {
-    throw new Error("BOOTSTRAP_ADMIN_PASSWORD must contain at least 12 characters.");
+  if (!isPasswordLayak(BOOTSTRAP_ADMIN_PASSWORD)) {
+    throw new Error(`BOOTSTRAP_ADMIN_PASSWORD must contain at least ${PASSWORD_MIN_LENGTH} characters.`);
   }
 
   await initializeDatabase();

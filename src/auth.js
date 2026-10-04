@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || (isProduction() ? "" : crypto.rando
 const JWT_EXPIRES_IN = "2h";
 const LOGIN_FAILURE_LIMIT = 5;
 const LOGIN_LOCK_MS = 15 * 60 * 1000;
-const PASSWORD_MIN_LENGTH = 12;
+const { PASSWORD_MIN_LENGTH } = require("./passwordPolicy");
 const LEGACY_DEMO_CREDENTIALS = new Map([
   ["fahmi", "guru123"], ["nadia", "guru123"], ["hilmi.lptq", "guru123"],
   ["hilmi.data", "guru123"], ["admin", "admin123"], ["admin.operasional", "admin123"],
@@ -22,22 +22,21 @@ if (isProduction() && (JWT_SECRET.length < 32 || JWT_SECRET === "dev-secret-jang
   throw new Error("JWT_SECRET produksi wajib diisi dengan minimal 32 karakter acak.");
 }
 
-function isSuperAdmin(user) {
-  return user?.role === "guru" && (user.jenisAkun === "superadmin" || (!user.jenisAkun && user.departemen === "admin"));
+// Peran Admin sudah dilebur ke Superadmin (keputusan 4 Okt 2026): hanya ada dua jenis akun,
+// "staf" dan "superadmin". Nilai lama jenisAkun = "admin" diperlakukan sebagai Superadmin
+// (schema.pg.sql juga memigrasikannya) agar akun lama tidak kehilangan akses.
+function jenisAkunEfektif(guru) {
+  if (guru?.jenisAkun === "admin") return "superadmin";
+  return guru?.jenisAkun || (guru?.departemen === "admin" ? "superadmin" : "staf");
 }
 
-function isOperationalAdmin(user) {
-  return user?.role === "guru" && user.jenisAkun === "admin";
+function isSuperAdmin(user) {
+  return user?.role === "guru" && jenisAkunEfektif(user) === "superadmin";
 }
 
 function requireDashboardAdmin(req, res, next) {
-  if (isSuperAdmin(req.user) || isOperationalAdmin(req.user)) return next();
-  res.status(403).json({ error: "Hanya akun Admin atau Superadmin yang berwenang mengakses dashboard." });
-}
-
-function allowAdminRead(req, res, next) {
-  if (req.method === "GET" && isOperationalAdmin(req.user)) return next();
-  res.status(403).json({ error: "Akun Admin hanya memiliki akses baca lintas modul." });
+  if (isSuperAdmin(req.user)) return next();
+  res.status(403).json({ error: "Hanya akun Superadmin yang berwenang mengakses dashboard." });
 }
 
 async function recordLoginAudit({ actorId, actorRole, action, reason }) {
@@ -83,7 +82,7 @@ async function login(username, password) {
 
   await query(`UPDATE "${table}" SET "loginFailedAttempts" = 0, "loginLockedUntil" = NULL WHERE "id" = $1`, [account.id]);
   const payload = guru
-    ? { role, id: guru.id, nama: guru.nama, departemen: guru.departemen, unit: guru.unit, jenisAkun: guru.jenisAkun || (guru.departemen === "admin" ? "superadmin" : "staf"), sv: Number(guru.sessionVersion || 0) }
+    ? { role, id: guru.id, nama: guru.nama, departemen: guru.departemen, unit: guru.unit, jenisAkun: jenisAkunEfektif(guru), sv: Number(guru.sessionVersion || 0) }
     : { role, id: wali.id, nama: wali.nama, sv: Number(wali.sessionVersion || 0) };
   const mustChangePassword = !!account.mustChangePassword;
   const token = jwt.sign(
@@ -170,7 +169,7 @@ async function requireAuth(req, res, next) {
     }
     if (account.mustChangePassword) return res.status(403).json({ error: "Ganti kata sandi sebelum menggunakan sistem.", kode: "PASSWORD_CHANGE_REQUIRED" });
     req.user = table === "Guru"
-      ? { role: "guru", id: account.id, nama: account.nama, departemen: account.departemen, unit: account.unit, jenisAkun: account.jenisAkun || (account.departemen === "admin" ? "superadmin" : "staf") }
+      ? { role: "guru", id: account.id, nama: account.nama, departemen: account.departemen, unit: account.unit, jenisAkun: jenisAkunEfektif(account) }
       : { role: "wali", id: account.id, nama: account.nama };
     return next();
   } catch (error) {
@@ -193,7 +192,7 @@ function requireUnitUsaha(req, res, next) {
 // Staf departemen apa pun (guru) — dipakai untuk endpoint yang aman diakses lintas departemen,
 // mis. sinkronisasi identitas dasar santri yang dibutuhkan banyak modul (bukan cuma BMT).
 function requireAnyStaff(req, res, next) {
-  if ((req.user?.role === "guru" && !isOperationalAdmin(req.user)) || (req.method === "GET" && isOperationalAdmin(req.user))) return next();
+  if (req.user?.role === "guru") return next();
   res.status(403).json({ error: "Hanya akun staf (guru) yang berwenang mengakses endpoint ini." });
 }
 
@@ -205,28 +204,24 @@ function requireWali(req, res, next) {
 // Staf Pengasuhan (untuk absensi, perizinan, pelanggaran).
 function requirePengasuhan(req, res, next) {
   if (isSuperAdmin(req.user) || (req.user?.role === "guru" && req.user.departemen === "pengasuhan")) return next();
-  if (isOperationalAdmin(req.user)) return allowAdminRead(req, res, next);
   res.status(403).json({ error: "Hanya staf Pengasuhan yang berwenang mengakses endpoint ini." });
 }
 
 // Staf Pengajaran (untuk nilai, prestasi).
 function requirePengajaran(req, res, next) {
   if (isSuperAdmin(req.user) || (req.user?.role === "guru" && req.user.departemen === "pengajaran")) return next();
-  if (isOperationalAdmin(req.user)) return allowAdminRead(req, res, next);
   res.status(403).json({ error: "Hanya staf Pengajaran yang berwenang mengakses endpoint ini." });
 }
 
 // Staf LPTQ (untuk hafalan, ubudiyah).
 function requireLPTQ(req, res, next) {
   if (isSuperAdmin(req.user) || (req.user?.role === "guru" && req.user.departemen === "lptq")) return next();
-  if (isOperationalAdmin(req.user)) return allowAdminRead(req, res, next);
   res.status(403).json({ error: "Hanya staf LPTQ yang berwenang mengakses endpoint ini." });
 }
 
 // Staf Administrasi/Keuangan (untuk tagihan, pembayaran, cashflow).
 function requireAdministrasi(req, res, next) {
   if (isSuperAdmin(req.user) || (req.user?.role === "guru" && req.user.departemen === "administrasi")) return next();
-  if (isOperationalAdmin(req.user)) return allowAdminRead(req, res, next);
   res.status(403).json({ error: "Hanya staf Administrasi/Keuangan yang berwenang mengakses endpoint ini." });
 }
 
@@ -237,9 +232,9 @@ function requireSekretariat(req, res, next) {
 }
 
 function requirePasswordResetAuthority(req, res, next) {
-  if (isSuperAdmin(req.user) || isOperationalAdmin(req.user)
+  if (isSuperAdmin(req.user)
     || (req.user?.role === "guru" && req.user.departemen === "sekretariat")) return next();
-  res.status(403).json({ error: "Hanya Admin, Superadmin, atau staf Sekretariat yang dapat mereset kata sandi." });
+  res.status(403).json({ error: "Hanya Superadmin atau staf Sekretariat yang dapat mereset kata sandi." });
 }
 
 // Staf Admin (untuk akun guru/staf, unit usaha, tahun ajaran, dan tampilan aplikasi).
@@ -248,4 +243,4 @@ function requireAdmin(req, res, next) {
   res.status(403).json({ error: "Hanya Superadmin yang berwenang mengakses pengelolaan ini." });
 }
 
-module.exports = { login, changePassword, requireAuth, requireBMT, requireUnitUsaha, requireWali, requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat, requirePasswordResetAuthority, requireAdmin, requireAnyStaff, isSuperAdmin, isOperationalAdmin, requireDashboardAdmin, JWT_SECRET };
+module.exports = { login, changePassword, requireAuth, requireBMT, requireUnitUsaha, requireWali, requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat, requirePasswordResetAuthority, requireAdmin, requireAnyStaff, isSuperAdmin, jenisAkunEfektif, requireDashboardAdmin, JWT_SECRET };

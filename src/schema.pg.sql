@@ -371,3 +371,11 @@ CREATE INDEX IF NOT EXISTS idx_santri_face_embed_present ON "Santri" ("id") WHER
 CREATE INDEX IF NOT EXISTS idx_santri_foto_present ON "Santri" ("id") WHERE "foto" IS NOT NULL AND "foto" != '';
 CREATE INDEX IF NOT EXISTS idx_santri_nama ON "Santri" ("nama");
 CREATE INDEX IF NOT EXISTS idx_santri_nis ON "Santri" ("nis");
+
+-- Admin dilebur ke Superadmin (keputusan 4 Okt 2026): akun lama berjenis 'admin' menjadi 'superadmin'.
+-- Idempotent: setelah dijalankan sekali, tidak ada baris 'admin' tersisa. Setiap akun yang dimigrasikan dicatat di AuditLog.
+INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
+SELECT gen_random_uuid()::text, NULL, 'system', 'admin.role_merged_to_superadmin', 'Guru', "id",
+  jsonb_build_object('jenisAkunSebelum', 'admin', 'jenisAkunSesudah', 'superadmin')
+FROM "Guru" WHERE "jenisAkun" = 'admin';
+UPDATE "Guru" SET "jenisAkun" = 'superadmin' WHERE "jenisAkun" = 'admin';

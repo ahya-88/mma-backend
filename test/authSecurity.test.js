@@ -184,6 +184,21 @@ test("first-login token is restricted to password change and rotates to a normal
   assert.equal(resetInvalidatesOldSession.res.statusCode, 401);
 });
 
+test("password change accepts 6 characters and rejects 5", async () => {
+  const account = accounts.Wali[0];
+  account.password = bcrypt.hashSync("Current-password-123", 4);
+  account.mustChangePassword = false;
+  account.sessionVersion = 0;
+  const user = { role: "wali", id: account.id, sv: 0 };
+  await assert.rejects(
+    changePassword({ user, currentPassword: "Current-password-123", newPassword: "12345" }),
+    (error) => error instanceof CashlessError && error.status === 400 && /minimal 6 karakter/.test(error.message),
+  );
+  const changed = await changePassword({ user, currentPassword: "Current-password-123", newPassword: "abc123" });
+  assert.equal(changed.user.mustChangePassword, false);
+  assert.equal(await bcrypt.compare("abc123", account.password), true);
+});
+
 test("password change validates length and current password", async () => {
   const account = accounts.Wali[0];
   account.password = bcrypt.hashSync("Current-password-123", 4);

@@ -1,7 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("../db");
-const { requireAuth, requireBMT, requireAnyStaff, requireSekretariat, isSuperAdmin, isOperationalAdmin } = require("../auth");
+const { requireAuth, requireBMT, requireAnyStaff, requireSekretariat, isSuperAdmin } = require("../auth");
 const { getSantriRow, toPublicSantri, toSaldoPublik, riwayatSantri, CashlessError, SANTRI_BIODATA_FIELDS } = require("../cashlessService");
 const { setPin, terbitkanKartu } = require("../pinService");
 const { riwayatAbsensi, daftarPerizinan, riwayatPelanggaran } = require("../pengasuhanService");
@@ -13,14 +13,14 @@ const router = express.Router();
 const isBMT = (user) => user?.role === "guru" && user.departemen === "unitusaha" && user.unit === "BMT";
 
 function assertLihatSantri(req, santri) {
-  if (isSuperAdmin(req.user) || isOperationalAdmin(req.user)) return;
+  if (isSuperAdmin(req.user)) return;
   if (isBMT(req.user)) return;
   if (req.user.role === "wali" && santri.waliId === req.user.id) return;
   throw new CashlessError(403, "Tidak berwenang melihat data santri ini.");
 }
 
 function assertLihatRaporSantri(req, santri) {
-  if (isSuperAdmin(req.user) || isOperationalAdmin(req.user)) return;
+  if (isSuperAdmin(req.user)) return;
   if (req.user.role === "guru") return;
   if (req.user.role === "wali" && santri.waliId === req.user.id) return;
   throw new CashlessError(403, "Tidak berwenang melihat data santri ini.");
@@ -183,7 +183,7 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
     riwayatAbsensi(req.params.id), riwayatPelanggaran(req.params.id), daftarPerizinan({ santriId: req.params.id }),
     semuaNilai(), semuaPrestasi(), semuaHafalan(), semuaUbudiyah(),
   ]);
-  const bolehLihatTagihan = isSuperAdmin(req.user) || isOperationalAdmin(req.user) || req.user.role === "wali" || (req.user.role === "guru" && req.user.departemen === "administrasi");
+  const bolehLihatTagihan = isSuperAdmin(req.user) || req.user.role === "wali" || (req.user.role === "guru" && req.user.departemen === "administrasi");
   res.json({
     absensi: absensi.rows,
     rekapAbsensi: absensi.rekap,

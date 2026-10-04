@@ -67,9 +67,9 @@ Cek: `curl http://localhost:4000/api/health` → `{"ok":true, ...}`. Endpoint in
 
 ## Panel Superadmin
 
-Dashboard Admin tersedia di `http://localhost:4000/admin` dan dashboard Superadmin di `http://localhost:4000/superadmin`. Keduanya memakai halaman login utama yang sama; setelah login, jenis akun menentukan dashboard tujuan. Akun Admin mendapat akses baca lintas modul operasional, sedangkan perubahan data, persetujuan, pengelolaan akun/role, konfigurasi, dan audit sistem tetap khusus Superadmin atau staf modul yang berwenang. Perbedaan akses ditegakkan oleh API, bukan hanya tampilan menu. Akun Admin tidak dapat melakukan transaksi kasir.
+Dashboard Superadmin tersedia di `http://localhost:4000/superadmin` (alamat `/admin` mengarah ke halaman yang sama). Peran **Admin sudah dilebur ke Superadmin** (keputusan 4 Okt 2026): hanya ada dua jenis akun, `staf` dan `superadmin`. Semua fitur yang dulu ada di bagian Admin tersedia di Superadmin: akun staf (tambah/ubah/hapus/reset sandi), akun wali (reset sandi), unit usaha (tambah/hapus), tahun ajaran (tambah/aktifkan/hapus), dan tampilan aplikasi (logo, foto gedung/latar login, nama aplikasi, warna tema, font, gaya background, kembalikan ke bawaan). Perbedaan akses ditegakkan oleh API, bukan hanya tampilan menu. Akun Superadmin tetap tidak dapat melakukan transaksi kasir.
 
-Dashboard Superadmin memuat ringkasan dan pengelolaan akun, konfigurasi, persetujuan, dan audit. Dashboard Admin menampilkan ringkasan serta daftar baca-saja untuk data operasional lintas modul; menu akun, kartu/biometrik, konfigurasi, dan audit sistem tidak tersedia bagi Admin. Pengelolaan akun selain reset sandi memerlukan Superadmin. Endpoint reset sandi Guru/Wali menerima Admin, Superadmin, atau Sekretariat, mewajibkan perubahan sandi saat login berikutnya, dan mencabut sesi sebelumnya. Pada database lama, akun yang sebelumnya memakai departemen `admin` otomatis dimigrasikan sebagai Superadmin.
+Kebijakan kata sandi: **minimal 6 karakter** untuk semua akun (`src/passwordPolicy.js`). Endpoint reset sandi Guru/Wali menerima Superadmin atau staf Sekretariat, mewajibkan perubahan sandi saat login berikutnya, dan mencabut sesi sebelumnya. Pada database lama, akun berjenis `admin` otomatis dimigrasikan menjadi `superadmin` saat server start (tercatat di AuditLog dengan aksi `admin.role_merged_to_superadmin`); sebelum migrasi berjalan pun, akun lama itu sudah diperlakukan sebagai Superadmin.
 
 ## Akun demo (lokal saja)
 Seed akun demo hanya berjalan jika `DEMO_MODE=true` di lingkungan non-production. Akun tidak boleh digunakan untuk data nyata; setiap akun seed wajib mengganti kata sandi pada login pertama. Kredensial demo disediakan hanya untuk menguji database lokal/staging terisolasi.
@@ -82,7 +82,7 @@ Semua endpoint berawalan `/api`. Kirim `Authorization: Bearer <token>` dari hasi
 | Method | Endpoint | Peran | Keterangan |
 |---|---|---|---|
 | POST | `/auth/login` | publik, dibatasi rate limit | `{ username, password }` → `{ token, user }`; akun awal/reset wajib ganti sandi melalui endpoint berikutnya |
-| POST | `/auth/change-password` | token ganti sandi atau sesi aktif | `{ currentPassword?, newPassword }`; minimum 12 karakter, token sesi baru dikembalikan |
+| POST | `/auth/change-password` | token ganti sandi atau sesi aktif | `{ currentPassword?, newPassword }`; minimum 6 karakter, token sesi baru dikembalikan |
 | GET | `/santri/me-anak` | wali | daftar anak sendiri + saldo/limit/blokir |
 | GET | `/santri/:id` | BMT atau wali pemilik | detail 1 santri |
 | GET | `/santri/:id/riwayat` | BMT atau wali pemilik | riwayat transaksi lintas unit |
