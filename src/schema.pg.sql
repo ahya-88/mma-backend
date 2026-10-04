@@ -397,6 +397,23 @@ CREATE TABLE IF NOT EXISTS "RekonsiliasiImpor" (
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
 
+-- ---- Antrian Kasir Offline (FASE 4) ----
+CREATE TABLE IF NOT EXISTS "QueueOfflineKasir" (
+  "id" TEXT PRIMARY KEY,
+  "idempotencyKey" TEXT NOT NULL UNIQUE,
+  "unit" TEXT NOT NULL,
+  "santriId" TEXT NOT NULL REFERENCES "Santri"("id"),
+  "jenis" TEXT NOT NULL,
+  "jumlah" BIGINT NOT NULL,
+  "keterangan" TEXT,
+  "kasirId" TEXT,
+  "statusSync" TEXT NOT NULL DEFAULT 'Menunggu',
+  "pesanError" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "syncedAt" TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_offline_queue_status ON "QueueOfflineKasir" ("statusSync");
+
 ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "statusAkun" TEXT NOT NULL DEFAULT 'Belum Aktivasi';
 ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "importBatchId" TEXT REFERENCES "BatchImpor"("id");
 ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "importBatchId" TEXT REFERENCES "BatchImpor"("id");

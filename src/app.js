@@ -69,6 +69,34 @@ app.get("/api/health", asyncHandler(async (req, res) => {
   }
 }));
 
+app.get("/api/readiness", asyncHandler(async (req, res) => {
+  try {
+    const start = Date.now();
+    await query("SELECT 1");
+    const dbLatencyMs = Date.now() - start;
+    const memory = process.memoryUsage();
+    res.json({
+      status: "ready",
+      database: "connected",
+      dbLatencyMs,
+      environment: process.env.NODE_ENV || "development",
+      uptimeSeconds: Math.floor(process.uptime()),
+      memoryMB: {
+        rss: Math.round(memory.rss / (1024 * 1024)),
+        heapUsed: Math.round(memory.heapUsed / (1024 * 1024)),
+      },
+      waktu: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "not_ready",
+      database: "disconnected",
+      error: error.message,
+      waktu: new Date().toISOString(),
+    });
+  }
+}));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/santri", santriRoutes);
 app.use("/api/transaksi", transaksiRoutes);
