@@ -150,9 +150,90 @@ async function simpanTampilan(tampilan) {
   return ambilTampilan();
 }
 
+async function ringkasanSuperadmin() {
+  const count = async (table, condition = "", params = []) => Number((await queryOne(`SELECT COUNT(*) AS "n" FROM "${table}" ${condition}`, params)).n);
+  const today = new Date().toISOString().slice(0, 10);
+  const [santri, wali, guru, absensiHariIni, izinMenunggu, topupMenunggu, anggaranMenunggu,
+    tagihan, transaksi, faceTemplates, cashflowTujuhHari, perKelas, aktivitas] = await Promise.all([
+    count("Santri"),
+    count("Wali"),
+    count("Guru"),
+    count("Absensi", 'WHERE "tanggalISO" = $1', [today]),
+    count("Perizinan", 'WHERE "status" = \'Menunggu\''),
+    count("PermintaanBMT", 'WHERE "status" = \'Menunggu\''),
+    count("PengajuanAnggaran", 'WHERE "status" = \'Diajukan\''),
+    queryOne('SELECT COUNT(*) AS "jumlah", COALESCE(SUM("jumlah" - "jumlahDibayar"), 0) AS "tunggakan" FROM "Tagihan" WHERE "jumlah" > "jumlahDibayar"'),
+    queryOne('SELECT COUNT(*) AS "jumlah", COALESCE(SUM("jumlah"), 0) AS "nominal" FROM "TransaksiCashless"'),
+    count("FaceTemplate"),
+    queryAll(`SELECT "tanggalISO" AS "tanggal", SUM(CASE WHEN "jenis" = 'Masuk' THEN "jumlah" ELSE -"jumlah" END) AS "neto"
+      FROM "Cashflow" WHERE "tanggalISO" >= to_char(CURRENT_DATE - INTERVAL '6 days', 'YYYY-MM-DD')
+      GROUP BY "tanggalISO" ORDER BY "tanggalISO"`),
+    queryAll('SELECT COALESCE("kelas", \'Belum ditentukan\') AS "kelas", COUNT(*) AS "jumlah" FROM "Santri" GROUP BY "kelas" ORDER BY "jumlah" DESC LIMIT 8'),
+    queryAll(`SELECT "waktu", "aktorRole", "aksi", "targetTipe", "targetId"
+      FROM "AuditLog" ORDER BY "waktu" DESC LIMIT 8`),
+  ]);
+
+  const statusLayanan = await queryOne('SELECT 1 AS "ok"');
+  return {
+    diperbaruiPada: new Date().toISOString(),
+    kartu: {
+      santri, wali, guru, absensiHariIni, izinMenunggu, topupMenunggu, anggaranMenunggu,
+      tagihanMenunggak: Number(tagihan.jumlah),
+      nominalTunggakan: Number(tagihan.tunggakan),
+      jumlahTransaksiCashless: Number(transaksi.jumlah),
+      nominalTransaksiCashless: Number(transaksi.nominal),
+      faceTemplates,
+    },
+    cashflowTujuhHari: cashflowTujuhHari.map((row) => ({ ...row, neto: Number(row.neto) })),
+    perKelas: perKelas.map((row) => ({ ...row, jumlah: Number(row.jumlah) })),
+    aktivitas,
+    statusLayanan: !!statusLayanan?.ok,
+  };
+}
+
+async function daftarWali() {
+  return queryAll('SELECT "id", "nama", "hp", "username", "createdAt" FROM "Wali" ORDER BY "nama"');
+}
+
+async function daftarKartuSuperadmin() {
+  return queryAll(`SELECT "id", "nama", "nis", "kelas", "kartuTerbit",
+      ("pinHash" IS NOT NULL AND "pinHash" != '') AS "punyaPin"
+    FROM "Santri" ORDER BY "nama"`);
+}
+
+async function daftarPermintaanSuperadmin() {
+  return queryAll(`SELECT "id", "santriId", "waliId", "jenis", "nilaiDiminta", "alasan", "status",
+      "tanggalAjukan", "tanggalDiproses", "diprosesOleh", "catatanBMT", "nominalDisetujui",
+      "referensiMutasi", "diprosesPada", "perluPersetujuanKedua", "diprosesPertamaOleh",
+      "createdAt", ("buktiTransfer" IS NOT NULL AND "buktiTransfer" != '') AS "adaBukti"
+    FROM "PermintaanBMT" ORDER BY "createdAt" DESC`);
+}
+
+async function daftarAuditSuperadmin({ page = 1, limit = 50 } = {}) {
+  const offset = (page - 1) * limit;
+  const [items, total] = await Promise.all([
+    queryAll(`SELECT "waktu", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId"
+      FROM "AuditLog" ORDER BY "waktu" DESC LIMIT $1 OFFSET $2`, [limit, offset]),
+    queryOne('SELECT COUNT(*) AS "total" FROM "AuditLog"'),
+  ]);
+  return { items, page, limit, total: Number(total.total) };
+}
+
+async function ubahStatusProduk({ id, aktif }) {
+  if (typeof aktif !== "boolean") throw new CashlessError(400, "Status produk harus berupa boolean.");
+  const result = await query(
+    'UPDATE "ProdukUnitUsaha" SET "aktif" = $1, "updatedAt" = to_char(CURRENT_TIMESTAMP AT TIME ZONE \'UTC\', \'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"\') WHERE "id" = $2 RETURNING "id", "unit", "nama", "aktif"',
+    [aktif ? 1 : 0, id],
+  );
+  if (!result.rowCount) throw new CashlessError(404, "Produk tidak ditemukan.");
+  return result.rows[0];
+}
+
 module.exports = {
   semuaGuru, buatGuru, editGuru, editPasswordGuru, hapusGuru,
   semuaUnitUsaha, tambahUnitUsaha, hapusUnitUsaha,
   semuaTahunAjaran, tambahTahunAjaran, aktifkanTahunAjaran, hapusTahunAjaran,
-  ambilTampilan, simpanTampilan, TAMPILAN_DEFAULT,
+  ambilTampilan, simpanTampilan, ringkasanSuperadmin, daftarWali, daftarKartuSuperadmin,
+  daftarPermintaanSuperadmin, daftarAuditSuperadmin,
+  ubahStatusProduk, TAMPILAN_DEFAULT,
 };

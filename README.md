@@ -57,6 +57,12 @@ npm start                   # jalan di http://localhost:4000
 ```
 Cek: `curl http://localhost:4000/api/health` → `{"ok":true, ...}`. Endpoint ini menjalankan `SELECT 1` dan membalas HTTP 503 bila PostgreSQL tidak dapat dihubungi.
 
+## Panel Superadmin
+
+Panel tersedia di `http://localhost:4000/superadmin` setelah backend berjalan. Login dilakukan melalui halaman utama `http://localhost:4000` bersama akun lain; setelah login berhasil, akun dengan departemen `admin` otomatis diarahkan ke panel. Tidak ada halaman atau kredensial login terpisah. Token sesi yang sama diteruskan di `sessionStorage` dan diverifikasi kembali pada endpoint yang dilindungi. Keluar dari panel akan kembali ke halaman login utama. Akun Admin dapat membaca modul lintas departemen, sedangkan pencatatan transaksi kasir tetap dibatasi untuk staf Unit Usaha.
+
+Panel merangkum santri, wali, staf, absensi, tunggakan, permintaan BMT, anggaran, cashflow, unit usaha, produk, kartu, statistik verifikasi wajah, tahun ajaran, tampilan aplikasi, status layanan, dan log audit. Panel juga menyediakan persetujuan perizinan/top-up/anggaran, aktivasi tahun ajaran, pengubahan tampilan, serta pengaktifan/nonaktifkan produk. Endpoint ringkasan, daftar wali/permintaan/kartu, akses panel, audit, dan status produk di `/api/admin/*` memerlukan akun Admin; daftar kartu panel hanya memuat status dan tidak menyertakan token/QR. Endpoint `/api/wajah/embeddings` hanya tersedia bagi staf Unit Usaha yang terautentikasi; nilai embedding tidak ditampilkan di panel.
+
 ## Akun demo (sama seperti frontend)
 | Username | Password | Peran |
 |---|---|---|

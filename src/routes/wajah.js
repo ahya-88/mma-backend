@@ -78,7 +78,7 @@ router.put("/embedding/:id", requireAuth, requireUnitUsaha, asyncHandler(async (
   res.json({ ok: true });
 }));
 
-router.get("/embeddings", asyncHandler(async (req, res) => {
+router.get("/embeddings", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
   const meta = await queryOne(`SELECT
     (SELECT COUNT(*) FROM "Santri" WHERE "faceEmbedding" IS NOT NULL AND "faceEmbedding" != '') AS "total",
     (SELECT MAX("updatedAt") FROM "Santri" WHERE "faceEmbedding" IS NOT NULL AND "faceEmbedding" != '') AS "lastUpdate",

@@ -22,5 +22,23 @@ router.delete("/tahun-ajaran/:id", requireAuth, requireAdmin, asyncHandler(async
 
 router.get("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.ambilTampilan())));
 router.put("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.simpanTampilan(req.body || {}))));
+router.get("/ringkasan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.ringkasanSuperadmin())));
+router.get("/wali", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.daftarWali())));
+router.get("/kartu", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.set("Cache-Control", "no-store").json(await admin.daftarKartuSuperadmin())));
+router.get("/permintaan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.daftarPermintaanSuperadmin())));
+router.get("/akses", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json({
+  id: req.user.id, nama: req.user.nama, departemen: req.user.departemen,
+})));
+router.put("/produk/:id/status", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await admin.ubahStatusProduk({ id: req.params.id, aktif: (req.body || {}).aktif }));
+}));
+router.get("/audit", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const page = Number(req.query.page || 1);
+  const limit = Number(req.query.limit || 50);
+  if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+    return res.status(400).json({ error: "page harus minimal 1 dan limit harus antara 1 sampai 100." });
+  }
+  res.json(await admin.daftarAuditSuperadmin({ page, limit }));
+}));
 
 module.exports = router;

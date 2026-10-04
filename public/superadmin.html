@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0C4A6E">
+  <title>Panel Superadmin — Ma'had Mudaiyatul Anwar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/superadmin.css">
+</head>
+<body>
+  <div id="app-shell" class="app-shell" hidden>
+    <aside id="sidebar" class="sidebar">
+      <a class="brand" href="/superadmin" aria-label="Panel Superadmin">
+        <span class="brand-mark">MA</span>
+        <span><strong>MA Admin</strong><small>SUPERADMIN</small></span>
+      </a>
+      <nav id="navigation" class="navigation" aria-label="Navigasi utama"></nav>
+      <div class="sidebar-footer"><span class="online-dot"></span> Sistem operasional</div>
+    </aside>
+    <button id="sidebar-backdrop" class="sidebar-backdrop" type="button" aria-label="Tutup navigasi" hidden></button>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button id="menu-toggle" class="icon-button menu-toggle" type="button" aria-label="Buka navigasi">☰</button>
+        <div class="breadcrumbs"><span>Panel</span><b>/</b><strong id="current-section">Ringkasan</strong></div>
+        <div class="topbar-actions">
+          <span id="academic-year" class="year-pill">Memuat tahun ajaran</span>
+          <span id="user-name" class="user-name">Admin</span>
+          <button id="logout-button" class="button quiet" type="button">Keluar</button>
+        </div>
+      </header>
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
+      <section id="content" class="content" tabindex="-1"></section>
+      <footer class="page-footer">Ma'had Mudaiyatul Anwar <span>•</span> Panel operasional internal</footer>
+    </main>
+  </div>
+  <noscript><p>Panel Superadmin memakai sesi dari halaman login utama. <a href="/">Buka halaman login.</a></p></noscript>
+  <script src="/superadmin.js" defer></script>
+</body>
+</html>
