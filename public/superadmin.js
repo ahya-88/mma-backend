@@ -138,6 +138,11 @@
     setTitle(config.title);
     const actions = config.actions === "santri" || superAdminAccess ? config.actions : undefined;
     content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Pemantauan lintas modul</p><h1>${escapeHtml(config.title)}</h1><p>${escapeHtml(config.description)}</p></div><div class="action-cell">${key === "guru" && superAdminAccess ? '<button id="add-staff-button" class="button primary" type="button">+ Tambah akun</button>' : ""}${key === "unit" ? '<button id="add-unit-button" class="button primary" type="button">+ Tambah unit</button>' : ""}<button id="refresh-button" class="button" type="button">↻ Muat ulang</button></div></div><div id="table-state" class="loading-state">Mengambil data...</div>`;
+
+    content.querySelector("#refresh-button")?.addEventListener("click", () => renderTable(key));
+    content.querySelector("#add-staff-button")?.addEventListener("click", createStaff);
+    content.querySelector("#add-unit-button")?.addEventListener("click", createUnit);
+
     try {
       const records = getRecords(await api(config.url));
       content.querySelector("#table-state").outerHTML = `
@@ -154,9 +159,6 @@
       };
       searchInput.addEventListener("input", draw);
       draw();
-      content.querySelector("#refresh-button").addEventListener("click", () => renderTable(key));
-      content.querySelector("#add-staff-button")?.addEventListener("click", createStaff);
-      content.querySelector("#add-unit-button")?.addEventListener("click", createUnit);
       content.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => performAction(button.dataset.action, button.dataset.id, button.dataset.status)));
     } catch (error) {
       showNotice(error.message, true);

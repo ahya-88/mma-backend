@@ -17,7 +17,7 @@ async function catatAuditAdmin({ aktorId, aksi, targetTipe, targetId, detail = {
 }
 
 async function semuaGuru() {
-  const rows = await queryAll('SELECT "id", "nama", "username", "departemen", "unit", "jenisAkun", "mustChangePassword", "statusAkun", "createdAt" FROM "Guru" ORDER BY "nama"');
+  const rows = await queryAll('SELECT "id", "nama", "username", "departemen", "unit", "jenisAkun", "mustChangePassword", COALESCE("statusAkun", \'Aktif\') AS "statusAkun", "createdAt" FROM "Guru" ORDER BY "nama"');
   return rows.map((row) => ({ ...row, jenisAkun: jenisEfektif(row) }));
 }
 
