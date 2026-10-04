@@ -9,7 +9,6 @@ const GURU_SEED = [
   { id: "g3a", nama: "Ustadz Hilmi", username: "hilmi.lptq", departemen: "lptq", password: "guru123" },
   { id: "g3b", nama: "Ustadz Hilmi", username: "hilmi.data", departemen: "sekretariat", password: "guru123" },
   { id: "g4", nama: "Pimpinan Pondok", username: "admin", departemen: "admin", jenisAkun: "superadmin", password: "admin123" },
-  { id: "g8", nama: "Admin Operasional", username: "admin.operasional", departemen: "admin", jenisAkun: "admin", password: "admin123" },
   { id: "g5", nama: "Bpk. Hendra", username: "hendra", departemen: "administrasi", password: "uang123" },
   { id: "g6", nama: "Bpk. Slamet", username: "slamet.kantin", departemen: "unitusaha", unit: "Kantin", password: "guru123" },
   { id: "g7", nama: "Ibu Fatimah", username: "fatimah.bmt", departemen: "unitusaha", unit: "BMT", password: "guru123" },

@@ -25,8 +25,8 @@ For a restore drill, create a new isolated staging database, restore a selected 
 ## Account and audit controls
 
 - Login uses bcrypt password hashes, a two-hour JWT lifetime, an account lock after five consecutive failures for 15 minutes, and process-local rate limits (3,000 login requests and 60,000 API requests per IP per 15 minutes). These limits are intentionally sized for the stated shared-NAT login peak; confirm/tune with staging load tests. The default limiter store is per process, so configure shared gateway-level limits before running multiple app instances.
-- Newly provisioned accounts and reset accounts must change their password before accessing protected APIs. Passwords must be at least 12 characters.
-- Admin, Superadmin, or Sekretariat may reset a Guru/Wali password through the protected admin API; reset increments the account session version and forces a password change, invalidating prior tokens.
+- Newly provisioned accounts and reset accounts must change their password before accessing protected APIs. Passwords must be at least 6 characters (single policy for every account type, defined in `src/passwordPolicy.js`; decision of 4 Oct 2026). Because the minimum is short, rely on the lockout, rate limits, forced first-login change, and Superadmin/Sekretariat reset rather than on password complexity.
+- Superadmin or Sekretariat may reset a Guru/Wali password through the protected admin API; reset increments the account session version and forces a password change, invalidating prior tokens.
 - Password-reset audit entries record the actor and target only. Never add passwords, PINs, card tokens, biometric embeddings, or transfer evidence to logs.
 - Keep audit and backup access limited to roles that need it; review access after staff changes.
 

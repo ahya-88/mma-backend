@@ -180,3 +180,12 @@ tr:hover td { background: #f5faff; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+.setting-item select { width: 100%; min-height: 34px; margin-top: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: #fff; font-size: 11px; }
+.setting-item input[type="color"] { padding: 2px; cursor: pointer; }
+.setting-section { grid-column: 1 / -1; margin: 6px 0 -2px; color: #607168; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.image-preview { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.image-preview img { width: 48px; height: 48px; object-fit: contain; border: 1px solid var(--line); border-radius: 8px; background: #f4f8fb; }
+.image-preview img[hidden] { display: none; }
+.image-note { margin: 0; font-size: 11px; color: #607168; }
+.setting-item .button.small { margin-top: 8px; }
+.action-end { justify-content: flex-end; margin-top: 15px; }

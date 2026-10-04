@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireAuth, requireAdmin, requirePasswordResetAuthority, requireDashboardAdmin, isOperationalAdmin } = require("../auth");
+const { requireAuth, requireAdmin, requirePasswordResetAuthority, requireDashboardAdmin, jenisAkunEfektif } = require("../auth");
 const admin = require("../adminService");
 const asyncHandler = require("../asyncHandler");
 
@@ -34,21 +34,13 @@ router.delete("/tahun-ajaran/:id", requireAuth, requireAdmin, asyncHandler(async
 
 router.get("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.ambilTampilan())));
 router.put("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.simpanTampilan(req.body || {}))));
-router.get("/ringkasan", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => {
-  const dashboard = await admin.ringkasanSuperadmin();
-  if (isOperationalAdmin(req.user)) {
-    const kartu = { ...dashboard.kartu };
-    delete kartu.faceTemplates;
-    return res.json({ ...dashboard, kartu, aktivitas: [] });
-  }
-  res.json(dashboard);
-}));
+router.get("/ringkasan", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => res.json(await admin.ringkasanSuperadmin())));
 router.get("/wali", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.daftarWali())));
 router.get("/kartu", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.set("Cache-Control", "no-store").json(await admin.daftarKartuSuperadmin())));
 router.get("/permintaan", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => res.json(await admin.daftarPermintaanSuperadmin())));
 router.get("/akses", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => res.json({
   id: req.user.id, nama: req.user.nama, departemen: req.user.departemen,
-  jenisAkun: req.user.jenisAkun || (req.user.departemen === "admin" ? "superadmin" : "staf"),
+  jenisAkun: jenisAkunEfektif(req.user),
 })));
 router.put("/produk/:id/status", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   res.json(await admin.ubahStatusProduk({ id: req.params.id, aktif: (req.body || {}).aktif }));
