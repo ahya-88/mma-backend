@@ -17,6 +17,8 @@ async function catatNilai({ santriId, mapel, nilai, dicatatOleh }) {
   });
 }
 const semuaNilai = () => queryAll('SELECT * FROM "Nilai" ORDER BY "createdAt" DESC');
+const nilaiPerSantri = (santriId) => queryAll('SELECT * FROM "Nilai" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
+
 async function hapusNilai(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Nilai" WHERE "id" = $1 FOR UPDATE', [id]);
@@ -38,6 +40,8 @@ async function catatPrestasi({ santriId, judul, tingkat, dicatatOleh }) {
   });
 }
 const semuaPrestasi = () => queryAll('SELECT * FROM "Prestasi" ORDER BY "createdAt" DESC');
+const prestasiPerSantri = (santriId) => queryAll('SELECT * FROM "Prestasi" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
+
 async function hapusPrestasi(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Prestasi" WHERE "id" = $1 FOR UPDATE', [id]);
@@ -59,6 +63,8 @@ async function catatHafalan({ santriId, juz, dicatatOleh }) {
   });
 }
 const semuaHafalan = () => queryAll('SELECT * FROM "Hafalan" ORDER BY "createdAt" DESC');
+const hafalanPerSantri = (santriId) => queryAll('SELECT * FROM "Hafalan" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
+
 async function hapusHafalan(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Hafalan" WHERE "id" = $1 FOR UPDATE', [id]);
@@ -81,6 +87,8 @@ async function catatUbudiyah({ santriId, jenis, materi, predikat, catatan, dicat
   });
 }
 const semuaUbudiyah = () => queryAll('SELECT * FROM "PenilaianUbudiyah" ORDER BY "createdAt" DESC');
+const ubudiyahPerSantri = (santriId) => queryAll('SELECT * FROM "PenilaianUbudiyah" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
+
 async function hapusUbudiyah(id, actorId) {
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "PenilaianUbudiyah" WHERE "id" = $1 FOR UPDATE', [id]);
@@ -93,8 +101,8 @@ async function hapusUbudiyah(id, actorId) {
 
 module.exports = {
   PREDIKAT_LIST,
-  catatNilai, semuaNilai, hapusNilai,
-  catatPrestasi, semuaPrestasi, hapusPrestasi,
-  catatHafalan, semuaHafalan, hapusHafalan,
-  catatUbudiyah, semuaUbudiyah, hapusUbudiyah,
+  catatNilai, semuaNilai, nilaiPerSantri, hapusNilai,
+  catatPrestasi, semuaPrestasi, prestasiPerSantri, hapusPrestasi,
+  catatHafalan, semuaHafalan, hafalanPerSantri, hapusHafalan,
+  catatUbudiyah, semuaUbudiyah, ubudiyahPerSantri, hapusUbudiyah,
 };

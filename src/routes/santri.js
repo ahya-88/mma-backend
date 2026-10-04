@@ -5,7 +5,7 @@ const { requireAuth, requireBMT, requireAnyStaff, requireSekretariat, isSuperAdm
 const { getSantriRow, toPublicSantri, toSaldoPublik, riwayatSantri, CashlessError, SANTRI_BIODATA_FIELDS } = require("../cashlessService");
 const { setPin, terbitkanKartu } = require("../pinService");
 const { riwayatAbsensi, daftarPerizinan, riwayatPelanggaran } = require("../pengasuhanService");
-const { semuaNilai, semuaPrestasi, semuaHafalan, semuaUbudiyah } = require("../akademikService");
+const { nilaiPerSantri, prestasiPerSantri, hafalanPerSantri, ubudiyahPerSantri } = require("../akademikService");
 const { tagihanSantri } = require("../keuanganService");
 const asyncHandler = require("../asyncHandler");
 
@@ -130,6 +130,46 @@ function sanitasiUntukNonBMT(santriPublik) {
 }
 
 router.get("/", requireAuth, requireAnyStaff, asyncHandler(async (req, res) => {
+  if (req.query.page !== undefined || req.query.limit !== undefined || req.query.q !== undefined || req.query.kelas !== undefined) {
+    const page = Math.max(1, Number(req.query.page || 1));
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit || 20)));
+    const offset = (page - 1) * limit;
+    const q = (req.query.q || "").trim().toLowerCase();
+    const kelas = (req.query.kelas || "").trim();
+
+    const whereConditions = [];
+    const params = [];
+
+    if (kelas) {
+      params.push(kelas);
+      whereConditions.push(`"kelas" = $${params.length}`);
+    }
+
+    if (q) {
+      params.push(`%${q}%`);
+      whereConditions.push(`(LOWER("nama") LIKE $${params.length} OR LOWER(COALESCE("nis", '')) LIKE $${params.length} OR LOWER(COALESCE("nisn", '')) LIKE $${params.length})`);
+    }
+
+    const whereSql = whereConditions.length ? `WHERE ${whereConditions.join(" AND ")}` : "";
+
+    const [rows, countRow] = await Promise.all([
+      queryAll(`SELECT * FROM "Santri" ${whereSql} ORDER BY "nama" LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, [...params, limit, offset]),
+      queryOne(`SELECT COUNT(*) AS "total" FROM "Santri" ${whereSql}`, params),
+    ]);
+
+    const total = Number(countRow.total);
+    const publicRows = await Promise.all(rows.map((row) => toPublicSantri(row)));
+    const sanitized = isBMT(req.user) ? publicRows : publicRows.map(sanitasiUntukNonBMT);
+
+    return res.json({
+      items: sanitized,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    });
+  }
+
   const rows = await Promise.all((await queryAll('SELECT * FROM "Santri" ORDER BY "nama"')).map((row) => toPublicSantri(row)));
   res.json(isBMT(req.user) ? rows : rows.map(sanitasiUntukNonBMT));
 }));
@@ -180,8 +220,13 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
   const santri = await getSantriRow(req.params.id);
   assertLihatRaporSantri(req, santri);
   const [absensi, pelanggaran, perizinan, nilai, prestasi, hafalan, ubudiyah] = await Promise.all([
-    riwayatAbsensi(req.params.id), riwayatPelanggaran(req.params.id), daftarPerizinan({ santriId: req.params.id }),
-    semuaNilai(), semuaPrestasi(), semuaHafalan(), semuaUbudiyah(),
+    riwayatAbsensi(req.params.id),
+    riwayatPelanggaran(req.params.id),
+    daftarPerizinan({ santriId: req.params.id }),
+    nilaiPerSantri(req.params.id),
+    prestasiPerSantri(req.params.id),
+    hafalanPerSantri(req.params.id),
+    ubudiyahPerSantri(req.params.id),
   ]);
   const bolehLihatTagihan = isSuperAdmin(req.user) || req.user.role === "wali" || (req.user.role === "guru" && req.user.departemen === "administrasi");
   res.json({
@@ -190,10 +235,10 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
     perizinan,
     pelanggaran: pelanggaran.rows,
     totalPoinPelanggaran: pelanggaran.totalPoin,
-    nilai: nilai.filter((row) => row.santriId === req.params.id),
-    prestasi: prestasi.filter((row) => row.santriId === req.params.id),
-    hafalan: hafalan.filter((row) => row.santriId === req.params.id),
-    ubudiyah: ubudiyah.filter((row) => row.santriId === req.params.id),
+    nilai,
+    prestasi,
+    hafalan,
+    ubudiyah,
     tagihan: bolehLihatTagihan ? await tagihanSantri(req.params.id) : [],
   });
 }));

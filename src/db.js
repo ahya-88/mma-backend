@@ -13,7 +13,9 @@ const host = new URL(connectionUrl).hostname;
 const isLocal = ["localhost", "127.0.0.1", "::1"].includes(host);
 const pool = new Pool({
   connectionString: connectionUrl,
-  max: 10,
+  max: Number(process.env.PG_POOL_MAX || 20),
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
   ssl: isLocal ? false : { rejectUnauthorized: false },
 });
 const transactionContext = new AsyncLocalStorage();
