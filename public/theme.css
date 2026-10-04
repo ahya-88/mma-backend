@@ -153,11 +153,11 @@ html[data-theme="dark"] #root ::selection {
   gap: 8px;
   min-height: 42px;
   padding: 9px 14px;
-  border: 1px solid #dce6e1;
+  border: 1px solid #cfe3f0;
   border-radius: 999px;
-  color: #176b56;
+  color: #0c4a6e;
   background: rgb(255 255 255 / 94%);
-  box-shadow: 0 8px 24px rgb(23 107 86 / 15%);
+  box-shadow: 0 8px 24px rgb(12 74 110 / 18%);
   font: 600 13px Inter, sans-serif;
   cursor: pointer;
   transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
@@ -168,7 +168,7 @@ html[data-theme="dark"] #root ::selection {
 }
 
 #theme-toggle:focus-visible {
-  outline: 3px solid #23836a;
+  outline: 3px solid #29aae1;
   outline-offset: 3px;
 }
 
