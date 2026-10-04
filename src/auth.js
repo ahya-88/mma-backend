@@ -183,6 +183,16 @@ function requireBMT(req, res, next) {
   res.status(403).json({ error: "Hanya staf BMT yang berwenang mengakses endpoint ini." });
 }
 
+// Admin Unit Usaha: Staf Keuangan/Administrasi, Staf BMT, atau Superadmin.
+function requireAdminUnitUsaha(req, res, next) {
+  if (isSuperAdmin(req.user)) return next();
+  if (req.user?.role === "guru") {
+    if (req.user.departemen === "administrasi") return next();
+    if (req.user.departemen === "unitusaha" && req.user.unit === "BMT") return next();
+  }
+  res.status(403).json({ error: "Hanya staf Keuangan/Administrasi, staf BMT, atau Superadmin yang berwenang mengelola transaksi unit usaha." });
+}
+
 // Staf unit usaha manapun (untuk mencatat transaksi di unitnya sendiri).
 function requireUnitUsaha(req, res, next) {
   if (req.user?.role === "guru" && req.user.departemen === "unitusaha") return next();
@@ -243,4 +253,4 @@ function requireAdmin(req, res, next) {
   res.status(403).json({ error: "Hanya Superadmin yang berwenang mengakses pengelolaan ini." });
 }
 
-module.exports = { login, changePassword, requireAuth, requireBMT, requireUnitUsaha, requireWali, requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat, requirePasswordResetAuthority, requireAdmin, requireAnyStaff, isSuperAdmin, jenisAkunEfektif, requireDashboardAdmin, JWT_SECRET };
+module.exports = { login, changePassword, requireAuth, requireBMT, requireAdminUnitUsaha, requireUnitUsaha, requireWali, requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat, requirePasswordResetAuthority, requireAdmin, requireAnyStaff, isSuperAdmin, jenisAkunEfektif, requireDashboardAdmin, JWT_SECRET };

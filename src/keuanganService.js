@@ -286,23 +286,49 @@ async function laporanCashflowUnitUsaha({ unit } = {}) {
   const transactions = await semuaTransaksiUnitUsaha({ unit });
   const cashflows = await semuaCashflow(unit && unit !== "Semua" ? unit : undefined);
 
+  const cashlessPerUnit = await queryAll(
+    'SELECT "unit", COALESCE(SUM("jumlah"), 0) AS "total" FROM "TransaksiCashless" GROUP BY "unit"'
+  );
+  const cashlessMap = {};
+  for (const row of cashlessPerUnit) {
+    if (row.unit) cashlessMap[row.unit] = Number(row.total || 0);
+  }
+
   const ringkasan = {};
   for (const name of unitNames) {
-    ringkasan[name] = { unit: name, totalMasuk: 0, totalKeluar: 0, netSaldo: 0 };
+    ringkasan[name] = {
+      unit: name,
+      penerimaanKasir: cashlessMap[name] || 0,
+      danaMasuk: 0,
+      danaKeluar: 0,
+      netSaldo: 0,
+    };
   }
 
   for (const cf of cashflows) {
     const uName = cf.unit;
     if (uName) {
-      if (!ringkasan[uName]) ringkasan[uName] = { unit: uName, totalMasuk: 0, totalKeluar: 0, netSaldo: 0 };
+      if (!ringkasan[uName]) {
+        ringkasan[uName] = {
+          unit: uName,
+          penerimaanKasir: cashlessMap[uName] || 0,
+          danaMasuk: 0,
+          danaKeluar: 0,
+          netSaldo: 0,
+        };
+      }
       const amt = Number(cf.jumlah || 0);
       if (cf.jenis === "Masuk") {
-        ringkasan[uName].totalMasuk += amt;
+        ringkasan[uName].danaMasuk += amt;
       } else if (cf.jenis === "Keluar") {
-        ringkasan[uName].totalKeluar += amt;
+        ringkasan[uName].danaKeluar += amt;
       }
-      ringkasan[uName].netSaldo = ringkasan[uName].totalMasuk - ringkasan[uName].totalKeluar;
     }
+  }
+
+  for (const uName of Object.keys(ringkasan)) {
+    const u = ringkasan[uName];
+    u.netSaldo = (u.penerimaanKasir + u.danaMasuk) - u.danaKeluar;
   }
 
   return {

@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireAuth, requireBMT, requireUnitUsaha, isSuperAdmin } = require("../auth");
+const { requireAuth, requireBMT, requireAdminUnitUsaha, requireUnitUsaha, isSuperAdmin } = require("../auth");
 const { catatTransaksi, auditSaldo, sinkronisasiOfflineKasir } = require("../cashlessService");
 const { catatTransaksiUnitUsaha, semuaTransaksiUnitUsaha, hapusTransaksiUnitUsaha, laporanCashflowUnitUsaha } = require("../keuanganService");
 const asyncHandler = require("../asyncHandler");
@@ -9,26 +9,31 @@ const router = express.Router();
 router.get("/audit-saldo", requireAuth, asyncHandler(async (req, res) => {
   const isAdmin = isSuperAdmin(req.user);
   const isBMT = req.user?.role === "guru" && req.user.departemen === "unitusaha" && req.user.unit === "BMT";
-  if (!isAdmin && !isBMT) return res.status(403).json({ error: "Hanya akun Superadmin atau staf BMT yang berwenang mengakses audit saldo." });
+  const isKeuangan = req.user?.role === "guru" && req.user.departemen === "administrasi";
+  if (!isAdmin && !isBMT && !isKeuangan) return res.status(403).json({ error: "Hanya akun Superadmin, BMT, atau Keuangan yang berwenang mengakses audit saldo." });
   res.json(await auditSaldo());
 }));
 
-// ---- Endpoint Transaksi Unit Usaha (Pengaturan & Cashflow BMT / Admin Unit Usaha) ----
-router.get("/unit-usaha", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
+// ---- Endpoint Transaksi Unit Usaha (Pengaturan & Cashflow Admin Unit Usaha: Keuangan, BMT, Superadmin) ----
+router.get("/unit-usaha", requireAuth, asyncHandler(async (req, res) => {
   const isAdmin = isSuperAdmin(req.user);
   const isBMT = req.user?.role === "guru" && req.user.departemen === "unitusaha" && req.user.unit === "BMT";
-  const selectedUnit = isAdmin || isBMT ? req.query.unit : req.user.unit;
+  const isKeuangan = req.user?.role === "guru" && req.user.departemen === "administrasi";
+  const isAdminUnit = isAdmin || isBMT || isKeuangan;
+  const selectedUnit = isAdminUnit ? req.query.unit : (req.user?.unit || req.query.unit);
   res.json(await semuaTransaksiUnitUsaha({ unit: selectedUnit }));
 }));
 
-router.get("/unit-usaha/laporan", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
+router.get("/unit-usaha/laporan", requireAuth, asyncHandler(async (req, res) => {
   const isAdmin = isSuperAdmin(req.user);
   const isBMT = req.user?.role === "guru" && req.user.departemen === "unitusaha" && req.user.unit === "BMT";
-  const selectedUnit = isAdmin || isBMT ? req.query.unit : req.user.unit;
+  const isKeuangan = req.user?.role === "guru" && req.user.departemen === "administrasi";
+  const isAdminUnit = isAdmin || isBMT || isKeuangan;
+  const selectedUnit = isAdminUnit ? req.query.unit : (req.user?.unit || req.query.unit);
   res.json(await laporanCashflowUnitUsaha({ unit: selectedUnit }));
 }));
 
-router.post("/unit-usaha", requireAuth, requireBMT, asyncHandler(async (req, res) => {
+router.post("/unit-usaha", requireAuth, requireAdminUnitUsaha, asyncHandler(async (req, res) => {
   const { jenis, unitAsal, unitTujuan, jumlah, keterangan } = req.body || {};
   res.status(201).json(await catatTransaksiUnitUsaha({
     jenis, unitAsal, unitTujuan, jumlah, keterangan,
@@ -36,7 +41,7 @@ router.post("/unit-usaha", requireAuth, requireBMT, asyncHandler(async (req, res
   }));
 }));
 
-router.delete("/unit-usaha/:id", requireAuth, requireBMT, asyncHandler(async (req, res) => {
+router.delete("/unit-usaha/:id", requireAuth, requireAdminUnitUsaha, asyncHandler(async (req, res) => {
   res.json(await hapusTransaksiUnitUsaha(req.params.id, req.user.id));
 }));
 

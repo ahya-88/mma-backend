@@ -16,7 +16,7 @@
     { title: "Pengasuhan", links: [["absensi", "Absensi", "◷"], ["perizinan", "Perizinan", "↗"], ["pelanggaran", "Pelanggaran", "⚑"]] },
     { title: "Pendidikan", links: [["nilai", "Nilai", "▤"], ["prestasi", "Prestasi", "✦"], ["hafalan", "Hafalan", "⌁"], ["ubudiyah", "Ubudiyah", "◉"]] },
     { title: "Keuangan & Cashless", links: [["tagihan", "Tagihan", "＄"], ["cashflow", "Arus kas", "↕"], ["anggaran", "Anggaran", "▧"], ["permintaan", "Permintaan BMT", "◌"], ["transaksi", "Audit saldo", "⇄"]] },
-    { title: "Operasional", links: [["unit", "Unit usaha", "▦"], ["produk", "Katalog produk", "▣"], ["kartu", "Kartu santri", "▤"], ["wajah", "Verifikasi wajah", "◎"]] },
+    { title: "Operasional", links: [["unit", "Unit usaha", "▦"], ["unit_keuangan", "Keuangan Unit", "💼"], ["produk", "Katalog produk", "▣"], ["kartu", "Kartu santri", "▤"], ["wajah", "Verifikasi wajah", "◎"]] },
     { title: "Pengaturan & Sistem", links: [["tahun", "Tahun ajaran", "◫"], ["tampilan", "Tampilan aplikasi", "◐"], ["audit", "Log aktivitas", "≋"], ["health", "Status sistem", "♥"]] },
   ];
 
@@ -37,6 +37,7 @@
     permintaan: { title: "Permintaan BMT", description: "Permohonan wali yang diproses oleh BMT.", url: "/api/admin/permintaan", columns: [["tanggalAjukan", "Tanggal"], ["santriId", "ID Santri"], ["jenis", "Jenis"], ["nilaiDiminta", "Nilai"], ["alasan", "Alasan"], ["status", "Status"]], actions: "topup" },
     transaksi: { title: "Audit Saldo Cashless", description: "Santri dengan saldo tersimpan yang tidak sesuai dengan ledger transaksi.", auditSaldo: true },
     unit: { title: "Unit Usaha", description: "Unit usaha terdaftar di sistem. Bagian baru langsung tersedia sebagai pilihan saat menambah akun staf.", url: "/api/admin/unit-usaha", columns: [["nama", "Nama unit"], ["id", "ID"]], actions: "unit" },
+    unit_keuangan: { title: "Keuangan Unit Usaha", description: "Ringkasan saldo, dana masuk, dana keluar, dan transfer antar bagian unit usaha.", url: "/api/transaksi/unit-usaha/laporan", unitKeuanganPage: true },
     produk: { title: "Katalog Produk", description: "Produk per unit, harga, dan status tampil di kasir.", url: "/api/produk", columns: [["unit", "Unit"], ["nama", "Produk"], ["kategori", "Kategori"], ["harga", "Harga"], ["barcode", "Barcode"], ["aktif", "Aktif"]], actions: "produk" },
     kartu: { title: "Kartu Santri", description: "Status penerbitan kartu dan kesiapan PIN.", url: "/api/admin/kartu", columns: [["nama", "Nama"], ["nis", "NIS"], ["kelas", "Kelas"], ["kartuTerbit", "Diterbitkan"], ["punyaPin", "PIN tersedia"]] },
   };
@@ -141,6 +142,7 @@
   async function renderTable(key) {
     const config = tablePages[key];
     if (config.auditSaldo) return renderAuditSaldo(config);
+    if (config.unitKeuanganPage) return renderUnitKeuanganPage(config);
     setTitle(config.title);
     const isSekretary = user?.departemen === "sekretariat";
     const actions = config.actions === "santri" || superAdminAccess || isSekretary ? config.actions : undefined;
@@ -340,6 +342,20 @@
     } catch (error) {
       showNotice(error.message, true);
       content.innerHTML = `<div class="panel-card empty-state">${escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  async function renderUnitKeuanganPage(config) {
+    setTitle(config.title);
+    content.innerHTML = `<div id="superadmin-unit-keuangan-host"></div>`;
+    const host = content.querySelector("#superadmin-unit-keuangan-host");
+    if (window.renderUnitKeuanganWorkspace) {
+      window.renderUnitKeuanganWorkspace(host);
+    } else {
+      host.innerHTML = `<div class="loading-state">Memuat antarmuka keuangan unit usaha...</div>`;
+      setTimeout(() => {
+        if (window.renderUnitKeuanganWorkspace) window.renderUnitKeuanganWorkspace(host);
+      }, 500);
     }
   }
 
