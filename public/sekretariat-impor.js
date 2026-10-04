@@ -163,7 +163,7 @@
   };
 
   const mountButtonsIntoContainer = (container) => {
-    if (!container || container.querySelector("[data-mma-impor-host]")) return;
+    if (!container || container.querySelector("[data-mma-impor-host]") || container.querySelector("#import-excel-button")) return;
 
     const host = document.createElement("div");
     host.dataset.mmaImporHost = "true";

@@ -2,9 +2,11 @@
   const root = document.getElementById("root");
 
   const getAuthToken = () => {
-    return sessionStorage.getItem("mma-token") ||
+    return sessionStorage.getItem("mma-superadmin-token") ||
+           sessionStorage.getItem("mma-token") ||
+           localStorage.getItem("mma-superadmin-token") ||
            localStorage.getItem("mma-token") ||
-           sessionStorage.getItem("mma-superadmin-token") || "";
+           window.mmaToken || "";
   };
 
   const parseJwt = (token) => {
