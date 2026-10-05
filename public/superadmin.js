@@ -165,7 +165,16 @@
         const filtered = records.filter((row) => !queryText || config.columns.some(([key]) => formatCell(key, row[key]).toLocaleLowerCase("id").includes(queryText)));
         content.querySelector("#table-count").textContent = `${number.format(filtered.length)} dari ${number.format(records.length)} data`;
         content.querySelector("#table-body").innerHTML = filtered.length ? filtered.map((row) => `
-          <tr>${config.columns.map(([field]) => `<td>${field === "status" ? badge(formatCell(field, row[field])) : escapeHtml(formatCell(field, row[field]))}</td>`).join("")}
+          <tr>${config.columns.map(([field]) => {
+            const cellVal = formatCell(field, row[field]);
+            if (field === "nama" && (key === "santri" || row.foto !== undefined)) {
+              const avatarHtml = row.foto
+                ? `<img src="${escapeHtml(row.foto)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;border:1px solid #0284c7;display:inline-block;" />`
+                : `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#e0f2fe;color:#0369a1;font-weight:700;font-size:11px;margin-right:8px;vertical-align:middle;">${escapeHtml((row.nama || 'S').slice(0, 1).toUpperCase())}</span>`;
+              return `<td><div style="display:inline-flex;align-items:center;gap:4px;">${avatarHtml}<span>${escapeHtml(cellVal)}</span></div></td>`;
+            }
+            return `<td>${field === "status" ? badge(cellVal) : escapeHtml(cellVal)}</td>`;
+          }).join("")}
           ${actions ? `<td>${actionButtons(actions, row)}</td>` : ""}</tr>`).join("") : `<tr><td colspan="${config.columns.length + (actions ? 1 : 0)}"><div class="empty-state">Tidak ada data yang cocok.</div></td></tr>`;
       };
       searchInput.addEventListener("input", draw);
@@ -562,7 +571,12 @@
         api(`/api/santri/${encodeURIComponent(id)}/rapor-ringkas`),
       ]);
       const fields = [["NIS", profile.nis], ["NISN", profile.nisn], ["Kelas", profile.kelas], ["Jenis kelamin", profile.jenisKelamin], ["Tempat/tanggal lahir", [profile.tempatLahir, profile.tanggalLahir].filter(Boolean).join(", ")], ["Asrama", profile.asrama], ["Halaqoh", profile.halaqoh], ["Wali", profile.waliId], ["Nomor darurat", profile.noDarurat], ["Catatan kesehatan", profile.catatanKesehatan], ["Saldo", rupiah.format(Number(profile.saldo) || 0)]];
-      content.innerHTML = `<div class="page-heading"><div><p class="eyebrow">Data pesantren</p><h1>${escapeHtml(profile.nama)}</h1><p>Profil santri dan ringkasan riwayat lintas modul.</p></div><button id="back-button" class="button" type="button">← Kembali ke data santri</button></div>
+
+      const photoAvatar = profile.foto
+        ? `<img src="${escapeHtml(profile.foto)}" alt="${escapeHtml(profile.nama)}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #0284c7;box-shadow:0 2px 4px rgba(0,0,0,0.1);" />`
+        : `<div style="width:72px;height:72px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;border:3px solid #bae6fd;">${escapeHtml((profile.nama || "S").slice(0, 2).toUpperCase())}</div>`;
+
+      content.innerHTML = `<div class="page-heading"><div style="display:flex;align-items:center;gap:16px;">${photoAvatar}<div><p class="eyebrow">Data pesantren</p><h1 style="margin:0;">${escapeHtml(profile.nama)}</h1><p style="margin-top:4px;">Profil santri dan ringkasan riwayat lintas modul.</p></div></div><button id="back-button" class="button" type="button">← Kembali ke data santri</button></div>
         <section class="panel-card"><div class="panel-title"><h2>Biodata ringkas</h2></div><div class="settings-grid">${fields.map(([label, value]) => `<div class="setting-item"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value || "—")}</span></div>`).join("")}</div></section>
         <div class="quick-grid">${metric("Absensi", number.format(history.absensi?.length || 0), "Catatan tersedia", "")}${metric("Perizinan", number.format(history.perizinan?.length || 0), "Catatan tersedia", "")}${metric("Pelanggaran", number.format(history.pelanggaran?.length || 0), `${number.format(history.totalPoinPelanggaran || 0)} poin`, "")}${metric("Nilai", number.format(history.nilai?.length || 0), "Catatan tersedia", "")}${metric("Prestasi", number.format(history.prestasi?.length || 0), "Catatan tersedia", "")}${metric("Hafalan", number.format(history.hafalan?.length || 0), "Catatan tersedia", "")}${metric("Ubudiyah", number.format(history.ubudiyah?.length || 0), "Catatan tersedia", "")}${metric("Tagihan", number.format(history.tagihan?.length || 0), "Catatan tersedia", "")}</div>`;
       content.querySelector("#back-button").addEventListener("click", () => renderTable("santri"));

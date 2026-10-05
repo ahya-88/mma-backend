@@ -194,7 +194,35 @@
     container.appendChild(host);
   };
 
+  const parseJwt = (token) => {
+    if (!token || typeof token !== "string" || !token.includes(".")) return null;
+    try {
+      const base64Url = token.split('.')[1];
+      if (!base64Url) return null;
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(jsonPayload);
+    } catch {
+      return null;
+    }
+  };
+
+  const isImportAuthorized = () => {
+    const token = getAuthToken();
+    if (!token) return false;
+    const payload = parseJwt(token);
+    if (!payload) return false;
+    const isSuper = payload.jenisAkun === "superadmin" || payload.departemen === "admin";
+    const isSekretariat = payload.departemen === "sekretariat";
+    return isSuper || isSekretariat;
+  };
+
   const checkAndInjectButtons = () => {
+    if (!isImportAuthorized()) {
+      document.querySelectorAll("[data-mma-impor-host]").forEach(el => el.remove());
+      return;
+    }
+
     const root = document.getElementById("root") || document;
 
     // Search for headings or headers related to Santri / Sekretariat

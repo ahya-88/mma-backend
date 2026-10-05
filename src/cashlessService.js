@@ -82,7 +82,7 @@ const SANTRI_BIODATA_FIELDS = [
   "pendidikanSMP", "tahunSMP", "pendidikanSMA", "tahunSMA",
 ];
 
-async function toPublicSantri(santri, includeFoto = false) {
+async function toPublicSantri(santri, includeFoto = true) {
   const biodata = {};
   for (const field of SANTRI_BIODATA_FIELDS) {
     if (field === "foto" && !includeFoto) continue;
