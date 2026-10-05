@@ -377,10 +377,28 @@ CREATE TABLE IF NOT EXISTS "ProdukUnitUsaha" (
   "harga" BIGINT NOT NULL,
   "kategori" TEXT,
   "barcode" TEXT,
+  "stok" INTEGER NOT NULL DEFAULT 0,
   "aktif" INTEGER NOT NULL DEFAULT 1,
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
   "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
+ALTER TABLE "ProdukUnitUsaha" ADD COLUMN IF NOT EXISTS "stok" INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS "RiwayatStokOpname" (
+  "id" TEXT PRIMARY KEY,
+  "produkId" TEXT NOT NULL REFERENCES "ProdukUnitUsaha"("id") ON DELETE CASCADE,
+  "unit" TEXT NOT NULL,
+  "stokSebelum" INTEGER NOT NULL,
+  "stokFisik" INTEGER NOT NULL,
+  "selisih" INTEGER NOT NULL,
+  "alasan" TEXT NOT NULL,
+  "catatan" TEXT,
+  "petugasNama" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+CREATE INDEX IF NOT EXISTS idx_stok_opname_unit ON "RiwayatStokOpname" ("unit");
+CREATE INDEX IF NOT EXISTS idx_stok_opname_produk ON "RiwayatStokOpname" ("produkId");
+
 CREATE INDEX IF NOT EXISTS idx_produk_unit ON "ProdukUnitUsaha" ("unit");
 CREATE UNIQUE INDEX IF NOT EXISTS idx_produk_unit_barcode ON "ProdukUnitUsaha" ("unit", "barcode") WHERE "barcode" IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_santri_kartu_token ON "Santri" ("kartuToken") WHERE "kartuToken" IS NOT NULL;

@@ -58,4 +58,61 @@ async function cariByBarcode(unit, barcode) {
   return row;
 }
 
-module.exports = { semuaProdukUnit, semuaProdukSemuaUnit, tambahProduk, editProduk, hapusProduk, cariByBarcode };
+async function stokOpname({ id, unit, stokFisik, alasan, catatan, petugasNama }) {
+  return withTransaction(async () => {
+    const row = await queryOne('SELECT * FROM "ProdukUnitUsaha" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row) throw new CashlessError(404, "Produk tidak ditemukan.");
+    if (unit && unit !== row.unit) throw new CashlessError(403, "Produk ini milik unit usaha lain.");
+
+    const fisik = Number(stokFisik);
+    if (!Number.isInteger(fisik) || fisik < 0) {
+      throw new CashlessError(400, "Jumlah stok fisik harus angka bulat >= 0.");
+    }
+    if (!alasan || !alasan.trim()) {
+      throw new CashlessError(400, "Alasan penyesuaian stok opname wajib diisi.");
+    }
+
+    const stokSebelum = Number(row.stok || 0);
+    const selisih = fisik - stokSebelum;
+
+    await query(`UPDATE "ProdukUnitUsaha" SET "stok" = $1,
+      "updatedAt" = to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+      WHERE "id" = $2`, [fisik, id]);
+
+    const logId = uid();
+    await query(`INSERT INTO "RiwayatStokOpname"
+      ("id", "produkId", "unit", "stokSebelum", "stokFisik", "selisih", "alasan", "catatan", "petugasNama")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [logId, id, row.unit, stokSebelum, fisik, selisih, alasan.trim(), catatan ? catatan.trim() : null, petugasNama || "Staf"]);
+
+    const produkUpdated = await queryOne('SELECT * FROM "ProdukUnitUsaha" WHERE "id" = $1', [id]);
+    return {
+      ok: true,
+      logId,
+      stokSebelum,
+      stokFisik: fisik,
+      selisih,
+      alasan: alasan.trim(),
+      produk: produkUpdated,
+    };
+  });
+}
+
+async function riwayatStokOpnameUnit(unit) {
+  return queryAll(`SELECT r.*, p."nama" AS "namaProduk", p."kategori", p."barcode"
+    FROM "RiwayatStokOpname" r
+    LEFT JOIN "ProdukUnitUsaha" p ON r."produkId" = p."id"
+    WHERE r."unit" = $1
+    ORDER BY r."createdAt" DESC LIMIT 100`, [unit]);
+}
+
+module.exports = {
+  semuaProdukUnit,
+  semuaProdukSemuaUnit,
+  tambahProduk,
+  editProduk,
+  hapusProduk,
+  cariByBarcode,
+  stokOpname,
+  riwayatStokOpnameUnit,
+};

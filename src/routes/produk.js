@@ -35,4 +35,21 @@ router.delete("/:id", requireAuth, requireUnitUsaha, assertUnitSendiri, asyncHan
 // tanpa perlu menarik ulang seluruh katalog unit.
 router.get("/saya/barcode/:kode", requireAuth, requireUnitUsaha, assertUnitSendiri, asyncHandler(async (req, res) => res.json(await produk.cariByBarcode(req.user.unit, req.params.kode))));
 
+// ---- Opname Stok & Audit Log ----
+router.post("/:id/stok-opname", requireAuth, requireUnitUsaha, assertUnitSendiri, asyncHandler(async (req, res) => {
+  const { stokFisik, alasan, catatan } = req.body || {};
+  res.json(await produk.stokOpname({
+    id: req.params.id,
+    unit: req.user.unit,
+    stokFisik,
+    alasan,
+    catatan,
+    petugasNama: req.user.nama || req.user.username || "Staf",
+  }));
+}));
+
+router.get("/stok-opname/riwayat", requireAuth, requireUnitUsaha, assertUnitSendiri, asyncHandler(async (req, res) => {
+  res.json(await produk.riwayatStokOpnameUnit(req.user.unit));
+}));
+
 module.exports = router;
