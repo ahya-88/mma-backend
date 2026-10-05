@@ -199,7 +199,7 @@
         <div>
           <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 10px;">
             💼 Keuangan & Arus Kas Unit Usaha
-            ${isAdminUnitUsaha ? '<span style="font-size: 11px; padding: 3px 10px; border-radius: 9999px; background: #dbeafe; color: #1e40af; font-weight: 700;">Akses Admin Unit Usaha (Keuangan & BMT)</span>' : '<span style="font-size: 11px; padding: 3px 10px; border-radius: 9999px; background: #f1f5f9; color: #475569; font-weight: 600;">Akses Staf Unit</span>'}
+            ${isAdminUnitUsaha ? '<span style="font-size: 11px; padding: 3px 10px; border-radius: 9999px; background: #dbeafe; color: #1e40af; font-weight: 700;">Akses Admin Unit Usaha (Keuangan & Superadmin)</span>' : '<span style="font-size: 11px; padding: 3px 10px; border-radius: 9999px; background: #f1f5f9; color: #475569; font-weight: 600;">Akses Staf Unit</span>'}
           </h2>
           <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Pantau saldo unit usaha, dana masuk (injeksi modal), dana keluar (pencairan saldo/operasional), dan transfer antar bagian secara akurat.</p>
         </div>
@@ -211,7 +211,7 @@
         card.innerHTML += `
           <div style="padding: 24px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #b91c1c; margin-top: 12px;">
             <p style="font-weight: 700; margin: 0 0 6px;">⚠️ Gagal memuat data laporan keuangan unit usaha.</p>
-            <p style="font-size: 12px; margin: 0 0 12px; color: #7f1d1d;">Pastikan Anda telah login sebagai Staf Keuangan/Administrasi, BMT, atau Superadmin.</p>
+            <p style="font-size: 12px; margin: 0 0 12px; color: #7f1d1d;">Pastikan Anda telah login sebagai Staf Keuangan/Administrasi atau Superadmin.</p>
             <button type="button" id="btn-retry-unit-keuangan" style="padding: 6px 16px; font-size: 12px; font-weight: 600; background: #b91c1c; color: #fff; border: none; border-radius: 6px; cursor: pointer;">↻ Coba Lagi</button>
           </div>
         `;
@@ -224,7 +224,7 @@
       const ringkasanData = lap.ringkasan || {};
       const unitSaldoSection = document.createElement("div");
       unitSaldoSection.style.cssText = "margin-bottom: 24px;";
-      unitSaldoSection.innerHTML = `<h3 style="font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">📊 Saldo & Rincian Kas Setiap Unit Usaha</h3>`;
+      unitSaldoSection.innerHTML = `<h3 style="font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">📊 Saldo Kas & Rincian Setiap Unit Usaha</h3>`;
 
       const unitGrid = document.createElement("div");
       unitGrid.style.cssText = "display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;";
@@ -523,9 +523,24 @@
 
   const insertKeuanganUnitTab = () => {
     if (!root) return;
+    const token = getAuthToken();
+    const payload = parseJwt(token);
+
+    // Keuangan Unit HANYA untuk bagian Keuangan/Administrasi, BMT, atau Superadmin.
+    // Jika Sekretariat, Pengasuhan, Pengajaran, LPTQ, dll. -> HAPUS / ABAIKAN TAB!
+    const isSuper = payload?.jenisAkun === "superadmin" || payload?.departemen === "admin";
+    const isKeuangan = payload?.departemen === "administrasi";
+    const isBMT = payload?.departemen === "unitusaha" && payload?.unit === "BMT";
+    const isAuthorized = isSuper || isKeuangan || isBMT;
+
     const menus = root.querySelectorAll('nav[aria-label="Navigasi bagian"], [role="menu"][aria-label="Navigasi bagian"]');
     menus.forEach((nav) => {
-      if (nav.querySelector("[data-unit-keuangan-tab]")) return;
+      const existingBtn = nav.querySelector("[data-unit-keuangan-tab]");
+      if (!isAuthorized) {
+        if (existingBtn) existingBtn.remove();
+        return;
+      }
+      if (existingBtn) return;
 
       const button = document.createElement("button");
       button.type = "button";

@@ -50,10 +50,15 @@ const allowedOrigins = [...new Set([...defaultOrigins, ...corsOrigins])];
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || /localhost|capacitor|railway\.app|ionic/i.test(origin)) {
+    const customOrigins = (process.env.CORS_ORIGINS || "")
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean);
+    const allowed = customOrigins.length ? customOrigins : allowedOrigins;
+    if (!origin || allowed.includes(origin) || (!customOrigins.length && /localhost|capacitor|railway\.app|ionic/i.test(origin))) {
       return callback(null, true);
     }
-    return callback(null, true);
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],

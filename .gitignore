@@ -7,6 +7,8 @@ node_modules/
 *.db-shm
 *.b64
 data-lama/
+.idea/
+.vscode/
 
 railway ssh*
 *.pem
