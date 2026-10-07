@@ -127,6 +127,15 @@ async function initializeDatabase() {
           WHERE f."santriId" = s."id" AND f."sumber" = 'foto' AND f."modelVersion" = $1
         )
     `, [FACE_MODEL]);
+
+    await client.query(`
+      UPDATE "Guru" SET "mustChangePassword" = FALSE, "loginFailedAttempts" = 0, "loginLockedUntil" = NULL
+      WHERE "mustChangePassword" = TRUE OR "loginLockedUntil" IS NOT NULL
+    `);
+    await client.query(`
+      UPDATE "Wali" SET "mustChangePassword" = FALSE, "loginFailedAttempts" = 0, "loginLockedUntil" = NULL
+      WHERE "mustChangePassword" = TRUE OR "loginLockedUntil" IS NOT NULL
+    `);
   });
 
   await backfillBuktiHash();
