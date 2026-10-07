@@ -7,16 +7,34 @@ const { decodeBuktiTransfer } = require("./topupEvidence");
 
 types.setTypeParser(20, (value) => Number(value));
 
-const connectionUrl = process.env.DATABASE_URL;
+let connectionUrl = process.env.DATABASE_URL;
+if (!connectionUrl && process.env.PGHOST) {
+  const user = encodeURIComponent(process.env.PGUSER || "postgres");
+  const pass = encodeURIComponent(process.env.PGPASSWORD || "");
+  const hostEnv = process.env.PGHOST;
+  const port = process.env.PGPORT || "5432";
+  const db = process.env.PGDATABASE || "postgres";
+  connectionUrl = `postgres://${user}:${pass}@${hostEnv}:${port}/${db}`;
+}
 if (!connectionUrl) throw new Error("DATABASE_URL wajib diisi.");
-const host = new URL(connectionUrl).hostname;
+
+let host = "localhost";
+try {
+  host = new URL(connectionUrl).hostname;
+} catch (_) {}
+
 const isLocal = ["localhost", "127.0.0.1", "::1"].includes(host);
+const isInternalRailway = host.endsWith(".railway.internal");
+const sslConfig = isLocal || isInternalRailway
+  ? (process.env.PGSSLMODE === "require" ? { rejectUnauthorized: false } : false)
+  : { rejectUnauthorized: false };
+
 const pool = new Pool({
   connectionString: connectionUrl,
   max: Number(process.env.PG_POOL_MAX || 20),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  ssl: sslConfig,
 });
 const transactionContext = new AsyncLocalStorage();
 
