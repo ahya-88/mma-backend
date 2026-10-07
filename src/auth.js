@@ -65,7 +65,7 @@ async function login(username, password) {
     throw new CashlessError(423, "Akun terkunci sementara. Silakan coba lagi setelah 15 menit.");
   }
 
-  const knownDemoCredential = isProduction() && LEGACY_DEMO_CREDENTIALS.get(username) === password;
+  const knownDemoCredential = isProduction() && account.mustChangePassword && LEGACY_DEMO_CREDENTIALS.get(username) === password;
   if (knownDemoCredential || !await bcrypt.compare(password, account.password)) {
     const updated = await queryOne(`UPDATE "${table}" SET
       "loginFailedAttempts" = CASE WHEN "loginLockedUntil" IS NOT NULL AND "loginLockedUntil" <= ${utcNowSql} THEN 1 ELSE "loginFailedAttempts" + 1 END,
