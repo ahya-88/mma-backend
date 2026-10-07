@@ -311,14 +311,45 @@
     });
   };
 
+  const isKasirContextAuthorized = () => {
+    const token = getAuthToken();
+    if (!token) return false;
+    const payload = parseJwt(token);
+    if (!payload) return false;
+
+    // Kamera barcode kasir KHUSUS untuk Kasir Unit Usaha (unitusaha), BMT, atau Superadmin saat di modul Kasir/Katalog Produk
+    const isSuper = payload.jenisAkun === "superadmin" || payload.departemen === "admin";
+    const isUnitUsaha = payload.departemen === "unitusaha";
+    return isSuper || isUnitUsaha;
+  };
+
   // Attach "📷 Scan Barcode Kamera Live" button into Kasir interfaces
   const injectScannerButton = () => {
+    if (!isKasirContextAuthorized()) {
+      document.querySelectorAll("[data-live-barcode-btn]").forEach(el => el.remove());
+      return;
+    }
+
     const root = document.getElementById("root") || document.body;
+
+    // Periksa apakah pengguna sedang berada di halaman Kasir, Katalog Produk, atau Pencarian Barcode Kasir
+    const isKasirPage = Array.from(root.querySelectorAll("h1, h2, h3, .page-heading, nav")).some(el => {
+      const text = (el.textContent || "").toLowerCase();
+      return text.includes("kasir") || text.includes("katalog produk") || text.includes("pilih produk") || text.includes("unit usaha");
+    });
+
+    if (!isKasirPage) {
+      document.querySelectorAll("[data-live-barcode-btn]").forEach(el => el.remove());
+      return;
+    }
 
     const inputs = root.querySelectorAll("input");
     inputs.forEach(input => {
       const placeholder = (input.placeholder || "").toLowerCase();
-      if ((placeholder.includes("barcode") || placeholder.includes("cari") || placeholder.includes("produk")) && !input.parentElement?.querySelector("[data-live-barcode-btn]")) {
+      // Hanya tempelkan tombol jika input khusus untuk barcode item produk (bukan pencarian umum absensi/santri/nilai)
+      const isBarcodeSpecificInput = placeholder.includes("barcode") || (placeholder.includes("produk") && !placeholder.includes("santri"));
+
+      if (isBarcodeSpecificInput && !input.parentElement?.querySelector("[data-live-barcode-btn]")) {
         const container = input.parentElement;
         if (container) {
           const btn = document.createElement("button");
