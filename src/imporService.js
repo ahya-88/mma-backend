@@ -242,15 +242,27 @@ async function rollbackBatchImpor(batchId, aktorId) {
     const batch = await queryOne('SELECT * FROM "BatchImpor" WHERE "id" = $1 FOR UPDATE', [batchId]);
     if (!batch) throw new CashlessError(404, "Batch impor tidak ditemukan.");
 
-    const adaTransaksi = await queryOne(
-      'SELECT COUNT(*) AS "n" FROM "TransaksiCashless" t JOIN "Santri" s ON t."santriId" = s."id" WHERE s."importBatchId" = $1',
-      [batchId],
-    );
-    if (Number(adaTransaksi.n) > 0) {
-      throw new CashlessError(400, "Batch impor tidak bisa di-rollback karena santri di dalamnya sudah memiliki riwayat transaksi cashless.");
+    const santriBatch = await queryAll('SELECT "id" FROM "Santri" WHERE "importBatchId" = $1', [batchId]);
+    const ids = santriBatch.map((s) => s.id);
+
+    if (ids.length) {
+      await query('DELETE FROM "Absensi" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "Perizinan" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "Pelanggaran" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "Nilai" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "Prestasi" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "Hafalan" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "PenilaianUbudiyah" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "Tagihan" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "Ledger" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "TransaksiCashless" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "PermintaanBMT" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "FaceTemplate" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "LogPin" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "QueueOfflineKasir" WHERE "santriId" = ANY($1::text[])', [ids]);
+      await query('DELETE FROM "Santri" WHERE "importBatchId" = $1', [batchId]);
     }
 
-    await query('DELETE FROM "Santri" WHERE "importBatchId" = $1', [batchId]);
     await query('DELETE FROM "Wali" WHERE "importBatchId" = $1', [batchId]);
     await query('UPDATE "BatchImpor" SET "status" = \'Di-rollback\' WHERE "id" = $1', [batchId]);
 
@@ -453,26 +465,48 @@ async function bersihkanDataDemo({ konfirmasi, aktorId }) {
   }
 
   return withTransaction(async () => {
-    const santriDemo = await queryAll('SELECT "id" FROM "Santri" WHERE "nis" IS NULL OR "nis" = \'\' OR "nis" LIKE \'DEMO%\'');
-    const ids = santriDemo.map((s) => s.id);
+    const tablesToClear = [
+      "QueueOfflineKasir",
+      "TransaksiCashlessIdempotency",
+      "TransaksiCashless",
+      "Ledger",
+      "PermintaanBMT",
+      "Tagihan",
+      "Cashflow",
+      "PengajuanAnggaran",
+      "RincianAnggaran",
+      "TransaksiUnitUsaha",
+      "Absensi",
+      "Perizinan",
+      "Pelanggaran",
+      "Nilai",
+      "Prestasi",
+      "Hafalan",
+      "PenilaianUbudiyah",
+      "FaceTemplate",
+      "LogPin",
+      "LogWajah",
+      "RekonsiliasiImpor",
+      "BatchImpor",
+      "Santri",
+      "Wali",
+    ];
 
-    if (ids.length) {
-      await query('DELETE FROM "TransaksiCashless" WHERE "santriId" = ANY($1::text[])', [ids]);
-      await query('DELETE FROM "Absensi" WHERE "santriId" = ANY($1::text[])', [ids]);
-      await query('DELETE FROM "Perizinan" WHERE "santriId" = ANY($1::text[])', [ids]);
-      await query('DELETE FROM "Pelanggaran" WHERE "santriId" = ANY($1::text[])', [ids]);
-      await query('DELETE FROM "Nilai" WHERE "santriId" = ANY($1::text[])', [ids]);
-      await query('DELETE FROM "Tagihan" WHERE "santriId" = ANY($1::text[])', [ids]);
-      await query('DELETE FROM "Santri" WHERE "id" = ANY($1::text[])', [ids]);
+    let totalSantriDihapus = 0;
+    for (const table of tablesToClear) {
+      try {
+        const res = await query(`DELETE FROM "${table}"`);
+        if (table === "Santri") totalSantriDihapus = Number(res.rowCount || 0);
+      } catch (_) {}
     }
 
     await query(
       `INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
        VALUES ($1, $2, 'guru', 'admin.demo_data_cleaned', 'Database', NULL, $3::jsonb)`,
-      [uid(), aktorId || null, JSON.stringify({ jumlahSantriDemoDihapus: ids.length })],
+      [uid(), aktorId || null, JSON.stringify({ jumlahSantriDemoDihapus: totalSantriDihapus })],
     );
 
-    return { jumlahSantriDemoDihapus: ids.length, cleaned: true };
+    return { jumlahSantriDemoDihapus: totalSantriDihapus, cleaned: true };
   });
 }
 

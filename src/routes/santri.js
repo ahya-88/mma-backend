@@ -175,21 +175,34 @@ router.get("/", requireAuth, requireAnyStaff, asyncHandler(async (req, res) => {
 }));
 
 router.delete("/:id", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
-  try {
-    const santri = await withTransaction(async () => {
-      const row = await getSantriRow(req.params.id, true);
-      await query('DELETE FROM "Santri" WHERE "id" = $1', [row.id]);
-      await query(`INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
-        VALUES ($1, $2, $3, 'data.santri_deleted', 'Santri', $4, '{}'::jsonb)`,
-      [crypto.randomUUID(), req.user.id, req.user.role, row.id]);
-      return row;
-    });
-    res.json({ id: santri.id, deleted: true });
-  } catch (error) {
-    if (error instanceof CashlessError) throw error;
-    if (error && error.code === "23503") return res.status(409).json({ error: "Santri tidak bisa dihapus karena masih memiliki riwayat data terkait (transaksi, nilai, absensi, dsb.)." });
-    throw error;
-  }
+  const santri = await withTransaction(async () => {
+    const row = await getSantriRow(req.params.id, true);
+    const sid = row.id;
+
+    await query('DELETE FROM "Absensi" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "Perizinan" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "Pelanggaran" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "Nilai" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "Prestasi" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "Hafalan" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "PenilaianUbudiyah" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "Tagihan" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "Ledger" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "TransaksiCashless" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "PermintaanBMT" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "FaceTemplate" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "LogPin" WHERE "santriId" = $1', [sid]);
+    await query('DELETE FROM "QueueOfflineKasir" WHERE "santriId" = $1', [sid]);
+
+    await query('DELETE FROM "Santri" WHERE "id" = $1', [sid]);
+
+    await query(`INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
+      VALUES ($1, $2, $3, 'data.santri_deleted', 'Santri', $4, '{}'::jsonb)`,
+    [crypto.randomUUID(), req.user.id, req.user.role, sid]);
+
+    return row;
+  });
+  res.json({ id: santri.id, deleted: true });
 }));
 
 router.get("/me-anak", requireAuth, asyncHandler(async (req, res) => {
