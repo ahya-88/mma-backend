@@ -11,6 +11,7 @@ const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
 const isBMT = (user) => user?.role === "guru" && user.departemen === "unitusaha" && user.unit === "BMT";
+const isBMTorSuperAdmin = (user) => isBMT(user) || isSuperAdmin(user);
 
 function assertLihatSantri(req, santri) {
   if (isSuperAdmin(req.user)) return;
@@ -119,7 +120,7 @@ router.post("/upsert", requireAuth, requireAnyStaff, asyncHandler(async (req, re
     await query(`INSERT INTO "Santri" (${columns.map((column) => `"${column}"`).join(", ")}) VALUES (${values.map((_, index) => `$${index + 1}`).join(", ")})`, values);
   }
   const publik = await toPublicSantri(await getSantriRow(id));
-  res.json(isBMT(req.user) ? publik : sanitasiUntukNonBMT(publik));
+  res.json(isBMTorSuperAdmin(req.user) ? publik : sanitasiUntukNonBMT(publik));
 }));
 
 const FIELD_FINANSIAL_SANTRI = ["saldo", "limitJajanHarian", "durasiBlokirHari", "sisaLimitHariIni", "blokir"];
@@ -159,7 +160,7 @@ router.get("/", requireAuth, requireAnyStaff, asyncHandler(async (req, res) => {
 
     const total = Number(countRow.total);
     const publicRows = await Promise.all(rows.map((row) => toPublicSantri(row)));
-    const sanitized = isBMT(req.user) ? publicRows : publicRows.map(sanitasiUntukNonBMT);
+    const sanitized = isBMTorSuperAdmin(req.user) ? publicRows : publicRows.map(sanitasiUntukNonBMT);
 
     return res.json({
       items: sanitized,
@@ -171,7 +172,7 @@ router.get("/", requireAuth, requireAnyStaff, asyncHandler(async (req, res) => {
   }
 
   const rows = await Promise.all((await queryAll('SELECT * FROM "Santri" ORDER BY "nama"')).map((row) => toPublicSantri(row)));
-  res.json(isBMT(req.user) ? rows : rows.map(sanitasiUntukNonBMT));
+  res.json(isBMTorSuperAdmin(req.user) ? rows : rows.map(sanitasiUntukNonBMT));
 }));
 
 router.delete("/:id", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {

@@ -152,3 +152,23 @@ test("SECURITY: TOTP 2FA Setup & Verification untuk Admin / Kasir", async () => 
   // Clean up
   await query('DELETE FROM "Guru" WHERE "id" = $1', [guruId]);
 });
+
+test("SECURITY: Staf Sekretariat berwenang mengakses endpoint akses, ringkasan, dan wali", async () => {
+  const username = `sekretariat_user_${crypto.randomUUID()}`;
+  const guruId = `guru_sekretariat_${crypto.randomUUID()}`;
+  const passwordHash = await bcrypt.hash(passwordPlain, 10);
+
+  await query(
+    'INSERT INTO "Guru" ("id", "nama", "username", "password", "departemen", "jenisAkun") VALUES ($1, \'Staf Sekretariat\', $2, $3, \'sekretariat\', \'staf\')',
+    [guruId, username, passwordHash]
+  );
+
+  const loginRes = await login(username, passwordPlain);
+  assert.ok(loginRes.token);
+  assert.equal(loginRes.user.departemen, "sekretariat");
+  assert.equal(loginRes.user.role, "guru");
+
+  // Clean up
+  await query('DELETE FROM "Guru" WHERE "id" = $1', [guruId]);
+});
+
