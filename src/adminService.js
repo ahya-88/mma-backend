@@ -205,10 +205,22 @@ const TAMPILAN_DEFAULT = {
   warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora",
 };
 
+let cachedTampilan = null;
+let cachedTampilanTime = 0;
+const TAMPILAN_CACHE_TTL_MS = 10 * 60 * 1000;
+
 async function ambilTampilan() {
+  if (cachedTampilan && Date.now() - cachedTampilanTime < TAMPILAN_CACHE_TTL_MS) {
+    return cachedTampilan;
+  }
   const row = await queryOne('SELECT "nilai" FROM "Pengaturan" WHERE "kunci" = \'tampilan\'');
-  if (!row) return TAMPILAN_DEFAULT;
-  try { return { ...TAMPILAN_DEFAULT, ...JSON.parse(row.nilai) }; } catch (_) { return TAMPILAN_DEFAULT; }
+  if (!row) {
+    cachedTampilan = TAMPILAN_DEFAULT;
+  } else {
+    try { cachedTampilan = { ...TAMPILAN_DEFAULT, ...JSON.parse(row.nilai) }; } catch (_) { cachedTampilan = TAMPILAN_DEFAULT; }
+  }
+  cachedTampilanTime = Date.now();
+  return cachedTampilan;
 }
 
 async function simpanTampilan(tampilan) {
@@ -217,6 +229,7 @@ async function simpanTampilan(tampilan) {
     'INSERT INTO "Pengaturan" ("kunci", "nilai") VALUES ($1, $2) ON CONFLICT ("kunci") DO UPDATE SET "nilai" = EXCLUDED."nilai"',
     ["tampilan", nilai],
   );
+  cachedTampilan = null;
   return ambilTampilan();
 }
 

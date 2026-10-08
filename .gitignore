@@ -14,3 +14,6 @@ railway ssh*
 *.pem
 id_rsa*
 id_ed25519*
+backups/
+*.dump
+*.dump.enc

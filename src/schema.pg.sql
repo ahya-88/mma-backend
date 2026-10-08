@@ -38,6 +38,8 @@ ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "statusAkun" TEXT NOT NULL DEFAULT '
 ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "loginFailedAttempts" INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "loginLockedUntil" TEXT;
 ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "sessionVersion" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "totpSecret" TEXT;
+ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "totpEnabled" BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE "Guru" ADD COLUMN IF NOT EXISTS "passwordChangedAt" TEXT;
 UPDATE "Guru" SET "jenisAkun" = 'superadmin' WHERE "departemen" = 'admin' AND "jenisAkun" = 'staf';
 
@@ -138,9 +140,28 @@ CREATE INDEX IF NOT EXISTS idx_transaksi_santri_tanggal ON "TransaksiCashless" (
 
 CREATE TABLE IF NOT EXISTS "TransaksiCashlessIdempotency" (
   "idempotencyKey" TEXT PRIMARY KEY,
+  "requestHash" TEXT,
+  "statusCode" INTEGER,
   "response" JSONB,
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
+ALTER TABLE "TransaksiCashlessIdempotency" ADD COLUMN IF NOT EXISTS "requestHash" TEXT;
+ALTER TABLE "TransaksiCashlessIdempotency" ADD COLUMN IF NOT EXISTS "statusCode" INTEGER;
+CREATE INDEX IF NOT EXISTS idx_transaksi_idempotency_created ON "TransaksiCashlessIdempotency" ("createdAt");
+
+CREATE TABLE IF NOT EXISTS "Ledger" (
+  "id" TEXT PRIMARY KEY,
+  "santriId" TEXT NOT NULL REFERENCES "Santri"("id"),
+  "jenis" TEXT NOT NULL,
+  "jumlah" BIGINT NOT NULL,
+  "saldoSetelah" BIGINT NOT NULL,
+  "referensi" TEXT,
+  "pelaku" TEXT,
+  "waktu" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+CREATE INDEX IF NOT EXISTS idx_ledger_santri ON "Ledger" ("santriId");
+CREATE INDEX IF NOT EXISTS idx_ledger_waktu ON "Ledger" ("waktu");
 
 CREATE TABLE IF NOT EXISTS "LogPin" (
   "id" BIGSERIAL PRIMARY KEY,
@@ -186,8 +207,10 @@ CREATE TABLE IF NOT EXISTS "AuditLog" (
   "aksi" TEXT NOT NULL,
   "targetTipe" TEXT NOT NULL,
   "targetId" TEXT,
+  "ip" TEXT,
   "detail" JSONB NOT NULL DEFAULT '{}'::jsonb
 );
+ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "ip" TEXT;
 CREATE INDEX IF NOT EXISTS idx_audit_waktu ON "AuditLog" ("waktu");
 CREATE INDEX IF NOT EXISTS idx_audit_aksi_waktu ON "AuditLog" ("aksi", "waktu");
 
@@ -408,6 +431,13 @@ CREATE INDEX IF NOT EXISTS idx_santri_face_embed_present ON "Santri" ("id") WHER
 CREATE INDEX IF NOT EXISTS idx_santri_foto_present ON "Santri" ("id") WHERE "foto" IS NOT NULL AND "foto" != '';
 CREATE INDEX IF NOT EXISTS idx_santri_nama ON "Santri" ("nama");
 CREATE INDEX IF NOT EXISTS idx_santri_nis ON "Santri" ("nis");
+CREATE INDEX IF NOT EXISTS idx_santri_wali ON "Santri" ("waliId");
+CREATE INDEX IF NOT EXISTS idx_santri_kelas ON "Santri" ("kelas");
+CREATE INDEX IF NOT EXISTS idx_permintaan_status ON "PermintaanBMT" ("status");
+CREATE INDEX IF NOT EXISTS idx_permintaan_created ON "PermintaanBMT" ("createdAt");
+CREATE INDEX IF NOT EXISTS idx_tagihan_bulan ON "Tagihan" ("bulan");
+CREATE INDEX IF NOT EXISTS idx_cashflow_jenis_kategori ON "Cashflow" ("jenis", "kategori");
+CREATE INDEX IF NOT EXISTS idx_anggaran_status ON "PengajuanAnggaran" ("status");
 
 -- ---- Modul Impor Data Bertahap & Provisioning (FASE 2) ----
 CREATE TABLE IF NOT EXISTS "BatchImpor" (

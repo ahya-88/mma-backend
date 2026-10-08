@@ -79,11 +79,13 @@ router.get("/laporan/topup-harian", requireAuth, requireBMTorAdmin, asyncHandler
 // BMT: setujui/tolak permintaan
 router.post("/:id/proses", requireAuth, requireBMTorAdmin, asyncHandler(async (req, res) => {
   const { disetujui, catatan, nominalDisetujui, referensiMutasi } = req.body || {};
+  const idempotencyKey = req.headers["idempotency-key"] || req.headers["x-idempotency-key"] || req.body?.idempotencyKey;
   const hasil = await prosesPermintaan({
     id: req.params.id, disetujui: !!disetujui, diprosesOleh: req.user.nama,
     diprosesOlehId: req.user.id, aktorRole: req.user.departemen === "admin" ? "Admin" : "BMT",
-    catatan, nominalDisetujui, referensiMutasi,
+    catatan, nominalDisetujui, referensiMutasi, idempotencyKey,
   });
+  if (hasil?.idempotentReplay) res.setHeader("X-Idempotent-Replay", "true");
   res.json(hasil);
 }));
 

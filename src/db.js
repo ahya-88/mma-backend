@@ -29,14 +29,26 @@ const sslConfig = isLocal || isInternalRailway
   ? (process.env.PGSSLMODE === "require" ? { rejectUnauthorized: false } : false)
   : { rejectUnauthorized: false };
 
+const maxPoolSize = Math.min(Math.max(1, Number(process.env.PG_POOL_MAX || 10)), 25);
+
 const pool = new Pool({
   connectionString: connectionUrl,
-  max: Number(process.env.PG_POOL_MAX || 20),
-  idleTimeoutMillis: 30000,
+  max: maxPoolSize,
+  idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 5000,
+  statement_timeout: 10000,
   ssl: sslConfig,
 });
 const transactionContext = new AsyncLocalStorage();
+
+function getPoolStats() {
+  return {
+    totalCount: pool.totalCount,
+    idleCount: pool.idleCount,
+    waitingCount: pool.waitingCount,
+    maxConfigured: maxPoolSize,
+  };
+}
 
 const query = (text, params = []) => {
   const client = transactionContext.getStore();
@@ -139,6 +151,7 @@ async function initializeDatabase() {
   });
 
   await backfillBuktiHash();
+  await backfillLedger();
 }
 
 async function backfillBuktiHash() {
@@ -170,7 +183,29 @@ async function backfillBuktiHash() {
   });
 }
 
+async function backfillLedger() {
+  await withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('mma-backfill-ledger'))");
+    const santriTanpaLedger = await client.query(`
+      SELECT s."id", s."saldo"
+      FROM "Santri" s
+      WHERE NOT EXISTS (
+        SELECT 1 FROM "Ledger" l WHERE l."santriId" = s."id"
+      )
+    `);
+    for (const s of santriTanpaLedger.rows) {
+      const nominal = Number(s.saldo || 0);
+      const ledgerId = crypto.randomUUID();
+      const tISO = new Date().toISOString();
+      await client.query(`
+        INSERT INTO "Ledger" ("id", "santriId", "jenis", "jumlah", "saldoSetelah", "referensi", "pelaku", "waktu")
+        VALUES ($1, $2, 'Saldo Awal', $3, $4, 'Inisialisasi Ledger', 'sistem', $5)
+      `, [ledgerId, s.id, nominal, nominal, tISO]);
+    }
+  });
+}
+
 module.exports = {
-  pool, query, queryOne, queryAll, withTransaction, initializeDatabase,
+  pool, query, queryOne, queryAll, withTransaction, initializeDatabase, getPoolStats,
   FACE_MODEL, TAMPILAN_DEFAULT, PENGATURAN_TOPUP_DEFAULT,
 };

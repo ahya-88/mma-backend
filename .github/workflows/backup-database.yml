@@ -1,0 +1,44 @@
+name: Database Backup & Verification Workflow
+
+on:
+  schedule:
+    - cron: '0 19 * * *' # Setiap hari pukul 02:00 WIB (19:00 UTC)
+  workflow_dispatch:
+
+jobs:
+  backup-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install PostgreSQL Client Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Run Encrypted Backup to S3
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ENCRYPTION_PASSPHRASE: ${{ secrets.ENCRYPTION_PASSPHRASE }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+        run: node scripts/backup-s3.js
+
+      - name: Run Restore Verification Test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESTORE_TEST_DATABASE_URL: ${{ secrets.RESTORE_TEST_DATABASE_URL }}
+          ENCRYPTION_PASSPHRASE: ${{ secrets.ENCRYPTION_PASSPHRASE }}
+        run: node scripts/verify-restore.js

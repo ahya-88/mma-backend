@@ -11,6 +11,15 @@
   <link rel="stylesheet" href="/theme.css">
   <link rel="stylesheet" href="/superadmin.css">
   <script src="/theme.js"></script>
+  <script>
+    (function() {
+      window.addEventListener("error", function(e) {
+        if (window.Sentry) {
+          try { window.Sentry.captureException(e.error || e.message); } catch (_) {}
+        }
+      });
+    })();
+  </script>
 </head>
 <body>
   <div id="app-shell" class="app-shell" hidden>

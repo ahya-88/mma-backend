@@ -62,12 +62,24 @@
     noticeTimer = setTimeout(() => { notice.hidden = true; }, 4200);
   }
 
+  function generateUUID() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+      (+c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & 15) >> (+c / 4)).toString(16)
+    );
+  }
+
   async function api(url, options = {}) {
+    const isMutation = options.method === "POST" || options.method === "PUT";
+    const needsIdempotency = isMutation && (url.includes("/api/permintaan") || url.includes("/api/transaksi"));
+    const idempotencyHeaders = needsIdempotency ? { "Idempotency-Key": generateUUID() } : {};
+
     const response = await fetch(url, {
       ...options,
       headers: {
         ...(options.body ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...idempotencyHeaders,
         ...(options.headers || {}),
       },
     });
@@ -436,12 +448,16 @@
       settings.body.catatan = catatan.trim();
     }
     if (!settings || !window.confirm(settings.label)) return;
+    const targetBtn = e?.target?.closest ? e.target.closest("button") : null;
+    if (targetBtn) targetBtn.disabled = true;
     try {
       await api(settings.url, { method: "POST", body: JSON.stringify(settings.body) });
       showNotice("Perubahan berhasil diproses.");
       await renderTable(selectedKey);
     } catch (error) {
       showNotice(error.message, true);
+    } finally {
+      if (targetBtn) targetBtn.disabled = false;
     }
   }
 

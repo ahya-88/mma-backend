@@ -363,15 +363,25 @@ async function rekonsiliasiSaldoDanTagihan({ batchId, tipe, items, totalKasTarge
     if (tipe === "Saldo Awal Cashless") {
       for (const item of items) {
         if (!item.santriId && !item.nis) continue;
-        const santri = item.santriId
+        const santriBase = item.santriId
           ? await getSantriRow(item.santriId)
           : await queryOne('SELECT "id" FROM "Santri" WHERE "nis" = $1', [item.nis]);
-        if (santri) {
+        if (santriBase) {
+          const santri = await queryOne('SELECT "id", "saldo" FROM "Santri" WHERE "id" = $1 FOR UPDATE', [santriBase.id]);
           const nominal = Number(item.nominal || item.jumlah || 0);
-          await query('UPDATE "Santri" SET "saldo" = "saldo" + $1 WHERE "id" = $2', [nominal, santri.id]);
+          const saldoSekarang = Number(santri?.saldo || 0);
+          const saldoBaru = saldoSekarang + nominal;
+
           await query(
-            'INSERT INTO "TransaksiCashless" ("id", "santriId", "unit", "jenis", "jumlah", "saldoSetelah", "tanggalISO", "tanggalLabel", "bulan", "keterangan") VALUES ($1, $2, \'BMT\', \'Kredit\', $3, $4, $5, $6, $7, $8)',
-            [uid(), santri.id, nominal, nominal, new Date().toISOString().slice(0, 10), new Date().toLocaleDateString("id-ID"), new Date().toISOString().slice(0, 7), `Saldo Awal Batch ${batchId}`],
+            `INSERT INTO "Ledger" ("id", "santriId", "jenis", "jumlah", "saldoSetelah", "referensi", "pelaku", "waktu")
+             VALUES ($1, $2, 'Saldo Awal', $3, $4, $5, $6, $7)`,
+            [uid(), santri.id, nominal, saldoBaru, `Batch ${batchId}`, dicatatOleh || aktorId || "sistem", new Date().toISOString()]
+          );
+
+          await query('UPDATE "Santri" SET "saldo" = $1 WHERE "id" = $2', [saldoBaru, santri.id]);
+          await query(
+            'INSERT INTO "TransaksiCashless" ("id", "santriId", "unit", "jenis", "jumlah", "saldoSetelah", "saldoSebelum", "saldoSesudah", "tanggalISO", "tanggalLabel", "bulan", "keterangan") VALUES ($1, $2, \'BMT\', \'Kredit\', $3, $4, $5, $6, $7, $8, $9, $10)',
+            [uid(), santri.id, nominal, saldoBaru, saldoSekarang, saldoBaru, new Date().toISOString().slice(0, 10), new Date().toLocaleDateString("id-ID"), new Date().toISOString().slice(0, 7), `Saldo Awal Batch ${batchId}`],
           );
         }
       }

@@ -6,7 +6,7 @@ const compression = require("compression");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { isProduction } = require("./environment");
-const { query, initializeDatabase } = require("./db");
+const { query, initializeDatabase, getPoolStats } = require("./db");
 const asyncHandler = require("./asyncHandler");
 
 const authRoutes = require("./routes/auth");
@@ -24,7 +24,17 @@ const wajahRoutes = require("./routes/wajah");
 const kartuRoutes = require("./routes/kartu");
 const { CashlessError } = require("./cashlessService");
 
+const { httpLoggerMiddleware } = require("./logger");
+const { captureException } = require("./sentry");
+const { record5xxError, sendHealthFailureAlert } = require("./alerting");
+const { requireAuth, requireDashboardAdmin } = require("./auth");
+const { auditSaldo } = require("./cashlessService");
+
+const APP_VERSION = require("../package.json").version || "1.0.0";
+
 const app = express();
+app.use(httpLoggerMiddleware);
+
 if (process.env.DEMO_MODE === "true" && (isProduction() || !["development", "test"].includes(process.env.NODE_ENV))) {
   throw new Error("DEMO_MODE hanya boleh aktif dengan NODE_ENV=development atau test.");
 }
@@ -62,7 +72,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Idempotency-Key"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Idempotency-Key", "X-Request-ID"],
 }));
 app.use(compression());
 app.use("/api", rateLimit({
@@ -72,8 +82,7 @@ app.use("/api", rateLimit({
   legacyHeaders: false,
   message: { error: "Terlalu banyak permintaan. Silakan coba lagi nanti." },
 }));
-// Keep the existing larger limit for other modules; Top Up only needs enough room for a
-// 1.5 MB image encoded as base64 plus its JSON envelope.
+
 const standardJsonParser = express.json({ limit: "8mb" });
 const topUpJsonParser = express.json({ limit: "2.1mb" });
 app.use((req, res, next) => (
@@ -83,9 +92,46 @@ app.use((req, res, next) => (
 app.get("/api/health", asyncHandler(async (req, res) => {
   try {
     await query("SELECT 1");
-    res.json({ ok: true, waktu: new Date().toISOString() });
-  } catch (_) {
-    res.status(503).json({ ok: false, waktu: new Date().toISOString() });
+    res.json({ ok: true, version: APP_VERSION, waktu: new Date().toISOString() });
+  } catch (err) {
+    sendHealthFailureAlert(err);
+    res.status(503).json({ ok: false, version: APP_VERSION, error: "Database unreachable", waktu: new Date().toISOString() });
+  }
+}));
+
+app.get("/api/health/deep", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => {
+  try {
+    const start = Date.now();
+    await query("SELECT 1");
+    const dbLatencyMs = Date.now() - start;
+
+    const audit = await auditSaldo();
+    const ledgerConsistent = audit.jumlahTidakCocok === 0;
+
+    const memory = process.memoryUsage();
+    res.json({
+      ok: ledgerConsistent,
+      database: "connected",
+      dbLatencyMs,
+      ledgerConsistent,
+      poolStats: getPoolStats(),
+      auditResult: { jumlahSantri: audit.jumlahSantri, jumlahTidakCocok: audit.jumlahTidakCocok },
+      version: APP_VERSION,
+      environment: process.env.NODE_ENV || "development",
+      uptimeSeconds: Math.floor(process.uptime()),
+      memoryMB: {
+        rss: Math.round(memory.rss / (1024 * 1024)),
+        heapUsed: Math.round(memory.heapUsed / (1024 * 1024)),
+      },
+      waktu: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      ok: false,
+      database: "disconnected",
+      error: error.message,
+      waktu: new Date().toISOString(),
+    });
   }
 }));
 
@@ -99,6 +145,7 @@ app.get("/api/readiness", asyncHandler(async (req, res) => {
       status: "ready",
       database: "connected",
       dbLatencyMs,
+      version: APP_VERSION,
       environment: process.env.NODE_ENV || "development",
       uptimeSeconds: Math.floor(process.uptime()),
       memoryMB: {
@@ -117,6 +164,13 @@ app.get("/api/readiness", asyncHandler(async (req, res) => {
   }
 }));
 
+// Intentional Test Error Trigger for Staging/Test verification
+if (process.env.NODE_ENV !== "production") {
+  app.get("/api/public/test-error", (req, res, next) => {
+    next(new Error("INTENTIONAL_STAGING_TEST_ERROR_500"));
+  });
+}
+
 app.use("/api/auth", authRoutes);
 app.use("/api/santri", santriRoutes);
 app.use("/api/transaksi", transaksiRoutes);
@@ -131,28 +185,23 @@ app.use("/api/produk", produkRoutes);
 app.use("/api/wajah", wajahRoutes);
 app.use("/api/kartu", kartuRoutes);
 
-// Sajikan aplikasi frontend (pesantren-app.html, disalin sebagai public/index.html) dari service
-// backend yang sama — satu URL untuk API dan aplikasi web, tidak perlu hosting frontend terpisah.
-// Aplikasi tambahan (kasir, kiosk, dst.) nanti bisa ditambah sebagai service Railway lain dalam
-// project yang sama, atau folder statis lain di sini.
 const publicDir = path.join(__dirname, "..", "public");
 app.use(express.static(publicDir));
 app.get("/admin", (req, res) => res.sendFile(path.join(publicDir, "superadmin.html")));
 app.get("/superadmin", (req, res) => res.sendFile(path.join(publicDir, "superadmin.html")));
 app.get("/bmt/qr", (req, res) => res.sendFile(path.join(publicDir, "bmt-qr.html")));
-// Fallback: request GET selain /api/* (mis. refresh di path lain) tetap kembalikan index.html,
-// supaya aplikasi single-page ini tidak pernah menampilkan 404 dari sisi server.
 app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(publicDir, "index.html")));
 
-// Error handler terpusat — CashlessError membawa status HTTP yang sesuai (400/403/404/409),
-// error lain dianggap kesalahan server.
 app.use((err, req, res, next) => {
   if (err instanceof CashlessError) return res.status(err.status).json({ error: err.message, ...err.details });
   if (req.path.startsWith("/api/permintaan") && err.type === "entity.too.large") {
     return res.status(400).json({ error: "Ukuran bukti transfer maksimal 1,5 MB setelah decode." });
   }
-  console.error(err);
-  res.status(500).json({ error: "Terjadi kesalahan pada server." });
+
+  captureException(err, { requestId: req.id, path: req.path, method: req.method });
+  record5xxError(req, err);
+
+  res.status(500).json({ error: "Terjadi kesalahan pada server.", requestId: req.id });
 });
 
 const PORT = process.env.PORT || 4000;
