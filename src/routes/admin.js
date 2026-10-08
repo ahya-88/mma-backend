@@ -22,6 +22,60 @@ function isAuthorizedAdminOrSekretariat(req) {
   return req.user?.role === "guru" && req.user.departemen === "sekretariat";
 }
 
+// ---- Akses & Profil Pengguna ----
+router.get("/akses", requireAuth, asyncHandler(async (req, res) => {
+  res.json(req.user);
+}));
+
+// ---- Kelengkapan Data Santri ----
+router.get("/kelengkapan-data", requireAuth, asyncHandler(async (req, res) => {
+  const totalSantriRow = await queryOne('SELECT COUNT(*) AS "total" FROM "Santri"');
+  const totalWaliRow = await queryOne('SELECT COUNT(*) AS "total" FROM "Wali"');
+  const totalSantriBelumLengkapRow = await queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "waliId" IS NULL OR "foto" IS NULL OR "nisn" IS NULL');
+  const totalWaliBelumAktivasiRow = await queryOne('SELECT COUNT(*) AS "total" FROM "Wali" WHERE "statusAkun" = \'Belum Aktivasi\' OR "mustChangePassword" = TRUE');
+
+  const perKelasRows = await queryAll(`
+    SELECT COALESCE(s."kelas", 'Belum ditentukan') AS "kelas",
+      COUNT(s."id") AS "total",
+      COUNT(s."waliId") AS "adaWali",
+      COUNT(CASE WHEN w."statusAkun" = 'Aktif' AND w."mustChangePassword" = FALSE THEN 1 END) AS "waliAktif",
+      COUNT(CASE WHEN s."foto" IS NOT NULL AND s."foto" != '' THEN 1 END) AS "adaFoto",
+      COUNT(CASE WHEN s."waliId" IS NOT NULL AND s."foto" IS NOT NULL AND s."foto" != '' AND s."nisn" IS NOT NULL AND s."nisn" != '' THEN 1 END) AS "dataLengkap"
+    FROM "Santri" s
+    LEFT JOIN "Wali" w ON s."waliId" = w."id"
+    GROUP BY s."kelas"
+    ORDER BY "total" DESC
+  `);
+
+  const perKelas = perKelasRows.map((r) => {
+    const tot = Number(r.total || 0);
+    const adaWali = Number(r.adaWali || 0);
+    const waliAktif = Number(r.waliAktif || 0);
+    const adaFoto = Number(r.adaFoto || 0);
+    const dataLengkap = Number(r.dataLengkap || 0);
+    return {
+      kelas: r.kelas,
+      total: tot,
+      adaWali,
+      persenWali: tot ? Math.round((adaWali / tot) * 100) : 0,
+      waliAktif,
+      persenWaliAktif: tot ? Math.round((waliAktif / tot) * 100) : 0,
+      adaFoto,
+      persenFoto: tot ? Math.round((adaFoto / tot) * 100) : 0,
+      dataLengkap,
+      persenDataLengkap: tot ? Math.round((dataLengkap / tot) * 100) : 0,
+    };
+  });
+
+  res.json({
+    totalSantri: Number(totalSantriRow.total || 0),
+    totalWali: Number(totalWaliRow.total || 0),
+    totalSantriBelumLengkap: Number(totalSantriBelumLengkapRow.total || 0),
+    totalWaliBelumAktivasi: Number(totalWaliBelumAktivasiRow.total || 0),
+    perKelas,
+  });
+}));
+
 // ---- Ringkasan Dashboard Superadmin ----
 router.get("/ringkasan", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => {
   res.json(await ringkasanSuperadmin());

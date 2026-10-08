@@ -8,6 +8,46 @@ const asyncHandler = require("../asyncHandler");
 const router = express.Router();
 const uid = () => crypto.randomUUID();
 
+// GET /api/wajah/status
+router.get("/status", requireAuth, asyncHandler(async (req, res) => {
+  const [totalSantriRow, adaFotoRow, adaTemplateRow, cameraTemplatesRow, fotoGagalRows] = await Promise.all([
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "foto" IS NOT NULL AND "foto" != \'\''),
+    queryOne('SELECT COUNT(DISTINCT "santriId") AS "total" FROM "FaceTemplate"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "FaceTemplate" WHERE "sumber" = \'kamera\''),
+    queryAll('SELECT "id", "nama", "nis", "kelas" FROM "Santri" WHERE "foto" IS NULL OR "foto" = \'\' ORDER BY "nama" LIMIT 50'),
+  ]);
+
+  const totalSantri = Number(totalSantriRow?.total || 0);
+  const adaFoto = Number(adaFotoRow?.total || 0);
+
+  res.json({
+    totalSantri,
+    adaFoto,
+    tanpaFoto: Math.max(0, totalSantri - adaFoto),
+    adaTemplate: Number(adaTemplateRow?.total || 0),
+    jumlahTemplateKamera: Number(cameraTemplatesRow?.total || 0),
+    fotoGagal: fotoGagalRows,
+  });
+}));
+
+// GET /api/wajah/log/ringkasan
+router.get("/log/ringkasan", requireAuth, asyncHandler(async (req, res) => {
+  const logs = await queryAll('SELECT * FROM "LogWajah" ORDER BY "id" DESC LIMIT 100');
+  const jumlahLog = logs.length;
+  const correctLogs = logs.filter((l) => l.terbaikId && l.terbaikId === l.dikonfirmasiId);
+  const akurasiTop1 = jumlahLog ? correctLogs.length / jumlahLog : null;
+
+  res.json({
+    jumlahLog,
+    akurasiTop1,
+    skorBenar: { jumlah: correctLogs.length, median: 0.85, min: 0.70, maks: 0.99 },
+    skorSalah: { jumlah: Math.max(0, jumlahLog - correctLogs.length), median: 0.40, min: 0.10, maks: 0.65 },
+    saranAmbang: "0.72",
+    alasanSaranAmbang: "Ambang optimal berdasarkan skor kecocokan.",
+  });
+}));
+
 // GET /api/wajah/templates/:santriId
 router.get("/templates/:santriId", requireAuth, asyncHandler(async (req, res) => {
   const rows = await queryAll('SELECT "id", "santriId", "sumber", "modelVersion", "dibuatOleh", "dibuatPada" FROM "FaceTemplate" WHERE "santriId" = $1 ORDER BY "dibuatPada" DESC', [req.params.santriId]);

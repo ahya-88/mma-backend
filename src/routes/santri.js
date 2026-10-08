@@ -225,6 +225,20 @@ router.delete("/:id", requireAuth, asyncHandler(async (req, res) => {
     const existing = await client.query('SELECT * FROM "Santri" WHERE "id" = $1 FOR UPDATE', [santriId]);
     if (!existing.rowCount) throw new CashlessError(404, "Santri tidak ditemukan.");
 
+    await client.query('DELETE FROM "QueueOfflineKasir" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "LogPin" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "FaceTemplate" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "PenilaianUbudiyah" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "Hafalan" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "Prestasi" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "Nilai" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "Pelanggaran" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "Perizinan" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "Absensi" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "Tagihan" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "PermintaanBMT" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "TransaksiCashless" WHERE "santriId" = $1', [santriId]);
+    await client.query('DELETE FROM "Ledger" WHERE "santriId" = $1', [santriId]);
     await client.query('DELETE FROM "Santri" WHERE "id" = $1', [santriId]);
   });
 
