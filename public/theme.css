@@ -40,14 +40,14 @@ body {
   position: relative;
   min-height: 100vh;
   color: var(--ui-ink, #1e293b);
-  background-color: #f1f6fa !important;
+  background-color: #eaf3f8 !important;
   background-image:
-    radial-gradient(circle at 10% 15%, rgba(41, 170, 225, 0.22) 0%, transparent 45%),
-    radial-gradient(circle at 90% 25%, rgba(16, 185, 129, 0.20) 0%, transparent 45%),
-    radial-gradient(circle at 50% 85%, rgba(124, 58, 237, 0.16) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.14) 0%, transparent 45%) !important;
+    radial-gradient(circle at 10% 15%, rgba(41, 170, 225, 0.38) 0%, transparent 45%),
+    radial-gradient(circle at 90% 25%, rgba(16, 185, 129, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(124, 58, 237, 0.30) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.28) 0%, transparent 45%) !important;
   background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200% !important;
-  animation: ambientGlowFlow 18s ease-in-out infinite alternate !important;
+  animation: ambientGlowFlow 14s ease-in-out infinite alternate !important;
 }
 
 body::before {
@@ -59,11 +59,11 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 20% 30%, rgba(41, 170, 225, 0.18) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 70%, rgba(16, 185, 129, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.12) 0%, transparent 50%);
-  animation: subtleOrbDrift 16s ease-in-out infinite alternate;
-  filter: blur(44px);
+    radial-gradient(ellipse at 20% 30%, rgba(41, 170, 225, 0.28) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 70%, rgba(16, 185, 129, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.22) 0%, transparent 50%);
+  animation: subtleOrbDrift 12s ease-in-out infinite alternate;
+  filter: blur(40px);
 }
 
 body.bg-motion-paused,
@@ -195,6 +195,7 @@ th {
 table tbody tr:nth-child(even),
 table tr:nth-child(even),
 #root table tbody tr:nth-child(even),
+#root table tbody tr:nth-child(even) > td,
 #root table tr:nth-child(even),
 .table-wrap tbody tr:nth-child(even) {
   background-color: var(--tbl-row-even) !important;
@@ -203,6 +204,7 @@ table tr:nth-child(even),
 table tbody tr:nth-child(odd),
 table tr:nth-child(odd),
 #root table tbody tr:nth-child(odd),
+#root table tbody tr:nth-child(odd) > td,
 #root table tr:nth-child(odd),
 .table-wrap tbody tr:nth-child(odd) {
   background-color: var(--tbl-row-odd) !important;
@@ -211,8 +213,9 @@ table tr:nth-child(odd),
 /* Sel Seluruh Baris Mengikuti Background Baris */
 table tbody tr td,
 table td,
-#root table tbody td,
 #root table td,
+#root table tbody td,
+#root table [class*="bg-white"],
 .table-wrap tbody td {
   background-color: transparent !important;
   border-top: 1px solid var(--tbl-border) !important;
