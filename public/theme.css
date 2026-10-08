@@ -1,104 +1,20 @@
 html[data-theme="dark"] {
   color-scheme: dark;
-  --theme-page: #0f172a;
-  --theme-surface: #1e293b;
-  --theme-surface-raised: #334155;
-  --theme-text: #f1f5f9;
-  --theme-muted: #94a3b8;
-  --theme-border: #334155;
-  --theme-accent: #38bdf8;
-}
-
-/* ==========================================================================
-   DYNAMIC LIVING ANIMATED BACKGROUND (Efek Hidup, Bernapas & Bergerak)
-   ========================================================================== */
-@keyframes ambientGlowFlow {
-  0% {
-    background-position: 0% 15%, 100% 85%, 50% 50%, 0% 0%;
-  }
-  50% {
-    background-position: 100% 85%, 0% 15%, 80% 20%, 50% 50%;
-  }
-  100% {
-    background-position: 0% 15%, 100% 85%, 50% 50%, 0% 0%;
-  }
-}
-
-@keyframes subtleOrbDrift {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(45px, -30px, 0) scale(1.08);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-body {
-  position: relative;
-  min-height: 100vh;
-  color: var(--ui-ink, #1e293b);
-  background-color: #eaf3f8 !important;
-  background-image:
-    radial-gradient(circle at 10% 15%, rgba(41, 170, 225, 0.38) 0%, transparent 45%),
-    radial-gradient(circle at 90% 25%, rgba(16, 185, 129, 0.35) 0%, transparent 45%),
-    radial-gradient(circle at 50% 85%, rgba(124, 58, 237, 0.30) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.28) 0%, transparent 45%) !important;
-  background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200% !important;
-  animation: ambientGlowFlow 14s ease-in-out infinite alternate !important;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: -15%;
-  width: 130%;
-  height: 130%;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse at 20% 30%, rgba(41, 170, 225, 0.28) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 70%, rgba(16, 185, 129, 0.25) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.22) 0%, transparent 50%);
-  animation: subtleOrbDrift 12s ease-in-out infinite alternate;
-  filter: blur(40px);
-}
-
-body.bg-motion-paused,
-body.bg-motion-paused::before {
-  animation-play-state: paused !important;
-}
-
-/* Transparansi pembungkus utama agar background hidup tembus */
-#root,
-.main-area,
-#root > div:first-child,
-#root [class*="bg-[#F4F8FB]"],
-#root [class*="bg-[#F5F8FC]"],
-#root [class*="bg-[#F8FBFE]"],
-div[aria-hidden="true"].fixed.inset-0,
-div[aria-hidden="true"][class*="fixed"] {
-  background-color: transparent !important;
+  --theme-page: #101820;
+  --theme-surface: #19232d;
+  --theme-surface-raised: #202d38;
+  --theme-text: #e4edf3;
+  --theme-muted: #a8bac7;
+  --theme-border: #344552;
+  --theme-accent: #78c5e8;
 }
 
 html[data-theme="dark"] body {
-  color: var(--theme-text, #f1f5f9);
-  background-color: #0b1118 !important;
+  color: var(--theme-text);
+  background-color: var(--theme-page);
   background-image:
-    radial-gradient(circle at 10% 15%, rgba(56, 189, 248, 0.25) 0%, transparent 45%),
-    radial-gradient(circle at 90% 25%, rgba(16, 185, 129, 0.22) 0%, transparent 45%),
-    radial-gradient(circle at 50% 85%, rgba(168, 85, 247, 0.18) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.16) 0%, transparent 45%) !important;
-  background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200% !important;
-}
-
-html[data-theme="dark"] body::before {
-  background:
-    radial-gradient(ellipse at 20% 30%, rgba(56, 189, 248, 0.20) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 70%, rgba(16, 185, 129, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.14) 0%, transparent 50%);
+    radial-gradient(ellipse at 4% 0%, rgb(31 91 113 / 22%), transparent 34rem),
+    radial-gradient(ellipse at 96% 18%, rgb(81 63 117 / 14%), transparent 28rem);
 }
 
 html[data-theme="dark"] #root {
@@ -111,6 +27,9 @@ html[data-theme="dark"] #root [class~="bg-white/90"],
 html[data-theme="dark"] #root [class~="bg-white/70"],
 html[data-theme="dark"] #root [class~="bg-white/60"],
 html[data-theme="dark"] #root [class~="bg-white/50"],
+html[data-theme="dark"] #root [class~="bg-[#F4F8FB]"],
+html[data-theme="dark"] #root [class~="bg-[#F5F8FC]"],
+html[data-theme="dark"] #root [class~="bg-[#F8FBFE]"],
 html[data-theme="dark"] #root [class~="bg-[#F0F8FE]"],
 html[data-theme="dark"] #root [class~="bg-[#EAF4FB]"] {
   background-color: var(--theme-surface) !important;
@@ -127,128 +46,266 @@ html[data-theme="dark"] #root .glass-card:hover {
   box-shadow: 0 18px 42px rgb(0 0 0 / 30%), 0 3px 8px rgb(0 0 0 / 18%) !important;
 }
 
-/* ==========================================================================
-   DEFAULT CSS VARIABLES UNTUK TABEL INFORMASI
-   ========================================================================== */
-:root {
-  --tbl-header-bg: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-  --tbl-header-text: #1e293b;
-  --tbl-header-border: #cbd5e1;
-  --tbl-row-odd: #ffffff;
-  --tbl-row-even: #f1f5f9;
-  --tbl-row-hover: #e2e8f0;
-  --tbl-row-indicator: #0284c7;
-  --tbl-border: #cbd5e1;
-  --tbl-accent: #0284c7;
+html[data-theme="dark"] #root [class~="bg-[#E3F0E8]"],
+html[data-theme="dark"] #root [class~="bg-[#D3E6DA]"],
+html[data-theme="dark"] #root [class~="bg-[#d3ecdd]"] {
+  background-color: #17382c !important;
+}
+
+html[data-theme="dark"] #root [class~="bg-[#FBE4E1]"],
+html[data-theme="dark"] #root [class~="bg-[#F6D3CE]"],
+html[data-theme="dark"] #root [class~="bg-[#f6d5cf]"],
+html[data-theme="dark"] #root [class~="bg-[#FCEFE8]"] {
+  background-color: #40272a !important;
+}
+
+html[data-theme="dark"] #root [class~="bg-[#FFF6DE]"],
+html[data-theme="dark"] #root [class~="bg-[#F0E1AE]"] {
+  background-color: #3c3420 !important;
+}
+
+html[data-theme="dark"] #root [class~="bg-[#DCEEFB]"],
+html[data-theme="dark"] #root [class~="bg-[#EAF4FA]"],
+html[data-theme="dark"] #root [class~="bg-[#D6EAF6]"],
+html[data-theme="dark"] #root [class~="bg-[#EAF4FB]"] {
+  background-color: #1d3442 !important;
+}
+
+html[data-theme="dark"] #root [class~="bg-[#EDE7F6]"] {
+  background-color: #30283f !important;
+}
+
+html[data-theme="dark"] #root [class~="text-[#17242E]"],
+html[data-theme="dark"] #root [class~="text-[#0B3A57]"],
+html[data-theme="dark"] #root [class~="text-[#0C4A6E]"],
+html[data-theme="dark"] #root [class~="text-[#45657A]"] {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] #root [class~="text-[#5B7C93]"],
+html[data-theme="dark"] #root [class~="text-[#8FB0C7]"],
+html[data-theme="dark"] #root [class~="text-[#8FA3B3]"],
+html[data-theme="dark"] #root [class~="text-[#94A9B6]"] {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme="dark"] #root [class~="text-[#15803D]"] {
+  color: #8ce0ad !important;
+}
+
+html[data-theme="dark"] #root [class~="text-[#96271A]"],
+html[data-theme="dark"] #root [class~="text-[#B5533C]"] {
+  color: #ffaaa0 !important;
+}
+
+html[data-theme="dark"] #root [class~="text-[#8A6A0D]"],
+html[data-theme="dark"] #root [class~="text-[#B98A1C]"] {
+  color: #f1d17d !important;
+}
+
+html[data-theme="dark"] #root [class~="text-[#5B3E8A]"] {
+  color: #cfb4ff !important;
+}
+
+html[data-theme="dark"] #root [class~="border-[#CFE3F0]"],
+html[data-theme="dark"] #root [class~="border-[#DCEDF7]"],
+html[data-theme="dark"] #root [class~="border-[#E7ECF2]"],
+html[data-theme="dark"] #root [class~="border-[#CFE3D6]"],
+html[data-theme="dark"] #root [class~="border-[#F0E2B0]"],
+html[data-theme="dark"] #root [class~="border-[#F3C9C2]"] {
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme="dark"] #root input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] #root select,
+html[data-theme="dark"] #root textarea {
+  color: var(--theme-text) !important;
+  background-color: var(--theme-surface-raised) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme="dark"] #root input::placeholder,
+html[data-theme="dark"] #root textarea::placeholder {
+  color: #9aabb7;
+}
+
+html[data-theme="dark"] #root table thead th {
+  color: var(--theme-muted);
+  background: #202e39;
+}
+
+html[data-theme="dark"] #root table tbody tr:hover {
+  background-color: rgb(120 197 232 / 8%);
+}
+
+html[data-theme="dark"] #root ::selection {
+  color: #101820;
+  background: #78c5e8;
+}
+
+#theme-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid #cfe3f0;
+  border-radius: 999px;
+  color: #0c4a6e;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 8px 24px rgb(12 74 110 / 18%);
+  font: 600 13px Inter, sans-serif;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+#theme-toggle:hover {
+  transform: translateY(-2px);
+}
+
+#theme-toggle:focus-visible {
+  outline: 3px solid #29aae1;
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] #theme-toggle {
+  border-color: #435866;
+  color: #e4edf3;
+  background: #202d38;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 32%);
+}
+
+@media (max-width: 480px) {
+  #theme-toggle {
+    right: 12px;
+    bottom: 12px;
+    min-height: 40px;
+    padding: 8px 12px;
+  }
 }
 
 /* ==========================================================================
-   ENHANCED TABLE & INFORMATION TABLE STYLING
+   ENHANCED MODERN & DYNAMIC TABLE STYLING (Hidup, Elegan & Berkelas)
    ========================================================================== */
 
-/* Container & Wrapper Tabel */
-table,
-#root table,
-.table-wrap table,
+/* Table Wrapper & Container Styling */
 .table-wrap,
+#root table,
 .panel-card table,
 section table {
-  width: 100%;
   border-collapse: separate !important;
   border-spacing: 0 !important;
+  width: 100%;
 }
 
-#root .overflow-x-auto,
-#root div:has(> table) {
-  background-color: transparent !important;
-}
-
-.table-wrap,
-#root table {
-  border-radius: 14px !important;
+#root table,
+.table-wrap {
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.08), 0 2px 6px -1px rgba(12, 74, 110, 0.04) !important;
-  border: 1.5px solid var(--tbl-border) !important;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.05), 0 2px 6px -1px rgba(12, 74, 110, 0.03);
 }
 
-/* Modern Themed Table Header */
-table thead th,
-table th,
+/* Modern Gradient Table Header */
 #root table thead th,
-#root table th,
 .table-wrap th,
-th {
-  background: var(--tbl-header-bg) !important;
-  color: var(--tbl-header-text) !important;
+table thead th {
+  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%) !important;
+  color: #334155 !important;
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0.07em !important;
   text-transform: uppercase !important;
   padding: 13px 16px !important;
-  border-bottom: 2px solid var(--tbl-header-border) !important;
+  border-bottom: 2px solid #cbd5e1 !important;
   border-top: none !important;
   white-space: nowrap;
 }
 
-/* Selang-Seling Baris (Zebra Striping) */
-table tbody tr:nth-child(even),
-table tr:nth-child(even),
+html[data-theme="dark"] #root table thead th,
+html[data-theme="dark"] .table-wrap th,
+html[data-theme="dark"] table thead th {
+  background: linear-gradient(180deg, #1e293b 0%, #152230 100%) !important;
+  color: #94a3b8 !important;
+  border-bottom: 2px solid #334155 !important;
+}
+
+/* Alternating Rows (Zebra Striping) */
 #root table tbody tr:nth-child(even),
-#root table tbody tr:nth-child(even) > td,
-#root table tr:nth-child(even),
-.table-wrap tbody tr:nth-child(even) {
-  background-color: var(--tbl-row-even) !important;
+.table-wrap tbody tr:nth-child(even),
+table tbody tr:nth-child(even) {
+  background-color: rgba(248, 250, 252, 0.75);
 }
 
-table tbody tr:nth-child(odd),
-table tr:nth-child(odd),
 #root table tbody tr:nth-child(odd),
-#root table tbody tr:nth-child(odd) > td,
-#root table tr:nth-child(odd),
-.table-wrap tbody tr:nth-child(odd) {
-  background-color: var(--tbl-row-odd) !important;
+.table-wrap tbody tr:nth-child(odd),
+table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
 }
 
-/* Sel Seluruh Baris Mengikuti Background Baris */
-table tbody tr td,
-table td,
-#root table td,
-#root table tbody td,
-#root table [class*="bg-white"],
-.table-wrap tbody td {
-  background-color: transparent !important;
-  border-top: 1px solid var(--tbl-border) !important;
-  border-bottom: none !important;
-  padding: 13px 16px !important;
-  font-size: 12.5px;
-  vertical-align: middle;
-  font-variant-numeric: tabular-nums;
-  transition: background-color 140ms ease;
+html[data-theme="dark"] #root table tbody tr:nth-child(even),
+html[data-theme="dark"] .table-wrap tbody tr:nth-child(even),
+html[data-theme="dark"] table tbody tr:nth-child(even) {
+  background-color: rgba(30, 41, 59, 0.45);
 }
 
-/* Efek Hover Interaktif Pada Baris Tabel */
-table tbody tr,
+html[data-theme="dark"] #root table tbody tr:nth-child(odd),
+html[data-theme="dark"] .table-wrap tbody tr:nth-child(odd),
+html[data-theme="dark"] table tbody tr:nth-child(odd) {
+  background-color: var(--theme-surface, #19232d);
+}
+
+/* Interactive Hover Row with Vibrant Indicator Bar */
 #root table tbody tr,
-.table-wrap tbody tr {
+.table-wrap tbody tr,
+table tbody tr {
   transition: background-color 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-table tbody tr:hover,
 #root table tbody tr:hover,
 .table-wrap tbody tr:hover,
-tr:hover td {
-  background-color: var(--tbl-row-hover) !important;
-  box-shadow: inset 4px 0 0 var(--tbl-row-indicator) !important;
+table tbody tr:hover {
+  background-color: #f0f9ff !important;
+  box-shadow: inset 4px 0 0 #0284c7 !important;
 }
 
-/* Helper Class untuk Baris/Card Informasi */
-.info-table-row {
-  background-color: var(--tbl-row-even) !important;
-  border-color: var(--tbl-border) !important;
+html[data-theme="dark"] #root table tbody tr:hover,
+html[data-theme="dark"] .table-wrap tbody tr:hover,
+html[data-theme="dark"] table tbody tr:hover {
+  background-color: rgba(56, 189, 248, 0.12) !important;
+  box-shadow: inset 4px 0 0 #38bdf8 !important;
 }
 
-/* Status Badges */
+/* Cell Spacing, Borders & Tabular Formatting */
+#root table tbody td,
+.table-wrap td,
+table tbody td {
+  padding: 13px 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 12.5px;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="dark"] #root table tbody td,
+html[data-theme="dark"] .table-wrap td,
+html[data-theme="dark"] table tbody td {
+  border-bottom: 1px solid #283946 !important;
+}
+
+/* Button & Action Cell in Table */
+table tbody td button {
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease !important;
+}
+
+table tbody td button:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+}
+
+/* Vibrant Status Badges with Pulse Dots */
 .badge,
 .table-badge,
 table td .badge {
@@ -273,6 +330,7 @@ table td .badge {
   flex-shrink: 0;
 }
 
+/* Green: Lunas, Hadir, Disetujui, Aktif */
 .badge.approved,
 .badge.disetujui,
 .badge.hadir,
@@ -291,6 +349,7 @@ table td .badge {
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
+/* Amber: Menunggu, Pending, Diajukan, Izin, Cicil */
 .badge.pending,
 .badge.menunggu,
 .badge.diajukan,
@@ -309,6 +368,7 @@ table td .badge {
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
+/* Red: Ditolak, Alpa, Tunggakan, Belum Lunas */
 .badge.rejected,
 .badge.ditolak,
 .badge.alpa,
@@ -327,6 +387,7 @@ table td .badge {
   box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2);
 }
 
+/* Sky/Blue: Sakit, Pulang, Verifikasi */
 .badge.sakit,
 .badge.pulang,
 .badge.verifikasi {
@@ -341,188 +402,42 @@ table td .badge {
   box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
 }
 
-/* ==========================================================================
-   FLOATING THEME & TABLE COLOR CONTROLS BAR (Elegan & Responsif)
-   ========================================================================== */
-.mma-floating-theme-bar {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 9999;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 9px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1.5px solid #cfe3f0;
-  border-radius: 9999px;
-  box-shadow: 0 10px 28px rgba(12, 74, 110, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+/* Dark Mode Adjustments for Badges */
+html[data-theme="dark"] .badge.approved,
+html[data-theme="dark"] .badge.disetujui,
+html[data-theme="dark"] .badge.hadir,
+html[data-theme="dark"] .badge.lunas,
+html[data-theme="dark"] .badge.aktif {
+  background-color: rgba(6, 95, 70, 0.3) !important;
+  color: #6ee7b7 !important;
+  border-color: #065f46 !important;
 }
 
-.mma-floating-theme-bar:hover {
-  box-shadow: 0 14px 34px rgba(12, 74, 110, 0.28);
+html[data-theme="dark"] .badge.pending,
+html[data-theme="dark"] .badge.menunggu,
+html[data-theme="dark"] .badge.diajukan,
+html[data-theme="dark"] .badge.izin,
+html[data-theme="dark"] .badge.cicil {
+  background-color: rgba(146, 64, 14, 0.3) !important;
+  color: #fde68a !important;
+  border-color: #92400e !important;
 }
 
-html[data-theme="dark"] .mma-floating-theme-bar {
-  background: rgba(25, 35, 45, 0.95);
-  border-color: #3e505e;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+html[data-theme="dark"] .badge.rejected,
+html[data-theme="dark"] .badge.ditolak,
+html[data-theme="dark"] .badge.alpa,
+html[data-theme="dark"] .badge.tunggakan,
+html[data-theme="dark"] .badge.belum-lunas {
+  background-color: rgba(159, 18, 57, 0.3) !important;
+  color: #fca5a5 !important;
+  border-color: #9f1239 !important;
 }
 
-.theme-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 6px 12px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font: 600 12px Inter, sans-serif;
-  color: #0c4a6e;
-  background: rgba(240, 248, 254, 0.8);
-  cursor: pointer;
-  transition: all 140ms ease;
-  white-space: nowrap;
+html[data-theme="dark"] .badge.sakit,
+html[data-theme="dark"] .badge.pulang,
+html[data-theme="dark"] .badge.verifikasi {
+  background-color: rgba(3, 105, 161, 0.3) !important;
+  color: #7dd3fc !important;
+  border-color: #0369a1 !important;
 }
 
-.theme-action-btn:hover {
-  background: #e0f2fe;
-  color: #0369a1;
-  transform: translateY(-1px);
-}
-
-html[data-theme="dark"] .theme-action-btn {
-  color: #e4edf3;
-  background: rgba(40, 56, 70, 0.85);
-}
-
-html[data-theme="dark"] .theme-action-btn:hover {
-  background: #2f4556;
-  color: #78c5e8;
-}
-
-.theme-color-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1.5px solid #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  flex-shrink: 0;
-}
-
-.table-theme-picker-popover {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 12px);
-  width: 256px;
-  padding: 13px;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
-  z-index: 10000;
-  animation: pickerPop 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes pickerPop {
-  from { opacity: 0; transform: translateY(8px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-html[data-theme="dark"] .table-theme-picker-popover {
-  background: #19232d;
-  border-color: #3a4b59;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
-}
-
-.picker-title strong {
-  display: block;
-  font-size: 12.5px;
-  color: #0f172a;
-}
-
-html[data-theme="dark"] .picker-title strong {
-  color: #f1f5f9;
-}
-
-.picker-title small {
-  display: block;
-  margin-bottom: 10px;
-  font-size: 11px;
-  color: #64748b;
-}
-
-html[data-theme="dark"] .picker-title small {
-  color: #94a3b8;
-}
-
-.table-theme-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-}
-
-.table-theme-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  color: #1e293b;
-  font: 500 11.5px Inter, sans-serif;
-  cursor: pointer;
-  transition: all 140ms ease;
-}
-
-.table-theme-option:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.table-theme-option.active {
-  border-color: #0284c7;
-  background: #e0f2fe;
-  color: #0369a1;
-  font-weight: 700;
-}
-
-html[data-theme="dark"] .table-theme-option {
-  background: #202d38;
-  border-color: #344552;
-  color: #e2e8f0;
-}
-
-html[data-theme="dark"] .table-theme-option:hover {
-  background: #273744;
-}
-
-html[data-theme="dark"] .table-theme-option.active {
-  background: #1d3a4d;
-  border-color: #38bdf8;
-  color: #7dd3fc;
-}
-
-.theme-swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid;
-  flex-shrink: 0;
-}
-
-@media (max-width: 540px) {
-  .mma-floating-theme-bar {
-    right: 10px;
-    bottom: 10px;
-    gap: 4px;
-    padding: 5px 6px;
-  }
-  .table-trigger-btn .btn-text {
-    display: none;
-  }
-}
