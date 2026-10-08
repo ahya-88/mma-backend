@@ -80,7 +80,7 @@ async function editGuru({ id, nama, username, departemen, unit, jenisAkun, actin
     if (adaUser) throw new CashlessError(400, "Username staf sudah digunakan.");
 
     await query(
-      'UPDATE "Guru" SET "nama" = $1, "username" = $2, "departemen" = $3, "unit" = $4, "jenisAkun" = $5 WHERE "id" = $6',
+      'UPDATE "Guru" SET "nama" = $1, "username" = $2, "departemen" = $3, "unit" = $4, "jenisAkun" = $5, "sessionVersion" = "sessionVersion" + 1 WHERE "id" = $6',
       [nameFinal, userFinal, depFinal, unitFinal, kindFinal, id],
     );
 

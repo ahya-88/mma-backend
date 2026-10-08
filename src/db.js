@@ -101,7 +101,7 @@ async function initializeDatabase() {
   await withTransaction(async (client) => {
     await client.query(
       'INSERT INTO "Pengaturan" ("kunci", "nilai") VALUES ($1, $2) ON CONFLICT ("kunci") DO NOTHING',
-      ["topup", JSON.stringify(PENGATURAN_TOPUP_DEFAULT)],
+      ["topup_settings", JSON.stringify(PENGATURAN_TOPUP_DEFAULT)],
     );
     const unitCount = await client.query('SELECT COUNT(*) AS "n" FROM "UnitUsaha"');
     if (Number(unitCount.rows[0].n) === 0) {
@@ -176,8 +176,8 @@ async function backfillBuktiHash() {
             )
         `, [hash, row.id]);
       } catch (error) {
-        if (error instanceof Error && /bukti transfer|Format bukti/i.test(error.message)) continue;
-        throw error;
+        // Abaikan entri bukti transfer yang korup agar tidak menggagalkan boot server
+        continue;
       }
     }
   });

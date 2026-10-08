@@ -5,9 +5,9 @@ const { URL } = require("url");
 const { logInfo, logError } = require("./logger");
 
 let consecutive5xxCount = 0;
-let lastAlertTime = 0;
+const lastAlertTimes = new Map();
 const CONSECUTIVE_5XX_THRESHOLD = 5;
-const ALERT_COOLDOWN_MS = 5 * 60 * 1000; // 5 minute cooldown between alerts
+const ALERT_COOLDOWN_MS = 5 * 60 * 1000;
 
 async function sendTelegramMessage(botToken, chatId, text) {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
@@ -75,11 +75,12 @@ async function sendWhatsAppWebhook(webhookUrl, text) {
 
 async function triggerAlertNotification({ title, message, level = "CRITICAL", metadata = {} }) {
   const now = Date.now();
-  if (now - lastAlertTime < ALERT_COOLDOWN_MS) {
-    logInfo("Notifikasi alert berada dalam periode cooldown, dilewati.", { title });
+  const lastTime = lastAlertTimes.get(level) || 0;
+  if (level !== "CRITICAL" && (now - lastTime < ALERT_COOLDOWN_MS)) {
+    logInfo("Notifikasi alert berada dalam periode cooldown, dilewati.", { title, level });
     return false;
   }
-  lastAlertTime = now;
+  lastAlertTimes.set(level, now);
 
   const envName = process.env.NODE_ENV || "development";
   const formattedText = `🚨 <b>[MMA ALERT: ${level}]</b> ${title}\n` +

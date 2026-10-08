@@ -1,9 +1,17 @@
 function isProduction() {
-  return [
-    process.env.NODE_ENV,
-    process.env.RAILWAY_ENVIRONMENT,
-    process.env.RAILWAY_ENVIRONMENT_NAME,
-  ].some((value) => typeof value === "string" && value.toLowerCase() === "production");
+  return process.env.NODE_ENV === "production";
 }
 
-module.exports = { isProduction };
+function isDevelopment() {
+  return process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
+}
+
+function isTest() {
+  return process.env.NODE_ENV === "test";
+}
+
+module.exports = {
+  isProduction,
+  isDevelopment,
+  isTest,
+};

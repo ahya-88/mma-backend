@@ -1,108 +1,282 @@
 const express = require("express");
-const { requireAuth, requireAdmin, requirePasswordResetAuthority, requireDashboardAdmin, requireSekretariat, jenisAkunEfektif } = require("../auth");
-const admin = require("../adminService");
-const impor = require("../imporService");
+const crypto = require("crypto");
+const { query, queryOne, queryAll, withTransaction } = require("../db");
+const { requireAuth, requireAdmin, requireDashboardAdmin, isSuperAdmin } = require("../auth");
+const {
+  semuaGuru, buatGuru, editGuru, editPasswordGuru, editPasswordWali, hapusGuru,
+  semuaUnitUsaha, tambahUnitUsaha, hapusUnitUsaha,
+  semuaTahunAjaran, tambahTahunAjaran, aktifkanTahunAjaran, hapusTahunAjaran,
+  ambilTampilan, simpanTampilan, ringkasanSuperadmin, daftarWali, daftarKartuSuperadmin,
+  daftarPermintaanSuperadmin, daftarAuditSuperadmin, ubahStatusProduk,
+} = require("../adminService");
+const { CashlessError, getSantriRow, toPublicSantri } = require("../cashlessService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
+const uid = () => crypto.randomUUID();
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
-router.get("/guru", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.semuaGuru())));
-router.post("/guru", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.status(201).json(await admin.buatGuru({
-  ...(req.body || {}), actingUserId: req.user.id,
-}))));
+// Helper permissions check
+function isAuthorizedAdminOrSekretariat(req) {
+  if (isSuperAdmin(req.user)) return true;
+  return req.user?.role === "guru" && req.user.departemen === "sekretariat";
+}
+
+// ---- Ringkasan Dashboard Superadmin ----
+router.get("/ringkasan", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => {
+  res.json(await ringkasanSuperadmin());
+}));
+
+// ---- Pengelolaan Staf (Guru) ----
+router.get("/guru", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await semuaGuru());
+}));
+
+router.post("/guru", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { nama, username, password, departemen, unit, jenisAkun } = req.body || {};
+  res.status(201).json(await buatGuru({
+    nama, username, password, departemen, unit, jenisAkun, actingUserId: req.user.id,
+  }));
+}));
+
 router.put("/guru/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
-  if (req.params.id === req.user.id && req.body?.jenisAkun && req.body.jenisAkun !== "superadmin") {
-    return res.status(400).json({ error: "Tidak dapat menurunkan jenis akun Superadmin yang sedang digunakan." });
+  const { nama, username, departemen, unit, jenisAkun } = req.body || {};
+  res.json(await editGuru({
+    id: req.params.id, nama, username, departemen, unit, jenisAkun, actingUserId: req.user.id,
+  }));
+}));
+
+router.delete("/guru/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await hapusGuru({ id: req.params.id, actingUserId: req.user.id }));
+}));
+
+router.post("/guru/:id/reset-password", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { newPassword } = req.body || {};
+  res.json(await editPasswordGuru({ id: req.params.id, password: newPassword, actingUserId: req.user.id }));
+}));
+
+// ---- Pengelolaan Wali ----
+router.get("/wali", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await daftarWali({ page: req.query.page, limit: req.query.limit, q: req.query.q }));
+}));
+
+router.post("/wali/:id/reset-password", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedAdminOrSekretariat(req)) {
+    return res.status(403).json({ error: "Hanya Superadmin atau Sekretariat yang dapat mereset kata sandi wali." });
   }
-  res.json(await admin.editGuru({ id: req.params.id, ...(req.body || {}), actingUserId: req.user.id }));
+  const { newPassword } = req.body || {};
+  res.json(await editPasswordWali({ id: req.params.id, password: newPassword, actingUserId: req.user.id }));
 }));
-router.put("/guru/:id/password", requireAuth, requirePasswordResetAuthority, asyncHandler(async (req, res) => res.json(await admin.editPasswordGuru({
-  id: req.params.id, password: (req.body || {}).password, actingUserId: req.user.id,
-}))));
-router.put("/wali/:id/password", requireAuth, requirePasswordResetAuthority, asyncHandler(async (req, res) => res.json(await admin.editPasswordWali({
-  id: req.params.id, password: (req.body || {}).password, actingUserId: req.user.id,
-}))));
-router.delete("/guru/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.hapusGuru({ id: req.params.id, actingUserId: req.user.id }))));
 
-router.get("/unit-usaha", requireAuth, asyncHandler(async (req, res) => res.json(await admin.semuaUnitUsaha())));
-router.post("/unit-usaha", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.status(201).json(await admin.tambahUnitUsaha((req.body || {}).nama))));
-router.delete("/unit-usaha/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.hapusUnitUsaha(req.params.id, req.user.id))));
-
-router.get("/tahun-ajaran", requireAuth, asyncHandler(async (req, res) => res.json(await admin.semuaTahunAjaran())));
-router.post("/tahun-ajaran", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.status(201).json(await admin.tambahTahunAjaran((req.body || {}).tahunMulai))));
-router.post("/tahun-ajaran/:id/aktifkan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.aktifkanTahunAjaran(req.params.id))));
-router.delete("/tahun-ajaran/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.hapusTahunAjaran(req.params.id, req.user.id))));
-
-router.get("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.ambilTampilan())));
-router.put("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => res.json(await admin.simpanTampilan(req.body || {}))));
-router.get("/ringkasan", requireAuth, requireSekretariat, asyncHandler(async (req, res) => res.json(await admin.ringkasanSuperadmin())));
-router.get("/wali", requireAuth, requireSekretariat, asyncHandler(async (req, res) => res.json(await admin.daftarWali())));
-router.get("/kartu", requireAuth, requireSekretariat, asyncHandler(async (req, res) => res.set("Cache-Control", "no-store").json(await admin.daftarKartuSuperadmin())));
-router.get("/permintaan", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => res.json(await admin.daftarPermintaanSuperadmin())));
-router.get("/akses", requireAuth, requireSekretariat, asyncHandler(async (req, res) => res.json({
-  id: req.user.id, nama: req.user.nama, departemen: req.user.departemen,
-  jenisAkun: jenisAkunEfektif(req.user),
-})));
-router.put("/produk/:id/status", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
-  res.json(await admin.ubahStatusProduk({ id: req.params.id, aktif: (req.body || {}).aktif }));
+// ---- Unit Usaha ----
+router.get("/unit-usaha", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await semuaUnitUsaha());
 }));
+
+router.post("/unit-usaha", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { nama } = req.body || {};
+  res.status(201).json(await tambahUnitUsaha(nama));
+}));
+
+router.delete("/unit-usaha/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await hapusUnitUsaha(req.params.id, req.user.id));
+}));
+
+// ---- Tahun Ajaran ----
+router.get("/tahun-ajaran", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await semuaTahunAjaran());
+}));
+
+router.post("/tahun-ajaran", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { tahunMulai } = req.body || {};
+  res.status(201).json(await tambahTahunAjaran(tahunMulai));
+}));
+
+router.post("/tahun-ajaran/:id/aktifkan", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await aktifkanTahunAjaran(req.params.id));
+}));
+
+router.delete("/tahun-ajaran/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await hapusTahunAjaran(req.params.id, req.user.id));
+}));
+
+// ---- Tampilan Aplikasi ----
+router.get("/tampilan", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await ambilTampilan());
+}));
+
+router.put("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await simpanTampilan(req.body));
+}));
+
+// ---- Kartu & Permintaan & Audit Superadmin ----
+router.get("/kartu", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await daftarKartuSuperadmin({ page: req.query.page, limit: req.query.limit, q: req.query.q, kelas: req.query.kelas }));
+}));
+
+router.get("/permintaan", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await daftarPermintaanSuperadmin({ page: req.query.page, limit: req.query.limit, status: req.query.status, q: req.query.q }));
+}));
+
 router.get("/audit", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
-  const page = Number(req.query.page || 1);
-  const limit = Number(req.query.limit || 50);
-  if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-    return res.status(400).json({ error: "page harus minimal 1 dan limit harus antara 1 sampai 100." });
+  res.json(await daftarAuditSuperadmin({ page: Number(req.query.page || 1), limit: Number(req.query.limit || 50) }));
+}));
+
+// ---- Impor Excel / CSV Santri (Sekretariat & Admin Sync Fix) ----
+router.get("/impor/template", requireAuth, asyncHandler(async (req, res) => {
+  const csvTemplate = `nama,nis,nisn,kelas,jenisKelamin,namaWali,hpWali,tempatLahir,tanggalLahir
+Ahmad Fauzi,1001,00812345,7A,L,Budi Santoso,08123456789,Jakarta,2010-05-15
+Siti Aminah,1002,00812346,7A,P,Rudi Hermawan,08123456780,Bandung,2010-08-20
+`;
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="Template_Impor_Santri_MMA.csv"');
+  res.send(csvTemplate);
+}));
+
+router.post("/impor/dry-run", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedAdminOrSekretariat(req)) {
+    return res.status(403).json({ error: "Hanya Sekretariat atau Superadmin yang dapat menguji impor santri." });
   }
-  res.json(await admin.daftarAuditSuperadmin({ page, limit }));
+
+  const { rows } = req.body || {};
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new CashlessError(400, "Data baris impor tidak boleh kosong.");
+  }
+
+  let jumlahBaru = 0;
+  let jumlahUpdate = 0;
+  let jumlahGagal = 0;
+  const detailGagal = [];
+
+  for (let idx = 0; idx < rows.length; idx++) {
+    const row = rows[idx];
+    const barisNum = idx + 2;
+    const nama = (row.nama || "").trim();
+    const nis = (row.nis || "").trim();
+
+    if (!nama) {
+      jumlahGagal++;
+      detailGagal.push({ baris: barisNum, nama: nama || "-", alasan: "Nama santri wajib diisi." });
+      continue;
+    }
+
+    if (nis) {
+      const existing = await queryOne('SELECT "id" FROM "Santri" WHERE "nis" = $1', [nis]);
+      if (existing) jumlahUpdate++;
+      else jumlahBaru++;
+    } else {
+      jumlahBaru++;
+    }
+  }
+
+  res.json({
+    valid: jumlahGagal === 0,
+    totalBaris: rows.length,
+    jumlahBaru,
+    jumlahUpdate,
+    jumlahGagal,
+    detailGagal,
+  });
 }));
 
-// ---- FASE 2: Endpoint Impor Bertahap, Provisioning Akun, & Kelengkapan Data ----
-router.get("/impor/template", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
-  const csvContent = impor.buatTemplateImporCSV();
-  res.set("Content-Type", "text/csv; charset=utf-8");
-  res.set("Content-Disposition", 'attachment; filename="Template_Impor_Santri_MMA.csv"');
-  res.send(csvContent);
-}));
+router.post("/impor/eksekusi", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedAdminOrSekretariat(req)) {
+    return res.status(403).json({ error: "Hanya Sekretariat atau Superadmin yang dapat mengeksekusi impor santri." });
+  }
 
-router.post("/impor/dry-run", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
-  const rows = req.body?.rows || [];
-  res.json(await impor.prosesDryRunImpor(rows));
-}));
-
-router.post("/impor/eksekusi", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
   const { namaBatch, rows } = req.body || {};
-  res.status(201).json(await impor.eksekusiImporBatch({
-    namaBatch, rows: rows || [], aktorId: req.user.id, aktorNama: req.user.nama,
-  }));
-}));
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new CashlessError(400, "Data baris impor tidak boleh kosong.");
+  }
 
-router.post("/impor/rollback/:batchId", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
-  res.json(await impor.rollbackBatchImpor(req.params.batchId, req.user.id));
-}));
+  const bcrypt = require("bcryptjs");
+  const batchId = uid();
+  const defaultWaliPass = "wali123";
+  const defaultWaliHash = await bcrypt.hash(defaultWaliPass, 10);
 
-router.post("/wali/provision-batch", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
-  const { santriIds, batchId } = req.body || {};
-  res.json(await impor.provisionAkunWali({ santriIds, batchId, aktorId: req.user.id }));
-}));
+  let totalSantri = 0;
+  let totalWaliBaru = 0;
 
-router.post("/wali/tautkan-anak", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
-  const { santriId, waliId } = req.body || {};
-  res.json(await impor.tautkanAnakKeWali({ santriId, waliId, aktorId: req.user.id }));
-}));
+  await withTransaction(async (client) => {
+    // Record BatchImpor
+    await client.query(
+      `INSERT INTO "BatchImpor" ("id", "namaBatch", "sumber", "jumlahSantri", "status", "dibuatOleh")
+       VALUES ($1, $2, 'excel', $3, 'Berhasil', $4)`,
+      [batchId, (namaBatch || "Impor Santri").trim(), rows.length, req.user.nama],
+    );
 
-router.post("/impor/rekonsiliasi", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
-  const { batchId, tipe, items, totalKasTarget } = req.body || {};
-  res.json(await impor.rekonsiliasiSaldoDanTagihan({
-    batchId, tipe, items, totalKasTarget, aktorId: req.user.id, dicatatOleh: req.user.nama,
-  }));
-}));
+    for (const row of rows) {
+      const nama = (row.nama || "").trim();
+      const nis = (row.nis || "").trim() || null;
+      const nisn = (row.nisn || "").trim() || null;
+      const kelas = (row.kelas || "").trim() || null;
+      const jenisKelamin = (row.jenisKelamin || "").trim() || null;
+      const tempatLahir = (row.tempatLahir || "").trim() || null;
+      const tanggalLahir = (row.tanggalLahir || "").trim() || null;
+      const namaWali = (row.namaWali || "").trim();
+      const hpWali = (row.hpWali || "").trim();
 
-router.get("/kelengkapan-data", requireAuth, requireSekretariat, asyncHandler(async (req, res) => {
-  res.json(await impor.kelengkapanDataSekretariat());
-}));
+      if (!nama) continue;
 
-router.post("/bersihkan-demo", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
-  const { konfirmasi } = req.body || {};
-  res.json(await impor.bersihkanDataDemo({ konfirmasi: !!konfirmasi, aktorId: req.user.id }));
+      let waliId = null;
+      if (namaWali) {
+        // Cari atau buat akun Wali secara otomatis
+        const usernameWali = hpWali
+          ? `wali.${hpWali.slice(-6)}`
+          : `wali.${namaWali.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10)}.${Math.floor(1000 + Math.random() * 9000)}`;
+
+        let waliRow = await client.query('SELECT "id" FROM "Wali" WHERE "nama" = $1 AND ("hp" = $2 OR "username" = $3)', [namaWali, hpWali || "", usernameWali]);
+        if (waliRow.rowCount) {
+          waliId = waliRow.rows[0].id;
+        } else {
+          waliId = uid();
+          await client.query(
+            `INSERT INTO "Wali" ("id", "nama", "hp", "username", "password", "mustChangePassword", "statusAkun", "importBatchId")
+             VALUES ($1, $2, $3, $4, $5, TRUE, 'Belum Aktivasi', $6)`,
+            [waliId, namaWali, hpWali || null, usernameWali, defaultWaliHash, batchId],
+          );
+          totalWaliBaru++;
+        }
+      }
+
+      // Upsert data Santri berdasarkan NIS atau UUID baru
+      let existingSantri = nis ? await client.query('SELECT "id" FROM "Santri" WHERE "nis" = $1', [nis]) : { rowCount: 0 };
+
+      if (existingSantri.rowCount) {
+        const santriId = existingSantri.rows[0].id;
+        await client.query(
+          `UPDATE "Santri" SET
+            "nama" = $1, "kelas" = COALESCE($2, "kelas"), "nisn" = COALESCE($3, "nisn"),
+            "jenisKelamin" = COALESCE($4, "jenisKelamin"), "tempatLahir" = COALESCE($5, "tempatLahir"),
+            "tanggalLahir" = COALESCE($6, "tanggalLahir"), "waliId" = COALESCE($7, "waliId"),
+            "importBatchId" = $8
+           WHERE "id" = $9`,
+          [nama, kelas, nisn, jenisKelamin, tempatLahir, tanggalLahir, waliId, batchId, santriId],
+        );
+      } else {
+        const santriId = uid();
+        await client.query(
+          `INSERT INTO "Santri"
+            ("id", "nama", "kelas", "nis", "nisn", "jenisKelamin", "tempatLahir", "tanggalLahir", "waliId", "saldo", "importBatchId")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10)`,
+          [santriId, nama, kelas, nis, nisn, jenisKelamin, tempatLahir, tanggalLahir, waliId, batchId],
+        );
+      }
+      totalSantri++;
+    }
+
+    await client.query(
+      'UPDATE "BatchImpor" SET "jumlahSantri" = $1, "jumlahWali" = $2 WHERE "id" = $3',
+      [totalSantri, totalWaliBaru, batchId],
+    );
+  });
+
+  res.json({
+    batchId,
+    totalSantri,
+    totalWaliBaru,
+    pesan: `Berhasil mengimpor ${totalSantri} data santri dan memproses ${totalWaliBaru} akun wali baru.`,
+  });
 }));
 
 module.exports = router;

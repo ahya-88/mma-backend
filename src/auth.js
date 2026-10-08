@@ -241,7 +241,7 @@ async function changePassword({ user, currentPassword, newPassword, ip }) {
     }
     await query(`UPDATE "${table}" SET "password" = $1, "mustChangePassword" = FALSE,
       "passwordChangedAt" = ${utcNowSql}, "sessionVersion" = "sessionVersion" + 1,
-      "loginFailedAttempts" = 0, "loginLockedUntil" = NULL WHERE "id" = $2`, [hashed, user.id]);
+      "loginFailedAttempts" = 0, "loginLockedUntil" = NULL${table === "Wali" ? ', "statusAkun" = \'Aktif\'' : ""} WHERE "id" = $2`, [hashed, user.id]);
     await recordLoginAudit({ actorId: user.id, actorRole: user.role, action: "auth.password_changed", reason: "self_service", ip });
   });
   const { purpose, iat, exp, nbf, ...userPayload } = user;

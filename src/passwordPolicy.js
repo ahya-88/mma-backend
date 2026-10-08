@@ -1,9 +1,13 @@
-// Kebijakan kata sandi satu-satunya untuk seluruh akun (Guru/Staf, Superadmin, Wali).
-// Keputusan 4 Okt 2026: minimal 6 karakter saja, tanpa syarat kompleksitas lain.
 const PASSWORD_MIN_LENGTH = 6;
 
-function isPasswordLayak(password) {
-  return typeof password === "string" && password.length >= PASSWORD_MIN_LENGTH;
+function validatePasswordPolicy(password) {
+  if (typeof password !== "string" || password.length < PASSWORD_MIN_LENGTH) {
+    return `Password minimal ${PASSWORD_MIN_LENGTH} karakter.`;
+  }
+  return null;
 }
 
-module.exports = { PASSWORD_MIN_LENGTH, isPasswordLayak };
+module.exports = {
+  PASSWORD_MIN_LENGTH,
+  validatePasswordPolicy,
+};
