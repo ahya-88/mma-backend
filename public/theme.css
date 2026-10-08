@@ -1,12 +1,12 @@
 html[data-theme="dark"] {
   color-scheme: dark;
-  --theme-page: #101820;
-  --theme-surface: #19232d;
-  --theme-surface-raised: #202d38;
-  --theme-text: #e4edf3;
-  --theme-muted: #a8bac7;
-  --theme-border: #344552;
-  --theme-accent: #78c5e8;
+  --theme-page: #0f172a;
+  --theme-surface: #1e293b;
+  --theme-surface-raised: #334155;
+  --theme-text: #f1f5f9;
+  --theme-muted: #94a3b8;
+  --theme-border: #334155;
+  --theme-accent: #38bdf8;
 }
 
 /* ==========================================================================
@@ -14,13 +14,13 @@ html[data-theme="dark"] {
    ========================================================================== */
 @keyframes ambientGlowFlow {
   0% {
-    background-position: 0% 15%, 100% 85%, 50% 50%, 0% 0%, 100% 100%;
+    background-position: 0% 15%, 100% 85%, 50% 50%, 0% 0%;
   }
   50% {
-    background-position: 100% 85%, 0% 15%, 80% 20%, 50% 50%, 50% 50%;
+    background-position: 100% 85%, 0% 15%, 80% 20%, 50% 50%;
   }
   100% {
-    background-position: 0% 15%, 100% 85%, 50% 50%, 0% 0%, 100% 100%;
+    background-position: 0% 15%, 100% 85%, 50% 50%, 0% 0%;
   }
 }
 
@@ -29,7 +29,7 @@ html[data-theme="dark"] {
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(30px, -20px, 0) scale(1.04);
+    transform: translate3d(45px, -30px, 0) scale(1.08);
   }
   100% {
     transform: translate3d(0, 0, 0) scale(1);
@@ -39,15 +39,15 @@ html[data-theme="dark"] {
 body {
   position: relative;
   min-height: 100vh;
-  background-color: var(--c-page-bg, #f4f8fb);
+  color: var(--ui-ink, #1e293b);
+  background-color: #f1f6fa !important;
   background-image:
-    radial-gradient(circle at 12% 18%, rgba(41, 170, 225, 0.16) 0%, transparent 45%),
-    radial-gradient(circle at 88% 28%, rgba(35, 131, 106, 0.16) 0%, transparent 44%),
-    radial-gradient(circle at 50% 88%, rgba(124, 58, 237, 0.09) 0%, transparent 48%),
-    radial-gradient(ellipse at 4% 0%, color-mix(in srgb, var(--c-accent, #23836a) 14%, transparent), transparent 34rem),
-    radial-gradient(ellipse at 96% 18%, color-mix(in srgb, var(--c-accent-bg, #d5e8d9) 18%, transparent), transparent 28rem);
-  background-size: 180% 180%, 180% 180%, 180% 180%, 100% 100%, 100% 100%;
-  animation: ambientGlowFlow 24s ease-in-out infinite alternate;
+    radial-gradient(circle at 10% 15%, rgba(41, 170, 225, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 90% 25%, rgba(16, 185, 129, 0.20) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(124, 58, 237, 0.16) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.14) 0%, transparent 45%) !important;
+  background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200% !important;
+  animation: ambientGlowFlow 18s ease-in-out infinite alternate !important;
 }
 
 body::before {
@@ -59,11 +59,11 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 25% 25%, rgba(41, 170, 225, 0.12) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 75%, rgba(35, 131, 106, 0.13) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.07) 0%, transparent 50%);
-  animation: subtleOrbDrift 20s ease-in-out infinite alternate;
-  filter: blur(48px);
+    radial-gradient(ellipse at 20% 30%, rgba(41, 170, 225, 0.18) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 70%, rgba(16, 185, 129, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.12) 0%, transparent 50%);
+  animation: subtleOrbDrift 16s ease-in-out infinite alternate;
+  filter: blur(44px);
 }
 
 body.bg-motion-paused,
@@ -71,24 +71,31 @@ body.bg-motion-paused::before {
   animation-play-state: paused !important;
 }
 
+/* Transparansi pembungkus utama agar background hidup tembus */
+#root,
+.main-area,
+#root [class~="bg-[#F4F8FB]"],
+#root [class~="bg-[#F5F8FC]"],
+#root [class~="bg-[#F8FBFE]"] {
+  background-color: transparent !important;
+}
+
 html[data-theme="dark"] body {
-  color: var(--theme-text);
-  background-color: var(--theme-page);
+  color: var(--theme-text, #f1f5f9);
+  background-color: #0b1118 !important;
   background-image:
-    radial-gradient(circle at 12% 18%, rgba(120, 197, 232, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 88% 28%, rgba(35, 131, 106, 0.17) 0%, transparent 44%),
-    radial-gradient(circle at 50% 88%, rgba(168, 85, 247, 0.12) 0%, transparent 48%),
-    radial-gradient(ellipse at 4% 0%, rgb(31 91 113 / 24%), transparent 34rem),
-    radial-gradient(ellipse at 96% 18%, rgb(81 63 117 / 16%), transparent 28rem);
-  background-size: 180% 180%, 180% 180%, 180% 180%, 100% 100%, 100% 100%;
-  animation: ambientGlowFlow 24s ease-in-out infinite alternate;
+    radial-gradient(circle at 10% 15%, rgba(56, 189, 248, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 90% 25%, rgba(16, 185, 129, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(168, 85, 247, 0.18) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.16) 0%, transparent 45%) !important;
+  background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200% !important;
 }
 
 html[data-theme="dark"] body::before {
   background:
-    radial-gradient(ellipse at 25% 25%, rgba(120, 197, 232, 0.15) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 75%, rgba(35, 131, 106, 0.15) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.10) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 30%, rgba(56, 189, 248, 0.20) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 70%, rgba(16, 185, 129, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.14) 0%, transparent 50%);
 }
 
 html[data-theme="dark"] #root {
@@ -101,9 +108,6 @@ html[data-theme="dark"] #root [class~="bg-white/90"],
 html[data-theme="dark"] #root [class~="bg-white/70"],
 html[data-theme="dark"] #root [class~="bg-white/60"],
 html[data-theme="dark"] #root [class~="bg-white/50"],
-html[data-theme="dark"] #root [class~="bg-[#F4F8FB]"],
-html[data-theme="dark"] #root [class~="bg-[#F5F8FC]"],
-html[data-theme="dark"] #root [class~="bg-[#F8FBFE]"],
 html[data-theme="dark"] #root [class~="bg-[#F0F8FE]"],
 html[data-theme="dark"] #root [class~="bg-[#EAF4FB]"] {
   background-color: var(--theme-surface) !important;
@@ -120,260 +124,52 @@ html[data-theme="dark"] #root .glass-card:hover {
   box-shadow: 0 18px 42px rgb(0 0 0 / 30%), 0 3px 8px rgb(0 0 0 / 18%) !important;
 }
 
-html[data-theme="dark"] #root [class~="bg-[#E3F0E8]"],
-html[data-theme="dark"] #root [class~="bg-[#D3E6DA]"],
-html[data-theme="dark"] #root [class~="bg-[#d3ecdd]"] {
-  background-color: #17382c !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#FBE4E1]"],
-html[data-theme="dark"] #root [class~="bg-[#F6D3CE]"],
-html[data-theme="dark"] #root [class~="bg-[#f6d5cf]"],
-html[data-theme="dark"] #root [class~="bg-[#FCEFE8]"] {
-  background-color: #40272a !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#FFF6DE]"],
-html[data-theme="dark"] #root [class~="bg-[#F0E1AE]"] {
-  background-color: #3c3420 !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#DCEEFB]"],
-html[data-theme="dark"] #root [class~="bg-[#EAF4FA]"],
-html[data-theme="dark"] #root [class~="bg-[#D6EAF6]"],
-html[data-theme="dark"] #root [class~="bg-[#EAF4FB]"] {
-  background-color: #1d3442 !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#EDE7F6]"] {
-  background-color: #30283f !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#17242E]"],
-html[data-theme="dark"] #root [class~="text-[#0B3A57]"],
-html[data-theme="dark"] #root [class~="text-[#0C4A6E]"],
-html[data-theme="dark"] #root [class~="text-[#45657A]"] {
-  color: var(--theme-text) !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#5B7C93]"],
-html[data-theme="dark"] #root [class~="text-[#8FB0C7]"],
-html[data-theme="dark"] #root [class~="text-[#8FA3B3]"],
-html[data-theme="dark"] #root [class~="text-[#94A9B6]"] {
-  color: var(--theme-muted) !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#15803D]"] {
-  color: #8ce0ad !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#96271A]"],
-html[data-theme="dark"] #root [class~="text-[#B5533C]"] {
-  color: #ffaaa0 !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#8A6A0D]"],
-html[data-theme="dark"] #root [class~="text-[#B98A1C]"] {
-  color: #f1d17d !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#5B3E8A]"] {
-  color: #cfb4ff !important;
-}
-
-html[data-theme="dark"] #root [class~="border-[#CFE3F0]"],
-html[data-theme="dark"] #root [class~="border-[#DCEDF7]"],
-html[data-theme="dark"] #root [class~="border-[#E7ECF2]"],
-html[data-theme="dark"] #root [class~="border-[#CFE3D6]"],
-html[data-theme="dark"] #root [class~="border-[#F0E2B0]"],
-html[data-theme="dark"] #root [class~="border-[#F3C9C2]"] {
-  border-color: var(--theme-border) !important;
-}
-
-html[data-theme="dark"] #root input:not([type="checkbox"]):not([type="radio"]),
-html[data-theme="dark"] #root select,
-html[data-theme="dark"] #root textarea {
-  color: var(--theme-text) !important;
-  background-color: var(--theme-surface-raised) !important;
-  border-color: var(--theme-border) !important;
-}
-
-html[data-theme="dark"] #root input::placeholder,
-html[data-theme="dark"] #root textarea::placeholder {
-  color: #9aabb7;
-}
-
-html[data-theme="dark"] #root ::selection {
-  color: #101820;
-  background: #78c5e8;
-}
-
 /* ==========================================================================
-   TEMA TABEL INFORMASI CUSTOMIZABLE (Warna Putih & Varian Tema)
+   DEFAULT CSS VARIABLES UNTUK TABEL INFORMASI
    ========================================================================== */
 :root {
-  /* Default: Putih Bersih */
-  --tbl-header-bg: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
-  --tbl-header-text: #334155;
-  --tbl-header-border: #cbd5e1;
-  --tbl-row-odd: #ffffff;
-  --tbl-row-even: rgba(248, 250, 252, 0.85);
-  --tbl-row-hover: #f0f9ff;
-  --tbl-row-indicator: #0284c7;
-  --tbl-border: #e2e8f0;
-}
-
-/* Tema Tabel: Putih Bersih (Default Pure White) */
-html[data-table-theme="white"] {
-  --tbl-header-bg: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  --tbl-header-bg: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
   --tbl-header-text: #1e293b;
   --tbl-header-border: #cbd5e1;
   --tbl-row-odd: #ffffff;
-  --tbl-row-even: #f8fafc;
-  --tbl-row-hover: #f1f5f9;
+  --tbl-row-even: #f1f5f9;
+  --tbl-row-hover: #e2e8f0;
   --tbl-row-indicator: #0284c7;
-  --tbl-border: #e2e8f0;
-}
-
-/* Tema Tabel: Hijau Emerald (Nuansa Pesantren / BMT) */
-html[data-table-theme="emerald"] {
-  --tbl-header-bg: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
-  --tbl-header-text: #065f46;
-  --tbl-header-border: #a7f3d0;
-  --tbl-row-odd: #ffffff;
-  --tbl-row-even: #f0fdf4;
-  --tbl-row-hover: #dcfce7;
-  --tbl-row-indicator: #10b981;
-  --tbl-border: #a7f3d0;
-}
-
-/* Tema Tabel: Biru Samudra (Ocean Blue) */
-html[data-table-theme="ocean"] {
-  --tbl-header-bg: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
-  --tbl-header-text: #0369a1;
-  --tbl-header-border: #bae6fd;
-  --tbl-row-odd: #ffffff;
-  --tbl-row-even: #f0f9ff;
-  --tbl-row-hover: #e0f2fe;
-  --tbl-row-indicator: #0ea5e9;
-  --tbl-border: #bae6fd;
-}
-
-/* Tema Tabel: Amber Emas (Warm Golden Amber) */
-html[data-table-theme="amber"] {
-  --tbl-header-bg: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
-  --tbl-header-text: #92400e;
-  --tbl-header-border: #fde68a;
-  --tbl-row-odd: #ffffff;
-  --tbl-row-even: #fffdf5;
-  --tbl-row-hover: #fef3c7;
-  --tbl-row-indicator: #f59e0b;
-  --tbl-border: #fde68a;
-}
-
-/* Tema Tabel: Ungu Elegan (Royal Purple) */
-html[data-table-theme="purple"] {
-  --tbl-header-bg: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
-  --tbl-header-text: #6b21a8;
-  --tbl-header-border: #e9d5ff;
-  --tbl-row-odd: #ffffff;
-  --tbl-row-even: #faf5ff;
-  --tbl-row-hover: #f3e8ff;
-  --tbl-row-indicator: #a855f7;
-  --tbl-border: #e9d5ff;
-}
-
-/* Tema Tabel: Gelap Obsidian (Dark Obsidian) */
-html[data-table-theme="dark"] {
-  --tbl-header-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  --tbl-header-text: #f8fafc;
-  --tbl-header-border: #334155;
-  --tbl-row-odd: #1e293b;
-  --tbl-row-even: #141e2b;
-  --tbl-row-hover: #26354a;
-  --tbl-row-indicator: #38bdf8;
-  --tbl-border: #334155;
-}
-
-/* Dark Mode Penyesuaian Otomatis Untuk Semua Tema */
-html[data-theme="dark"] {
-  --tbl-header-bg: linear-gradient(180deg, #1e293b 0%, #152230 100%);
-  --tbl-header-text: #cbd5e1;
-  --tbl-header-border: #334155;
-  --tbl-row-odd: #19232d;
-  --tbl-row-even: rgba(30, 41, 59, 0.45);
-  --tbl-row-hover: rgba(56, 189, 248, 0.14);
-  --tbl-row-indicator: #38bdf8;
-  --tbl-border: #283946;
-}
-
-html[data-theme="dark"][data-table-theme="emerald"] {
-  --tbl-header-bg: linear-gradient(180deg, #14352b 0%, #0f2921 100%);
-  --tbl-header-text: #a7f3d0;
-  --tbl-header-border: #1d4d3e;
-  --tbl-row-odd: #142822;
-  --tbl-row-even: #18332b;
-  --tbl-row-hover: rgba(16, 185, 129, 0.2);
-  --tbl-row-indicator: #10b981;
-}
-
-html[data-theme="dark"][data-table-theme="ocean"] {
-  --tbl-header-bg: linear-gradient(180deg, #142f43 0%, #0f2434 100%);
-  --tbl-header-text: #bae6fd;
-  --tbl-header-border: #1f4562;
-  --tbl-row-odd: #142738;
-  --tbl-row-even: #193349;
-  --tbl-row-hover: rgba(14, 165, 233, 0.2);
-  --tbl-row-indicator: #0ea5e9;
-}
-
-html[data-theme="dark"][data-table-theme="amber"] {
-  --tbl-header-bg: linear-gradient(180deg, #3d2f16 0%, #2f2410 100%);
-  --tbl-header-text: #fde68a;
-  --tbl-header-border: #523f1e;
-  --tbl-row-odd: #2a2214;
-  --tbl-row-even: #362c19;
-  --tbl-row-hover: rgba(245, 158, 11, 0.2);
-  --tbl-row-indicator: #f59e0b;
-}
-
-html[data-theme="dark"][data-table-theme="purple"] {
-  --tbl-header-bg: linear-gradient(180deg, #341f48 0%, #281838 100%);
-  --tbl-header-text: #e9d5ff;
-  --tbl-header-border: #4d2f6b;
-  --tbl-row-odd: #261735;
-  --tbl-row-even: #321f46;
-  --tbl-row-hover: rgba(168, 85, 247, 0.2);
-  --tbl-row-indicator: #c084fc;
+  --tbl-border: #cbd5e1;
+  --tbl-accent: #0284c7;
 }
 
 /* ==========================================================================
-   ENHANCED MODERN & DYNAMIC TABLE STYLING
+   ENHANCED TABLE & INFORMATION TABLE STYLING
    ========================================================================== */
 
-/* Table Wrapper & Container Styling */
-.table-wrap,
+/* Container & Wrapper Tabel */
+table,
 #root table,
+.table-wrap table,
+.table-wrap,
 .panel-card table,
 section table {
+  width: 100%;
   border-collapse: separate !important;
   border-spacing: 0 !important;
-  width: 100%;
 }
 
-#root table,
-.table-wrap {
-  border-radius: 14px;
+.table-wrap,
+#root table {
+  border-radius: 14px !important;
   overflow: hidden;
-  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.06), 0 2px 6px -1px rgba(12, 74, 110, 0.04);
-  border: 1px solid var(--tbl-border) !important;
+  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.08), 0 2px 6px -1px rgba(12, 74, 110, 0.04) !important;
+  border: 1.5px solid var(--tbl-border) !important;
   transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
-/* Modern Gradient Table Header */
+/* Modern Themed Table Header */
+table thead th,
+table th,
 #root table thead th,
 .table-wrap th,
-table thead th {
+th {
   background: var(--tbl-header-bg) !important;
   color: var(--tbl-header-text) !important;
   font-size: 11px !important;
@@ -386,62 +182,56 @@ table thead th {
   white-space: nowrap;
 }
 
-/* Alternating Rows (Zebra Striping) Mengikuti Tema Terpilih */
+/* Selang-Seling Baris (Zebra Striping) */
+table tbody tr:nth-child(even),
 #root table tbody tr:nth-child(even),
-.table-wrap tbody tr:nth-child(even),
-table tbody tr:nth-child(even) {
+.table-wrap tbody tr:nth-child(even) {
   background-color: var(--tbl-row-even) !important;
 }
 
+table tbody tr:nth-child(odd),
 #root table tbody tr:nth-child(odd),
-.table-wrap tbody tr:nth-child(odd),
-table tbody tr:nth-child(odd) {
+.table-wrap tbody tr:nth-child(odd) {
   background-color: var(--tbl-row-odd) !important;
 }
 
-/* Helper Class untuk Memaksa Baris / Tabel Informasi Tetap Putih Solid */
-.info-table-row {
-  background-color: var(--tbl-row-odd, #ffffff) !important;
-}
-.info-table-row:hover {
-  background-color: var(--tbl-row-hover, #f1f5f9) !important;
+/* Sel Seluruh Baris Mengikuti Background Baris */
+table tbody tr td,
+table td,
+#root table tbody td,
+.table-wrap tbody td {
+  background-color: transparent !important;
+  border-top: 1px solid var(--tbl-border) !important;
+  border-bottom: none !important;
+  padding: 13px 16px !important;
+  font-size: 12.5px;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 140ms ease;
 }
 
-/* Interactive Hover Row with Vibrant Indicator Bar */
+/* Efek Hover Interaktif Pada Baris Tabel */
+table tbody tr,
 #root table tbody tr,
-.table-wrap tbody tr,
-table tbody tr {
+.table-wrap tbody tr {
   transition: background-color 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+table tbody tr:hover,
 #root table tbody tr:hover,
 .table-wrap tbody tr:hover,
-table tbody tr:hover {
+tr:hover td {
   background-color: var(--tbl-row-hover) !important;
   box-shadow: inset 4px 0 0 var(--tbl-row-indicator) !important;
 }
 
-/* Cell Spacing, Borders & Tabular Formatting */
-#root table tbody td,
-.table-wrap td,
-table tbody td {
-  padding: 13px 16px !important;
-  border-bottom: 1px solid var(--tbl-border) !important;
-  font-size: 12.5px;
-  vertical-align: middle;
-  font-variant-numeric: tabular-nums;
+/* Helper Class untuk Baris/Card Informasi */
+.info-table-row {
+  background-color: var(--tbl-row-even) !important;
+  border-color: var(--tbl-border) !important;
 }
 
-/* Button & Action Cell in Table */
-table tbody td button {
-  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease !important;
-}
-
-table tbody td button:hover:not(:disabled) {
-  transform: translateY(-1px) !important;
-}
-
-/* Vibrant Status Badges with Pulse Dots */
+/* Status Badges */
 .badge,
 .table-badge,
 table td .badge {
@@ -466,7 +256,6 @@ table td .badge {
   flex-shrink: 0;
 }
 
-/* Green: Lunas, Hadir, Disetujui, Aktif */
 .badge.approved,
 .badge.disetujui,
 .badge.hadir,
@@ -485,7 +274,6 @@ table td .badge {
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
-/* Amber: Menunggu, Pending, Diajukan, Izin, Cicil */
 .badge.pending,
 .badge.menunggu,
 .badge.diajukan,
@@ -504,7 +292,6 @@ table td .badge {
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
-/* Red: Ditolak, Alpa, Tunggakan, Belum Lunas */
 .badge.rejected,
 .badge.ditolak,
 .badge.alpa,
@@ -523,7 +310,6 @@ table td .badge {
   box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2);
 }
 
-/* Sky/Blue: Sakit, Pulang, Verifikasi */
 .badge.sakit,
 .badge.pulang,
 .badge.verifikasi {
@@ -538,45 +324,6 @@ table td .badge {
   box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
 }
 
-/* Dark Mode Adjustments for Badges */
-html[data-theme="dark"] .badge.approved,
-html[data-theme="dark"] .badge.disetujui,
-html[data-theme="dark"] .badge.hadir,
-html[data-theme="dark"] .badge.lunas,
-html[data-theme="dark"] .badge.aktif {
-  background-color: rgba(6, 95, 70, 0.3) !important;
-  color: #6ee7b7 !important;
-  border-color: #065f46 !important;
-}
-
-html[data-theme="dark"] .badge.pending,
-html[data-theme="dark"] .badge.menunggu,
-html[data-theme="dark"] .badge.diajukan,
-html[data-theme="dark"] .badge.izin,
-html[data-theme="dark"] .badge.cicil {
-  background-color: rgba(146, 64, 14, 0.3) !important;
-  color: #fde68a !important;
-  border-color: #92400e !important;
-}
-
-html[data-theme="dark"] .badge.rejected,
-html[data-theme="dark"] .badge.ditolak,
-html[data-theme="dark"] .badge.alpa,
-html[data-theme="dark"] .badge.tunggakan,
-html[data-theme="dark"] .badge.belum-lunas {
-  background-color: rgba(159, 18, 57, 0.3) !important;
-  color: #fca5a5 !important;
-  border-color: #9f1239 !important;
-}
-
-html[data-theme="dark"] .badge.sakit,
-html[data-theme="dark"] .badge.pulang,
-html[data-theme="dark"] .badge.verifikasi {
-  background-color: rgba(3, 105, 161, 0.3) !important;
-  color: #7dd3fc !important;
-  border-color: #0369a1 !important;
-}
-
 /* ==========================================================================
    FLOATING THEME & TABLE COLOR CONTROLS BAR (Elegan & Responsif)
    ========================================================================== */
@@ -584,28 +331,28 @@ html[data-theme="dark"] .badge.verifikasi {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: 250;
+  z-index: 9999;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 9px;
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #cfe3f0;
+  border: 1.5px solid #cfe3f0;
   border-radius: 9999px;
-  box-shadow: 0 10px 28px rgba(12, 74, 110, 0.16), 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 28px rgba(12, 74, 110, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .mma-floating-theme-bar:hover {
-  box-shadow: 0 14px 34px rgba(12, 74, 110, 0.22);
+  box-shadow: 0 14px 34px rgba(12, 74, 110, 0.28);
 }
 
 html[data-theme="dark"] .mma-floating-theme-bar {
   background: rgba(25, 35, 45, 0.95);
   border-color: #3e505e;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
 }
 
 .theme-action-btn {
@@ -618,7 +365,7 @@ html[data-theme="dark"] .mma-floating-theme-bar {
   border-radius: 999px;
   font: 600 12px Inter, sans-serif;
   color: #0c4a6e;
-  background: rgba(240, 248, 254, 0.7);
+  background: rgba(240, 248, 254, 0.8);
   cursor: pointer;
   transition: all 140ms ease;
   white-space: nowrap;
@@ -632,7 +379,7 @@ html[data-theme="dark"] .mma-floating-theme-bar {
 
 html[data-theme="dark"] .theme-action-btn {
   color: #e4edf3;
-  background: rgba(40, 56, 70, 0.8);
+  background: rgba(40, 56, 70, 0.85);
 }
 
 html[data-theme="dark"] .theme-action-btn:hover {
@@ -641,11 +388,11 @@ html[data-theme="dark"] .theme-action-btn:hover {
 }
 
 .theme-color-dot {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: 1.5px solid #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   flex-shrink: 0;
 }
 
@@ -657,9 +404,9 @@ html[data-theme="dark"] .theme-action-btn:hover {
   padding: 13px;
   border-radius: 16px;
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
-  z-index: 260;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+  z-index: 10000;
   animation: pickerPop 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -671,7 +418,7 @@ html[data-theme="dark"] .theme-action-btn:hover {
 html[data-theme="dark"] .table-theme-picker-popover {
   background: #19232d;
   border-color: #3a4b59;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
 }
 
 .picker-title strong {
@@ -707,7 +454,7 @@ html[data-theme="dark"] .picker-title small {
   gap: 8px;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1.5px solid #e2e8f0;
   background: #f8fafc;
   color: #1e293b;
   font: 500 11.5px Inter, sans-serif;
@@ -744,8 +491,8 @@ html[data-theme="dark"] .table-theme-option.active {
 }
 
 .theme-swatch {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   border: 2px solid;
   flex-shrink: 0;
