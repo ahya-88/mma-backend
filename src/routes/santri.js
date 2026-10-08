@@ -2,7 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("../db");
 const { requireAuth, isSuperAdmin } = require("../auth");
-const { CashlessError, getSantriRow, toPublicSantri, SANTRI_BIODATA_FIELDS } = require("../cashlessService");
+const { CashlessError, getSantriRow, toPublicSantri, toSaldoPublik, riwayatSantri, SANTRI_BIODATA_FIELDS } = require("../cashlessService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
@@ -108,6 +108,25 @@ router.get("/:id", requireAuth, asyncHandler(async (req, res) => {
 
   const pub = await toPublicSantri(row);
   res.json({ ...pub, namaWali: row.namaWali || "", hpWali: row.hpWali || "" });
+}));
+
+// GET /api/santri/:id/riwayat
+router.get("/:id/riwayat", requireAuth, asyncHandler(async (req, res) => {
+  const row = await queryOne('SELECT "id", "waliId" FROM "Santri" WHERE "id" = $1', [req.params.id]);
+  if (!row) throw new CashlessError(404, "Santri tidak ditemukan.");
+  if (req.user.role === "wali" && row.waliId !== req.user.id) {
+    return res.status(403).json({ error: "Akses ditolak. Anda hanya berwenang mengakses data anak sendiri." });
+  }
+  res.json(await riwayatSantri(req.params.id));
+}));
+
+// GET /api/santri/:id/saldo-publik
+router.get("/:id/saldo-publik", requireAuth, asyncHandler(async (req, res) => {
+  const santri = await getSantriRow(req.params.id);
+  if (req.user.role === "wali" && santri.waliId !== req.user.id) {
+    return res.status(403).json({ error: "Akses ditolak. Anda hanya berwenang mengakses data anak sendiri." });
+  }
+  res.json(await toSaldoPublik(santri));
 }));
 
 // GET /api/santri/:id/rapor-ringkas

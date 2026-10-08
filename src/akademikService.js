@@ -127,9 +127,13 @@ async function hapusPrestasi(id) {
   return { id, deleted: true };
 }
 
+async function nilaiPerSantri(santriId) {
+  return queryAll('SELECT * FROM "Nilai" WHERE "santriId" = $1 ORDER BY "createdAt" DESC', [santriId]);
+}
+
 module.exports = {
   semuaHafalan, catatHafalan, hapusHafalan,
   semuaUbudiyah, catatUbudiyah, hapusUbudiyah,
-  semuaNilai, catatNilai, hapusNilai,
+  semuaNilai, catatNilai, hapusNilai, nilaiPerSantri,
   semuaPrestasi, catatPrestasi, hapusPrestasi,
 };

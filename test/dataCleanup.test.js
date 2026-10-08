@@ -24,7 +24,7 @@ test("DATA CLEANUP: Hapus santri Sekretariat menghapus seluruh data anak terkait
   await query('INSERT INTO "Absensi" ("id", "santriId", "status", "tanggalISO") VALUES ($1, $2, \'Hadir\', \'2026-10-08\')', [crypto.randomUUID(), santriId]);
   await query('INSERT INTO "Perizinan" ("id", "santriId", "jenis", "alasan", "status", "tanggalKeluar", "tanggalKembali") VALUES ($1, $2, \'Pulang\', \'Sakit\', \'Disetujui\', \'2026-10-08\', \'2026-10-09\')', [crypto.randomUUID(), santriId]);
   await query('INSERT INTO "Pelanggaran" ("id", "santriId", "jenis", "poin", "tanggalISO") VALUES ($1, $2, \'Terlambat\', 5, \'2026-10-08\')', [crypto.randomUUID(), santriId]);
-  await query('INSERT INTO "Nilai" ("id", "santriId", "mapel", "nilai") VALUES ($1, $2, \'Fiqih\', 90)', [crypto.randomUUID(), santriId]);
+  await query('INSERT INTO "Nilai" ("id", "santriId", "mapel", "nilai", "tanggalISO") VALUES ($1, $2, \'Fiqih\', 90, \'2026-10-08\')', [crypto.randomUUID(), santriId]);
   await query('INSERT INTO "Tagihan" ("id", "santriId", "jenis", "jumlah", "bulan") VALUES ($1, $2, \'Syahriyah\', 100000, \'2026-10\')', [crypto.randomUUID(), santriId]);
   await query('INSERT INTO "Ledger" ("id", "santriId", "jenis", "jumlah", "saldoSetelah", "waktu") VALUES ($1, $2, \'Saldo Awal\', 50000, 50000, $3)', [crypto.randomUUID(), santriId, new Date().toISOString()]);
 

@@ -187,8 +187,7 @@ app.use("/api/kartu", kartuRoutes);
 
 const publicDir = path.join(__dirname, "..", "public");
 app.use(express.static(publicDir));
-app.get("/admin", (req, res) => res.sendFile(path.join(publicDir, "superadmin.html")));
-app.get("/superadmin", (req, res) => res.sendFile(path.join(publicDir, "superadmin.html")));
+app.get(["/admin", "/superadmin"], (req, res) => res.redirect("/#admin"));
 app.get("/bmt/qr", (req, res) => res.sendFile(path.join(publicDir, "bmt-qr.html")));
 app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(publicDir, "index.html")));
 

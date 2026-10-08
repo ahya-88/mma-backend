@@ -2,8 +2,8 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("../db");
-const { requireAuth, isSuperAdmin } = require("../auth");
-const { CashlessError, getSantriRow, toPublicSantri } = require("../cashlessService");
+const { requireAuth, requireUnitUsaha, isSuperAdmin } = require("../auth");
+const { CashlessError, getSantriRow, toPublicSantri, sisaLimitHarian } = require("../cashlessService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
@@ -56,4 +56,60 @@ router.post("/set-pin", requireAuth, asyncHandler(async (req, res) => {
   res.json({ santriId, pinSet: true, pesan: "PIN santri berhasil disimpan." });
 }));
 
+// POST /api/kartu/resolve - Resolusi kartu untuk kasir Unit Usaha
+router.post("/resolve", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
+  const raw = typeof req.body?.token === "string" ? req.body.token.trim() : "";
+  if (!raw) return res.status(400).json({ error: "Token kartu wajib diisi." });
+
+  const kandidat = new Set();
+  kandidat.add(raw);
+
+  if ((raw.startsWith("{") && raw.endsWith("}")) || (raw.includes("{") && raw.includes("}"))) {
+    try {
+      const start = raw.indexOf("{");
+      const end = raw.lastIndexOf("}");
+      if (start !== -1 && end > start) {
+        const parsed = JSON.parse(raw.substring(start, end + 1));
+        const keys = ["token", "nis", "nisn", "id", "santri_id", "santriId", "id_santri", "no_kartu", "noKartu", "card_id", "cardId", "code", "kode", "nomor", "uuid"];
+        for (const k of keys) {
+          if (parsed[k]) kandidat.add(String(parsed[k]).trim());
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (raw.includes("://") || raw.includes("?") || raw.includes("&")) {
+    try {
+      const match = raw.match(/(?:token|nis|id|santri_id|card|code|no)=([A-Za-z0-9_-]+)/i);
+      if (match) kandidat.add(match[1].trim());
+    } catch (_) {}
+  }
+
+  const prefixes = ["MMA1:", "MMA:", "BMT:", "BMT-", "KARTU:", "KARTU-", "CARD:", "CARD-", "SANTRI:", "SANTRI-", "NIS:", "NIS-", "ID:", "ID-"];
+  for (const p of prefixes) {
+    if (raw.toUpperCase().startsWith(p.toUpperCase())) {
+      kandidat.add(raw.substring(p.length).trim());
+    }
+  }
+
+  const tokenList = Array.from(kandidat).filter(Boolean);
+  let santri = null;
+  if (tokenList.length > 0) {
+    santri = await queryOne(
+      'SELECT * FROM "Santri" WHERE "kartuToken" = ANY($1) OR "id" = ANY($1) OR "nis" = ANY($1) OR "nisn" = ANY($1) LIMIT 1',
+      [tokenList]
+    );
+  }
+
+  if (!santri) return res.status(404).json({ error: "Kartu tidak dikenal." });
+
+  const publik = await toPublicSantri(santri);
+  res.json({
+    id: publik.id, nis: publik.nis, nisn: publik.nisn, nama: publik.nama, kelas: publik.kelas,
+    saldo: publik.saldo, limitJajanHarian: publik.limitJajanHarian,
+    sisaLimitHariIni: await sisaLimitHarian(santri), blokir: publik.blokir, punyaPin: !!santri.pinHash,
+  });
+}));
+
 module.exports = router;
+

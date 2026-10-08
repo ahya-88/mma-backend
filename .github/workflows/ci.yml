@@ -1,0 +1,50 @@
+name: Continuous Integration & Automated Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Run Test Suite
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgres://test:testpassword@127.0.0.1:5432/testdb
+          JWT_SECRET: test-super-secret-jwt-key-minimum-32-characters
+          DEMO_MODE: false
+          TRUST_PROXY_HOPS: 0
+        run: npm test

@@ -5,6 +5,16 @@ const { CashlessError } = require("./cashlessService");
 const uid = () => crypto.randomUUID();
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
+const JENIS_TRANSAKSI_UNIT = ["Dana Masuk", "Dana Keluar", "Transfer Antar Bagian"];
+const KATEGORI_CASHFLOW = [
+  "Unit Usaha - Dana Masuk",
+  "Unit Usaha - Dana Keluar",
+  "Unit Usaha - Transfer Antar Bagian",
+  "Pembayaran Santri",
+  "Infaq/Donasi",
+  "Operasional",
+];
+
 // Transaksi Unit Usaha
 async function semuaTransaksiUnitUsaha({ unit } = {}) {
   const kondisi = [];
@@ -65,6 +75,8 @@ async function laporanCashflowUnitUsaha({ unit } = {}) {
 }
 
 module.exports = {
+  JENIS_TRANSAKSI_UNIT,
+  KATEGORI_CASHFLOW,
   semuaTransaksiUnitUsaha,
   catatTransaksiUnitUsaha,
   hapusTransaksiUnitUsaha,

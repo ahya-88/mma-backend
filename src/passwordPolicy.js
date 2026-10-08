@@ -7,7 +7,12 @@ function validatePasswordPolicy(password) {
   return null;
 }
 
+function isPasswordLayak(password) {
+  return typeof password === "string" && password.length >= PASSWORD_MIN_LENGTH;
+}
+
 module.exports = {
   PASSWORD_MIN_LENGTH,
   validatePasswordPolicy,
+  isPasswordLayak,
 };
