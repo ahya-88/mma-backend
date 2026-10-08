@@ -114,12 +114,42 @@ router.get("/wali", requireAuth, asyncHandler(async (req, res) => {
   res.json(await daftarWali({ page: req.query.page, limit: req.query.limit, q: req.query.q }));
 }));
 
+router.put("/wali/:id", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedAdminOrSekretariat(req)) {
+    return res.status(403).json({ error: "Hanya Superadmin atau Sekretariat yang dapat mengedit data wali." });
+  }
+  const { nama, hp, username } = req.body || {};
+  const wali = await queryOne('SELECT * FROM "Wali" WHERE "id" = $1', [req.params.id]);
+  if (!wali) return res.status(404).json({ error: "Akun wali tidak ditemukan." });
+
+  if (username && username.trim() !== wali.username) {
+    const existing = await queryOne('SELECT "id" FROM "Wali" WHERE "username" = $1 AND "id" <> $2', [username.trim(), req.params.id]);
+    if (existing) return res.status(400).json({ error: "Username sudah digunakan oleh akun wali lain." });
+  }
+
+  await query('UPDATE "Wali" SET "nama" = COALESCE($1, "nama"), "hp" = COALESCE($2, "hp"), "username" = COALESCE($3, "username") WHERE "id" = $4', [
+    nama ? String(nama).trim() : null,
+    hp ? String(hp).trim() : null,
+    username ? String(username).trim() : null,
+    req.params.id,
+  ]);
+  res.json({ ok: true, message: "Data wali berhasil diperbarui." });
+}));
+
 router.post("/wali/:id/reset-password", requireAuth, asyncHandler(async (req, res) => {
   if (!isAuthorizedAdminOrSekretariat(req)) {
     return res.status(403).json({ error: "Hanya Superadmin atau Sekretariat yang dapat mereset kata sandi wali." });
   }
-  const { newPassword } = req.body || {};
-  res.json(await editPasswordWali({ id: req.params.id, password: newPassword, actingUserId: req.user.id }));
+  const { newPassword, password } = req.body || {};
+  res.json(await editPasswordWali({ id: req.params.id, password: newPassword || password, actingUserId: req.user.id }));
+}));
+
+router.put("/wali/:id/password", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedAdminOrSekretariat(req)) {
+    return res.status(403).json({ error: "Hanya Superadmin atau Sekretariat yang dapat mereset kata sandi wali." });
+  }
+  const { password, newPassword } = req.body || {};
+  res.json(await editPasswordWali({ id: req.params.id, password: password || newPassword, actingUserId: req.user.id }));
 }));
 
 // ---- Unit Usaha ----
