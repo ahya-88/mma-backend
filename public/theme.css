@@ -187,3 +187,257 @@ html[data-theme="dark"] #theme-toggle {
     padding: 8px 12px;
   }
 }
+
+/* ==========================================================================
+   ENHANCED MODERN & DYNAMIC TABLE STYLING (Hidup, Elegan & Berkelas)
+   ========================================================================== */
+
+/* Table Wrapper & Container Styling */
+.table-wrap,
+#root table,
+.panel-card table,
+section table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100%;
+}
+
+#root table,
+.table-wrap {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.05), 0 2px 6px -1px rgba(12, 74, 110, 0.03);
+}
+
+/* Modern Gradient Table Header */
+#root table thead th,
+.table-wrap th,
+table thead th {
+  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%) !important;
+  color: #334155 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+  padding: 13px 16px !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  border-top: none !important;
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] #root table thead th,
+html[data-theme="dark"] .table-wrap th,
+html[data-theme="dark"] table thead th {
+  background: linear-gradient(180deg, #1e293b 0%, #152230 100%) !important;
+  color: #94a3b8 !important;
+  border-bottom: 2px solid #334155 !important;
+}
+
+/* Alternating Rows (Zebra Striping) */
+#root table tbody tr:nth-child(even),
+.table-wrap tbody tr:nth-child(even),
+table tbody tr:nth-child(even) {
+  background-color: rgba(248, 250, 252, 0.75);
+}
+
+#root table tbody tr:nth-child(odd),
+.table-wrap tbody tr:nth-child(odd),
+table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+html[data-theme="dark"] #root table tbody tr:nth-child(even),
+html[data-theme="dark"] .table-wrap tbody tr:nth-child(even),
+html[data-theme="dark"] table tbody tr:nth-child(even) {
+  background-color: rgba(30, 41, 59, 0.45);
+}
+
+html[data-theme="dark"] #root table tbody tr:nth-child(odd),
+html[data-theme="dark"] .table-wrap tbody tr:nth-child(odd),
+html[data-theme="dark"] table tbody tr:nth-child(odd) {
+  background-color: var(--theme-surface, #19232d);
+}
+
+/* Interactive Hover Row with Vibrant Indicator Bar */
+#root table tbody tr,
+.table-wrap tbody tr,
+table tbody tr {
+  transition: background-color 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#root table tbody tr:hover,
+.table-wrap tbody tr:hover,
+table tbody tr:hover {
+  background-color: #f0f9ff !important;
+  box-shadow: inset 4px 0 0 #0284c7 !important;
+}
+
+html[data-theme="dark"] #root table tbody tr:hover,
+html[data-theme="dark"] .table-wrap tbody tr:hover,
+html[data-theme="dark"] table tbody tr:hover {
+  background-color: rgba(56, 189, 248, 0.12) !important;
+  box-shadow: inset 4px 0 0 #38bdf8 !important;
+}
+
+/* Cell Spacing, Borders & Tabular Formatting */
+#root table tbody td,
+.table-wrap td,
+table tbody td {
+  padding: 13px 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 12.5px;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="dark"] #root table tbody td,
+html[data-theme="dark"] .table-wrap td,
+html[data-theme="dark"] table tbody td {
+  border-bottom: 1px solid #283946 !important;
+}
+
+/* Button & Action Cell in Table */
+table tbody td button {
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease !important;
+}
+
+table tbody td button:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+}
+
+/* Vibrant Status Badges with Pulse Dots */
+.badge,
+.table-badge,
+table td .badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 3.5px 10px !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+.badge::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Green: Lunas, Hadir, Disetujui, Aktif */
+.badge.approved,
+.badge.disetujui,
+.badge.hadir,
+.badge.lunas,
+.badge.aktif {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+.badge.approved::before,
+.badge.disetujui::before,
+.badge.hadir::before,
+.badge.lunas::before,
+.badge.aktif::before {
+  background-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+/* Amber: Menunggu, Pending, Diajukan, Izin, Cicil */
+.badge.pending,
+.badge.menunggu,
+.badge.diajukan,
+.badge.izin,
+.badge.cicil {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+}
+.badge.pending::before,
+.badge.menunggu::before,
+.badge.diajukan::before,
+.badge.izin::before,
+.badge.cicil::before {
+  background-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+/* Red: Ditolak, Alpa, Tunggakan, Belum Lunas */
+.badge.rejected,
+.badge.ditolak,
+.badge.alpa,
+.badge.tunggakan,
+.badge.belum-lunas {
+  background-color: #fff1f2 !important;
+  color: #9f1239 !important;
+  border: 1px solid #fecdd3 !important;
+}
+.badge.rejected::before,
+.badge.ditolak::before,
+.badge.alpa::before,
+.badge.tunggakan::before,
+.badge.belum-lunas::before {
+  background-color: #f43f5e;
+  box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2);
+}
+
+/* Sky/Blue: Sakit, Pulang, Verifikasi */
+.badge.sakit,
+.badge.pulang,
+.badge.verifikasi {
+  background-color: #f0f9ff !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+}
+.badge.sakit::before,
+.badge.pulang::before,
+.badge.verifikasi::before {
+  background-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+/* Dark Mode Adjustments for Badges */
+html[data-theme="dark"] .badge.approved,
+html[data-theme="dark"] .badge.disetujui,
+html[data-theme="dark"] .badge.hadir,
+html[data-theme="dark"] .badge.lunas,
+html[data-theme="dark"] .badge.aktif {
+  background-color: rgba(6, 95, 70, 0.3) !important;
+  color: #6ee7b7 !important;
+  border-color: #065f46 !important;
+}
+
+html[data-theme="dark"] .badge.pending,
+html[data-theme="dark"] .badge.menunggu,
+html[data-theme="dark"] .badge.diajukan,
+html[data-theme="dark"] .badge.izin,
+html[data-theme="dark"] .badge.cicil {
+  background-color: rgba(146, 64, 14, 0.3) !important;
+  color: #fde68a !important;
+  border-color: #92400e !important;
+}
+
+html[data-theme="dark"] .badge.rejected,
+html[data-theme="dark"] .badge.ditolak,
+html[data-theme="dark"] .badge.alpa,
+html[data-theme="dark"] .badge.tunggakan,
+html[data-theme="dark"] .badge.belum-lunas {
+  background-color: rgba(159, 18, 57, 0.3) !important;
+  color: #fca5a5 !important;
+  border-color: #9f1239 !important;
+}
+
+html[data-theme="dark"] .badge.sakit,
+html[data-theme="dark"] .badge.pulang,
+html[data-theme="dark"] .badge.verifikasi {
+  background-color: rgba(3, 105, 161, 0.3) !important;
+  color: #7dd3fc !important;
+  border-color: #0369a1 !important;
+}
+

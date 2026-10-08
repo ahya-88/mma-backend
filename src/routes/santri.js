@@ -233,16 +233,87 @@ router.put("/:id", requireAuth, asyncHandler(async (req, res) => {
   res.json(await toPublicSantri(updated));
 }));
 
+// POST /api/santri/upsert - Tambah atau perbarui data santri secara fleksibel
+router.post("/upsert", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedSantriManager(req)) {
+    return res.status(403).json({ error: "Hanya Superadmin atau pengelola santri yang berwenang memperbarui data santri." });
+  }
+
+  const body = req.body || {};
+  const nama = (body.nama || "").trim();
+  if (!nama) {
+    throw new CashlessError(400, "Nama santri wajib diisi.");
+  }
+
+  const santriId = (body.id && String(body.id).trim()) ? String(body.id).trim() : crypto.randomUUID();
+  const kelas = body.kelas ? String(body.kelas).trim() : null;
+  const nis = body.nis ? String(body.nis).trim() : null;
+  const nisn = body.nisn ? String(body.nisn).trim() : null;
+  const waliId = body.waliId ? String(body.waliId).trim() : null;
+  const limitVal = body.limitJajanHarian !== undefined && body.limitJajanHarian !== null ? Number(body.limitJajanHarian) : null;
+
+  await withTransaction(async (client) => {
+    if (nis) {
+      const adaNis = await client.query('SELECT "id" FROM "Santri" WHERE "nis" = $1 AND "id" <> $2', [nis, santriId]);
+      if (adaNis.rowCount) throw new CashlessError(400, "NIS sudah digunakan oleh santri lain.");
+    }
+
+    const existing = await client.query('SELECT "id" FROM "Santri" WHERE "id" = $1 FOR UPDATE', [santriId]);
+    if (existing.rowCount) {
+      const updates = [
+        '"nama" = $1', '"kelas" = $2', '"nis" = $3', '"nisn" = $4', '"waliId" = $5',
+      ];
+      const params = [nama, kelas, nis, nisn, waliId];
+      if (limitVal !== null) {
+        params.push(limitVal);
+        updates.push(`"limitJajanHarian" = $${params.length}`);
+      }
+      for (const field of SANTRI_BIODATA_FIELDS) {
+        if (body[field] !== undefined) {
+          params.push(body[field]);
+          updates.push(`"${field}" = $${params.length}`);
+        }
+      }
+      params.push(santriId);
+      await client.query(`UPDATE "Santri" SET ${updates.join(", ")} WHERE "id" = $${params.length}`, params);
+    } else {
+      const cols = ['"id"', '"nama"', '"kelas"', '"nis"', '"nisn"', '"waliId"', '"saldo"'];
+      const vals = ['$1', '$2', '$3', '$4', '$5', '$6', '0'];
+      const params = [santriId, nama, kelas, nis, nisn, waliId];
+      if (limitVal !== null) {
+        params.push(limitVal);
+        cols.push('"limitJajanHarian"');
+        vals.push(`$${params.length}`);
+      }
+      for (const field of SANTRI_BIODATA_FIELDS) {
+        if (body[field] !== undefined) {
+          params.push(body[field]);
+          cols.push(`"${field}"`);
+          vals.push(`$${params.length}`);
+        }
+      }
+      await client.query(`INSERT INTO "Santri" (${cols.join(", ")}) VALUES (${vals.join(", ")})`, params);
+    }
+  });
+
+  const updated = await getSantriRow(santriId);
+  res.json(await toPublicSantri(updated));
+}));
+
 // DELETE /api/santri/:id
 router.delete("/:id", requireAuth, asyncHandler(async (req, res) => {
-  if (!isSuperAdmin(req.user) && req.user?.departemen !== "sekretariat") {
-    return res.status(403).json({ error: "Hanya Superadmin atau Sekretariat yang dapat menghapus data santri." });
+  if (!isSuperAdmin(req.user) && req.user?.departemen !== "sekretariat" && req.user?.departemen !== "pengasuhan") {
+    return res.status(403).json({ error: "Hanya Superadmin, Sekretariat, atau Pengasuhan yang dapat menghapus data santri." });
   }
 
   const santriId = req.params.id;
   await withTransaction(async (client) => {
     const existing = await client.query('SELECT * FROM "Santri" WHERE "id" = $1 FOR UPDATE', [santriId]);
-    if (!existing.rowCount) throw new CashlessError(404, "Santri tidak ditemukan.");
+    if (!existing.rowCount) {
+      // Jika data santri tidak ditemukan di database (mis. data mock atau sudah terhapus),
+      // tetap kembalikan respons sukses agar operasi DELETE bersifat idempoten dan UI dapat membersihkan tampilannya.
+      return;
+    }
 
     await client.query('DELETE FROM "QueueOfflineKasir" WHERE "santriId" = $1', [santriId]);
     await client.query('DELETE FROM "LogPin" WHERE "santriId" = $1', [santriId]);

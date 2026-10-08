@@ -521,55 +521,133 @@
     }
   };
 
+  const isForbiddenDepartment = (nav) => {
+    // 1. Cek hash URL jika mengarah ke bagian yang dilarang
+    const hash = (window.location.hash || "").replace("#", "").toLowerCase();
+    if (["pengasuhan", "pengajaran", "lptq", "sekretariat"].includes(hash)) {
+      return true;
+    }
+
+    // 2. Cek teks khas nav pada pengasuhan, pengajaran, lptq, sekretariat
+    const navText = (nav ? nav.textContent : "").toLowerCase();
+    const forbiddenKeywords = [
+      // Pengasuhan
+      "master data santri", "perizinan", "pelanggaran", "kamar santri", "rapor mental", "konseling", "kedisiplinan", "tahfidz asrama", "penilaian kegiatan",
+      // Pengajaran
+      "kelas", "prestasi", "riwayat akademik", "rapor akademik", "jadwal pelajaran", "presensi kelas", "kurikulum", "mata pelajaran",
+      // LPTQ
+      "halaqoh", "tahfidz & mengaji", "ubudiyah & doa", "rapor tahfidz", "target hafalan", "setoran harian", "ujian tahfidz", "mutaba'ah", "musyrif",
+      // Sekretariat / Sekretaris
+      "data santri", "data alumni", "data wali", "surat masuk", "surat keluar", "arsip dokumen", "buku tamu", "legalisir", "surat rekomendasi"
+    ];
+
+    if (forbiddenKeywords.some((kw) => navText.includes(kw))) {
+      return true;
+    }
+
+    // 3. Cek judul halaman atau banner active department jika ada
+    const activeDeptBtn = document.querySelector("#root button.ring-amber-400, #root button.scale-105");
+    if (activeDeptBtn) {
+      const activeText = (activeDeptBtn.textContent || "").toLowerCase();
+      if (activeText.includes("pengasuhan") || activeText.includes("pengajaran") ||
+          activeText.includes("lptq") || activeText.includes("sekretariat")) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  const isAllowedDepartment = (nav) => {
+    if (isForbiddenDepartment(nav)) return false;
+
+    const navText = (nav ? nav.textContent : "").toLowerCase();
+    // Harus secara positif merupakan navigasi Administrasi atau Unit Usaha
+    const allowedKeywords = [
+      // Administrasi
+      "tagihan & pembayaran", "tagihan", "infaq bulanan", "infaq", "pengajuan anggaran", "cashflow bulanan", "laporan", "inventaris",
+      // Unit Usaha
+      "transaksi cashless", "riwayat semua unit", "riwayat transaksi", "permintaan wali", "cashflow unit"
+    ];
+
+    if (allowedKeywords.some((kw) => navText.includes(kw))) {
+      return true;
+    }
+
+    const hash = (window.location.hash || "").replace("#", "").toLowerCase();
+    if (hash === "administrasi" || hash === "unitusaha") {
+      return true;
+    }
+
+    return false;
+  };
+
+  let isUpdatingTabs = false;
   const insertKeuanganUnitTab = () => {
-    if (!root) return;
+    if (!root || isUpdatingTabs) return;
     const token = getAuthToken();
     const payload = parseJwt(token);
 
     // Keuangan Unit HANYA untuk bagian Keuangan/Administrasi, BMT, atau Superadmin.
-    // Jika Sekretariat, Pengasuhan, Pengajaran, LPTQ, dll. -> HAPUS / ABAIKAN TAB!
+    // Jika Pengasuhan, Pengajaran, LPTQ, atau Sekretariat: HAPUS TAB!
     const isSuper = payload?.jenisAkun === "superadmin" || payload?.departemen === "admin";
     const isKeuangan = payload?.departemen === "administrasi";
     const isBMT = payload?.departemen === "unitusaha" && payload?.unit === "BMT";
     const isAuthorized = isSuper || isKeuangan || isBMT;
 
-    const menus = root.querySelectorAll('nav[aria-label="Navigasi bagian"], [role="menu"][aria-label="Navigasi bagian"]');
-    menus.forEach((nav) => {
-      const existingBtn = nav.querySelector("[data-unit-keuangan-tab]");
-      if (!isAuthorized) {
-        if (existingBtn) existingBtn.remove();
-        return;
-      }
-      if (existingBtn) return;
+    isUpdatingTabs = true;
+    try {
+      const menus = root.querySelectorAll('nav[aria-label="Navigasi bagian"], [role="menu"][aria-label="Navigasi bagian"]');
+      menus.forEach((nav) => {
+        const existingBtn = nav.querySelector("[data-unit-keuangan-tab]");
 
-      const button = document.createElement("button");
-      button.type = "button";
-      button.dataset.unitKeuanganTab = "true";
-      button.setAttribute("role", "menuitem");
-      button.setAttribute("aria-label", "Keuangan Unit Usaha");
-      button.title = "Keuangan Unit Usaha";
-      button.className = nav.tagName === "NAV"
-        ? "group relative flex items-center gap-2.5 pl-3 pr-3 py-2.5 rounded-xl text-sm text-left text-[#5B7C93] hover:bg-[#F4F8FB] hover:text-[#17242E] shrink-0"
-        : "flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg whitespace-nowrap text-[#5B7C93] hover:bg-[#F4F8FB]";
+        // Jika tidak berwenang ATAU berada di bagian Pengasuhan, Pengajaran, LPTQ, atau Sekretariat:
+        if (!isAuthorized || isForbiddenDepartment(nav) || !isAllowedDepartment(nav)) {
+          if (existingBtn) {
+            existingBtn.remove();
+          }
+          if (keuanganWorkspace && keuanganWorkspace.style.display !== "none") {
+            keuanganWorkspace.style.display = "none";
+            if (workArea?.content) workArea.content.style.display = "";
+          }
+          return;
+        }
 
-      const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      icon.setAttribute("viewBox", "0 0 24 24");
-      icon.setAttribute("width", nav.tagName === "NAV" ? "16" : "14");
-      icon.setAttribute("height", nav.tagName === "NAV" ? "16" : "14");
-      icon.setAttribute("fill", "none");
-      icon.setAttribute("stroke", "currentColor");
-      icon.setAttribute("stroke-width", "1.8");
-      icon.innerHTML = '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>';
+        if (existingBtn) return;
 
-      const label = document.createElement("span");
-      label.textContent = "Keuangan Unit";
-      if (nav.tagName === "NAV") label.className = "truncate";
-      button.append(icon, label);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.unitKeuanganTab = "true";
+        button.setAttribute("role", "menuitem");
+        button.setAttribute("aria-label", "Keuangan Unit Usaha");
+        button.title = "Keuangan Unit Usaha";
+        button.className = nav.tagName === "NAV"
+          ? "group relative flex items-center gap-2.5 pl-3 pr-3 py-2.5 rounded-xl text-sm text-left text-[#5B7C93] hover:bg-[#F4F8FB] hover:text-[#17242E] shrink-0"
+          : "flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg whitespace-nowrap text-[#5B7C93] hover:bg-[#F4F8FB]";
 
-      const riwayatTab = [...nav.querySelectorAll("button")].find((b) => b.textContent.trim().includes("Riwayat"));
-      if (riwayatTab) riwayatTab.after(button);
-      else nav.appendChild(button);
-    });
+        const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        icon.setAttribute("viewBox", "0 0 24 24");
+        icon.setAttribute("width", nav.tagName === "NAV" ? "16" : "14");
+        icon.setAttribute("height", nav.tagName === "NAV" ? "16" : "14");
+        icon.setAttribute("fill", "none");
+        icon.setAttribute("stroke", "currentColor");
+        icon.setAttribute("stroke-width", "1.8");
+        icon.innerHTML = '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>';
+
+        const label = document.createElement("span");
+        label.textContent = "Keuangan Unit";
+        if (nav.tagName === "NAV") label.className = "truncate";
+        button.append(icon, label);
+
+        const riwayatTab = [...nav.querySelectorAll("button")].find((b) => b.textContent.trim().includes("Riwayat"));
+        const cashflowTab = [...nav.querySelectorAll("button")].find((b) => b.textContent.trim().includes("Cashflow") || b.textContent.trim().includes("Tagihan"));
+        if (riwayatTab) riwayatTab.after(button);
+        else if (cashflowTab) cashflowTab.after(button);
+        else nav.appendChild(button);
+      });
+    } finally {
+      isUpdatingTabs = false;
+    }
   };
 
   window.renderUnitKeuanganWorkspace = (container) => {
@@ -585,9 +663,26 @@
       if (event.target.closest('nav[aria-label="Navigasi bagian"] button, [role="menu"][aria-label="Navigasi bagian"] button')) {
         setKeuanganTab(false);
       }
+      // Jika pengguna mengklik switcher departemen Superadmin:
+      if (event.target.closest("button") && event.target.closest(".rounded-2xl")) {
+        setTimeout(insertKeuanganUnitTab, 30);
+      }
     });
 
-    new MutationObserver(insertKeuanganUnitTab).observe(root, { childList: true, subtree: true });
+    window.addEventListener("hashchange", () => {
+      setTimeout(insertKeuanganUnitTab, 30);
+    });
+
+    let tabDebounceTimer = null;
+    const debouncedTabCheck = () => {
+      if (tabDebounceTimer) return;
+      tabDebounceTimer = setTimeout(() => {
+        tabDebounceTimer = null;
+        insertKeuanganUnitTab();
+      }, 60);
+    };
+
+    new MutationObserver(debouncedTabCheck).observe(root, { childList: true, subtree: true });
     insertKeuanganUnitTab();
   }
 })();

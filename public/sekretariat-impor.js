@@ -239,13 +239,29 @@
     });
   };
 
+  let isImportMutating = false;
+  let importDebounceTimer = null;
+
+  const debouncedCheckAndInject = () => {
+    if (isImportMutating || importDebounceTimer) return;
+    importDebounceTimer = setTimeout(() => {
+      importDebounceTimer = null;
+      isImportMutating = true;
+      try {
+        checkAndInjectButtons();
+      } finally {
+        isImportMutating = false;
+      }
+    }, 80);
+  };
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      new MutationObserver(checkAndInjectButtons).observe(document.body, { childList: true, subtree: true });
+      new MutationObserver(debouncedCheckAndInject).observe(document.body, { childList: true, subtree: true });
       checkAndInjectButtons();
     });
   } else {
-    new MutationObserver(checkAndInjectButtons).observe(document.body, { childList: true, subtree: true });
+    new MutationObserver(debouncedCheckAndInject).observe(document.body, { childList: true, subtree: true });
     checkAndInjectButtons();
   }
 })();
