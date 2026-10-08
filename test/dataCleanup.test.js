@@ -2,7 +2,7 @@ require("dotenv").config({ quiet: true });
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const crypto = require("crypto");
-const { pool, query, queryOne, initializeDatabase } = require("../src/db");
+const { pool, query, queryOne, queryAll, initializeDatabase } = require("../src/db");
 const { bersihkanDataDemo } = require("../src/imporService");
 
 test.before(async () => {
@@ -46,14 +46,35 @@ test("DATA CLEANUP: Hapus santri Sekretariat menghapus seluruh data anak terkait
 });
 
 test("DATA CLEANUP: bersihkanDataDemo mengosongkan seluruh data santri/wali/transaksi, Guru tetap ada", async () => {
-  const result = await bersihkanDataDemo({ konfirmasi: true, aktorId: "admin_test" });
-  assert.equal(result.cleaned, true);
+  const existingWali = await queryAll('SELECT * FROM "Wali"');
+  const existingSantri = await queryAll('SELECT * FROM "Santri"');
+  try {
+    const result = await bersihkanDataDemo({ konfirmasi: true, aktorId: "admin_test" });
+    assert.equal(result.cleaned, true);
 
-  const santriCount = await queryOne('SELECT COUNT(*) AS "n" FROM "Santri"');
-  const waliCount = await queryOne('SELECT COUNT(*) AS "n" FROM "Wali"');
-  const guruCount = await queryOne('SELECT COUNT(*) AS "n" FROM "Guru"');
+    const santriCount = await queryOne('SELECT COUNT(*) AS "n" FROM "Santri"');
+    const waliCount = await queryOne('SELECT COUNT(*) AS "n" FROM "Wali"');
+    const guruCount = await queryOne('SELECT COUNT(*) AS "n" FROM "Guru"');
 
-  assert.equal(Number(santriCount.n), 0, "Seluruh data santri harus 0");
-  assert.equal(Number(waliCount.n), 0, "Seluruh data wali harus 0");
-  assert.ok(Number(guruCount.n) >= 0, "Tabel Guru tetap ada");
+    assert.equal(Number(santriCount.n), 0, "Seluruh data santri harus 0");
+    assert.equal(Number(waliCount.n), 0, "Seluruh data wali harus 0");
+    assert.ok(Number(guruCount.n) >= 0, "Tabel Guru tetap ada");
+  } finally {
+    for (const w of existingWali) {
+      await query(
+        `INSERT INTO "Wali" ("id", "nama", "hp", "username", "password", "mustChangePassword", "statusAkun") 
+         VALUES ($1, $2, $3, $4, $5, $6, $7) 
+         ON CONFLICT ("id") DO NOTHING`,
+        [w.id, w.nama, w.hp, w.username, w.password, w.mustChangePassword, w.statusAkun]
+      );
+    }
+    for (const s of existingSantri) {
+      await query(
+        `INSERT INTO "Santri" ("id", "nama", "waliId", "saldo") 
+         VALUES ($1, $2, $3, $4) 
+         ON CONFLICT ("id") DO NOTHING`,
+        [s.id, s.nama, s.waliId, s.saldo]
+      );
+    }
+  }
 });
