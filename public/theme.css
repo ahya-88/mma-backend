@@ -74,9 +74,12 @@ body.bg-motion-paused::before {
 /* Transparansi pembungkus utama agar background hidup tembus */
 #root,
 .main-area,
-#root [class~="bg-[#F4F8FB]"],
-#root [class~="bg-[#F5F8FC]"],
-#root [class~="bg-[#F8FBFE]"] {
+#root > div:first-child,
+#root [class*="bg-[#F4F8FB]"],
+#root [class*="bg-[#F5F8FC]"],
+#root [class*="bg-[#F8FBFE]"],
+div[aria-hidden="true"].fixed.inset-0,
+div[aria-hidden="true"][class*="fixed"] {
   background-color: transparent !important;
 }
 
@@ -155,6 +158,11 @@ section table {
   border-spacing: 0 !important;
 }
 
+#root .overflow-x-auto,
+#root div:has(> table) {
+  background-color: transparent !important;
+}
+
 .table-wrap,
 #root table {
   border-radius: 14px !important;
@@ -168,6 +176,7 @@ section table {
 table thead th,
 table th,
 #root table thead th,
+#root table th,
 .table-wrap th,
 th {
   background: var(--tbl-header-bg) !important;
@@ -184,13 +193,17 @@ th {
 
 /* Selang-Seling Baris (Zebra Striping) */
 table tbody tr:nth-child(even),
+table tr:nth-child(even),
 #root table tbody tr:nth-child(even),
+#root table tr:nth-child(even),
 .table-wrap tbody tr:nth-child(even) {
   background-color: var(--tbl-row-even) !important;
 }
 
 table tbody tr:nth-child(odd),
+table tr:nth-child(odd),
 #root table tbody tr:nth-child(odd),
+#root table tr:nth-child(odd),
 .table-wrap tbody tr:nth-child(odd) {
   background-color: var(--tbl-row-odd) !important;
 }
@@ -199,6 +212,7 @@ table tbody tr:nth-child(odd),
 table tbody tr td,
 table td,
 #root table tbody td,
+#root table td,
 .table-wrap tbody td {
   background-color: transparent !important;
   border-top: 1px solid var(--tbl-border) !important;

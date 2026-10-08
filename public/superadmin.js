@@ -42,7 +42,7 @@
     kartu: { title: "Kartu Santri", description: "Status penerbitan kartu dan kesiapan PIN.", url: "/api/admin/kartu", columns: [["nama", "Nama"], ["nis", "NIS"], ["kelas", "Kelas"], ["kartuTerbit", "Diterbitkan"], ["punyaPin", "PIN tersedia"]] },
   };
 
-  let token = sessionStorage.getItem(TOKEN_KEY) || "";
+  let token = sessionStorage.getItem(TOKEN_KEY) || sessionStorage.getItem("mma-token") || localStorage.getItem("mma-token") || "";
   let user = null;
   let superAdminAccess = false;
   let selectedKey = "dashboard";
@@ -97,6 +97,9 @@
     user = null;
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem("mma-token");
+    sessionStorage.removeItem("mma-session-user");
+    sessionStorage.removeItem("mma-session-role");
     window.location.replace("/");
   }
 
@@ -1508,7 +1511,12 @@
   if (token) {
     appShell.hidden = false;
     try {
-      user = JSON.parse(sessionStorage.getItem(USER_KEY) || "null");
+      user = JSON.parse(
+        sessionStorage.getItem(USER_KEY) ||
+        sessionStorage.getItem("mma-session-user") ||
+        localStorage.getItem("mma-session-user") ||
+        "null"
+      );
       await startApp();
     } catch {
       signOut();
