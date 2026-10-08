@@ -9,12 +9,86 @@ html[data-theme="dark"] {
   --theme-accent: #78c5e8;
 }
 
+/* ==========================================================================
+   DYNAMIC LIVING ANIMATED BACKGROUND (Efek Hidup, Bernapas & Bergerak)
+   ========================================================================== */
+@keyframes ambientGlowFlow {
+  0% {
+    background-position: 0% 15%, 100% 85%, 50% 50%, 0% 0%, 100% 100%;
+  }
+  50% {
+    background-position: 100% 85%, 0% 15%, 80% 20%, 50% 50%, 50% 50%;
+  }
+  100% {
+    background-position: 0% 15%, 100% 85%, 50% 50%, 0% 0%, 100% 100%;
+  }
+}
+
+@keyframes subtleOrbDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(30px, -20px, 0) scale(1.04);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  background-color: var(--c-page-bg, #f4f8fb);
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(41, 170, 225, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 88% 28%, rgba(35, 131, 106, 0.16) 0%, transparent 44%),
+    radial-gradient(circle at 50% 88%, rgba(124, 58, 237, 0.09) 0%, transparent 48%),
+    radial-gradient(ellipse at 4% 0%, color-mix(in srgb, var(--c-accent, #23836a) 14%, transparent), transparent 34rem),
+    radial-gradient(ellipse at 96% 18%, color-mix(in srgb, var(--c-accent-bg, #d5e8d9) 18%, transparent), transparent 28rem);
+  background-size: 180% 180%, 180% 180%, 180% 180%, 100% 100%, 100% 100%;
+  animation: ambientGlowFlow 24s ease-in-out infinite alternate;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -15%;
+  width: 130%;
+  height: 130%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 25% 25%, rgba(41, 170, 225, 0.12) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 75%, rgba(35, 131, 106, 0.13) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.07) 0%, transparent 50%);
+  animation: subtleOrbDrift 20s ease-in-out infinite alternate;
+  filter: blur(48px);
+}
+
+body.bg-motion-paused,
+body.bg-motion-paused::before {
+  animation-play-state: paused !important;
+}
+
 html[data-theme="dark"] body {
   color: var(--theme-text);
   background-color: var(--theme-page);
   background-image:
-    radial-gradient(ellipse at 4% 0%, rgb(31 91 113 / 22%), transparent 34rem),
-    radial-gradient(ellipse at 96% 18%, rgb(81 63 117 / 14%), transparent 28rem);
+    radial-gradient(circle at 12% 18%, rgba(120, 197, 232, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 88% 28%, rgba(35, 131, 106, 0.17) 0%, transparent 44%),
+    radial-gradient(circle at 50% 88%, rgba(168, 85, 247, 0.12) 0%, transparent 48%),
+    radial-gradient(ellipse at 4% 0%, rgb(31 91 113 / 24%), transparent 34rem),
+    radial-gradient(ellipse at 96% 18%, rgb(81 63 117 / 16%), transparent 28rem);
+  background-size: 180% 180%, 180% 180%, 180% 180%, 100% 100%, 100% 100%;
+  animation: ambientGlowFlow 24s ease-in-out infinite alternate;
+}
+
+html[data-theme="dark"] body::before {
+  background:
+    radial-gradient(ellipse at 25% 25%, rgba(120, 197, 232, 0.15) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 75%, rgba(35, 131, 106, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.10) 0%, transparent 50%);
 }
 
 html[data-theme="dark"] #root {
@@ -129,67 +203,152 @@ html[data-theme="dark"] #root textarea::placeholder {
   color: #9aabb7;
 }
 
-html[data-theme="dark"] #root table thead th {
-  color: var(--theme-muted);
-  background: #202e39;
-}
-
-html[data-theme="dark"] #root table tbody tr:hover {
-  background-color: rgb(120 197 232 / 8%);
-}
-
 html[data-theme="dark"] #root ::selection {
   color: #101820;
   background: #78c5e8;
 }
 
-#theme-toggle {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 200;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 9px 14px;
-  border: 1px solid #cfe3f0;
-  border-radius: 999px;
-  color: #0c4a6e;
-  background: rgb(255 255 255 / 94%);
-  box-shadow: 0 8px 24px rgb(12 74 110 / 18%);
-  font: 600 13px Inter, sans-serif;
-  cursor: pointer;
-  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+/* ==========================================================================
+   TEMA TABEL INFORMASI CUSTOMIZABLE (Warna Putih & Varian Tema)
+   ========================================================================== */
+:root {
+  /* Default: Putih Bersih */
+  --tbl-header-bg: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
+  --tbl-header-text: #334155;
+  --tbl-header-border: #cbd5e1;
+  --tbl-row-odd: #ffffff;
+  --tbl-row-even: rgba(248, 250, 252, 0.85);
+  --tbl-row-hover: #f0f9ff;
+  --tbl-row-indicator: #0284c7;
+  --tbl-border: #e2e8f0;
 }
 
-#theme-toggle:hover {
-  transform: translateY(-2px);
+/* Tema Tabel: Putih Bersih (Default Pure White) */
+html[data-table-theme="white"] {
+  --tbl-header-bg: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  --tbl-header-text: #1e293b;
+  --tbl-header-border: #cbd5e1;
+  --tbl-row-odd: #ffffff;
+  --tbl-row-even: #f8fafc;
+  --tbl-row-hover: #f1f5f9;
+  --tbl-row-indicator: #0284c7;
+  --tbl-border: #e2e8f0;
 }
 
-#theme-toggle:focus-visible {
-  outline: 3px solid #29aae1;
-  outline-offset: 3px;
+/* Tema Tabel: Hijau Emerald (Nuansa Pesantren / BMT) */
+html[data-table-theme="emerald"] {
+  --tbl-header-bg: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+  --tbl-header-text: #065f46;
+  --tbl-header-border: #a7f3d0;
+  --tbl-row-odd: #ffffff;
+  --tbl-row-even: #f0fdf4;
+  --tbl-row-hover: #dcfce7;
+  --tbl-row-indicator: #10b981;
+  --tbl-border: #a7f3d0;
 }
 
-html[data-theme="dark"] #theme-toggle {
-  border-color: #435866;
-  color: #e4edf3;
-  background: #202d38;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 32%);
+/* Tema Tabel: Biru Samudra (Ocean Blue) */
+html[data-table-theme="ocean"] {
+  --tbl-header-bg: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+  --tbl-header-text: #0369a1;
+  --tbl-header-border: #bae6fd;
+  --tbl-row-odd: #ffffff;
+  --tbl-row-even: #f0f9ff;
+  --tbl-row-hover: #e0f2fe;
+  --tbl-row-indicator: #0ea5e9;
+  --tbl-border: #bae6fd;
 }
 
-@media (max-width: 480px) {
-  #theme-toggle {
-    right: 12px;
-    bottom: 12px;
-    min-height: 40px;
-    padding: 8px 12px;
-  }
+/* Tema Tabel: Amber Emas (Warm Golden Amber) */
+html[data-table-theme="amber"] {
+  --tbl-header-bg: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  --tbl-header-text: #92400e;
+  --tbl-header-border: #fde68a;
+  --tbl-row-odd: #ffffff;
+  --tbl-row-even: #fffdf5;
+  --tbl-row-hover: #fef3c7;
+  --tbl-row-indicator: #f59e0b;
+  --tbl-border: #fde68a;
+}
+
+/* Tema Tabel: Ungu Elegan (Royal Purple) */
+html[data-table-theme="purple"] {
+  --tbl-header-bg: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
+  --tbl-header-text: #6b21a8;
+  --tbl-header-border: #e9d5ff;
+  --tbl-row-odd: #ffffff;
+  --tbl-row-even: #faf5ff;
+  --tbl-row-hover: #f3e8ff;
+  --tbl-row-indicator: #a855f7;
+  --tbl-border: #e9d5ff;
+}
+
+/* Tema Tabel: Gelap Obsidian (Dark Obsidian) */
+html[data-table-theme="dark"] {
+  --tbl-header-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  --tbl-header-text: #f8fafc;
+  --tbl-header-border: #334155;
+  --tbl-row-odd: #1e293b;
+  --tbl-row-even: #141e2b;
+  --tbl-row-hover: #26354a;
+  --tbl-row-indicator: #38bdf8;
+  --tbl-border: #334155;
+}
+
+/* Dark Mode Penyesuaian Otomatis Untuk Semua Tema */
+html[data-theme="dark"] {
+  --tbl-header-bg: linear-gradient(180deg, #1e293b 0%, #152230 100%);
+  --tbl-header-text: #cbd5e1;
+  --tbl-header-border: #334155;
+  --tbl-row-odd: #19232d;
+  --tbl-row-even: rgba(30, 41, 59, 0.45);
+  --tbl-row-hover: rgba(56, 189, 248, 0.14);
+  --tbl-row-indicator: #38bdf8;
+  --tbl-border: #283946;
+}
+
+html[data-theme="dark"][data-table-theme="emerald"] {
+  --tbl-header-bg: linear-gradient(180deg, #14352b 0%, #0f2921 100%);
+  --tbl-header-text: #a7f3d0;
+  --tbl-header-border: #1d4d3e;
+  --tbl-row-odd: #142822;
+  --tbl-row-even: #18332b;
+  --tbl-row-hover: rgba(16, 185, 129, 0.2);
+  --tbl-row-indicator: #10b981;
+}
+
+html[data-theme="dark"][data-table-theme="ocean"] {
+  --tbl-header-bg: linear-gradient(180deg, #142f43 0%, #0f2434 100%);
+  --tbl-header-text: #bae6fd;
+  --tbl-header-border: #1f4562;
+  --tbl-row-odd: #142738;
+  --tbl-row-even: #193349;
+  --tbl-row-hover: rgba(14, 165, 233, 0.2);
+  --tbl-row-indicator: #0ea5e9;
+}
+
+html[data-theme="dark"][data-table-theme="amber"] {
+  --tbl-header-bg: linear-gradient(180deg, #3d2f16 0%, #2f2410 100%);
+  --tbl-header-text: #fde68a;
+  --tbl-header-border: #523f1e;
+  --tbl-row-odd: #2a2214;
+  --tbl-row-even: #362c19;
+  --tbl-row-hover: rgba(245, 158, 11, 0.2);
+  --tbl-row-indicator: #f59e0b;
+}
+
+html[data-theme="dark"][data-table-theme="purple"] {
+  --tbl-header-bg: linear-gradient(180deg, #341f48 0%, #281838 100%);
+  --tbl-header-text: #e9d5ff;
+  --tbl-header-border: #4d2f6b;
+  --tbl-row-odd: #261735;
+  --tbl-row-even: #321f46;
+  --tbl-row-hover: rgba(168, 85, 247, 0.2);
+  --tbl-row-indicator: #c084fc;
 }
 
 /* ==========================================================================
-   ENHANCED MODERN & DYNAMIC TABLE STYLING (Hidup, Elegan & Berkelas)
+   ENHANCED MODERN & DYNAMIC TABLE STYLING
    ========================================================================== */
 
 /* Table Wrapper & Container Styling */
@@ -206,56 +365,46 @@ section table {
 .table-wrap {
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.05), 0 2px 6px -1px rgba(12, 74, 110, 0.03);
+  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.06), 0 2px 6px -1px rgba(12, 74, 110, 0.04);
+  border: 1px solid var(--tbl-border) !important;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 /* Modern Gradient Table Header */
 #root table thead th,
 .table-wrap th,
 table thead th {
-  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%) !important;
-  color: #334155 !important;
+  background: var(--tbl-header-bg) !important;
+  color: var(--tbl-header-text) !important;
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0.07em !important;
   text-transform: uppercase !important;
   padding: 13px 16px !important;
-  border-bottom: 2px solid #cbd5e1 !important;
+  border-bottom: 2px solid var(--tbl-header-border) !important;
   border-top: none !important;
   white-space: nowrap;
 }
 
-html[data-theme="dark"] #root table thead th,
-html[data-theme="dark"] .table-wrap th,
-html[data-theme="dark"] table thead th {
-  background: linear-gradient(180deg, #1e293b 0%, #152230 100%) !important;
-  color: #94a3b8 !important;
-  border-bottom: 2px solid #334155 !important;
-}
-
-/* Alternating Rows (Zebra Striping) */
+/* Alternating Rows (Zebra Striping) Mengikuti Tema Terpilih */
 #root table tbody tr:nth-child(even),
 .table-wrap tbody tr:nth-child(even),
 table tbody tr:nth-child(even) {
-  background-color: rgba(248, 250, 252, 0.75);
+  background-color: var(--tbl-row-even) !important;
 }
 
 #root table tbody tr:nth-child(odd),
 .table-wrap tbody tr:nth-child(odd),
 table tbody tr:nth-child(odd) {
-  background-color: #ffffff;
+  background-color: var(--tbl-row-odd) !important;
 }
 
-html[data-theme="dark"] #root table tbody tr:nth-child(even),
-html[data-theme="dark"] .table-wrap tbody tr:nth-child(even),
-html[data-theme="dark"] table tbody tr:nth-child(even) {
-  background-color: rgba(30, 41, 59, 0.45);
+/* Helper Class untuk Memaksa Baris / Tabel Informasi Tetap Putih Solid */
+.info-table-row {
+  background-color: var(--tbl-row-odd, #ffffff) !important;
 }
-
-html[data-theme="dark"] #root table tbody tr:nth-child(odd),
-html[data-theme="dark"] .table-wrap tbody tr:nth-child(odd),
-html[data-theme="dark"] table tbody tr:nth-child(odd) {
-  background-color: var(--theme-surface, #19232d);
+.info-table-row:hover {
+  background-color: var(--tbl-row-hover, #f1f5f9) !important;
 }
 
 /* Interactive Hover Row with Vibrant Indicator Bar */
@@ -268,15 +417,8 @@ table tbody tr {
 #root table tbody tr:hover,
 .table-wrap tbody tr:hover,
 table tbody tr:hover {
-  background-color: #f0f9ff !important;
-  box-shadow: inset 4px 0 0 #0284c7 !important;
-}
-
-html[data-theme="dark"] #root table tbody tr:hover,
-html[data-theme="dark"] .table-wrap tbody tr:hover,
-html[data-theme="dark"] table tbody tr:hover {
-  background-color: rgba(56, 189, 248, 0.12) !important;
-  box-shadow: inset 4px 0 0 #38bdf8 !important;
+  background-color: var(--tbl-row-hover) !important;
+  box-shadow: inset 4px 0 0 var(--tbl-row-indicator) !important;
 }
 
 /* Cell Spacing, Borders & Tabular Formatting */
@@ -284,16 +426,10 @@ html[data-theme="dark"] table tbody tr:hover {
 .table-wrap td,
 table tbody td {
   padding: 13px 16px !important;
-  border-bottom: 1px solid #f1f5f9 !important;
+  border-bottom: 1px solid var(--tbl-border) !important;
   font-size: 12.5px;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
-}
-
-html[data-theme="dark"] #root table tbody td,
-html[data-theme="dark"] .table-wrap td,
-html[data-theme="dark"] table tbody td {
-  border-bottom: 1px solid #283946 !important;
 }
 
 /* Button & Action Cell in Table */
@@ -441,3 +577,188 @@ html[data-theme="dark"] .badge.verifikasi {
   border-color: #0369a1 !important;
 }
 
+/* ==========================================================================
+   FLOATING THEME & TABLE COLOR CONTROLS BAR (Elegan & Responsif)
+   ========================================================================== */
+.mma-floating-theme-bar {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 250;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #cfe3f0;
+  border-radius: 9999px;
+  box-shadow: 0 10px 28px rgba(12, 74, 110, 0.16), 0 2px 8px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.mma-floating-theme-bar:hover {
+  box-shadow: 0 14px 34px rgba(12, 74, 110, 0.22);
+}
+
+html[data-theme="dark"] .mma-floating-theme-bar {
+  background: rgba(25, 35, 45, 0.95);
+  border-color: #3e505e;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.theme-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: 600 12px Inter, sans-serif;
+  color: #0c4a6e;
+  background: rgba(240, 248, 254, 0.7);
+  cursor: pointer;
+  transition: all 140ms ease;
+  white-space: nowrap;
+}
+
+.theme-action-btn:hover {
+  background: #e0f2fe;
+  color: #0369a1;
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .theme-action-btn {
+  color: #e4edf3;
+  background: rgba(40, 56, 70, 0.8);
+}
+
+html[data-theme="dark"] .theme-action-btn:hover {
+  background: #2f4556;
+  color: #78c5e8;
+}
+
+.theme-color-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.table-theme-picker-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  width: 256px;
+  padding: 13px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+  z-index: 260;
+  animation: pickerPop 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pickerPop {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+html[data-theme="dark"] .table-theme-picker-popover {
+  background: #19232d;
+  border-color: #3a4b59;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+}
+
+.picker-title strong {
+  display: block;
+  font-size: 12.5px;
+  color: #0f172a;
+}
+
+html[data-theme="dark"] .picker-title strong {
+  color: #f1f5f9;
+}
+
+.picker-title small {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+html[data-theme="dark"] .picker-title small {
+  color: #94a3b8;
+}
+
+.table-theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.table-theme-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #1e293b;
+  font: 500 11.5px Inter, sans-serif;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.table-theme-option:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.table-theme-option.active {
+  border-color: #0284c7;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+html[data-theme="dark"] .table-theme-option {
+  background: #202d38;
+  border-color: #344552;
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .table-theme-option:hover {
+  background: #273744;
+}
+
+html[data-theme="dark"] .table-theme-option.active {
+  background: #1d3a4d;
+  border-color: #38bdf8;
+  color: #7dd3fc;
+}
+
+.theme-swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid;
+  flex-shrink: 0;
+}
+
+@media (max-width: 540px) {
+  .mma-floating-theme-bar {
+    right: 10px;
+    bottom: 10px;
+    gap: 4px;
+    padding: 5px 6px;
+  }
+  .table-trigger-btn .btn-text {
+    display: none;
+  }
+}

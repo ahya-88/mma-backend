@@ -230,14 +230,14 @@
   }
 
   :where(#root) table thead th {
-    background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%) !important;
-    color: #334155 !important;
+    background: var(--tbl-header-bg, linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%)) !important;
+    color: var(--tbl-header-text, #334155) !important;
     font-size: 11px !important;
     font-weight: 700 !important;
     letter-spacing: 0.07em !important;
     text-transform: uppercase !important;
     padding: 12px 14px !important;
-    border-bottom: 2px solid #cbd5e1 !important;
+    border-bottom: 2px solid var(--tbl-header-border, #cbd5e1) !important;
   }
 
   #root table tbody tr {
@@ -245,16 +245,16 @@
   }
 
   #root table tbody tr:nth-child(even) {
-    background-color: rgba(248, 250, 252, 0.7);
+    background-color: var(--tbl-row-even, rgba(248, 250, 252, 0.7));
   }
 
   #root table tbody tr:nth-child(odd) {
-    background-color: #ffffff;
+    background-color: var(--tbl-row-odd, #ffffff);
   }
 
   :where(#root) table tbody tr:hover {
-    background-color: #f0f9ff !important;
-    box-shadow: inset 4px 0 0 #0284c7 !important;
+    background-color: var(--tbl-row-hover, #f0f9ff) !important;
+    box-shadow: inset 4px 0 0 var(--tbl-row-indicator, #0284c7) !important;
   }
 
   #root ::selection {
