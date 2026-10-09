@@ -15,6 +15,58 @@ function isAuthorizedProductManager(req) {
   return req.user?.role === "guru" && req.user.departemen === "unitusaha";
 }
 
+// GET /api/produk/saya - List produk unit staf kasir yang login
+router.get("/saya", requireAuth, asyncHandler(async (req, res) => {
+  const unit = req.user?.unit || "Kantin";
+  const rows = await queryAll(`SELECT * FROM "ProdukUnitUsaha" WHERE "unit" = $1 ORDER BY "nama"`, [unit]);
+  res.json(rows.map((r) => ({
+    ...r,
+    harga: Number(r.harga),
+    stok: Number(r.stok || 0),
+    aktif: r.aktif === 1 || r.aktif === true,
+  })));
+}));
+
+// GET /api/produk/saya/barcode/:kode - Lookup barcode unit sendiri
+router.get("/saya/barcode/:kode", requireAuth, asyncHandler(async (req, res) => {
+  const unit = req.user?.unit || "Kantin";
+  const kode = req.params.kode;
+  const row = await queryOne(`SELECT * FROM "ProdukUnitUsaha" WHERE "barcode" = $1 AND "unit" = $2 LIMIT 1`, [kode, unit]);
+  if (!row) {
+    throw new CashlessError(404, `Produk dengan barcode '${kode}' tidak ditemukan.`);
+  }
+  res.json({
+    ...row,
+    harga: Number(row.harga),
+    stok: Number(row.stok || 0),
+    aktif: row.aktif === 1 || row.aktif === true,
+  });
+}));
+
+// GET /api/produk/barcode/:kode - Lookup barcode global
+router.get("/barcode/:kode", requireAuth, asyncHandler(async (req, res) => {
+  const kode = req.params.kode;
+  const row = await queryOne(`SELECT * FROM "ProdukUnitUsaha" WHERE "barcode" = $1 LIMIT 1`, [kode]);
+  if (!row) {
+    throw new CashlessError(404, `Produk dengan barcode '${kode}' tidak ditemukan.`);
+  }
+  res.json({
+    ...row,
+    harga: Number(row.harga),
+    stok: Number(row.stok || 0),
+    aktif: row.aktif === 1 || row.aktif === true,
+  });
+}));
+
+// GET /api/produk/stok-opname/riwayat - Riwayat stok opname unit
+router.get("/stok-opname/riwayat", requireAuth, asyncHandler(async (req, res) => {
+  const unit = req.user?.unit;
+  const where = unit && !isSuperAdmin(req.user) ? `WHERE "unit" = $1` : "";
+  const params = unit && !isSuperAdmin(req.user) ? [unit] : [];
+  const rows = await queryAll(`SELECT * FROM "RiwayatStokOpname" ${where} ORDER BY "createdAt" DESC LIMIT 100`, params);
+  res.json(rows);
+}));
+
 // GET /api/produk - List produk
 router.get("/", requireAuth, asyncHandler(async (req, res) => {
   const unit = req.query.unit || (req.user?.unit !== undefined ? req.user.unit : null);
@@ -70,6 +122,55 @@ router.post("/", requireAuth, asyncHandler(async (req, res) => {
   res.status(201).json({ ...row, harga: Number(row.harga), aktif: true });
 }));
 
+// Helper eksekusi stok opname
+async function eksekusiStokOpname({ produkId, stokFisik, alasan, catatan, user }) {
+  const fis = Number(stokFisik);
+  if (!produkId || Number.isNaN(fis) || fis < 0 || !alasan) {
+    throw new CashlessError(400, "produkId, stokFisik valid, dan alasan wajib diisi.");
+  }
+
+  return withTransaction(async (client) => {
+    const prodRes = await client.query('SELECT * FROM "ProdukUnitUsaha" WHERE "id" = $1 FOR UPDATE', [produkId]);
+    if (!prodRes.rowCount) throw new CashlessError(404, "Produk tidak ditemukan.");
+
+    const p = prodRes.rows[0];
+    const stokSebelum = Number(p.stok || 0);
+    const selisih = fis - stokSebelum;
+
+    await client.query('UPDATE "ProdukUnitUsaha" SET "stok" = $1 WHERE "id" = $2', [fis, produkId]);
+
+    const opnameId = uid();
+    await client.query(
+      `INSERT INTO "RiwayatStokOpname"
+        ("id", "produkId", "unit", "stokSebelum", "stokFisik", "selisih", "alasan", "catatan", "petugasNama")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [opnameId, produkId, p.unit, stokSebelum, fis, selisih, alasan, catatan || null, user.nama],
+    );
+
+    return { id: opnameId, produkId, unit: p.unit, stokSebelum, stokFisik: fis, selisih, alasan };
+  });
+}
+
+// POST /api/produk/:id/stok-opname - Catat stok opname via URL param id
+router.post("/:id/stok-opname", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedProductManager(req)) {
+    return res.status(403).json({ error: "Akses ditolak." });
+  }
+  const { stokFisik, alasan, catatan } = req.body || {};
+  const result = await eksekusiStokOpname({ produkId: req.params.id, stokFisik, alasan, catatan, user: req.user });
+  res.status(201).json(result);
+}));
+
+// POST /api/produk/stok-opname - Catat stok opname via body produkId
+router.post("/stok-opname", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedProductManager(req)) {
+    return res.status(403).json({ error: "Akses ditolak." });
+  }
+  const { produkId, stokFisik, alasan, catatan } = req.body || {};
+  const result = await eksekusiStokOpname({ produkId, stokFisik, alasan, catatan, user: req.user });
+  res.status(201).json(result);
+}));
+
 // PUT /api/produk/:id - Edit produk
 router.put("/:id", requireAuth, asyncHandler(async (req, res) => {
   if (!isAuthorizedProductManager(req)) {
@@ -101,6 +202,19 @@ router.put("/:id", requireAuth, asyncHandler(async (req, res) => {
   res.json({ ...updated, harga: Number(updated.harga), aktif: updated.aktif === 1 });
 }));
 
+// DELETE /api/produk/:id - Hapus produk
+router.delete("/:id", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedProductManager(req)) {
+    return res.status(403).json({ error: "Hanya staf Unit Usaha atau Superadmin yang dapat menghapus produk." });
+  }
+  const id = req.params.id;
+  const existing = await queryOne('SELECT * FROM "ProdukUnitUsaha" WHERE "id" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Produk tidak ditemukan.");
+
+  await query('DELETE FROM "ProdukUnitUsaha" WHERE "id" = $1', [id]);
+  res.json({ success: true, message: `Produk '${existing.nama}' berhasil dihapus.` });
+}));
+
 // PATCH /api/produk/:id/status - Aktifkan/nonaktifkan produk
 router.patch("/:id/status", requireAuth, asyncHandler(async (req, res) => {
   if (!isAuthorizedProductManager(req)) {
@@ -109,44 +223,6 @@ router.patch("/:id/status", requireAuth, asyncHandler(async (req, res) => {
 
   const { aktif } = req.body || {};
   res.json(await ubahStatusProduk({ id: req.params.id, aktif: !!aktif }));
-}));
-
-// POST /api/produk/stok-opname - Catat stok opname
-router.post("/stok-opname", requireAuth, asyncHandler(async (req, res) => {
-  if (!isAuthorizedProductManager(req)) {
-    return res.status(403).json({ error: "Akses ditolak." });
-  }
-
-  const { produkId, stokFisik, alasan, catatan } = req.body || {};
-  const fis = Number(stokFisik);
-
-  if (!produkId || Number.isNaN(fis) || fis < 0 || !alasan) {
-    throw new CashlessError(400, "produkId, stokFisik valid, dan alasan wajib diisi.");
-  }
-
-  let result;
-  await withTransaction(async (client) => {
-    const prodRes = await client.query('SELECT * FROM "ProdukUnitUsaha" WHERE "id" = $1 FOR UPDATE', [produkId]);
-    if (!prodRes.rowCount) throw new CashlessError(404, "Produk tidak ditemukan.");
-
-    const p = prodRes.rows[0];
-    const stokSebelum = Number(p.stok || 0);
-    const selisih = fis - stokSebelum;
-
-    await client.query('UPDATE "ProdukUnitUsaha" SET "stok" = $1 WHERE "id" = $2', [fis, produkId]);
-
-    const opnameId = uid();
-    await client.query(
-      `INSERT INTO "RiwayatStokOpname"
-        ("id", "produkId", "unit", "stokSebelum", "stokFisik", "selisih", "alasan", "catatan", "petugasNama")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [opnameId, produkId, p.unit, stokSebelum, fis, selisih, alasan, catatan || null, req.user.nama],
-    );
-
-    result = { id: opnameId, produkId, unit: p.unit, stokSebelum, stokFisik: fis, selisih, alasan };
-  });
-
-  res.status(201).json(result);
 }));
 
 module.exports = router;

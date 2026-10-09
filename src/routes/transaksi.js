@@ -1,4 +1,5 @@
 const express = require("express");
+const { query } = require("../db");
 const { requireAuth, requireBMT, requireAdminUnitUsaha, requireUnitUsaha, isSuperAdmin } = require("../auth");
 const { catatTransaksi, auditSaldo, sinkronisasiOfflineKasir, laporanOfflineKasir, koreksiSaldo } = require("../cashlessService");
 const { catatTransaksiUnitUsaha, semuaTransaksiUnitUsaha, hapusTransaksiUnitUsaha, laporanCashflowUnitUsaha } = require("../keuanganService");
@@ -56,19 +57,89 @@ router.delete("/unit-usaha/:id", requireAuth, requireAdminUnitUsaha, asyncHandle
   res.json(await hapusTransaksiUnitUsaha(req.params.id, req.user.id));
 }));
 
-// ---- Endpoint Transaksi Cashless Santri ----
+// ---- Endpoint Transaksi Cashless Santri & Kasir Belanja ----
 router.post("/", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) => {
-  const { santriId, jenis: jenisInput, kategori: kategoriInput, subKategori, jumlah, keterangan, bulan, pin, metode } = req.body || {};
+  const { santriId, jenis: jenisInput, kategori: kategoriInput, subKategori, jumlah, keterangan, bulan, pin, metode, items } = req.body || {};
   const idempotencyKey = req.headers["idempotency-key"] || req.headers["x-idempotency-key"] || req.body?.idempotencyKey;
   if (!santriId || !jumlah) return res.status(400).json({ error: "santriId dan jumlah wajib diisi." });
+
+  const unit = req.body?.unit || req.user.unit || "Kantin";
+  const normalizedMetode = metode ? String(metode).toLowerCase() : null;
+
+  // Kasus Pelanggan UMUM (Non-Santri / Cash / QRIS di Kasir)
+  if (santriId === "UMUM") {
+    const nominal = Number(jumlah);
+    if (!nominal || nominal <= 0) return res.status(400).json({ error: "Jumlah belanja harus lebih dari 0." });
+
+    const txUnit = await catatTransaksiUnitUsaha({
+      jenis: "Dana Masuk",
+      unitAsal: null,
+      unitTujuan: unit,
+      jumlah: nominal,
+      keterangan: keterangan || "Penjualan Kasir Umum",
+      dicatatOleh: req.user.nama,
+      aktorId: req.user.id,
+    });
+
+    // Kurangi stok produk jika ada daftar items
+    if (Array.isArray(items) && items.length) {
+      for (const it of items) {
+        const qty = Number(it.qty || 1);
+        if (qty > 0) {
+          if (it.id) {
+            await query(`UPDATE "ProdukUnitUsaha" SET "stok" = GREATEST(0, "stok" - $1) WHERE "id" = $2`, [qty, it.id]);
+          } else if (it.nama) {
+            await query(`UPDATE "ProdukUnitUsaha" SET "stok" = GREATEST(0, "stok" - $1) WHERE "nama" = $2 AND "unit" = $3`, [qty, it.nama, unit]);
+          }
+        }
+      }
+    }
+
+    return res.status(201).json({
+      transaksi: {
+        id: txUnit.id,
+        santriId: "UMUM",
+        unit,
+        jenis: "Penjualan Tunai",
+        kategori: "Kasir Umum",
+        jumlah: nominal,
+        keterangan,
+        saldoSetelah: 0,
+        saldoSebelum: 0,
+        saldoSesudah: 0,
+        idempotencyKey,
+        tanggalISO: txUnit.tanggalISO,
+        metode: normalizedMetode || "cash",
+      },
+      santri: null,
+      lewatLimit: false,
+      pesan: "Transaksi penjualan kasir umum berhasil dicatat.",
+    });
+  }
+
+  // Kasus Transaksi Santri Pesantren
   const jenis = jenisInput || "Tarik Tunai";
   const kategori = kategoriInput || (jenis === "Tarik Tunai" ? "Jajan Harian" : undefined);
-  const unit = req.body?.unit || req.user.unit || "BMT";
   const hasil = await catatTransaksi({
     santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, bulan, idempotencyKey,
     pin, validasiPin: jenis === "Tarik Tunai", petugasId: req.user.id,
-    metode: ["qr", "wajah", "manual"].includes(metode) ? metode : null,
+    metode: ["qr", "wajah", "manual", "kartu", "rfid", "cash", "cashless", "qris"].includes(normalizedMetode) ? normalizedMetode : null,
   });
+
+  // Kurangi stok item produk jika transaksi sukses dan items disertakan
+  if (!hasil.pinError && Array.isArray(items) && items.length) {
+    for (const it of items) {
+      const qty = Number(it.qty || 1);
+      if (qty > 0) {
+        if (it.id) {
+          await query(`UPDATE "ProdukUnitUsaha" SET "stok" = GREATEST(0, "stok" - $1) WHERE "id" = $2`, [qty, it.id]);
+        } else if (it.nama) {
+          await query(`UPDATE "ProdukUnitUsaha" SET "stok" = GREATEST(0, "stok" - $1) WHERE "nama" = $2 AND "unit" = $3`, [qty, it.nama, unit]);
+        }
+      }
+    }
+  }
+
   if (hasil.idempotentReplay) res.setHeader("X-Idempotent-Replay", "true");
   res.status(hasil.idempotentReplay ? 200 : 201).json(hasil);
 }));
