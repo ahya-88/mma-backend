@@ -7438,8 +7438,30 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         </ArchCard>
       )}
 
-      {tab === "santri" && (
-        <ArchCard title="Data Santri" eyebrow={`${santriAktifList.length} Santri Aktif Terdaftar`} icon={User}>
+      {tab === "santri" && (() => {
+        const asramaList = Array.from(new Set(santriAktifList.map((s) => s.asrama).filter(Boolean))).sort();
+        const q = santriSearch.trim().toLowerCase();
+        const santriFiltered = santriAktifList.filter((s) => {
+          if (santriKelasFilter !== "Semua" && s.kelas !== santriKelasFilter) return false;
+          if (santriAsramaFilter !== "Semua" && s.asrama !== santriAsramaFilter) return false;
+          if (santriGenderFilter !== "Semua" && s.jenisKelamin !== santriGenderFilter) return false;
+          if (q) {
+            const wali = (data.wali || []).find((w) => w.id === s.waliId);
+            const matchNama = (s.nama || "").toLowerCase().includes(q);
+            const matchNis = (s.nis || "").toLowerCase().includes(q);
+            const matchNisn = (s.nisn || "").toLowerCase().includes(q);
+            const matchWali = (wali?.nama || "").toLowerCase().includes(q);
+            if (!matchNama && !matchNis && !matchNisn && !matchWali) return false;
+          }
+          return true;
+        });
+        const totalSantriFiltered = santriFiltered.length;
+        const totalPagesSantri = Math.max(1, Math.ceil(totalSantriFiltered / santriLimit));
+        const santriPageClamped = Math.min(Math.max(1, santriPage), totalPagesSantri);
+        const santriPagingItems = santriFiltered.slice((santriPageClamped - 1) * santriLimit, santriPageClamped * santriLimit);
+
+        return (
+          <ArchCard title="Data Santri" eyebrow={`${santriAktifList.length} Santri Aktif Terdaftar`} icon={User}>
           {santriFetch.loading && <p className="text-xs text-[#5B7C93] mb-3">Memuat data santri dari server…</p>}
           {santriFetch.error && <p className="text-xs text-[#B5533C] mb-3">{santriFetch.error}</p>}
           {santriSaveError && <p className="text-xs text-[#B5533C] mb-3">{santriSaveError}</p>}
@@ -8112,7 +8134,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             </div>
           )}
         </ArchCard>
-      )}
+      );
+    })()}
 
       {tab === "daftar-ulang" && (() => {
         const daftarKelasSantri = Array.from(new Set(santriAktifList.map((s) => s.kelas).filter(Boolean))).sort();
