@@ -11,10 +11,13 @@ const ENTRY_SCRATCH_PATH = path.join(ROOT_DIR, 'scratch_entry.jsx');
 console.log('Building MMA Application...');
 
 const entryCode = `
+import React from "react";
+import { createRoot } from "react-dom/client";
 import App from "./pesantren-app.jsx";
+
 const rootEl = document.getElementById("root");
-if (rootEl && window.ReactDOM) {
-  window.ReactDOM.createRoot(rootEl).render(window.React.createElement(App));
+if (rootEl) {
+  createRoot(rootEl).render(<App />);
 }
 `;
 fs.writeFileSync(ENTRY_SCRATCH_PATH, entryCode, 'utf8');
@@ -26,9 +29,7 @@ try {
     minify: true,
     format: 'iife',
     target: ['es2020'],
-    jsx: 'transform',
-    jsxFactory: 'window.React.createElement',
-    jsxFragment: 'window.React.Fragment',
+    jsx: 'automatic',
     external: ['core-js/*', 'canvg'],
     write: false,
   });
