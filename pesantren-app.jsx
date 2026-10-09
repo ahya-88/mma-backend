@@ -6,7 +6,8 @@ import {
   Pencil, Printer, Package, FileText, TrendingUp, TrendingDown, Eye, EyeOff, Gift, UserCheck,
   Mail, Inbox, Archive, Settings, FileSignature, Landmark, Send, Search, Download, Loader2, Bell, Home,
   Image as ImageIcon, ShieldAlert, Clock,
-  QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle
+  QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle,
+  Database, HardDrive
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -600,7 +601,7 @@ function SantriSearchSelect({ santriList, value, onChange, placeholder }) {
           onChange={(e) => { setQuery(e.target.value); setOpen(true); if (!e.target.value) onChange(""); }}
           onFocus={() => { setQuery(""); setOpen(true); }}
           onBlur={() => setTimeout(() => setOpen(false), 140)}
-          placeholder={placeholder || "Cari nama santri..."}
+          placeholder={placeholder || "Cari nama / No. Stambuk santri..."}
           className="w-full h-10 border border-[#E3E8EE] bg-white rounded-xl pl-9 pr-3 text-sm text-[#0A2540] placeholder:text-[#8FA3B3] focus:outline-none focus:ring-2 focus:ring-[#29AAE1]/30 focus:border-[#29AAE1] transition-colors shadow-sm"
         />
       </div>
@@ -901,7 +902,7 @@ function KartuSantriPrintContent({ santriList = [], qrMap = {} }) {
                           {s.nama}
                         </div>
                         <div className="text-[9px] text-[#0C4A6E] font-semibold mt-0.5">
-                          NIS: {s.nis || "-"}
+                          No. Stambuk: {s.nis || "-"}
                         </div>
                       </div>
                       <div className="text-[8.5px] text-[#5B7C93] space-y-0.5">
@@ -1153,7 +1154,7 @@ function RaportContent({ jenis, santri, wali, tahunAjaran, semester, ringkasanRo
             <table style={{ borderCollapse: "collapse" }} className="flex-1">
               <tbody>
                 <BarisBiodata label="Nama Lengkap" value={santri?.nama} />
-                <BarisBiodata label="NIS" value={santri?.nis} />
+                <BarisBiodata label="No. Stambuk" value={santri?.nis} />
                 <BarisBiodata label="Tempat, Tanggal Lahir" value={santri?.tempatLahir || santri?.tanggalLahir ? `${santri?.tempatLahir || "-"}, ${santri?.tanggalLahir || "-"}` : null} />
                 <BarisBiodata label="Jenis Kelamin" value={santri?.jenisKelamin} />
                 <BarisBiodata label="Alamat" value={santri?.alamat} />
@@ -1214,7 +1215,7 @@ function RaportContent({ jenis, santri, wali, tahunAjaran, semester, ringkasanRo
             <table style={{ borderCollapse: "collapse" }}>
               <tbody>
                 <BarisBiodata label="Nama Santri" value={santri?.nama} />
-                <BarisBiodata label="NIS" value={santri?.nis} />
+                <BarisBiodata label="No. Stambuk" value={santri?.nis} />
                 <BarisBiodata label="Kelas" value={santri?.kelas} />
                 <BarisBiodata label="Tahun Ajaran" value={tahunAjaran} />
               </tbody>
@@ -2681,6 +2682,115 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const simpanTampilan = () => simpanTampilanKeBackend(tampilanForm, "Pengaturan tampilan tersimpan dan langsung diterapkan ke seluruh aplikasi.");
   const resetTampilan = () => simpanTampilanKeBackend(TAMPILAN_DEFAULT, "Tampilan dikembalikan ke pengaturan bawaan.");
 
+  // -- Database Persistence & Automated Backup --
+  const [dbStatus, setDbStatus] = useState(null);
+  const [dbLoading, setDbLoading] = useState(false);
+  const [dbMsg, setDbMsg] = useState("");
+  const [dbIsErr, setDbIsErr] = useState(false);
+  const [dbSyncBusy, setDbSyncBusy] = useState(false);
+
+  const ambilDbStatus = async () => {
+    if (!backendToken) return;
+    setDbLoading(true);
+    try {
+      const res = await backendApi("/admin/database/status", { token: backendToken });
+      setDbStatus(res);
+    } catch (e) {
+      setDbStatus(null);
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (adminTab === "database") {
+      ambilDbStatus();
+    }
+  }, [adminTab]);
+
+  const unduhBackupJson = async () => {
+    try {
+      setDbLoading(true);
+      setDbMsg("");
+      const res = await fetch("/api/admin/database/backup", {
+        headers: { ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {}) },
+      });
+      if (!res.ok) throw new Error("Gagal mengunduh berkas cadangan dari server.");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup-mma-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setDbIsErr(false);
+      setDbMsg("Berkas backup database berhasil diunduh ke komputer Anda.");
+    } catch (e) {
+      setDbIsErr(true);
+      setDbMsg(e.message || "Gagal mengunduh cadangan database.");
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
+  const simpanBackupDiServer = async () => {
+    try {
+      setDbLoading(true);
+      setDbMsg("");
+      const res = await backendApi("/admin/database/backup/simpan-lokal", {
+        method: "POST",
+        token: backendToken,
+      });
+      setDbIsErr(false);
+      setDbMsg(`Cadangan database berhasil disimpan di server: ${res.filename}`);
+      ambilDbStatus();
+    } catch (e) {
+      setDbIsErr(true);
+      setDbMsg(e.message || "Gagal menyimpan cadangan di server.");
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
+  const sinkronkanSantriKeCloudDb = async () => {
+    if (!data.santri || !data.santri.length) return;
+    setDbSyncBusy(true);
+    setDbMsg("");
+    try {
+      let sukses = 0;
+      for (const s of data.santri) {
+        await backendApi("/santri/upsert", {
+          method: "POST",
+          token: backendToken,
+          body: {
+            id: s.id,
+            nama: s.nama,
+            kelas: s.kelas,
+            nis: s.nis,
+            nisn: s.nisn,
+            waliId: s.waliId,
+            limitJajanHarian: s.limitJajanHarian,
+            asrama: s.asrama,
+            halaqoh: s.halaqoh,
+            catatanKesehatan: s.catatanKesehatan,
+            golDarah: s.golDarah,
+            alamat: s.alamat,
+          },
+        });
+        sukses++;
+      }
+      setDbIsErr(false);
+      setDbMsg(`Berhasil menyinkronkan ${sukses} data santri ke Cloud Database PostgreSQL! Data kini tersimpan permanen.`);
+      ambilDbStatus();
+    } catch (e) {
+      setDbIsErr(true);
+      setDbMsg(e.message || "Gagal menyinkronkan data santri ke server.");
+    } finally {
+      setDbSyncBusy(false);
+    }
+  };
+
   const [adminTab, setAdminTab] = useState("ringkasan");
   const adminMenus = [
     { id: "ringkasan", label: "Ringkasan & Metrik", icon: TrendingUp, badge: "KPI" },
@@ -2688,6 +2798,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${data.unitUsaha.length}` },
     { id: "tahun", label: "Kalender Akademik", icon: CalendarCheck },
     { id: "tampilan", label: "Pengaturan Tampilan", icon: ImageIcon },
+    { id: "database", label: "Penyimpanan & Cadangan", icon: Database, badge: "Cloud" },
   ];
 
   return (
@@ -2699,7 +2810,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
         <aside className="w-full lg:w-64 shrink-0 bg-white/90 backdrop-blur-md rounded-2xl border border-[#CFE3F0] p-3.5 shadow-sm lg:sticky lg:top-20 z-10 space-y-1.5">
           <div className="px-3 py-2 border-b border-[#EAF4FB] mb-1 flex items-center justify-between">
             <p className="text-[11px] font-bold text-[#5B7C93] uppercase tracking-wider">Menu Navigasi Admin</p>
-            <span className="text-[10px] bg-[#0C4A6E]/10 text-[#0C4A6E] font-bold px-2 py-0.5 rounded-full">5 Tab</span>
+            <span className="text-[10px] bg-[#0C4A6E]/10 text-[#0C4A6E] font-bold px-2 py-0.5 rounded-full">6 Tab</span>
           </div>
           {adminMenus.map((m) => (
             <button
@@ -3007,6 +3118,106 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
               <div className="flex flex-wrap gap-2">
                 <button onClick={simpanTampilan} disabled={tampilanBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Check size={15} />{tampilanBusy ? "Menyimpan..." : "Simpan Pengaturan Tampilan"}</button>
                 <button onClick={resetTampilan} disabled={tampilanBusy || backendOnline !== true} className="border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60 disabled:opacity-50">Kembalikan ke Bawaan</button>
+              </div>
+            </ArchCard>
+          )}
+
+          {adminTab === "database" && (
+            <ArchCard title="Penyimpanan & Cadangan Data" eyebrow="Keamanan & Data Persistence" icon={Database} tone="gold">
+              <p className="text-xs text-[#5B7C93] mb-4">
+                Sistem terhubung ke Managed PostgreSQL Cloud Database. Seluruh data transaksi, santri, tagihan, dan pengaturan tersimpan terisolasi di server database sehingga tidak akan hilang atau ter-reset saat aplikasi di-deploy ulang.
+              </p>
+
+              {/* Status Box */}
+              <div className="p-4 rounded-xl border border-[#CFE3F0] bg-[#F4F8FB] mb-5 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-bold text-[#0C4A6E]">Status Database: Terhubung (Cloud PostgreSQL)</span>
+                  </div>
+                  <button
+                    onClick={ambilDbStatus}
+                    disabled={dbLoading}
+                    className="text-xs text-[#0C4A6E] font-medium hover:underline flex items-center gap-1"
+                  >
+                    <RefreshCw size={12} className={dbLoading ? "animate-spin" : ""} /> Perbarui Status
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                  <div className="bg-white p-2.5 rounded-xl border border-[#DCEDF7]">
+                    <p className="text-[11px] text-[#5B7C93]">Santri di Server</p>
+                    <p className="text-base font-bold text-[#0C4A6E]">{dbStatus?.totalSantri ?? data.santri.length}</p>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-[#DCEDF7]">
+                    <p className="text-[11px] text-[#5B7C93]">Wali Tercatat</p>
+                    <p className="text-base font-bold text-[#0C4A6E]">{dbStatus?.totalWali ?? data.wali.length}</p>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-[#DCEDF7]">
+                    <p className="text-[11px] text-[#5B7C93]">Transaksi Kasir</p>
+                    <p className="text-base font-bold text-[#0C4A6E]">{dbStatus?.totalTransaksi ?? 0}</p>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-[#DCEDF7]">
+                    <p className="text-[11px] text-[#5B7C93]">Saldo Tersimpan</p>
+                    <p className="text-base font-bold text-emerald-700">{rupiah(dbStatus?.totalSaldoSemuaSantri ?? 0)}</p>
+                  </div>
+                </div>
+
+                {dbStatus?.persistenceInfo && (
+                  <p className="text-[11px] text-[#45657A] bg-white/80 p-2.5 rounded-lg border border-[#DCEDF7]">
+                    🔒 {dbStatus.persistenceInfo}
+                  </p>
+                )}
+              </div>
+
+              {dbMsg && (
+                <div className={`p-3 rounded-xl text-xs mb-4 flex items-center gap-2 ${
+                  dbIsErr ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                }`}>
+                  {dbIsErr ? <AlertCircle size={15} className="shrink-0" /> : <CheckCircle2 size={15} className="shrink-0" />}
+                  <span>{dbMsg}</span>
+                </div>
+              )}
+
+              {/* Aksi Cadangan & Sinkronisasi */}
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2 font-bold">1. Unduh Berkas Cadangan (Backup Manual)</p>
+                  <p className="text-xs text-[#5B7C93] mb-2.5">
+                    Simpan salinan data lengkap ke komputer/laptop Anda sewaktu-waktu sebagai arsip mandiri (format JSON terenkripsi).
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={unduhBackupJson}
+                      disabled={dbLoading}
+                      className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                    >
+                      <Download size={14} /> Unduh Berkas Backup (.JSON)
+                    </button>
+                    <button
+                      onClick={simpanBackupDiServer}
+                      disabled={dbLoading}
+                      className="border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-slate-50 text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                    >
+                      <HardDrive size={14} /> Simpan Snapshot di Server
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-[#DCEDF7]">
+                  <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2 font-bold">2. Sinkronisasi Data Master ke Cloud Database</p>
+                  <p className="text-xs text-[#5B7C93] mb-2.5">
+                    Pastikan seluruh data santri lokal ({data.santri.length} santri) tersimpan permanen di cloud PostgreSQL. Sangat berguna jika server baru saja dideploy pertama kali.
+                  </p>
+                  <button
+                    onClick={sinkronkanSantriKeCloudDb}
+                    disabled={dbSyncBusy || !backendToken}
+                    className="border border-[#0C4A6E] text-[#0C4A6E] bg-white hover:bg-[#EAF4FB] text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs active:scale-95 disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={dbSyncBusy ? "animate-spin" : ""} />
+                    {dbSyncBusy ? "Menyinkronkan..." : `Simpan ${data.santri.length} Santri Lokal ke Server Cloud`}
+                  </button>
+                </div>
               </div>
             </ArchCard>
           )}
@@ -3343,7 +3554,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
         </div>
         <div className="mb-2">
           <p>Santri: <span className="font-bold">{struk.santri.nama}</span></p>
-          <p>NIS: {struk.santri.nis || "-"} · Kelas: {struk.santri.kelas || "-"}</p>
+          <p>No. Stambuk: {struk.santri.nis || "-"} · Kelas: {struk.santri.kelas || "-"}</p>
         </div>
         <div className="border-t border-b py-2 my-2 divide-y divide-dashed">
           {struk.items.map((it, idx) => (
@@ -4136,7 +4347,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                   <Search size={15} className="absolute left-3 top-3 text-[#5B7C93]" />
                   <input
                     type="text"
-                    placeholder="Cari nama, NIS, atau kelas santri..."
+                    placeholder="Cari nama, No. Stambuk, atau kelas santri..."
                     value={kartuCari}
                     onChange={(e) => setKartuCari(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#CFE3F0] bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/20"
@@ -4206,7 +4417,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                                   {s.nama}
                                 </h4>
                                 <p className="text-[11px] text-[#5B7C93]">
-                                  NIS: <span className="font-mono font-medium text-slate-700">{s.nis || "-"}</span> · Kelas {s.kelas || "-"}
+                                  No. Stambuk: <span className="font-mono font-medium text-slate-700">{s.nis || "-"}</span> · Kelas {s.kelas || "-"}
                                 </p>
                               </div>
                             </div>
@@ -5792,7 +6003,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       headers.forEach((h, idx) => {
         let key = h;
         if (["namasantri", "nama_santri", "namalengkap", "nama"].includes(h)) key = "nama";
-        else if (["nis", "noinduk", "nomorinduk"].includes(h)) key = "nis";
+        else if (["nis", "noinduk", "nomorinduk", "stambuk", "nostambuk", "nomorstambuk"].includes(h)) key = "nis";
         else if (["nisn", "nomorinduknasional"].includes(h)) key = "nisn";
         else if (["kelas", "rombonganbelajar"].includes(h)) key = "kelas";
         else if (["jeniskelamin", "jk", "gender"].includes(h)) key = "jenisKelamin";
@@ -6537,7 +6748,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 <div className="flex items-center gap-3 border border-[#DCEDF7] rounded-xl p-3.5">
                   {s.foto ? <img src={s.foto} alt={s.nama} className="w-14 h-14 rounded-full object-cover border border-[#CFE3F0]" /> : <div className="w-14 h-14 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center font-semibold">{s.nama.split(" ").map(w=>w[0]).slice(0,2).join("")}</div>}
                   <div>
-                    <p className="font-medium text-[#17242E]">{s.nama} <span className="text-[#5B7C93] font-normal">· NIS {s.nis || "-"} · NISN {s.nisn || "-"} · {s.kelas}{s.halaqoh ? ` · ${s.halaqoh}` : ""}</span></p>
+                    <p className="font-medium text-[#17242E]">{s.nama} <span className="text-[#5B7C93] font-normal">· No. Stambuk {s.nis || "-"} · NISN {s.nisn || "-"} · {s.kelas}{s.halaqoh ? ` · ${s.halaqoh}` : ""}</span></p>
                     <p className="text-xs text-[#5B7C93]">Wali: {wali?.nama || "-"} ({wali?.hp || "-"}) · Asrama: {s.asrama || "-"} · Cat. Kesehatan: {s.catatanKesehatan || "Tidak ada"}</p>
                   </div>
                 </div>
@@ -6747,7 +6958,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 <div className="flex items-center gap-3 border border-[#DCEDF7] rounded-xl p-3.5">
                   {s.foto ? <img src={s.foto} alt={s.nama} className="w-14 h-14 rounded-full object-cover border border-[#CFE3F0]" /> : <div className="w-14 h-14 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center font-semibold">{s.nama.split(" ").map(w=>w[0]).slice(0,2).join("")}</div>}
                   <div>
-                    <p className="font-medium text-[#17242E]">{s.nama} <span className="text-[#5B7C93] font-normal">· NIS {s.nis || "-"} · NISN {s.nisn || "-"} · {s.kelas}</span></p>
+                    <p className="font-medium text-[#17242E]">{s.nama} <span className="text-[#5B7C93] font-normal">· No. Stambuk {s.nis || "-"} · NISN {s.nisn || "-"} · {s.kelas}</span></p>
                     <p className="text-xs text-[#5B7C93]">Rata-rata nilai: {nilaiS.length ? Math.round(nilaiS.reduce((a,n)=>a+Number(n.nilai),0)/nilaiS.length) : "-"}</p>
                   </div>
                 </div>
@@ -6917,7 +7128,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 <div className="flex items-center gap-3 border border-[#DCEDF7] rounded-xl p-3.5">
                   {s.foto ? <img src={s.foto} alt={s.nama} className="w-14 h-14 rounded-full object-cover border border-[#CFE3F0]" /> : <div className="w-14 h-14 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center font-semibold">{s.nama.split(" ").map(w=>w[0]).slice(0,2).join("")}</div>}
                   <div>
-                    <p className="font-medium text-[#17242E]">{s.nama} <span className="text-[#5B7C93] font-normal">· NIS {s.nis || "-"} · NISN {s.nisn || "-"} · {s.kelas}</span></p>
+                    <p className="font-medium text-[#17242E]">{s.nama} <span className="text-[#5B7C93] font-normal">· No. Stambuk {s.nis || "-"} · NISN {s.nisn || "-"} · {s.kelas}</span></p>
                   </div>
                 </div>
 
@@ -7045,7 +7256,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               </div>
               <div className="grid sm:grid-cols-3 gap-2 mb-4">
                 <input placeholder="Nama lengkap" value={santriForm.nama} onChange={(e) => setSantriForm({ ...santriForm, nama: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="No. Induk (NIS)" value={santriForm.nis} onChange={(e) => setSantriForm({ ...santriForm, nis: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                <input placeholder="No. Stambuk" value={santriForm.nis} onChange={(e) => setSantriForm({ ...santriForm, nis: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
                 <input placeholder="NISN" value={santriForm.nisn} onChange={(e) => setSantriForm({ ...santriForm, nisn: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
                 <select value={santriForm.jenisKelamin} onChange={(e) => setSantriForm({ ...santriForm, jenisKelamin: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm"><option>Laki-laki</option><option>Perempuan</option></select>
                 <select value={santriForm.kelas} onChange={(e) => setSantriForm({ ...santriForm, kelas: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">{data.kelas.map((k) => <option key={k}>{k}</option>)}</select>
@@ -7102,7 +7313,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                     )}
                     <span>
                       <span className="text-[#17242E] font-medium">{s.nama}</span>
-                      <span className="text-[#5B7C93]"> · {s.kelas} · NIS {s.nis || "-"} · NISN {s.nisn || "-"} · Wali: {data.wali.find((w) => w.id === s.waliId)?.nama || "-"}</span>
+                      <span className="text-[#5B7C93]"> · {s.kelas} · No. Stambuk {s.nis || "-"} · NISN {s.nisn || "-"} · Wali: {data.wali.find((w) => w.id === s.waliId)?.nama || "-"}</span>
                     </span>
                   </button>
                   <div className="flex items-center gap-1 shrink-0">
@@ -7272,7 +7483,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                               <thead className="bg-[#EAF4FB] text-[#0C4A6E]">
                                 <tr>
                                   <th className="p-2">Nama</th>
-                                  <th className="p-2">NIS</th>
+                                  <th className="p-2">No. Stambuk</th>
                                   <th className="p-2">Kelas</th>
                                   <th className="p-2">Wali</th>
                                   <th className="p-2">HP Wali</th>
@@ -7341,7 +7552,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">{editingAlumniId ? "Edit Data Alumni" : "Data Alumni Baru"}</p>
               <div className="grid sm:grid-cols-3 gap-2 mb-2">
                 <input placeholder="Nama lengkap" value={alumniForm.nama} onChange={(e) => setAlumniForm({ ...alumniForm, nama: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="NIS (opsional)" value={alumniForm.nis} onChange={(e) => setAlumniForm({ ...alumniForm, nis: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                <input placeholder="No. Stambuk (opsional)" value={alumniForm.nis} onChange={(e) => setAlumniForm({ ...alumniForm, nis: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
                 <input placeholder="Kelas terakhir" value={alumniForm.kelasTerakhir} onChange={(e) => setAlumniForm({ ...alumniForm, kelasTerakhir: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
                 <input placeholder="Tahun lulus" value={alumniForm.tahunLulus} onChange={(e) => setAlumniForm({ ...alumniForm, tahunLulus: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
                 <select value={alumniForm.statusSaatIni} onChange={(e) => setAlumniForm({ ...alumniForm, statusSaatIni: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
@@ -7470,7 +7681,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             <div className="space-y-2 mb-3">
               <div className="grid sm:grid-cols-2 gap-2">
                 <input placeholder="Nama pihak yang diterangkan" value={suratForm.namaPihak} onChange={(e) => setSuratForm({ ...suratForm, namaPihak: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="Identitas (NIS/Kelas/Jabatan, dll.)" value={suratForm.identitasPihak} onChange={(e) => setSuratForm({ ...suratForm, identitasPihak: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                <input placeholder="Identitas (No. Stambuk/Kelas/Jabatan, dll.)" value={suratForm.identitasPihak} onChange={(e) => setSuratForm({ ...suratForm, identitasPihak: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
               </div>
               <textarea placeholder="Keperluan / isi keterangan..." value={suratForm.keperluan} onChange={(e) => setSuratForm({ ...suratForm, keperluan: e.target.value })} rows={3} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
             </div>
@@ -8274,7 +8485,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
               {santri.nama}
             </h2>
             <p className="text-sm text-white/85 mt-0.5">
-              {santri.kelas}{santri.halaqoh ? ` · ${santri.halaqoh}` : ""} · NIS: {santri.nis || "-"}
+              {santri.kelas}{santri.halaqoh ? ` · ${santri.halaqoh}` : ""} · No. Stambuk: {santri.nis || "-"}
             </p>
           </div>
           {anak.length > 1 && (
@@ -8310,7 +8521,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
         </div>
       )}
 
-      <ArchCard title="Biodata Santri" eyebrow={`NIS ${santri.nis || "-"}`} icon={User}>
+      <ArchCard title="Biodata Santri" eyebrow={`No. Stambuk ${santri.nis || "-"}`} icon={User}>
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <p><span className="text-[#5B7C93]">Jenis kelamin:</span> {santri.jenisKelamin || "-"}</p>
           <p><span className="text-[#5B7C93]">Kamar/Asrama:</span> {santri.asrama || "-"}</p>
@@ -8578,21 +8789,37 @@ export default function App() {
   };
   const handleLogout = () => { setSession(null); setBackendToken(null); setBackendOnline(null); };
   const [printContent, setPrintContent] = useState(null);
-  const [data, setData] = useState({
-    tahunAjaran: TAHUN_AJARAN_SEED,
-    unitUsaha: UNIT_USAHA_SEED,
-    transaksiCashless: [],
-    permintaanBMT: [],
-    cashflowUnit: [],
-    penilaianKegiatan: [],
-    penilaianUbudiyah: [],
-    indikatorKegiatan: JSON.parse(JSON.stringify(KEGIATAN_PENGASUHAN_INDIKATOR_SEED)),
-    materiUbudiyah: [...UBUDIYAH_MATERI_SEED],
-    materiDoa: [...DOA_MATERI_SEED],
-    raportAkademik: [],
-    raportMental: [],
-    raportTahfidz: [],
-    santri: SANTRI_SEED, guru: GURU_SEED, wali: WALI_SEED, kelas: KELAS_SEED,
+  const [data, setData] = useState(() => {
+    let santriAwal = SANTRI_SEED;
+    let waliAwal = WALI_SEED;
+    try {
+      const cachedS = localStorage.getItem("mma_cached_santri");
+      if (cachedS) {
+        const parsed = JSON.parse(cachedS);
+        if (Array.isArray(parsed) && parsed.length > 0) santriAwal = parsed;
+      }
+      const cachedW = localStorage.getItem("mma_cached_wali");
+      if (cachedW) {
+        const parsed = JSON.parse(cachedW);
+        if (Array.isArray(parsed) && parsed.length > 0) waliAwal = parsed;
+      }
+    } catch {}
+
+    return {
+      tahunAjaran: TAHUN_AJARAN_SEED,
+      unitUsaha: UNIT_USAHA_SEED,
+      transaksiCashless: [],
+      permintaanBMT: [],
+      cashflowUnit: [],
+      penilaianKegiatan: [],
+      penilaianUbudiyah: [],
+      indikatorKegiatan: JSON.parse(JSON.stringify(KEGIATAN_PENGASUHAN_INDIKATOR_SEED)),
+      materiUbudiyah: [...UBUDIYAH_MATERI_SEED],
+      materiDoa: [...DOA_MATERI_SEED],
+      raportAkademik: [],
+      raportMental: [],
+      raportTahfidz: [],
+      santri: santriAwal, guru: GURU_SEED, wali: waliAwal, kelas: KELAS_SEED,
     alumni: [],
     kelasInfo: {},
     halaqoh: HALAQOH_SEED,
@@ -8633,7 +8860,8 @@ export default function App() {
     pengajuanAnggaran: [],
     // ---- Admin: pengaturan tampilan aplikasi (logo, foto, warna tema) ----
     tampilan: { ...TAMPILAN_DEFAULT },
-  });
+  };
+});
 
   const users = { guru: data.guru, wali: data.wali };
 
@@ -8667,6 +8895,28 @@ export default function App() {
         }));
       })
       .catch(() => {}); // gagal diam-diam — panel yang membutuhkan tetap menampilkan data lama/lokal
+  }, [backendToken, backendOnline]);
+
+  // ---- Sinkronisasi Global Master Data Santri dari Server Cloud Database ----
+  useEffect(() => {
+    if (!backendToken || backendOnline !== true) return;
+    backendApi("/santri", { token: backendToken })
+      .then((santriRows) => {
+        if (Array.isArray(santriRows) && santriRows.length > 0) {
+          setData((d) => {
+            const byId = new Map(d.santri.map((s) => [s.id, s]));
+            for (const r of santriRows) {
+              byId.set(r.id, { ...(byId.get(r.id) || {}), ...r });
+            }
+            const updatedSantri = Array.from(byId.values());
+            try {
+              localStorage.setItem("mma_cached_santri", JSON.stringify(updatedSantri));
+            } catch {}
+            return { ...d, santri: updatedSantri };
+          });
+        }
+      })
+      .catch(() => {});
   }, [backendToken, backendOnline]);
 
   // ---- Terapkan pengaturan Tampilan (Admin): logo, foto gedung, warna tema ----

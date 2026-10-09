@@ -42,7 +42,7 @@
       <div class="heading"><div><p class="eyebrow">Kartu cashless</p><h1>QR Code Santri</h1><p>Kelola kartu aktif per santri. QR lama tidak berlaku setelah diterbitkan ulang.</p></div><button class="btn btn-primary" id="printButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/><path d="M17 12h.01"/></svg><span>Cetak kartu</span></button></div>
       <p class="notice">PIN bersifat opsional. Santri tanpa PIN dapat bertransaksi dengan QR; setelah PIN diatur, PIN wajib dimasukkan untuk transaksi debit.</p>
       <div id="pageError" class="error hidden" role="alert"></div>
-      <div class="toolbar"><label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="searchInput" type="search" placeholder="Cari nama, NIS, atau kelas..." aria-label="Cari santri"></label><span class="count" id="countLabel"></span></div>
+      <div class="toolbar"><label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="searchInput" type="search" placeholder="Cari nama, No. Stambuk, atau kelas..." aria-label="Cari santri"></label><span class="count" id="countLabel"></span></div>
       <div class="grid" id="cardGrid" aria-live="polite"><div class="state">Memuat data santri...</div></div>
     </section>
   </main>
@@ -105,7 +105,7 @@
         for (const row of visible) {
           const card = el("article", "qr-card");
           const identity = el("div", "identity");
-          identity.append(el("h2", "", row.nama), el("p", "", `Kelas ${row.kelas || "-"}`), el("p", "", `NIS ${row.nis || "-"}`));
+          identity.append(el("h2", "", row.nama), el("p", "", `Kelas ${row.kelas || "-"}`), el("p", "", `No. Stambuk ${row.nis || "-"}`));
           identity.append(el("span", `badge${row.qr ? "" : " off"}`, row.qr ? "QR aktif" : "Belum diterbitkan"));
           identity.append(el("span", `pin-status${row.punyaPin ? "" : " off"}`, row.punyaPin ? "PIN aktif" : "PIN belum diatur"));
           const actions = el("div", "card-actions");

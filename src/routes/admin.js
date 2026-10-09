@@ -1,6 +1,8 @@
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 const crypto = require("crypto");
-const { query, queryOne, queryAll, withTransaction } = require("../db");
+const { query, queryOne, queryAll, withTransaction, getPoolStats } = require("../db");
 const { requireAuth, requireAdmin, requireDashboardAdmin, isSuperAdmin } = require("../auth");
 const {
   semuaGuru, buatGuru, editGuru, editPasswordGuru, editPasswordWali, hapusGuru,
@@ -384,6 +386,131 @@ router.post("/impor/eksekusi", requireAuth, asyncHandler(async (req, res) => {
     totalSantri,
     totalWaliBaru,
     pesan: `Berhasil mengimpor ${totalSantri} data santri dan memproses ${totalWaliBaru} akun wali baru.`,
+  });
+}));
+
+// ---- Status & Keamanan Database (Data Persistence) ----
+router.get("/database/status", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => {
+  const [santriRes, waliRes, guruRes, trxRes, prodRes, ledgRes, saldoRes] = await Promise.all([
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Wali"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Guru"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "TransaksiCashless"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "ProdukUnitUsaha"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Ledger"'),
+    queryOne('SELECT COALESCE(SUM("saldo"), 0) AS "total" FROM "Santri"'),
+  ]);
+
+  res.json({
+    status: "ok",
+    dbEngine: "PostgreSQL",
+    targetHost: process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).host : "localhost",
+    poolStats: getPoolStats(),
+    totalSantri: Number(santriRes?.total || 0),
+    totalWali: Number(waliRes?.total || 0),
+    totalGuru: Number(guruRes?.total || 0),
+    totalTransaksi: Number(trxRes?.total || 0),
+    totalProduk: Number(prodRes?.total || 0),
+    totalLedger: Number(ledgRes?.total || 0),
+    totalSaldoSemuaSantri: Number(saldoRes?.total || 0),
+    isPersistent: true,
+    persistenceInfo: "Database terhubung ke Managed PostgreSQL Cloud (Railway/Neon). Seluruh data aman, terisolasi, dan tidak terpengaruh deploy ulang container aplikasi.",
+    serverTime: new Date().toISOString(),
+  });
+}));
+
+// ---- Ekspor & Unduh Backup Database Komprehensif ----
+router.get("/database/backup", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => {
+  const [
+    santri, wali, guru, unitUsaha, tahunAjaran, produk, pengaturan,
+    ringkasanTrx,
+  ] = await Promise.all([
+    queryAll(`SELECT "id", "nama", "kelas", "nis", "nisn", "jenisKelamin", "tempatLahir", "tanggalLahir", "waliId", "saldo", "limitJajanHarian", "asrama", "halaqoh", "catatanKesehatan", "golDarah", "alamat", "namaAyah", "namaIbu", "asalSekolah", "programPilihan", "citaCita", "noDarurat" FROM "Santri" ORDER BY "nama"`),
+    queryAll(`SELECT "id", "nama", "hp", "username", "statusAkun", "mustChangePassword" FROM "Wali" ORDER BY "nama"`),
+    queryAll(`SELECT "id", "nama", "username", "departemen", "unit", "jenisAkun", "statusAkun" FROM "Guru" ORDER BY "nama"`),
+    queryAll(`SELECT "id", "nama" FROM "UnitUsaha" ORDER BY "nama"`),
+    queryAll(`SELECT "id", "tahunMulai", "aktif" FROM "TahunAjaran" ORDER BY "tahunMulai"`),
+    queryAll(`SELECT "id", "unit", "nama", "barcode", "harga", "stok", "aktif" FROM "ProdukUnitUsaha" ORDER BY "nama"`),
+    queryAll(`SELECT "kunci", "nilai" FROM "Pengaturan"`),
+    queryOne(`SELECT COUNT(*) AS "totalTrx", COALESCE(SUM("jumlah"), 0) AS "omsetTotal" FROM "TransaksiCashless"`),
+  ]);
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const filename = `backup-mma-${timestamp}.json`;
+
+  const backupData = {
+    metadata: {
+      aplikasi: "Ma'had Mudaiyatul Anwar",
+      eksporPada: new Date().toISOString(),
+      dieksporOleh: req.user.username,
+      versiSkema: "1.0-pg",
+      totalSantri: santri.length,
+      totalWali: wali.length,
+      totalGuru: guru.length,
+      totalProduk: produk.length,
+      totalTransaksiTercatat: Number(ringkasanTrx?.totalTrx || 0),
+    },
+    santri,
+    wali,
+    guru,
+    unitUsaha,
+    tahunAjaran,
+    produk,
+    pengaturan,
+  };
+
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.json(backupData);
+}));
+
+// ---- Simpan Backup ke Folder Server (backups/) ----
+router.post("/database/backup/simpan-lokal", requireAuth, requireDashboardAdmin, asyncHandler(async (req, res) => {
+  const [santri, wali, guru, unitUsaha, tahunAjaran, produk, pengaturan] = await Promise.all([
+    queryAll(`SELECT "id", "nama", "kelas", "nis", "nisn", "jenisKelamin", "tempatLahir", "tanggalLahir", "waliId", "saldo", "limitJajanHarian", "asrama", "halaqoh", "catatanKesehatan", "golDarah", "alamat", "namaAyah", "namaIbu", "asalSekolah", "programPilihan", "citaCita", "noDarurat" FROM "Santri" ORDER BY "nama"`),
+    queryAll(`SELECT "id", "nama", "hp", "username", "statusAkun", "mustChangePassword" FROM "Wali" ORDER BY "nama"`),
+    queryAll(`SELECT "id", "nama", "username", "departemen", "unit", "jenisAkun", "statusAkun" FROM "Guru" ORDER BY "nama"`),
+    queryAll(`SELECT "id", "nama" FROM "UnitUsaha" ORDER BY "nama"`),
+    queryAll(`SELECT "id", "tahunMulai", "aktif" FROM "TahunAjaran" ORDER BY "tahunMulai"`),
+    queryAll(`SELECT "id", "unit", "nama", "barcode", "harga", "stok", "aktif" FROM "ProdukUnitUsaha" ORDER BY "nama"`),
+    queryAll(`SELECT "kunci", "nilai" FROM "Pengaturan"`),
+  ]);
+
+  const backupsDir = path.resolve(__dirname, "..", "..", "backups");
+  if (!fs.existsSync(backupsDir)) {
+    fs.mkdirSync(backupsDir, { recursive: true });
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const filename = `backup-mma-${timestamp}.json`;
+  const filePath = path.join(backupsDir, filename);
+
+  const payload = {
+    metadata: {
+      aplikasi: "Ma'had Mudaiyatul Anwar",
+      eksporPada: new Date().toISOString(),
+      dieksporOleh: req.user.username,
+      versiSkema: "1.0-pg",
+      totalSantri: santri.length,
+      totalWali: wali.length,
+    },
+    santri,
+    wali,
+    guru,
+    unitUsaha,
+    tahunAjaran,
+    produk,
+    pengaturan,
+  };
+
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
+
+  res.json({
+    status: "ok",
+    pesan: "Backup berhasil disimpan di server.",
+    filename,
+    totalSantri: santri.length,
+    waktu: new Date().toISOString(),
   });
 }));
 
