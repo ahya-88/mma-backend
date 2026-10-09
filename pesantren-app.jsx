@@ -2438,6 +2438,7 @@ const DEPT_META = {
 // tersambung, supaya tidak ada aksi yang terasa berhasil padahal sebenarnya tidak tersimpan.
 function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const deptKeys = Object.keys(DEPT_META);
+  const [adminTab, setAdminTab] = useState("ringkasan");
 
   // -- Akun Guru/Staf --
   const [guruFetch, setGuruFetch] = useState({ loading: true, error: "", data: [] });
@@ -2445,11 +2446,11 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     if (!backendToken) { setGuruFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] }); return; }
     setGuruFetch((f) => ({ ...f, loading: true }));
     backendApi("/admin/guru", { token: backendToken })
-      .then((rows) => setGuruFetch({ loading: false, error: "", data: rows }))
+      .then((rows) => setGuruFetch({ loading: false, error: "", data: Array.isArray(rows) ? rows : [] }))
       .catch((e) => setGuruFetch({ loading: false, error: e.message || "Gagal memuat daftar akun.", data: [] }));
   };
   useEffect(muatGuru, [backendToken]);
-  const guruList = guruFetch.data;
+  const guruList = Array.isArray(guruFetch.data) ? guruFetch.data : [];
 
   const [guruBusyId, setGuruBusyId] = useState(null);
   const [guruActionError, setGuruActionError] = useState("");
@@ -2791,11 +2792,10 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     }
   };
 
-  const [adminTab, setAdminTab] = useState("ringkasan");
   const adminMenus = [
     { id: "ringkasan", label: "Ringkasan & Metrik", icon: TrendingUp, badge: "KPI" },
-    { id: "akun", label: "Kelola Akun Guru", icon: ShieldCheck, badge: `${guruList.length}` },
-    { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${data.unitUsaha.length}` },
+    { id: "akun", label: "Kelola Akun Guru", icon: ShieldCheck, badge: `${(guruList || []).length}` },
+    { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${(data?.unitUsaha || []).length}` },
     { id: "tahun", label: "Kalender Akademik", icon: CalendarCheck },
     { id: "tampilan", label: "Pengaturan Tampilan", icon: ImageIcon },
     { id: "database", label: "Penyimpanan & Cadangan", icon: Database, badge: "Cloud" },
@@ -2846,35 +2846,35 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
                 <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                   <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {(data.santri || []).length}
+                    {(data?.santri || []).length}
                   </p>
                   <p className="text-xs font-semibold text-[#17242E] mt-1">Total Santri</p>
                   <p className="text-[10px] text-[#5B7C93]">Terdaftar aktif</p>
                 </div>
                 <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                   <p className="text-base sm:text-lg font-bold text-[#15803D]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {rupiah((data.santri || []).reduce((acc, s) => acc + (Number(s.saldo) || 0), 0))}
+                    {rupiah((data?.santri || []).reduce((acc, s) => acc + (Number(s.saldo) || 0), 0))}
                   </p>
                   <p className="text-xs font-semibold text-[#17242E] mt-1">Saldo BMT Santri</p>
                   <p className="text-[10px] text-[#5B7C93]">Akumulasi cashless</p>
                 </div>
                 <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                   <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {guruList.length}
+                    {(guruList || []).length}
                   </p>
                   <p className="text-xs font-semibold text-[#17242E] mt-1">Akun Petugas</p>
                   <p className="text-[10px] text-[#5B7C93]">Seluruh bagian</p>
                 </div>
                 <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                   <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {data.unitUsaha.length}
+                    {(data?.unitUsaha || []).length}
                   </p>
                   <p className="text-xs font-semibold text-[#17242E] mt-1">Unit Usaha</p>
                   <p className="text-[10px] text-[#5B7C93]">Kantin, BMT, dll</p>
                 </div>
                 <div className="border border-[#0C4A6E] rounded-xl p-3.5 text-center bg-[#EAF4FB] shadow-sm transition-all hover:scale-[1.02] col-span-2 sm:col-span-1">
                   <p className="text-sm sm:text-base font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {data.tahunAjaran.find((t) => t.aktif)?.label || "Aktif"}
+                    {(data?.tahunAjaran || []).find((t) => t.aktif)?.label || "Aktif"}
                   </p>
                   <p className="text-xs font-semibold text-[#0C4A6E] mt-1">Tahun Ajaran</p>
                   <p className="text-[10px] text-[#15803D] font-bold uppercase">Sedang Berjalan</p>
@@ -3147,11 +3147,11 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
                   <div className="bg-white p-2.5 rounded-xl border border-[#DCEDF7]">
                     <p className="text-[11px] text-[#5B7C93]">Santri di Server</p>
-                    <p className="text-base font-bold text-[#0C4A6E]">{dbStatus?.totalSantri ?? data.santri.length}</p>
+                    <p className="text-base font-bold text-[#0C4A6E]">{dbStatus?.totalSantri ?? (data?.santri || []).length}</p>
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-[#DCEDF7]">
                     <p className="text-[11px] text-[#5B7C93]">Wali Tercatat</p>
-                    <p className="text-base font-bold text-[#0C4A6E]">{dbStatus?.totalWali ?? data.wali.length}</p>
+                    <p className="text-base font-bold text-[#0C4A6E]">{dbStatus?.totalWali ?? (data?.wali || []).length}</p>
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-[#DCEDF7]">
                     <p className="text-[11px] text-[#5B7C93]">Transaksi Kasir</p>
@@ -3207,7 +3207,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                 <div className="pt-3 border-t border-[#DCEDF7]">
                   <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2 font-bold">2. Sinkronisasi Data Master ke Cloud Database</p>
                   <p className="text-xs text-[#5B7C93] mb-2.5">
-                    Pastikan seluruh data santri lokal ({data.santri.length} santri) tersimpan permanen di cloud PostgreSQL. Sangat berguna jika server baru saja dideploy pertama kali.
+                    Pastikan seluruh data santri lokal ({(data?.santri || []).length} santri) tersimpan permanen di cloud PostgreSQL. Sangat berguna jika server baru saja dideploy pertama kali.
                   </p>
                   <button
                     onClick={sinkronkanSantriKeCloudDb}
@@ -3215,7 +3215,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                     className="border border-[#0C4A6E] text-[#0C4A6E] bg-white hover:bg-[#EAF4FB] text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs active:scale-95 disabled:opacity-50"
                   >
                     <RefreshCw size={14} className={dbSyncBusy ? "animate-spin" : ""} />
-                    {dbSyncBusy ? "Menyinkronkan..." : `Simpan ${data.santri.length} Santri Lokal ke Server Cloud`}
+                    {dbSyncBusy ? "Menyinkronkan..." : `Simpan ${(data?.santri || []).length} Santri Lokal ke Server Cloud`}
                   </button>
                 </div>
               </div>
@@ -8177,7 +8177,7 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
   const dept = guru.departemen;
   const isSuper = dept === "admin";
   const [adminActiveScope, setAdminActiveScope] = useState("admin");
-  const [adminActiveUnit, setAdminActiveUnit] = useState(data.unitUsaha[0] || "BMT");
+  const [adminActiveUnit, setAdminActiveUnit] = useState((data?.unitUsaha && data.unitUsaha[0]) || "BMT");
 
   const effectiveDept = isSuper ? adminActiveScope : dept;
   const effectiveUnit = isSuper ? adminActiveUnit : guru.unit;
@@ -8210,10 +8210,10 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
       />
 
       <KpiRow items={[
-        { icon: Users, label: "Total Santri", value: data.santri.length },
-        { icon: User, label: "Wali Santri", value: data.wali.length },
-        { icon: GraduationCap, label: "Guru & Staff", value: data.guru.length },
-        { icon: School, label: "Jumlah Kelas", value: data.kelas.length },
+        { icon: Users, label: "Total Santri", value: (data?.santri || []).length },
+        { icon: User, label: "Wali Santri", value: (data?.wali || []).length },
+        { icon: GraduationCap, label: "Guru & Staff", value: (data?.guru || []).length },
+        { icon: School, label: "Jumlah Kelas", value: (data?.kelas || []).length },
       ]} />
 
       {/* Master Department Switcher Khusus Admin */}
@@ -8261,7 +8261,7 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
                 <Store size={13} /> Pilih Unit:
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {data.unitUsaha.map((u) => {
+                {(data?.unitUsaha || []).map((u) => {
                   const isUnitActive = effectiveUnit === u;
                   return (
                     <button
@@ -8762,6 +8762,57 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
   );
 }
 
+// ---------- ERROR BOUNDARY ----------
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("MMA App ErrorBoundary caught error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#F4F8FB] flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl border border-[#CFE3F0] p-6 shadow-lg text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <AlertCircle size={24} />
+            </div>
+            <h2 className="text-lg font-bold text-[#0C4A6E]">Terjadi Kendala Tampilan</h2>
+            <p className="text-xs text-[#5B7C93] leading-relaxed">
+              Aplikasi mendeteksi kendala pada modul ini. Klik tombol di bawah untuk memuat ulang tampilan atau kembali.
+            </p>
+            {this.state.error?.message && (
+              <p className="text-[11px] bg-red-50 text-red-700 p-2.5 rounded-xl border border-red-200 font-mono text-left break-all">
+                {this.state.error.message}
+              </p>
+            )}
+            <div className="flex gap-2 justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  if (this.props.onReset) this.props.onReset();
+                  else window.location.reload();
+                }}
+                className="btn-gradient px-4 py-2 rounded-xl text-xs font-semibold"
+              >
+                Muat Ulang Tampilan
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ---------- ROOT APP ----------
 
 export default function App() {
@@ -9005,8 +9056,10 @@ export default function App() {
       ) : (
         <div className="page-enter">
           <TopBar role={session.role} user={session.user} onLogout={handleLogout} namaAplikasi={namaAplikasi} warnaPrimer={warnaPrimer} warnaSekunder={warnaSekunder} backendOnline={backendOnline} />
-          {session.role === "guru" && <GuruDashboard guru={data.guru.find((g) => g.id === session.user.id) || session.user} data={data} setData={setData} onPrint={setPrintContent} backendToken={backendToken} backendOnline={backendOnline} />}
-          {session.role === "wali" && <WaliDashboard wali={session.user} data={data} setData={setData} onPrint={setPrintContent} backendToken={backendToken} backendOnline={backendOnline} />}
+          <ErrorBoundary onReset={handleLogout}>
+            {session.role === "guru" && <GuruDashboard guru={data.guru.find((g) => g.id === session.user.id) || session.user} data={data} setData={setData} onPrint={setPrintContent} backendToken={backendToken} backendOnline={backendOnline} />}
+            {session.role === "wali" && <WaliDashboard wali={session.user} data={data} setData={setData} onPrint={setPrintContent} backendToken={backendToken} backendOnline={backendOnline} />}
+          </ErrorBoundary>
         </div>
       )}
       <PrintOverlay content={printContent} onClose={() => setPrintContent(null)} />
