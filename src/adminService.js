@@ -22,20 +22,23 @@ async function semuaGuru() {
 }
 
 async function buatGuru({ nama, username, password, departemen, unit, jenisAkun, actingUserId }) {
-  if (jenisAkun === "admin") throw new CashlessError(400, "Jenis akun Admin sudah dilebur ke Superadmin. Gunakan jenisAkun 'superadmin'.");
-  if (!JENIS_AKUN_VALID.includes(jenisAkun)) throw new CashlessError(400, "Jenis akun tidak valid.");
+  let finalJenisAkun = (jenisAkun || "").toLowerCase().trim();
+  if (!finalJenisAkun) finalJenisAkun = "staf"; // default fallback jika tidak dikirim
+  if (finalJenisAkun === "admin") finalJenisAkun = "superadmin"; // otomatis migrate
+  
+  if (!JENIS_AKUN_VALID.includes(finalJenisAkun)) throw new CashlessError(400, `Jenis akun tidak valid (${finalJenisAkun}). Harus 'staf' atau 'superadmin'.`);
   if (!nama || !username || !password) throw new CashlessError(400, "Nama, username, dan password wajib diisi.");
 
   const { PASSWORD_MIN_LENGTH } = require("./passwordPolicy");
   if (password.length < PASSWORD_MIN_LENGTH) throw new CashlessError(400, `Password minimal ${PASSWORD_MIN_LENGTH} karakter.`);
 
-  if (jenisAkun !== "staf") departemen = "admin";
-  if (jenisAkun === "staf" && departemen === "admin") throw new CashlessError(400, "Departemen admin hanya untuk jenisAkun superadmin.");
+  if (finalJenisAkun !== "staf") departemen = "admin";
+  if (finalJenisAkun === "staf" && departemen === "admin") throw new CashlessError(400, "Departemen admin hanya untuk jenisAkun superadmin.");
   if (departemen !== "admin" && !DEPARTEMEN_VALID.includes(departemen)) throw new CashlessError(400, "Departemen tidak valid.");
   if (departemen === "unitusaha" && !unit) throw new CashlessError(400, "Unit usaha wajib dipilih untuk staf unit usaha.");
 
   const hash = await bcrypt.hash(password, 10);
-  const row = { id: uid(), nama: nama.trim(), username: username.trim(), password: hash, departemen, unit: departemen === "unitusaha" ? unit : null, jenisAkun };
+  const row = { id: uid(), nama: nama.trim(), username: username.trim(), password: hash, departemen, unit: departemen === "unitusaha" ? unit : null, jenisAkun: finalJenisAkun };
 
   return withTransaction(async () => {
     const ada = await queryOne('SELECT "id" FROM "Guru" WHERE "username" = $1', [row.username]);
@@ -53,14 +56,16 @@ async function buatGuru({ nama, username, password, departemen, unit, jenisAkun,
 }
 
 async function editGuru({ id, nama, username, departemen, unit, jenisAkun, actingUserId }) {
-  if (jenisAkun === "admin") throw new CashlessError(400, "Jenis akun Admin sudah dilebur ke Superadmin. Gunakan jenisAkun 'superadmin'.");
+  let inputJenisAkun = (jenisAkun || "").toLowerCase().trim();
+  if (inputJenisAkun === "admin") inputJenisAkun = "superadmin";
+
   return withTransaction(async () => {
     const row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row) throw new CashlessError(404, "Staf tidak ditemukan.");
 
     const oldKind = jenisEfektif(row);
-    const kindFinal = jenisAkun || oldKind;
-    if (!JENIS_AKUN_VALID.includes(kindFinal)) throw new CashlessError(400, "Jenis akun tidak valid.");
+    const kindFinal = inputJenisAkun || oldKind;
+    if (!JENIS_AKUN_VALID.includes(kindFinal)) throw new CashlessError(400, `Jenis akun tidak valid (${kindFinal}).`);
 
     const depFinal = kindFinal !== "staf" ? "admin" : (departemen || row.departemen);
     if (kindFinal === "staf" && depFinal === "admin") throw new CashlessError(400, "Departemen admin hanya untuk jenisAkun superadmin.");
