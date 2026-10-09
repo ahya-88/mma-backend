@@ -268,6 +268,37 @@ async function catatTransaksiTx({ santriId, unit, jenis, kategori, subKategori, 
         [txId, santriId, unit, jenis, kategori || null, subKategori || null, jumlah, keterangan || null, saldoSetelah, saldoSekarang, saldoSetelah, idempotencyKey || null, tISO, tLabel, bLabel, metode || null],
       );
 
+      // Integrasi ke Sistem Keuangan (Unit Usaha)
+      const { catatTransaksiUnitUsaha } = require("./keuanganService");
+      const namaSantri = santri.nama || "Unknown";
+
+      if (jenis === "Tarik Tunai") {
+        await catatTransaksiUnitUsaha({
+          jenis: "Transfer Antar Bagian",
+          unitAsal: "BMT",
+          unitTujuan: unit || "Kantin",
+          jumlah: jumlah,
+          keterangan: keterangan || `Pembayaran Cashless Santri - ${namaSantri} (${kategori || 'Umum'})`,
+          dicatatOleh: petugasId || "sistem"
+        });
+      } else if (jenis === "Tarik Tunai BMT") {
+        await catatTransaksiUnitUsaha({
+          jenis: "Dana Keluar",
+          unitAsal: "BMT",
+          jumlah: jumlah,
+          keterangan: keterangan || `Tarik Tunai Cashless Santri - ${namaSantri}`,
+          dicatatOleh: petugasId || "sistem"
+        });
+      } else if (jenis === "Setor Tunai" || jenis === "Setor Tunai BMT" || jenis === "Kredit") {
+        await catatTransaksiUnitUsaha({
+          jenis: "Dana Masuk",
+          unitTujuan: unit || "BMT",
+          jumlah: jumlah,
+          keterangan: keterangan || `Setor Tunai Cashless Santri - ${namaSantri}`,
+          dicatatOleh: petugasId || "sistem"
+        });
+      }
+
       const santriBaru = await getSantriRow(santriId);
       const result = {
         transaksi: { id: txId, santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, saldoSetelah, saldoSebelum: saldoSekarang, saldoSesudah: saldoSetelah, idempotencyKey, tanggalISO: tISO, tanggalLabel: tLabel, bulan: bLabel, metode },
@@ -482,6 +513,17 @@ async function prosesPermintaan({ id, disetujui, diprosesOleh, diprosesOlehId, a
            VALUES ($1, $2, 'BMT', 'Setor Tunai', 'Setor Tunai', $3, $4, $5, $6, $7, $8, $9, $10, 'topup_approved')`,
           [uid(), row.santriId, nominalFinal, `Top Up BMT: ${row.alasan}`, saldoBaru, saldoSekarang, saldoBaru, todayISO(), todayLabel(), todayISO().slice(0, 7)],
         );
+
+        // Integrasi ke Sistem Keuangan (Unit Usaha)
+        const { catatTransaksiUnitUsaha } = require("./keuanganService");
+        const namaSantri = santri.nama || "Unknown";
+        await catatTransaksiUnitUsaha({
+          jenis: "Dana Masuk",
+          unitTujuan: "BMT",
+          jumlah: nominalFinal,
+          keterangan: `Penerimaan Top Up Cashless Santri - ${namaSantri} (Titipan)`,
+          dicatatOleh: diprosesOleh || diprosesOlehId || "sistem"
+        });
 
         await query(
           'UPDATE "PermintaanBMT" SET "status" = \'Disetujui\', "nominalDisetujui" = $1, "referensiMutasi" = $2, "diprosesOleh" = $3, "diprosesPada" = $4, "catatanBMT" = $5 WHERE "id" = $6',
