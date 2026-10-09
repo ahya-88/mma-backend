@@ -58,6 +58,11 @@ CREATE TABLE IF NOT EXISTS Santri (
   pendidikanSMA    TEXT,
   tahunSMA         TEXT,
   riwayatKelas     TEXT,             -- JSON array [{kelas, tanggal}]
+  statusSantri     TEXT NOT NULL DEFAULT 'Aktif', -- Aktif | Alumni | Mundur | Cuti
+  alumniTahunLulus TEXT,
+  alumniStatusSaatIni TEXT,
+  alumniInstansiTujuan TEXT,
+  alumniNoHp       TEXT,
   pinHash          TEXT,
   pinGagal         INTEGER NOT NULL DEFAULT 0,
   pinKunciSampai   TEXT,
@@ -335,3 +340,24 @@ CREATE TABLE IF NOT EXISTS ProdukUnitUsaha (
 CREATE INDEX IF NOT EXISTS idx_produk_unit ON ProdukUnitUsaha (unit);
 -- Barcode wajib unik hanya dalam satu unit yang sama, dan hanya bila diisi (NULL boleh berulang).
 CREATE UNIQUE INDEX IF NOT EXISTS idx_produk_unit_barcode ON ProdukUnitUsaha (unit, barcode) WHERE barcode IS NOT NULL;
+
+-- ---- Modul Pendaftaran Ulang / Kenaikan Kelas ----
+CREATE TABLE IF NOT EXISTS PendaftaranUlang (
+  id                  TEXT PRIMARY KEY,
+  santriId            TEXT NOT NULL REFERENCES Santri(id),
+  tahunAjaranId       TEXT NOT NULL REFERENCES TahunAjaran(id),
+  kelasBaru           TEXT NOT NULL,
+  kelasSebelumnya     TEXT,
+  asramaBaru          TEXT,
+  asramaSebelumnya    TEXT,
+  halaqohBaru         TEXT,
+  status              TEXT NOT NULL DEFAULT 'Terdaftar',
+  keterangan           TEXT,
+  diprosesOleh        TEXT,
+  tanggalDaftarUlang   TEXT NOT NULL,
+  createdAt           TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(santriId, tahunAjaranId)
+);
+CREATE INDEX IF NOT EXISTS idx_daftarulang_tahun ON PendaftaranUlang (tahunAjaranId);
+CREATE INDEX IF NOT EXISTS idx_daftarulang_santri ON PendaftaranUlang (santriId);
+

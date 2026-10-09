@@ -7,7 +7,7 @@ import {
   Mail, Inbox, Archive, Settings, FileSignature, Landmark, Send, Search, Download, Loader2, Bell, Home,
   Image as ImageIcon, ShieldAlert, Clock,
   QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle,
-  Database, HardDrive
+  Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -5440,6 +5440,7 @@ const SCOPE_TABS = {
   ],
   sekretariat: [
     { key: "santri", label: "Data Santri", icon: User },
+    { key: "daftar-ulang", label: "Kenaikan & Daftar Ulang", icon: RefreshCw },
     { key: "alumni", label: "Data Alumni", icon: UserCheck },
     { key: "wali", label: "Data Wali", icon: Users },
     { key: "surat-keluar", label: "Surat Keluar", icon: Send },
@@ -5453,7 +5454,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const tabs = SCOPE_TABS[scope];
   const [tab, setTab] = useState(tabs[0].key);
   const [kelasFilter, setKelasFilter] = useState("Semua");
-  const santriTampil = kelasFilter === "Semua" ? data.santri : data.santri.filter((s) => s.kelas === kelasFilter);
+  const santriAktifList = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif");
+  const santriTampil = kelasFilter === "Semua" ? santriAktifList : santriAktifList.filter((s) => s.kelas === kelasFilter);
   const namaSantri = (id) => data.santri.find((s) => s.id === id)?.nama || "(santri dihapus)";
   const tahunAjaranAktifDept = data.tahunAjaran.find((t) => t.aktif) || data.tahunAjaran[0];
 
@@ -6088,17 +6090,244 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     }
   };
 
+  // -- Panel Master Data Santri (Skala s.d. 2.000 Santri) --
+  const [santriSearch, setSantriSearch] = useState("");
+  const [santriKelasFilter, setSantriKelasFilter] = useState("Semua");
+  const [santriAsramaFilter, setSantriAsramaFilter] = useState("Semua");
+  const [santriGenderFilter, setSantriGenderFilter] = useState("Semua");
+  const [santriPage, setSantriPage] = useState(1);
+  const [santriLimit, setSantriLimit] = useState(25);
+  const [detailSantriData, setDetailSantriData] = useState(null);
+  const [riwayatDaftarUlangModal, setRiwayatDaftarUlangModal] = useState([]);
+  const [loadingRiwayatDU, setLoadingRiwayatDU] = useState(false);
+
+  // -- Modul Kenaikan & Daftar Ulang Massal --
+  const [promosiKelasAsal, setPromosiKelasAsal] = useState("");
+  const [promosiKelasTujuan, setPromosiKelasTujuan] = useState("");
+  const [promosiAsramaTujuan, setPromosiAsramaTujuan] = useState("");
+  const [promosiTerpilihIds, setPromosiTerpilihIds] = useState(new Set());
+  const [promosiLoading, setPromosiLoading] = useState(false);
+  const [promosiMsg, setPromosiMsg] = useState("");
+  const [promosiError, setPromosiError] = useState("");
+
+  const [luluskanKelasAsal, setLuluskanKelasAsal] = useState("");
+  const [luluskanTahun, setLuluskanTahun] = useState(String(new Date().getFullYear()));
+  const [luluskanStatus, setLuluskanStatus] = useState("Melanjutkan Pendidikan");
+  const [luluskanTerpilihIds, setLuluskanTerpilihIds] = useState(new Set());
+  const [luluskanLoading, setLuluskanLoading] = useState(false);
+  const [luluskanMsg, setLuluskanMsg] = useState("");
+  const [luluskanError, setLuluskanError] = useState("");
+  const [duMode, setDuMode] = useState("promosi");
+
+  const togglePilihPromosi = (id) => {
+    setPromosiTerpilihIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSemuaPromosi = (santriList) => {
+    if (promosiTerpilihIds.size === santriList.length && santriList.length > 0) {
+      setPromosiTerpilihIds(new Set());
+    } else {
+      setPromosiTerpilihIds(new Set(santriList.map((s) => s.id)));
+    }
+  };
+
+  const togglePilihLuluskan = (id) => {
+    setLuluskanTerpilihIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSemuaLuluskan = (santriList) => {
+    if (luluskanTerpilihIds.size === santriList.length && santriList.length > 0) {
+      setLuluskanTerpilihIds(new Set());
+    } else {
+      setLuluskanTerpilihIds(new Set(santriList.map((s) => s.id)));
+    }
+  };
+
+  const bukaDetailSantri = async (s) => {
+    setDetailSantriData(s);
+    setRiwayatDaftarUlangModal([]);
+    if (backendToken) {
+      setLoadingRiwayatDU(true);
+      try {
+        const rows = await backendApi(`/daftar-ulang/riwayat/${s.id}`, { token: backendToken });
+        setRiwayatDaftarUlangModal(rows || []);
+      } catch (_) {
+        setRiwayatDaftarUlangModal([]);
+      } finally {
+        setLoadingRiwayatDU(false);
+      }
+    }
+  };
+
+  const tutupDetailSantri = () => {
+    setDetailSantriData(null);
+    setRiwayatDaftarUlangModal([]);
+  };
+
+  const eksporSantriAktifCSV = () => {
+    const aktif = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif");
+    const headers = ["No", "Nama", "No Stambuk (NIS)", "NISN", "Kelas", "Kamar / Asrama", "Jenis Kelamin", "Nama Wali", "No HP Wali", "Alamat", "Saldo Cashless"];
+    const rows = aktif.map((s, idx) => {
+      const wali = data.wali.find((w) => w.id === s.waliId);
+      return [
+        idx + 1,
+        `"${(s.nama || "").replace(/"/g, '""')}"`,
+        `"${s.nis || ""}"`,
+        `"${s.nisn || ""}"`,
+        `"${s.kelas || ""}"`,
+        `"${(s.asrama || "").replace(/"/g, '""')}"`,
+        `"${s.jenisKelamin || ""}"`,
+        `"${(wali?.nama || "").replace(/"/g, '""')}"`,
+        `"${wali?.hp || ""}"`,
+        `"${(s.alamat || "").replace(/"/g, '""')}"`,
+        s.saldo || 0,
+      ].join(",");
+    });
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Data_Santri_Aktif_MMA_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const jalankanPromosiMassal = async () => {
+    if (!promosiKelasAsal || !promosiKelasTujuan) {
+      setPromosiError("Pilih kelas asal dan isi kelas baru tujuan.");
+      return;
+    }
+    if (promosiTerpilihIds.size === 0) {
+      setPromosiError("Pilih minimal 1 santri untuk dipromosikan.");
+      return;
+    }
+    const tahunAktif = data.tahunAjaran.find((t) => t.aktif) || data.tahunAjaran[0];
+    if (!tahunAktif) {
+      setPromosiError("Tahun ajaran aktif belum ditentukan.");
+      return;
+    }
+    setPromosiLoading(true);
+    setPromosiError("");
+    setPromosiMsg("");
+
+    const items = Array.from(promosiTerpilihIds).map((id) => ({
+      santriId: id,
+      kelasBaru: promosiKelasTujuan.trim(),
+      asramaBaru: promosiAsramaTujuan.trim() || undefined,
+      status: "Aktif",
+    }));
+
+    try {
+      if (backendToken) {
+        await backendApi("/daftar-ulang/promosi-massal", {
+          method: "POST",
+          token: backendToken,
+          body: { tahunAjaranId: tahunAktif.id, items },
+        });
+      }
+      setData((d) => ({
+        ...d,
+        santri: d.santri.map((s) => {
+          if (promosiTerpilihIds.has(s.id)) {
+            let rw = [];
+            try { rw = s.riwayatKelas ? (typeof s.riwayatKelas === "string" ? JSON.parse(s.riwayatKelas) : s.riwayatKelas) : []; } catch (_) {}
+            return {
+              ...s,
+              kelas: promosiKelasTujuan.trim(),
+              asrama: promosiAsramaTujuan.trim() || s.asrama,
+              riwayatKelas: [...(Array.isArray(rw) ? rw : []), { kelas: promosiKelasTujuan.trim(), asrama: promosiAsramaTujuan.trim() || s.asrama, tanggal: todayStr(), tahunAjaran: tahunAktif?.label || "-" }],
+            };
+          }
+          return s;
+        }),
+      }));
+      setPromosiMsg(`Alhamdulillah, berhasil mempromosikan ${items.length} santri ke kelas ${promosiKelasTujuan}!`);
+      setPromosiTerpilihIds(new Set());
+    } catch (e) {
+      setPromosiError(e.message || "Gagal memproses kenaikan kelas.");
+    } finally {
+      setPromosiLoading(false);
+    }
+  };
+
+  const jalankanLuluskanMassal = async () => {
+    if (luluskanTerpilihIds.size === 0) {
+      setLuluskanError("Pilih minimal 1 santri untuk diluluskan.");
+      return;
+    }
+    setLuluskanLoading(true);
+    setLuluskanError("");
+    setLuluskanMsg("");
+
+    const santriIds = Array.from(luluskanTerpilihIds);
+    try {
+      if (backendToken) {
+        await backendApi("/daftar-ulang/luluskan-massal", {
+          method: "POST",
+          token: backendToken,
+          body: { tahunLulus: luluskanTahun, santriIds, statusSaatIni: luluskanStatus },
+        });
+      }
+      const lulusList = data.santri.filter((s) => luluskanTerpilihIds.has(s.id));
+      setData((d) => ({
+        ...d,
+        alumni: [
+          ...d.alumni,
+          ...lulusList.map((s) => ({
+            id: uid(),
+            nama: s.nama,
+            nis: s.nis,
+            kelasTerakhir: s.kelas,
+            tahunLulus: luluskanTahun,
+            statusSaatIni: luluskanStatus,
+            instansiTujuan: "",
+            noHp: s.noDarurat || "",
+            alamat: s.alamat || "",
+            keterangan: "Lulus Massal",
+          })),
+        ],
+        santri: d.santri.map((s) => luluskanTerpilihIds.has(s.id) ? { ...s, statusSantri: "Alumni" } : s),
+      }));
+      setLuluskanMsg(`Alhamdulillah, berhasil meluluskan ${santriIds.length} santri ke buku alumni.`);
+      setLuluskanTerpilihIds(new Set());
+    } catch (e) {
+      setLuluskanError(e.message || "Gagal meluluskan santri.");
+    } finally {
+      setLuluskanLoading(false);
+    }
+  };
+
   // -- Alumni --
   const [meluluskanId, setMeluluskanId] = useState(null);
   const [lulusForm, setLulusForm] = useState({ tahunLulus: String(new Date().getFullYear()), statusSaatIni: "Melanjutkan Pendidikan", instansiTujuan: "", noHp: "" });
   const bukaLuluskan = (s) => { setMeluluskanId(s.id); setLulusForm({ tahunLulus: String(new Date().getFullYear()), statusSaatIni: "Melanjutkan Pendidikan", instansiTujuan: "", noHp: "" }); };
-  const konfirmasiLuluskan = () => {
+  const konfirmasiLuluskan = async () => {
     const s = data.santri.find((x) => x.id === meluluskanId);
     if (!s) return;
+    if (backendToken) {
+      try {
+        await backendApi(`/santri/${meluluskanId}/luluskan`, { method: "POST", token: backendToken, body: lulusForm });
+      } catch (err) {
+        console.warn("Gagal meluluskan santri ke server:", err);
+      }
+    }
     setData((d) => ({
       ...d,
       alumni: [...d.alumni, { id: uid(), nama: s.nama, nis: s.nis, kelasTerakhir: s.kelas, ...lulusForm, alamat: s.alamat || "", keterangan: "" }],
-      santri: d.santri.filter((x) => x.id !== meluluskanId),
+      santri: d.santri.map((x) => (x.id === meluluskanId ? { ...x, statusSantri: "Alumni" } : x)),
     }));
     setMeluluskanId(null);
   };
@@ -7210,163 +7439,507 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       )}
 
       {tab === "santri" && (
-        <ArchCard title="Data Santri" eyebrow={`${data.santri.length} Santri Terdaftar`} icon={User}>
+        <ArchCard title="Data Santri" eyebrow={`${santriAktifList.length} Santri Aktif Terdaftar`} icon={User}>
           {santriFetch.loading && <p className="text-xs text-[#5B7C93] mb-3">Memuat data santri dari server…</p>}
           {santriFetch.error && <p className="text-xs text-[#B5533C] mb-3">{santriFetch.error}</p>}
           {santriSaveError && <p className="text-xs text-[#B5533C] mb-3">{santriSaveError}</p>}
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <button onClick={() => (showSantriForm ? batalFormSantri() : bukaTambahSantri())} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95">
-              <Plus size={15} />{showSantriForm ? "Tutup Form" : "Tambah Santri Baru"}
-            </button>
-            <button
-              type="button"
-              onClick={unduhTemplateSantri}
-              className="flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-gray-50 text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors"
-              title="Unduh format template CSV/Excel untuk impor santri"
-            >
-              <Download size={14} /> Unduh Template CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowImporModal(true);
-                setImporDryRunResult(null);
-                setImporError("");
-                setImporSuccess("");
-              }}
-              className="flex items-center gap-1.5 border border-[#0C4A6E] text-[#0C4A6E] bg-white hover:bg-[#EAF4FB] text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors shadow-sm"
-              title="Unggah berkas CSV/Excel untuk impor santri masal"
-            >
-              <UploadCloud size={14} /> Impor Excel / CSV
-            </button>
+
+          {/* Bar KPI / Statistik Ringkas */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-[#EAF4FB] to-[#F4F9FD] border border-[#CFE3F0]/60">
+              <div className="flex items-center gap-2 text-[#0C4A6E] mb-1">
+                <User size={15} />
+                <span className="text-xs font-semibold">Santri Aktif</span>
+              </div>
+              <p className="text-xl font-bold text-[#17242E]">{santriAktifList.length}</p>
+              <p className="text-[10px] text-[#5B7C93]">Kapasitas sistem: s.d. 2.000 santri</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-[#EAF4FB] to-[#F4F9FD] border border-[#CFE3F0]/60">
+              <div className="flex items-center gap-2 text-[#0C4A6E] mb-1">
+                <School size={15} />
+                <span className="text-xs font-semibold">Rombel Kelas</span>
+              </div>
+              <p className="text-xl font-bold text-[#17242E]">{Array.from(new Set(santriAktifList.map((s) => s.kelas).filter(Boolean))).length}</p>
+              <p className="text-[10px] text-[#5B7C93]">Kelas aktif terisi</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-[#EAF4FB] to-[#F4F9FD] border border-[#CFE3F0]/60">
+              <div className="flex items-center gap-2 text-[#0C4A6E] mb-1">
+                <Home size={15} />
+                <span className="text-xs font-semibold">Kamar / Asrama</span>
+              </div>
+              <p className="text-xl font-bold text-[#17242E]">{asramaList.length}</p>
+              <p className="text-[10px] text-[#5B7C93]">Lokasi kamar tercatat</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-[#EAF4FB] to-[#F4F9FD] border border-[#CFE3F0]/60">
+              <div className="flex items-center gap-2 text-[#0C4A6E] mb-1">
+                <GraduationCap size={15} />
+                <span className="text-xs font-semibold">Data Alumni</span>
+              </div>
+              <p className="text-xl font-bold text-[#17242E]">{(data.alumni || []).length}</p>
+              <p className="text-[10px] text-[#5B7C93]">Santri telah lulus</p>
+            </div>
           </div>
+
+          {/* Toolbar: Pencarian, Filter & Aksi Cepat */}
+          <div className="space-y-3 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button onClick={() => (showSantriForm ? batalFormSantri() : bukaTambahSantri())} className="flex items-center gap-1.5 btn-gradient text-xs px-3.5 py-2 rounded-xl font-semibold hover:shadow-lg active:scale-95">
+                  <Plus size={14} /> Tambah Santri Baru
+                </button>
+                <button
+                  type="button"
+                  onClick={unduhTemplateSantri}
+                  className="flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-gray-50 text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors"
+                  title="Unduh format template CSV/Excel untuk impor santri"
+                >
+                  <Download size={14} /> Unduh Format CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImporModal(true);
+                    setImporDryRunResult(null);
+                    setImporError("");
+                    setImporSuccess("");
+                  }}
+                  className="flex items-center gap-1.5 border border-[#0C4A6E] text-[#0C4A6E] bg-white hover:bg-[#EAF4FB] text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors shadow-sm"
+                  title="Unggah berkas CSV/Excel untuk impor santri masal"
+                >
+                  <UploadCloud size={14} /> Impor Excel / CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={eksporSantriAktifCSV}
+                  className="flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-gray-50 text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors"
+                  title="Ekspor seluruh data santri aktif saat ini ke format CSV"
+                >
+                  <Download size={14} /> Ekspor Data Aktif
+                </button>
+              </div>
+
+              <div className="text-xs text-[#5B7C93]">
+                Total: <span className="font-semibold text-[#0C4A6E]">{totalSantriFiltered}</span> santri cocok
+              </div>
+            </div>
+
+            {/* Filter Multifaset Bar */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 bg-[#F7FAFD] p-2.5 rounded-2xl border border-[#CFE3F0]/70">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5B7C93]" />
+                <input
+                  value={santriSearch}
+                  onChange={(e) => { setSantriSearch(e.target.value); setSantriPage(1); }}
+                  placeholder="Cari nama, NIS, NISN, wali..."
+                  className="w-full pl-8 pr-3 py-1.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] placeholder-[#8FB0C7] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                />
+              </div>
+              <select
+                value={santriKelasFilter}
+                onChange={(e) => { setSantriKelasFilter(e.target.value); setSantriPage(1); }}
+                className="w-full py-1.5 px-2.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+              >
+                <option value="Semua">Semua Kelas</option>
+                {data.kelas.map((k) => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              </select>
+              <select
+                value={santriAsramaFilter}
+                onChange={(e) => { setSantriAsramaFilter(e.target.value); setSantriPage(1); }}
+                className="w-full py-1.5 px-2.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+              >
+                <option value="Semua">Semua Asrama / Kamar</option>
+                {asramaList.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+              <select
+                value={santriGenderFilter}
+                onChange={(e) => { setSantriGenderFilter(e.target.value); setSantriPage(1); }}
+                className="w-full py-1.5 px-2.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+              >
+                <option value="Semua">Semua Jenis Kelamin</option>
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Tabel Kompak Berpaginasi (Dioptimasi untuk skala 2.000 santri) */}
+          <div className="overflow-x-auto border border-[#CFE3F0] rounded-2xl bg-white shadow-sm mb-3">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-[#EBF4FA] text-[#0C4A6E] font-semibold border-b border-[#CFE3F0]">
+                <tr>
+                  <th className="py-2.5 px-3 w-12 text-center">No</th>
+                  <th className="py-2.5 px-3">Santri</th>
+                  <th className="py-2.5 px-3">Kelas</th>
+                  <th className="py-2.5 px-3">Kamar / Asrama</th>
+                  <th className="py-2.5 px-3">Wali Santri</th>
+                  <th className="py-2.5 px-3">Saldo Cashless</th>
+                  <th className="py-2.5 px-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#DCEDF7]">
+                {santriPagingItems.map((s, idx) => {
+                  const noUrut = (santriPageClamped - 1) * santriLimit + idx + 1;
+                  const wali = (data.wali || []).find((w) => w.id === s.waliId);
+                  return (
+                    <tr key={s.id} className="hover:bg-[#F4F9FD] transition-colors">
+                      <td className="py-2.5 px-3 text-center text-[#5B7C93] font-medium">{noUrut}</td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-2.5">
+                          {s.foto ? (
+                            <img src={s.foto} alt={s.nama} className="w-8 h-8 rounded-full object-cover border border-[#CFE3F0] shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-xs font-semibold shrink-0">
+                              {(s.nama || "?").split(" ").map(w => w[0]).slice(0, 2).join("")}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <button onClick={() => bukaDetailSantri(s)} className="text-left font-medium text-[#17242E] hover:text-[#0C4A6E] hover:underline block truncate max-w-[170px]" title={s.nama}>
+                              {s.nama}
+                            </button>
+                            <p className="text-[11px] text-[#5B7C93]">
+                              {s.nis ? `Stb: ${s.nis}` : "No Stb: -"} {s.nisn ? `· NISN: ${s.nisn}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className="inline-block px-2 py-0.5 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] font-medium text-[11px] border border-[#CFE3F0]">
+                          {s.kelas || "-"}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-[#45657A] truncate max-w-[140px]" title={s.asrama || "-"}>
+                        {s.asrama || "-"}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <p className="text-[#17242E] font-medium truncate max-w-[140px]">{wali?.nama || "-"}</p>
+                        <p className="text-[11px] text-[#5B7C93]">{wali?.hp || s.noDarurat || "-"}</p>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <p className="font-semibold text-[#0C4A6E]">{rupiah(s.saldo || 0)}</p>
+                        <p className="text-[10px] text-[#5B7C93]">
+                          {s.limitJajanHarian ? `Limit: ${rupiah(s.limitJajanHarian)}` : "Limit: bebas"}
+                        </p>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <IconBtn tone="ok" onClick={() => bukaDetailSantri(s)} title="Lihat biodata lengkap"><Eye size={14} /></IconBtn>
+                          <IconBtn tone="ok" onClick={() => bukaEditSantri(s)} title="Edit data santri"><Pencil size={14} /></IconBtn>
+                          <IconBtn tone="ok" onClick={() => bukaLuluskan(s)} title="Luluskan santri ke alumni"><UserCheck size={14} /></IconBtn>
+                          <IconBtn onClick={() => delSantri(s.id)} title="Hapus santri"><Trash2 size={14} /></IconBtn>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {!santriPagingItems.length && (
+              <div className="py-8 text-center text-xs text-[#5B7C93]">
+                Tidak ada data santri yang cocok dengan filter pencarian.
+              </div>
+            )}
+          </div>
+
+          {/* Bar Kontrol Paginasi */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 text-xs text-[#5B7C93]">
+            <div>
+              Menampilkan <span className="font-semibold text-[#17242E]">{totalSantriFiltered === 0 ? 0 : (santriPageClamped - 1) * santriLimit + 1}</span>–<span className="font-semibold text-[#17242E]">{Math.min(santriPageClamped * santriLimit, totalSantriFiltered)}</span> dari <span className="font-semibold text-[#17242E]">{totalSantriFiltered}</span> santri aktif
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={santriPageClamped <= 1}
+                  onClick={() => setSantriPage((p) => Math.max(1, p - 1))}
+                  className="px-2.5 py-1 rounded-xl border border-[#CFE3F0] bg-white hover:bg-gray-50 disabled:opacity-40 flex items-center gap-1 font-medium text-[#0C4A6E]"
+                >
+                  <ChevronLeft size={13} /> Sblm
+                </button>
+                <span className="px-2 font-medium text-[#0C4A6E]">
+                  Hal. {santriPageClamped} / {totalPagesSantri}
+                </span>
+                <button
+                  disabled={santriPageClamped >= totalPagesSantri}
+                  onClick={() => setSantriPage((p) => Math.min(totalPagesSantri, p + 1))}
+                  className="px-2.5 py-1 rounded-xl border border-[#CFE3F0] bg-white hover:bg-gray-50 disabled:opacity-40 flex items-center gap-1 font-medium text-[#0C4A6E]"
+                >
+                  Lanjut <ChevronRight size={13} />
+                </button>
+              </div>
+              <select
+                value={santriLimit}
+                onChange={(e) => { setSantriLimit(Number(e.target.value)); setSantriPage(1); }}
+                className="border border-[#CFE3F0] rounded-xl px-2 py-1 text-xs bg-white text-[#0C4A6E] focus:outline-none"
+              >
+                <option value={25}>25 / hal</option>
+                <option value={50}>50 / hal</option>
+                <option value={100}>100 / hal</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Modal Form Tambah / Edit Santri */}
           {showSantriForm && (
-            <div className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-4 mb-5 bg-[#F0F8FE]">
-              <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">{editingSantriId ? "Edit Data Pokok" : "Data Pokok"}</p>
-              <div className="flex items-center gap-3 mb-4">
-                {santriForm.foto ? (
-                  <img src={santriForm.foto} alt="Foto santri" className="w-16 h-16 rounded-full object-cover border border-[#CFE3F0]" />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-lg font-semibold">{(santriForm.nama || "?").split(" ").map(w => w[0]).slice(0,2).join("")}</div>
-                )}
-                <div>
-                  <input type="file" accept="image/*" onChange={pilihFoto} className="text-xs text-[#45657A]" />
-                  {santriForm.foto && <button onClick={() => setSantriForm({ ...santriForm, foto: "" })} className="block text-[10px] text-[#B5533C] mt-1">Hapus foto</button>}
+            <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+              <div className="bg-white rounded-2xl max-w-3xl w-full p-6 border border-[#CFE3F0] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <h3 className="font-semibold text-base text-[#0C4A6E] flex items-center gap-2">
+                    <User size={18} />
+                    {editingSantriId ? "Edit Data Santri" : "Tambah Santri Baru"}
+                  </h3>
+                  <button onClick={batalFormSantri} className="text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  <div className="flex items-center gap-3">
+                    {santriForm.foto ? (
+                      <img src={santriForm.foto} alt="Foto santri" className="w-16 h-16 rounded-2xl object-cover border border-[#CFE3F0]" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-2xl bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-lg font-semibold">
+                        {(santriForm.nama || "?").split(" ").map(w => w[0]).slice(0, 2).join("")}
+                      </div>
+                    )}
+                    <div>
+                      <input type="file" accept="image/*" onChange={pilihFoto} className="text-xs text-[#45657A]" />
+                      {santriForm.foto && <button onClick={() => setSantriForm({ ...santriForm, foto: "" })} className="block text-[10px] text-[#B5533C] mt-1 font-medium">Hapus foto</button>}
+                    </div>
+                  </div>
+
+                  <p className="font-semibold uppercase tracking-wide text-[#0C4A6E]">Data Pokok</p>
+                  <div className="grid sm:grid-cols-3 gap-2">
+                    <input placeholder="Nama lengkap *" value={santriForm.nama} onChange={(e) => setSantriForm({ ...santriForm, nama: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="No. Stambuk (NIS)" value={santriForm.nis} onChange={(e) => setSantriForm({ ...santriForm, nis: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="NISN" value={santriForm.nisn} onChange={(e) => setSantriForm({ ...santriForm, nisn: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <select value={santriForm.jenisKelamin} onChange={(e) => setSantriForm({ ...santriForm, jenisKelamin: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
+                      <option>Laki-laki</option><option>Perempuan</option>
+                    </select>
+                    <select value={santriForm.kelas} onChange={(e) => setSantriForm({ ...santriForm, kelas: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
+                      {data.kelas.map((k) => <option key={k} value={k}>{k}</option>)}
+                    </select>
+                    <select value={santriForm.waliId} onChange={(e) => setSantriForm({ ...santriForm, waliId: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
+                      {data.wali.map((w) => <option key={w.id} value={w.id}>{w.nama}</option>)}
+                    </select>
+                    <input placeholder="Kamar / Asrama" value={santriForm.asrama} onChange={(e) => setSantriForm({ ...santriForm, asrama: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <select value={santriForm.halaqoh} onChange={(e) => setSantriForm({ ...santriForm, halaqoh: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
+                      <option value="">Halaqoh (opsional)</option>
+                      {(data.halaqoh || []).map((h) => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </div>
+
+                  <p className="font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2">Kelahiran & Alamat</p>
+                  <div className="grid sm:grid-cols-3 gap-2">
+                    <input placeholder="Tempat lahir" value={santriForm.tempatLahir} onChange={(e) => setSantriForm({ ...santriForm, tempatLahir: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input type="date" value={santriForm.tanggalLahir} onChange={(e) => setSantriForm({ ...santriForm, tanggalLahir: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="Golongan darah" value={santriForm.golDarah} onChange={(e) => setSantriForm({ ...santriForm, golDarah: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="Alamat lengkap" value={santriForm.alamat} onChange={(e) => setSantriForm({ ...santriForm, alamat: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 sm:col-span-3" />
+                  </div>
+
+                  <p className="font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2">Kontak Darurat & Kesehatan</p>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    <input placeholder="No. HP kontak darurat" value={santriForm.noDarurat} onChange={(e) => setSantriForm({ ...santriForm, noDarurat: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="Catatan kesehatan (alergi, dsb.)" value={santriForm.catatanKesehatan} onChange={(e) => setSantriForm({ ...santriForm, catatanKesehatan: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                  </div>
+
+                  <p className="font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2">BMT & Cashless</p>
+                  <div>
+                    <input type="number" placeholder="Limit jajan harian (Rp), kosongkan jika tidak dibatasi" value={santriForm.limitJajanHarian} onChange={(e) => setSantriForm({ ...santriForm, limitJajanHarian: e.target.value })} className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t">
+                  <button onClick={batalFormSantri} className="px-4 py-2 text-xs border border-[#CFE3F0] text-[#45657A] rounded-xl hover:bg-gray-50">Batal</button>
+                  <button onClick={simpanSantri} className="btn-gradient text-xs px-4 py-2 rounded-xl font-semibold hover:shadow-lg active:scale-95 flex items-center gap-1.5">
+                    <Check size={14} />{editingSantriId ? "Simpan Perubahan" : "Simpan Santri"}
+                  </button>
                 </div>
               </div>
-              <div className="grid sm:grid-cols-3 gap-2 mb-4">
-                <input placeholder="Nama lengkap" value={santriForm.nama} onChange={(e) => setSantriForm({ ...santriForm, nama: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="No. Stambuk" value={santriForm.nis} onChange={(e) => setSantriForm({ ...santriForm, nis: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="NISN" value={santriForm.nisn} onChange={(e) => setSantriForm({ ...santriForm, nisn: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <select value={santriForm.jenisKelamin} onChange={(e) => setSantriForm({ ...santriForm, jenisKelamin: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm"><option>Laki-laki</option><option>Perempuan</option></select>
-                <select value={santriForm.kelas} onChange={(e) => setSantriForm({ ...santriForm, kelas: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">{data.kelas.map((k) => <option key={k}>{k}</option>)}</select>
-                <select value={santriForm.waliId} onChange={(e) => setSantriForm({ ...santriForm, waliId: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">{data.wali.map((w) => <option key={w.id} value={w.id}>{w.nama}</option>)}</select>
-                <input placeholder="Kamar / Asrama" value={santriForm.asrama} onChange={(e) => setSantriForm({ ...santriForm, asrama: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <select value={santriForm.halaqoh} onChange={(e) => setSantriForm({ ...santriForm, halaqoh: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
-                  <option value="">Halaqoh (opsional)</option>
-                  {(data.halaqoh || []).map((h) => <option key={h}>{h}</option>)}
-                </select>
-              </div>
-              <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Kelahiran & Alamat</p>
-              <div className="grid sm:grid-cols-3 gap-2 mb-4">
-                <input placeholder="Tempat lahir" value={santriForm.tempatLahir} onChange={(e) => setSantriForm({ ...santriForm, tempatLahir: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input type="date" value={santriForm.tanggalLahir} onChange={(e) => setSantriForm({ ...santriForm, tanggalLahir: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="Golongan darah" value={santriForm.golDarah} onChange={(e) => setSantriForm({ ...santriForm, golDarah: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="Alamat lengkap" value={santriForm.alamat} onChange={(e) => setSantriForm({ ...santriForm, alamat: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm sm:col-span-3" />
-              </div>
-              <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Orang Tua & Riwayat Pendidikan (untuk cetak rapor)</p>
-              <div className="grid sm:grid-cols-3 gap-2 mb-2">
-                <input placeholder="Nama Ayah" value={santriForm.namaAyah} onChange={(e) => setSantriForm({ ...santriForm, namaAyah: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="Nama Ibu" value={santriForm.namaIbu} onChange={(e) => setSantriForm({ ...santriForm, namaIbu: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="Asal Sekolah" value={santriForm.asalSekolah} onChange={(e) => setSantriForm({ ...santriForm, asalSekolah: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-              </div>
-              <div className="grid sm:grid-cols-3 gap-2 mb-2">
-                <div className="flex gap-1"><input placeholder="Nama SD" value={santriForm.pendidikanSD} onChange={(e) => setSantriForm({ ...santriForm, pendidikanSD: e.target.value })} className="flex-1 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" /><input placeholder="Tahun" value={santriForm.tahunSD} onChange={(e) => setSantriForm({ ...santriForm, tahunSD: e.target.value })} className="w-24 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" /></div>
-                <div className="flex gap-1"><input placeholder="Nama SMP" value={santriForm.pendidikanSMP} onChange={(e) => setSantriForm({ ...santriForm, pendidikanSMP: e.target.value })} className="flex-1 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" /><input placeholder="Tahun" value={santriForm.tahunSMP} onChange={(e) => setSantriForm({ ...santriForm, tahunSMP: e.target.value })} className="w-24 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" /></div>
-                <div className="flex gap-1"><input placeholder="Nama SMA/MA" value={santriForm.pendidikanSMA} onChange={(e) => setSantriForm({ ...santriForm, pendidikanSMA: e.target.value })} className="flex-1 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" /><input placeholder="Tahun" value={santriForm.tahunSMA} onChange={(e) => setSantriForm({ ...santriForm, tahunSMA: e.target.value })} className="w-24 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" /></div>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-2 mb-4">
-                <input placeholder="Program Pilihan (mis. Tahfidz Al-Qur'an)" value={santriForm.programPilihan} onChange={(e) => setSantriForm({ ...santriForm, programPilihan: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="Cita-cita" value={santriForm.citaCita} onChange={(e) => setSantriForm({ ...santriForm, citaCita: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-              </div>
-              <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Kontak Darurat & Kesehatan</p>
-              <div className="grid sm:grid-cols-2 gap-2 mb-4">
-                <input placeholder="No. HP kontak darurat" value={santriForm.noDarurat} onChange={(e) => setSantriForm({ ...santriForm, noDarurat: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                <input placeholder="Catatan kesehatan (alergi, dsb.)" value={santriForm.catatanKesehatan} onChange={(e) => setSantriForm({ ...santriForm, catatanKesehatan: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-              </div>
-              <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Cashless</p>
-              <div className="grid sm:grid-cols-2 gap-2 mb-4">
-                <input type="number" placeholder="Limit jajan harian (Rp), kosongkan jika tidak dibatasi" value={santriForm.limitJajanHarian} onChange={(e) => setSantriForm({ ...santriForm, limitJajanHarian: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm sm:col-span-2" />
-              </div>
-              <button onClick={simpanSantri} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />{editingSantriId ? "Simpan Perubahan" : "Simpan Santri"}</button>
             </div>
           )}
-          <div className="divide-y divide-[#DCEDF7]">
-            {data.santri.map((s) => (
-              <div key={s.id} className="py-2.5">
-                <div className="flex items-center justify-between text-sm">
-                  <button onClick={() => setDetailSantriId(detailSantriId === s.id ? null : s.id)} className="text-left flex-1 flex items-center gap-2.5">
-                    {s.foto ? (
-                      <img src={s.foto} alt={s.nama} className="w-8 h-8 rounded-full object-cover border border-[#CFE3F0] shrink-0" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-xs font-semibold shrink-0">{s.nama.split(" ").map(w => w[0]).slice(0,2).join("")}</div>
-                    )}
-                    <span>
-                      <span className="text-[#17242E] font-medium">{s.nama}</span>
-                      <span className="text-[#5B7C93]"> · {s.kelas} · No. Stambuk {s.nis || "-"} · NISN {s.nisn || "-"} · Wali: {data.wali.find((w) => w.id === s.waliId)?.nama || "-"}</span>
-                    </span>
+
+          {/* Modal Biodata Lengkap Santri */}
+          {detailSantriData && (
+            <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+              <div className="bg-white rounded-2xl max-w-2xl w-full p-6 border border-[#CFE3F0] shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <div className="flex items-center gap-2">
+                    <User size={18} className="text-[#0C4A6E]" />
+                    <h3 className="font-semibold text-base text-[#0C4A6E]">Biodata Lengkap Santri</h3>
+                  </div>
+                  <button onClick={tutupDetailSantri} className="text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg">
+                    <X size={18} />
                   </button>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <IconBtn tone="ok" onClick={() => setDetailSantriId(detailSantriId === s.id ? null : s.id)} title="Lihat biodata"><User size={15} /></IconBtn>
-                    <IconBtn tone="ok" onClick={() => bukaEditSantri(s)} title="Edit"><Pencil size={15} /></IconBtn>
-                    <IconBtn tone="ok" onClick={() => (meluluskanId === s.id ? setMeluluskanId(null) : bukaLuluskan(s))} title="Luluskan"><UserCheck size={15} /></IconBtn>
-                    <IconBtn onClick={() => delSantri(s.id)} title="Hapus"><Trash2 size={15} /></IconBtn>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  {detailSantriData.foto ? (
+                    <img src={detailSantriData.foto} alt={detailSantriData.nama} className="w-20 h-20 rounded-2xl object-cover border border-[#CFE3F0] shrink-0 shadow-sm" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-xl font-bold shrink-0">
+                      {(detailSantriData.nama || "?").split(" ").map(w => w[0]).slice(0, 2).join("")}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-lg font-bold text-[#17242E]">{detailSantriData.nama}</h4>
+                    <p className="text-xs text-[#5B7C93] mt-0.5">
+                      No. Stambuk: <span className="font-semibold text-[#0C4A6E]">{detailSantriData.nis || "-"}</span> · NISN: <span className="font-semibold text-[#0C4A6E]">{detailSantriData.nisn || "-"}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className="px-2 py-0.5 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] text-[11px] font-medium border border-[#CFE3F0]">
+                        Kelas {detailSantriData.kelas || "-"}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-lg bg-[#F0FDF4] text-[#166534] text-[11px] font-medium border border-[#BBF7D0]">
+                        {detailSantriData.asrama || "Belum ada asrama"}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-[#45657A] text-[11px] font-medium">
+                        {detailSantriData.jenisKelamin || "-"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                {detailSantriId === s.id && (
-                  <div className="mt-2 ml-1 grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-[#45657A] bg-[#F0F8FE] border border-[#DCEDF7] rounded-xl p-3">
-                    <p><span className="text-[#5B7C93]">Jenis kelamin:</span> {s.jenisKelamin || "-"}</p>
-                    <p><span className="text-[#5B7C93]">Kamar/Asrama:</span> {s.asrama || "-"}</p>
-                    <p><span className="text-[#5B7C93]">Tempat, Tgl Lahir:</span> {s.tempatLahir || "-"}{s.tanggalLahir ? `, ${s.tanggalLahir}` : ""}</p>
-                    <p><span className="text-[#5B7C93]">Golongan darah:</span> {s.golDarah || "-"}</p>
-                    <p className="sm:col-span-2"><span className="text-[#5B7C93]">Alamat:</span> {s.alamat || "-"}</p>
-                    <p><span className="text-[#5B7C93]">Kontak darurat:</span> {s.noDarurat || "-"}</p>
-                    <p><span className="text-[#5B7C93]">Catatan kesehatan:</span> {s.catatanKesehatan || "-"}</p>
-                    <p><span className="text-[#5B7C93]">Saldo cashless:</span> {rupiah(s.saldo || 0)}</p>
-                    <p><span className="text-[#5B7C93]">Limit jajan harian:</span> {s.limitJajanHarian ? `${rupiah(s.limitJajanHarian)} (sisa hari ini: ${rupiah(sisaLimitHarian(s, data.transaksiCashless))})` : "Tidak dibatasi"}</p>
-                    <p><span className="text-[#5B7C93]">Status blokir cashless:</span> {isBlokirAktif(s) ? <span className="text-[#96271A] font-medium">Diblokir sampai {formatTanggalISO(s.blokirCashless.sampaiISO)}</span> : <span className="text-[#15803D]">Tidak diblokir</span>} <span className="text-[#8FB0C7]">(diatur lewat BMT)</span></p>
-                    <div className="sm:col-span-2">
-                      <span className="text-[#5B7C93]">Riwayat kelas:</span>
-                      <div className="mt-1 space-y-0.5">
-                        {(s.riwayatKelas || []).map((r, i) => (
-                          <p key={i}>{r.kelas} <span className="text-[#8FB0C7]">— sejak {r.tanggal}</span></p>
-                        ))}
-                        {!(s.riwayatKelas || []).length && <p className="text-[#8FB0C7]">Belum ada riwayat.</p>}
-                      </div>
+
+                {/* Grid Rincian Biodata */}
+                <div className="grid sm:grid-cols-2 gap-3 text-xs bg-[#F7FAFD] p-3.5 rounded-xl border border-[#CFE3F0]/70">
+                  <div><span className="text-[#5B7C93]">Tempat, Tgl Lahir:</span> <p className="font-medium text-[#17242E]">{detailSantriData.tempatLahir || "-"}{detailSantriData.tanggalLahir ? `, ${detailSantriData.tanggalLahir}` : ""}</p></div>
+                  <div><span className="text-[#5B7C93]">Golongan Darah:</span> <p className="font-medium text-[#17242E]">{detailSantriData.golDarah || "-"}</p></div>
+                  <div className="sm:col-span-2"><span className="text-[#5B7C93]">Alamat:</span> <p className="font-medium text-[#17242E]">{detailSantriData.alamat || "-"}</p></div>
+                  <div><span className="text-[#5B7C93]">Wali Santri:</span> <p className="font-medium text-[#17242E]">{(data.wali || []).find(w => w.id === detailSantriData.waliId)?.nama || "-"}</p></div>
+                  <div><span className="text-[#5B7C93]">Kontak Darurat / HP:</span> <p className="font-medium text-[#17242E]">{detailSantriData.noDarurat || (data.wali || []).find(w => w.id === detailSantriData.waliId)?.hp || "-"}</p></div>
+                  <div><span className="text-[#5B7C93]">Nama Ayah & Ibu:</span> <p className="font-medium text-[#17242E]">{detailSantriData.namaAyah || "-"} / {detailSantriData.namaIbu || "-"}</p></div>
+                  <div><span className="text-[#5B7C93]">Catatan Kesehatan:</span> <p className="font-medium text-[#17242E]">{detailSantriData.catatanKesehatan || "-"}</p></div>
+                  <div><span className="text-[#5B7C93]">Saldo BMT Cashless:</span> <p className="font-semibold text-[#0C4A6E]">{rupiah(detailSantriData.saldo || 0)}</p></div>
+                  <div><span className="text-[#5B7C93]">Limit Jajan Harian:</span> <p className="font-medium text-[#17242E]">{detailSantriData.limitJajanHarian ? rupiah(detailSantriData.limitJajanHarian) : "Bebas / Tanpa batas"}</p></div>
+                </div>
+
+                {/* Rekam Jejak Kelas & Asrama Tahunan */}
+                <div className="space-y-1.5 pt-1">
+                  <h5 className="font-semibold text-xs text-[#0C4A6E] flex items-center gap-1.5">
+                    <RefreshCw size={13} /> Rekam Jejak Perjalanan Kelas & Asrama
+                  </h5>
+                  {loadingRiwayatDU && <p className="text-[11px] text-[#5B7C93]">Memuat rekam jejak...</p>}
+                  {!loadingRiwayatDU && riwayatDaftarUlangModal.length > 0 && (
+                    <div className="border border-[#DCEDF7] rounded-xl overflow-hidden">
+                      <table className="w-full text-[11px] text-left">
+                        <thead className="bg-[#EAF4FB] text-[#0C4A6E]">
+                          <tr>
+                            <th className="p-2">Tahun Ajaran</th>
+                            <th className="p-2">Kelas Baru</th>
+                            <th className="p-2">Asrama Baru</th>
+                            <th className="p-2">Tanggal</th>
+                            <th className="p-2">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#DCEDF7]">
+                          {riwayatDaftarUlangModal.map((r, i) => (
+                            <tr key={i} className="hover:bg-gray-50/50">
+                              <td className="p-2 font-medium">{r.tahunLabel}</td>
+                              <td className="p-2">{r.kelasBaru} <span className="text-[#8FB0C7] text-[10px]">(dari {r.kelasSebelumnya || "-"})</span></td>
+                              <td className="p-2">{r.asramaBaru || "-"}</td>
+                              <td className="p-2 text-[#5B7C93]">{r.tanggalDaftarUlang}</td>
+                              <td className="p-2"><span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-semibold">{r.status}</span></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  </div>
-                )}
-                {meluluskanId === s.id && (
-                  <div className="mt-2 ml-1 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-3 bg-[#F0F8FE]">
-                    <p className="text-xs font-medium text-[#0C4A6E] mb-2">Luluskan {s.nama} — pindahkan ke Data Alumni</p>
-                    <div className="grid sm:grid-cols-2 gap-2 mb-2">
-                      <input placeholder="Tahun lulus" value={lulusForm.tahunLulus} onChange={(e) => setLulusForm({ ...lulusForm, tahunLulus: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1.5 text-sm" />
-                      <select value={lulusForm.statusSaatIni} onChange={(e) => setLulusForm({ ...lulusForm, statusSaatIni: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1.5 text-sm">
-                        <option>Melanjutkan Pendidikan</option><option>Bekerja</option><option>Wirausaha</option><option>Belum Diketahui</option><option>Lainnya</option>
-                      </select>
-                      <input placeholder="Instansi tujuan (kampus/tempat kerja)" value={lulusForm.instansiTujuan} onChange={(e) => setLulusForm({ ...lulusForm, instansiTujuan: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1.5 text-sm sm:col-span-2" />
-                      <input placeholder="No. HP alumni (opsional)" value={lulusForm.noHp} onChange={(e) => setLulusForm({ ...lulusForm, noHp: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1.5 text-sm sm:col-span-2" />
+                  )}
+                  {!loadingRiwayatDU && riwayatDaftarUlangModal.length === 0 && (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-[#5B7C93]">
+                      {(detailSantriData.riwayatKelas && (Array.isArray(detailSantriData.riwayatKelas) ? detailSantriData.riwayatKelas : JSON.parse(detailSantriData.riwayatKelas || "[]"))).length > 0 ? (
+                        <div className="space-y-1">
+                          {(Array.isArray(detailSantriData.riwayatKelas) ? detailSantriData.riwayatKelas : JSON.parse(detailSantriData.riwayatKelas || "[]")).map((rw, i) => (
+                            <p key={i}>• Kelas {rw.kelas} {rw.asrama ? `· Asrama: ${rw.asrama}` : ""} {rw.tanggal ? `(${rw.tanggal})` : ""}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p>Belum ada riwayat mutasi kelas atau pendaftaran ulang tercatat.</p>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={konfirmasiLuluskan} className="text-xs btn-gradient px-3 py-1.5 rounded-xl  hover:shadow-lg active:scale-95">Konfirmasi Luluskan</button>
-                      <button onClick={() => setMeluluskanId(null)} className="text-xs border border-[#CFE3F0] text-[#45657A] px-3 py-1.5 rounded-xl">Batal</button>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end pt-3 border-t">
+                  <button onClick={tutupDetailSantri} className="px-4 py-2 text-xs border border-[#CFE3F0] text-[#45657A] rounded-xl hover:bg-gray-50">Tutup</button>
+                </div>
               </div>
-            ))}
-            {!data.santri.length && <EmptyState text="Belum ada santri terdaftar." />}
-          </div>
+            </div>
+          )}
+
+          {/* Modal Luluskan Santri Individual */}
+          {meluluskanId && (
+            <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-[#CFE3F0] shadow-2xl space-y-4">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <div className="flex items-center gap-2">
+                    <UserCheck size={18} className="text-[#0C4A6E]" />
+                    <h3 className="font-semibold text-base text-[#0C4A6E]">Luluskan Santri</h3>
+                  </div>
+                  <button onClick={() => setMeluluskanId(null)} className="text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <p className="text-xs text-[#45657A]">
+                  Santri yang diluluskan akan dialihkan statusnya menjadi <b>Alumni</b> dan dipindahkan ke Buku Induk Alumni. Riwayat akademik dan saldo cashless tetap tersimpan aman.
+                </p>
+
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <label className="text-[#5B7C93] block mb-1">Tahun Kelulusan</label>
+                    <input
+                      placeholder="Contoh: 2026/2027"
+                      value={lulusForm.tahunLulus}
+                      onChange={(e) => setLulusForm({ ...lulusForm, tahunLulus: e.target.value })}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[#5B7C93] block mb-1">Rencana / Status Saat Ini</label>
+                    <select
+                      value={lulusForm.statusSaatIni}
+                      onChange={(e) => setLulusForm({ ...lulusForm, statusSaatIni: e.target.value })}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    >
+                      <option>Melanjutkan Pendidikan</option>
+                      <option>Bekerja</option>
+                      <option>Wirausaha</option>
+                      <option>Belum Diketahui</option>
+                      <option>Lainnya</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[#5B7C93] block mb-1">Instansi Tujuan (Kampus / Sekolah / Tempat Kerja)</label>
+                    <input
+                      placeholder="Nama kampus atau instansi"
+                      value={lulusForm.instansiTujuan}
+                      onChange={(e) => setLulusForm({ ...lulusForm, instansiTujuan: e.target.value })}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[#5B7C93] block mb-1">No. HP Kontak Alumni</label>
+                    <input
+                      placeholder="0812..."
+                      value={lulusForm.noHp}
+                      onChange={(e) => setLulusForm({ ...lulusForm, noHp: e.target.value })}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t">
+                  <button onClick={() => setMeluluskanId(null)} className="px-3.5 py-1.5 text-xs border border-[#CFE3F0] text-[#45657A] rounded-xl">Batal</button>
+                  <button onClick={konfirmasiLuluskan} className="btn-gradient text-xs px-4 py-2 rounded-xl font-semibold hover:shadow-lg active:scale-95 flex items-center gap-1.5">
+                    <Check size={14} /> Konfirmasi Luluskan
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Modal Impor Excel / CSV Santri */}
           {showImporModal && (
@@ -7540,6 +8113,534 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           )}
         </ArchCard>
       )}
+
+      {tab === "daftar-ulang" && (() => {
+        const daftarKelasSantri = Array.from(new Set(santriAktifList.map((s) => s.kelas).filter(Boolean))).sort();
+        const daftarAsramaSantri = Array.from(new Set(santriAktifList.map((s) => s.asrama).filter(Boolean))).sort();
+        const santriPromosiList = santriAktifList.filter((s) => s.kelas === promosiKelasAsal);
+        const santriLuluskanList = santriAktifList.filter((s) => s.kelas === luluskanKelasAsal);
+
+        return (
+          <ArchCard
+            title="Kenaikan Kelas & Pendaftaran Ulang Santri"
+            eyebrow={`Tahun Ajaran Aktif: ${tahunAjaranAktifDept?.label || "Aktif"}`}
+            icon={RefreshCw}
+          >
+            {/* Header Description & Workflow Notice */}
+            <div className="bg-[#F0F8FE] border border-[#CFE3F0] rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-[#0C4A6E] text-white rounded-lg mt-0.5">
+                  <RefreshCw size={18} />
+                </div>
+                <div className="flex-1 text-xs text-[#5B7C93] leading-relaxed">
+                  <p className="font-semibold text-sm text-[#0C4A6E] mb-1">
+                    Sistem Manajemen Kenaikan Tingkat & Mutasi Rombel
+                  </p>
+                  <p>
+                    Fitur ini memfasilitasi proses pendaftaran ulang tahunan dan kenaikan jenjang rombongan belajar (rombel)
+                    secara massal oleh staf sekretariat/pengasuhan. Santri dapat dipromosikan ke kelas atau asrama baru
+                    sekaligus, atau diluluskan menjadi Alumni untuk kelas tingkat akhir.
+                  </p>
+                  <p className="mt-1 text-emerald-800 font-medium">
+                    ✓ Catatan Keuangan: Pembiayaan dan tagihan pendaftaran ulang ditangani terpisah oleh modul Keuangan/Administrasi.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Mode Switcher */}
+            <div className="flex flex-wrap gap-2 mb-6 border-b border-[#CFE3F0] pb-3">
+              <button
+                type="button"
+                onClick={() => setDuMode("promosi")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  duMode === "promosi"
+                    ? "bg-[#0C4A6E] text-white shadow-sm"
+                    : "bg-white/80 text-[#5B7C93] hover:bg-[#F0F8FE] border border-[#CFE3F0]"
+                }`}
+              >
+                <ArrowRightLeft size={16} />
+                <span>Kenaikan Kelas & Mutasi Asrama Massal</span>
+                <span className="text-[10px] bg-sky-200/40 text-current px-2 py-0.5 rounded-full ml-1">Rombel</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDuMode("kelulusan")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  duMode === "kelulusan"
+                    ? "bg-[#0C4A6E] text-white shadow-sm"
+                    : "bg-white/80 text-[#5B7C93] hover:bg-[#F0F8FE] border border-[#CFE3F0]"
+                }`}
+              >
+                <GraduationCap size={16} />
+                <span>Kelulusan Santri Tingkat Akhir (Alumni)</span>
+                <span className="text-[10px] bg-amber-200/40 text-current px-2 py-0.5 rounded-full ml-1">Tingkat Akhir</span>
+              </button>
+            </div>
+
+            {/* Sub-Panel 1: Kenaikan Kelas & Mutasi Asrama */}
+            {duMode === "promosi" && (
+              <div className="space-y-6">
+                {/* Form Pengaturan Kenaikan */}
+                <div className="bg-white border border-[#CFE3F0] rounded-xl p-5 shadow-sm">
+                  <h4 className="text-sm font-semibold text-[#0F172A] mb-3 flex items-center gap-2">
+                    <ArrowRightLeft size={16} className="text-[#0C4A6E]" />
+                    Pengaturan Kenaikan / Mutasi Rombel
+                  </h4>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-[#5B7C93] mb-1">
+                        1. Pilih Kelas Asal (Rombel Saat Ini) *
+                      </label>
+                      <select
+                        value={promosiKelasAsal}
+                        onChange={(e) => {
+                          setPromosiKelasAsal(e.target.value);
+                          setPromosiTerpilihIds(new Set());
+                          setPromosiMsg("");
+                          setPromosiError("");
+                        }}
+                        className="w-full border border-[#CFE3F0] bg-[#F8FAFC] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      >
+                        <option value="">-- Pilih Kelas Asal --</option>
+                        {daftarKelasSantri.map((k) => (
+                          <option key={k} value={k}>
+                            {k} ({santriAktifList.filter((s) => s.kelas === k).length} santri)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#5B7C93] mb-1">
+                        2. Kelas Baru / Tujuan *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: Tahfidz 2A, 8B, 10-IPA"
+                        value={promosiKelasTujuan}
+                        onChange={(e) => setPromosiKelasTujuan(e.target.value)}
+                        list="daftar-kelas-rekomendasi"
+                        className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      />
+                      <datalist id="daftar-kelas-rekomendasi">
+                        {daftarKelasSantri.map((k) => (
+                          <option key={k} value={k} />
+                        ))}
+                      </datalist>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#5B7C93] mb-1">
+                        3. Kamar / Asrama Baru (Opsional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Kosongkan jika tetap di asrama lama"
+                        value={promosiAsramaTujuan}
+                        onChange={(e) => setPromosiAsramaTujuan(e.target.value)}
+                        list="daftar-asrama-rekomendasi"
+                        className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      />
+                      <datalist id="daftar-asrama-rekomendasi">
+                        {daftarAsramaSantri.map((a) => (
+                          <option key={a} value={a} />
+                        ))}
+                      </datalist>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Feedback Alerts */}
+                {promosiMsg && (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-2">
+                    <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+                    <span>{promosiMsg}</span>
+                  </div>
+                )}
+                {promosiError && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-2">
+                    <AlertCircle size={16} className="shrink-0 text-red-600" />
+                    <span>{promosiError}</span>
+                  </div>
+                )}
+
+                {/* Daftar Santri Kelas Asal */}
+                <div className="bg-white border border-[#CFE3F0] rounded-xl overflow-hidden shadow-sm">
+                  <div className="p-4 bg-[#F8FAFC] border-b border-[#CFE3F0] flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-[#0F172A]">
+                        Santri di Kelas {promosiKelasAsal || "(Belum dipilih)"}:
+                      </span>
+                      <span className="text-xs bg-sky-100 text-[#0C4A6E] font-medium px-2 py-0.5 rounded-full">
+                        {santriPromosiList.length} Santri
+                      </span>
+                      {promosiTerpilihIds.size > 0 && (
+                        <span className="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full">
+                          {promosiTerpilihIds.size} Dipilih
+                        </span>
+                      )}
+                    </div>
+
+                    {santriPromosiList.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSemuaPromosi(santriPromosiList)}
+                          className="text-xs px-3 py-1.5 rounded-lg border border-[#CFE3F0] bg-white text-[#0C4A6E] font-medium flex items-center gap-1.5 hover:bg-[#F0F8FE] transition-colors"
+                        >
+                          {promosiTerpilihIds.size === santriPromosiList.length ? (
+                            <>
+                              <CheckSquare size={14} className="text-[#0C4A6E]" />
+                              <span>Batal Pilih Semua</span>
+                            </>
+                          ) : (
+                            <>
+                              <Square size={14} />
+                              <span>Pilih Semua Santri</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {!promosiKelasAsal ? (
+                    <div className="p-10 text-center text-[#5B7C93] text-sm">
+                      <ArrowRightLeft size={36} className="mx-auto mb-2 text-[#CFE3F0]" />
+                      <p>Silakan pilih kelas asal terlebih dahulu untuk menampilkan daftar santri.</p>
+                    </div>
+                  ) : santriPromosiList.length === 0 ? (
+                    <div className="p-10 text-center text-[#5B7C93] text-sm">
+                      <p>Tidak ada santri aktif di kelas {promosiKelasAsal}.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-[#F8FAFC] text-[#5B7C93] font-semibold uppercase tracking-wider border-b border-[#CFE3F0]">
+                          <tr>
+                            <th className="p-3 w-10 text-center">
+                              <input
+                                type="checkbox"
+                                checked={promosiTerpilihIds.size === santriPromosiList.length && santriPromosiList.length > 0}
+                                onChange={() => toggleSemuaPromosi(santriPromosiList)}
+                                className="rounded text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                              />
+                            </th>
+                            <th className="p-3 w-12 text-center">No</th>
+                            <th className="p-3">NIS / Stambuk</th>
+                            <th className="p-3">Nama Santri</th>
+                            <th className="p-3">L/P</th>
+                            <th className="p-3">Kamar / Asrama Saat Ini</th>
+                            <th className="p-3 text-center">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E2E8F0]">
+                          {santriPromosiList.map((s, idx) => {
+                            const isChecked = promosiTerpilihIds.has(s.id);
+                            return (
+                              <tr
+                                key={s.id}
+                                className={`transition-colors ${isChecked ? "bg-sky-50/70" : "hover:bg-[#F8FAFC]"}`}
+                              >
+                                <td className="p-3 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => togglePilihPromosi(s.id)}
+                                    className="rounded text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                                  />
+                                </td>
+                                <td className="p-3 text-center text-[#5B7C93]">{idx + 1}</td>
+                                <td className="p-3 font-mono font-medium text-[#0F172A]">{s.nis || "-"}</td>
+                                <td className="p-3 font-medium text-[#0F172A]">
+                                  <button
+                                    type="button"
+                                    onClick={() => bukaDetailSantri(s)}
+                                    className="hover:text-[#0C4A6E] hover:underline text-left"
+                                  >
+                                    {s.nama}
+                                  </button>
+                                </td>
+                                <td className="p-3 text-[#5B7C93]">
+                                  {s.jenisKelamin ? (s.jenisKelamin === "Laki-laki" ? "L" : "P") : "-"}
+                                </td>
+                                <td className="p-3 text-[#5B7C93]">{s.asrama || "-"}</td>
+                                <td className="p-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => bukaDetailSantri(s)}
+                                    className="p-1 text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#E0F2FE] rounded transition-colors"
+                                    title="Lihat Biodata & Riwayat"
+                                  >
+                                    <Eye size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Footer Eksekusi Promosi */}
+                  {santriPromosiList.length > 0 && (
+                    <div className="p-4 bg-[#F8FAFC] border-t border-[#CFE3F0] flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-xs text-[#5B7C93]">
+                        <p>
+                          Target: Santri terpilih akan dipindahkan ke kelas{" "}
+                          <strong className="text-[#0F172A]">{promosiKelasTujuan || "(Ketik kelas baru)"}</strong>
+                          {promosiAsramaTujuan ? (
+                            <> dan asrama <strong className="text-[#0F172A]">{promosiAsramaTujuan}</strong></>
+                          ) : (
+                            " (asrama tetap)"
+                          )}
+                          .
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={jalankanPromosiMassal}
+                        disabled={promosiLoading || promosiTerpilihIds.size === 0 || !promosiKelasTujuan.trim()}
+                        className="btn-gradient text-white px-5 py-2 rounded-xl font-semibold text-xs flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {promosiLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                        <span>Eksekusi Kenaikan Kelas ({promosiTerpilihIds.size} Santri)</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Sub-Panel 2: Kelulusan Santri Tingkat Akhir */}
+            {duMode === "kelulusan" && (
+              <div className="space-y-6">
+                {/* Form Pengaturan Kelulusan */}
+                <div className="bg-white border border-[#CFE3F0] rounded-xl p-5 shadow-sm">
+                  <h4 className="text-sm font-semibold text-[#0F172A] mb-3 flex items-center gap-2">
+                    <GraduationCap size={16} className="text-amber-600" />
+                    Pengaturan Kelulusan Santri Tingkat Akhir
+                  </h4>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-[#5B7C93] mb-1">
+                        1. Pilih Kelas Tingkat Akhir *
+                      </label>
+                      <select
+                        value={luluskanKelasAsal}
+                        onChange={(e) => {
+                          setLuluskanKelasAsal(e.target.value);
+                          setLuluskanTerpilihIds(new Set());
+                          setLuluskanMsg("");
+                          setLuluskanError("");
+                        }}
+                        className="w-full border border-[#CFE3F0] bg-[#F8FAFC] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      >
+                        <option value="">-- Pilih Kelas Akhir --</option>
+                        {daftarKelasSantri.map((k) => (
+                          <option key={k} value={k}>
+                            {k} ({santriAktifList.filter((s) => s.kelas === k).length} santri)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#5B7C93] mb-1">
+                        2. Tahun Kelulusan *
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Contoh: 2026"
+                        value={luluskanTahun}
+                        onChange={(e) => setLuluskanTahun(e.target.value)}
+                        className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#5B7C93] mb-1">
+                        3. Status Alumni Awal
+                      </label>
+                      <select
+                        value={luluskanStatus}
+                        onChange={(e) => setLuluskanStatus(e.target.value)}
+                        className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      >
+                        <option value="Melanjutkan Pendidikan">Melanjutkan Pendidikan (PT/Ma'had Aly)</option>
+                        <option value="Khidmah / Pengabdian">Khidmah / Pengabdian Pesantren</option>
+                        <option value="Bekerja / Wirausaha">Bekerja / Wirausaha</option>
+                        <option value="Lainnya">Lainnya</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Feedback Alerts */}
+                {luluskanMsg && (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-2">
+                    <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+                    <span>{luluskanMsg}</span>
+                  </div>
+                )}
+                {luluskanError && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-2">
+                    <AlertCircle size={16} className="shrink-0 text-red-600" />
+                    <span>{luluskanError}</span>
+                  </div>
+                )}
+
+                {/* Daftar Santri Calon Lulusan */}
+                <div className="bg-white border border-[#CFE3F0] rounded-xl overflow-hidden shadow-sm">
+                  <div className="p-4 bg-[#F8FAFC] border-b border-[#CFE3F0] flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-[#0F172A]">
+                        Santri Calon Lulusan {luluskanKelasAsal || "(Belum dipilih)"}:
+                      </span>
+                      <span className="text-xs bg-amber-100 text-amber-800 font-medium px-2 py-0.5 rounded-full">
+                        {santriLuluskanList.length} Santri
+                      </span>
+                      {luluskanTerpilihIds.size > 0 && (
+                        <span className="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full">
+                          {luluskanTerpilihIds.size} Dipilih
+                        </span>
+                      )}
+                    </div>
+
+                    {santriLuluskanList.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSemuaLuluskan(santriLuluskanList)}
+                          className="text-xs px-3 py-1.5 rounded-lg border border-[#CFE3F0] bg-white text-[#0C4A6E] font-medium flex items-center gap-1.5 hover:bg-[#F0F8FE] transition-colors"
+                        >
+                          {luluskanTerpilihIds.size === santriLuluskanList.length ? (
+                            <>
+                              <CheckSquare size={14} className="text-[#0C4A6E]" />
+                              <span>Batal Pilih Semua</span>
+                            </>
+                          ) : (
+                            <>
+                              <Square size={14} />
+                              <span>Pilih Semua Santri</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {!luluskanKelasAsal ? (
+                    <div className="p-10 text-center text-[#5B7C93] text-sm">
+                      <GraduationCap size={36} className="mx-auto mb-2 text-[#CFE3F0]" />
+                      <p>Silakan pilih kelas tingkat akhir yang akan diluluskan.</p>
+                    </div>
+                  ) : santriLuluskanList.length === 0 ? (
+                    <div className="p-10 text-center text-[#5B7C93] text-sm">
+                      <p>Tidak ada santri aktif di kelas {luluskanKelasAsal}.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-[#F8FAFC] text-[#5B7C93] font-semibold uppercase tracking-wider border-b border-[#CFE3F0]">
+                          <tr>
+                            <th className="p-3 w-10 text-center">
+                              <input
+                                type="checkbox"
+                                checked={luluskanTerpilihIds.size === santriLuluskanList.length && santriLuluskanList.length > 0}
+                                onChange={() => toggleSemuaLuluskan(santriLuluskanList)}
+                                className="rounded text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                              />
+                            </th>
+                            <th className="p-3 w-12 text-center">No</th>
+                            <th className="p-3">NIS / Stambuk</th>
+                            <th className="p-3">Nama Santri</th>
+                            <th className="p-3">L/P</th>
+                            <th className="p-3">Kamar / Asrama</th>
+                            <th className="p-3 text-center">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E2E8F0]">
+                          {santriLuluskanList.map((s, idx) => {
+                            const isChecked = luluskanTerpilihIds.has(s.id);
+                            return (
+                              <tr
+                                key={s.id}
+                                className={`transition-colors ${isChecked ? "bg-amber-50/70" : "hover:bg-[#F8FAFC]"}`}
+                              >
+                                <td className="p-3 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => togglePilihLuluskan(s.id)}
+                                    className="rounded text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                                  />
+                                </td>
+                                <td className="p-3 text-center text-[#5B7C93]">{idx + 1}</td>
+                                <td className="p-3 font-mono font-medium text-[#0F172A]">{s.nis || "-"}</td>
+                                <td className="p-3 font-medium text-[#0F172A]">
+                                  <button
+                                    type="button"
+                                    onClick={() => bukaDetailSantri(s)}
+                                    className="hover:text-[#0C4A6E] hover:underline text-left"
+                                  >
+                                    {s.nama}
+                                  </button>
+                                </td>
+                                <td className="p-3 text-[#5B7C93]">
+                                  {s.jenisKelamin ? (s.jenisKelamin === "Laki-laki" ? "L" : "P") : "-"}
+                                </td>
+                                <td className="p-3 text-[#5B7C93]">{s.asrama || "-"}</td>
+                                <td className="p-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => bukaDetailSantri(s)}
+                                    className="p-1 text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#E0F2FE] rounded transition-colors"
+                                    title="Lihat Biodata & Riwayat"
+                                  >
+                                    <Eye size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Warning Box & Footer Eksekusi Kelulusan */}
+                  {santriLuluskanList.length > 0 && (
+                    <div className="p-4 bg-amber-50/70 border-t border-amber-200 flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-xs text-amber-900 flex items-start gap-2 max-w-xl">
+                        <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold">Transisi Status Santri ke Alumni</p>
+                          <p className="text-[11px] text-amber-800">
+                            Santri terpilih akan dipindahkan ke buku <strong>Data Alumni</strong>. Data tidak dihapus;
+                            saldo cashless & histori transaksi tetap utuh dan tersimpan di sistem.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={jalankanLuluskanMassal}
+                        disabled={luluskanLoading || luluskanTerpilihIds.size === 0}
+                        className="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-xl font-semibold text-xs flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {luluskanLoading ? <Loader2 size={14} className="animate-spin" /> : <GraduationCap size={14} />}
+                        <span>Luluskan {luluskanTerpilihIds.size} Santri ke Alumni</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </ArchCard>
+        );
+      })()}
 
       {tab === "alumni" && (
         <ArchCard title="Data Alumni" eyebrow={`${data.alumni.length} Alumni Tercatat`} icon={UserCheck}>

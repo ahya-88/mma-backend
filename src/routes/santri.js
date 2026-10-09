@@ -17,12 +17,34 @@ function isAuthorizedSantriManager(req) {
   return false;
 }
 
+// GET /api/santri/statistik - Statistik santri untuk dashboard skala 2.000 santri
+router.get("/statistik", requireAuth, asyncHandler(async (req, res) => {
+  const [totalRow, aktifRow, alumniRow, rombelRows, asramaRows] = await Promise.all([
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE COALESCE("statusSantri", \'Aktif\') = \'Aktif\''),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "statusSantri" = \'Alumni\''),
+    queryAll('SELECT COALESCE("kelas", \'Belum ada\') AS "kelas", COUNT(*) AS "jumlah" FROM "Santri" WHERE COALESCE("statusSantri", \'Aktif\') = \'Aktif\' GROUP BY "kelas" ORDER BY "kelas"'),
+    queryAll('SELECT COALESCE("asrama", \'Belum ada\') AS "asrama", COUNT(*) AS "jumlah" FROM "Santri" WHERE COALESCE("statusSantri", \'Aktif\') = \'Aktif\' GROUP BY "asrama" ORDER BY "asrama"'),
+  ]);
+
+  res.json({
+    total: Number(totalRow?.total || 0),
+    aktif: Number(aktifRow?.total || 0),
+    alumni: Number(alumniRow?.total || 0),
+    perKelas: rombelRows.map((r) => ({ kelas: r.kelas, jumlah: Number(r.jumlah) })),
+    perAsrama: asramaRows.map((r) => ({ asrama: r.asrama, jumlah: Number(r.jumlah) })),
+  });
+}));
+
 // GET /api/santri - List santri dengan relasi data Wali
 router.get("/", requireAuth, asyncHandler(async (req, res) => {
   const page = req.query.page ? Number(req.query.page) : null;
   const limit = req.query.limit ? Number(req.query.limit) : null;
   const q = (req.query.q || "").trim().toLowerCase();
   const kelas = (req.query.kelas || "").trim();
+  const asrama = (req.query.asrama || "").trim();
+  const status = (req.query.status || "").trim();
+  const jenisKelamin = (req.query.jenisKelamin || req.query.gender || "").trim();
 
   const whereConditions = [];
   const params = [];
@@ -30,6 +52,21 @@ router.get("/", requireAuth, asyncHandler(async (req, res) => {
   if (kelas && kelas !== "Semua") {
     params.push(kelas);
     whereConditions.push(`s."kelas" = $${params.length}`);
+  }
+
+  if (asrama && asrama !== "Semua") {
+    params.push(asrama);
+    whereConditions.push(`s."asrama" = $${params.length}`);
+  }
+
+  if (status && status !== "Semua") {
+    params.push(status);
+    whereConditions.push(`COALESCE(s."statusSantri", 'Aktif') = $${params.length}`);
+  }
+
+  if (jenisKelamin && jenisKelamin !== "Semua") {
+    params.push(jenisKelamin);
+    whereConditions.push(`s."jenisKelamin" = $${params.length}`);
   }
 
   if (q) {
@@ -372,6 +409,57 @@ router.post("/:id/pin", requireAuth, asyncHandler(async (req, res) => {
   );
 
   res.json({ santriId, pinSet: true, pesan: "PIN santri berhasil disimpan." });
+}));
+
+// POST /api/santri/:id/luluskan - Luluskan santri menjadi Alumni
+router.post("/:id/luluskan", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedSantriManager(req)) {
+    return res.status(403).json({ error: "Hanya Sekretariat atau Superadmin yang dapat meluluskan santri." });
+  }
+  const santriId = req.params.id;
+  const { tahunLulus, statusSaatIni, instansiTujuan, noHp } = req.body || {};
+  const tLulus = tahunLulus ? String(tahunLulus).trim() : new Date().getFullYear().toString();
+
+  await withTransaction(async (client) => {
+    const existing = await client.query('SELECT * FROM "Santri" WHERE "id" = $1 FOR UPDATE', [santriId]);
+    if (!existing.rowCount) throw new CashlessError(404, "Santri tidak ditemukan.");
+
+    await client.query(`
+      UPDATE "Santri"
+      SET "statusSantri" = 'Alumni',
+          "alumniTahunLulus" = $1,
+          "alumniStatusSaatIni" = $2,
+          "alumniInstansiTujuan" = $3,
+          "alumniNoHp" = $4,
+          "updatedAt" = (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+      WHERE "id" = $5
+    `, [tLulus, statusSaatIni || "Melanjutkan Pendidikan", instansiTujuan || "", noHp || "", santriId]);
+  });
+
+  const updated = await getSantriRow(santriId);
+  res.json(await toPublicSantri(updated));
+}));
+
+// POST /api/santri/:id/aktifkan-kembali - Kembalikan status santri menjadi Aktif
+router.post("/:id/aktifkan-kembali", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedSantriManager(req)) {
+    return res.status(403).json({ error: "Hanya Sekretariat atau Superadmin yang dapat mengaktifkan santri." });
+  }
+  const santriId = req.params.id;
+  await withTransaction(async (client) => {
+    const existing = await client.query('SELECT * FROM "Santri" WHERE "id" = $1 FOR UPDATE', [santriId]);
+    if (!existing.rowCount) throw new CashlessError(404, "Santri tidak ditemukan.");
+
+    await client.query(`
+      UPDATE "Santri"
+      SET "statusSantri" = 'Aktif',
+          "updatedAt" = (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+      WHERE "id" = $1
+    `, [santriId]);
+  });
+
+  const updated = await getSantriRow(santriId);
+  res.json(await toPublicSantri(updated));
 }));
 
 module.exports = router;

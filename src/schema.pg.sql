@@ -484,6 +484,30 @@ CREATE INDEX IF NOT EXISTS idx_offline_queue_status ON "QueueOfflineKasir" ("sta
 ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "statusAkun" TEXT NOT NULL DEFAULT 'Belum Aktivasi';
 ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "importBatchId" TEXT REFERENCES "BatchImpor"("id");
 ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "importBatchId" TEXT REFERENCES "BatchImpor"("id");
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "statusSantri" TEXT NOT NULL DEFAULT 'Aktif';
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "alumniTahunLulus" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "alumniStatusSaatIni" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "alumniInstansiTujuan" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "alumniNoHp" TEXT;
+
+CREATE TABLE IF NOT EXISTS "PendaftaranUlang" (
+  "id" TEXT PRIMARY KEY,
+  "santriId" TEXT NOT NULL REFERENCES "Santri"("id") ON DELETE CASCADE,
+  "tahunAjaranId" TEXT NOT NULL REFERENCES "TahunAjaran"("id") ON DELETE CASCADE,
+  "kelasBaru" TEXT NOT NULL,
+  "kelasSebelumnya" TEXT,
+  "asramaBaru" TEXT,
+  "asramaSebelumnya" TEXT,
+  "halaqohBaru" TEXT,
+  "status" TEXT NOT NULL DEFAULT 'Terdaftar',
+  "keterangan" TEXT,
+  "diprosesOleh" TEXT,
+  "tanggalDaftarUlang" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  CONSTRAINT "uq_pendaftaran_santri_tahun" UNIQUE ("santriId", "tahunAjaranId")
+);
+CREATE INDEX IF NOT EXISTS idx_daftarulang_tahun ON "PendaftaranUlang" ("tahunAjaranId");
+CREATE INDEX IF NOT EXISTS idx_daftarulang_santri ON "PendaftaranUlang" ("santriId");
 
 -- Admin dilebur ke Superadmin (keputusan 4 Okt 2026): akun lama berjenis 'admin' menjadi 'superadmin'.
 -- Idempotent: setelah dijalankan sekali, tidak ada baris 'admin' tersisa. Setiap akun yang dimigrasikan dicatat di AuditLog.
@@ -492,3 +516,4 @@ SELECT gen_random_uuid()::text, NULL, 'system', 'admin.role_merged_to_superadmin
   jsonb_build_object('jenisAkunSebelum', 'admin', 'jenisAkunSesudah', 'superadmin')
 FROM "Guru" WHERE "jenisAkun" = 'admin';
 UPDATE "Guru" SET "jenisAkun" = 'superadmin' WHERE "jenisAkun" = 'admin';
+

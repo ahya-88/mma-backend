@@ -80,6 +80,7 @@ const SANTRI_BIODATA_FIELDS = [
   "noDarurat", "catatanKesehatan", "halaqoh", "foto", "namaAyah", "namaIbu",
   "asalSekolah", "programPilihan", "citaCita", "pendidikanSD", "tahunSD",
   "pendidikanSMP", "tahunSMP", "pendidikanSMA", "tahunSMA",
+  "statusSantri", "alumniTahunLulus", "alumniStatusSaatIni", "alumniInstansiTujuan", "alumniNoHp",
 ];
 
 async function toPublicSantri(santri, includeFoto = true) {
@@ -97,6 +98,7 @@ async function toPublicSantri(santri, includeFoto = true) {
     nis: santri.nis ?? "",
     nisn: santri.nisn ?? "",
     waliId: santri.waliId ?? null,
+    statusSantri: santri.statusSantri || "Aktif",
     saldo: Number(santri.saldo || 0),
     limitJajanHarian: santri.limitJajanHarian ? Number(santri.limitJajanHarian) : null,
     durasiBlokirHari: Number(santri.durasiBlokirHari || DEFAULT_DURASI_BLOKIR_HARI),
