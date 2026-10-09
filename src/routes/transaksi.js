@@ -63,7 +63,7 @@ router.post("/", requireAuth, requireUnitUsaha, asyncHandler(async (req, res) =>
   if (!santriId || !jumlah) return res.status(400).json({ error: "santriId dan jumlah wajib diisi." });
   const jenis = jenisInput || "Tarik Tunai";
   const kategori = kategoriInput || (jenis === "Tarik Tunai" ? "Jajan Harian" : undefined);
-  const unit = req.user.unit;
+  const unit = req.body?.unit || req.user.unit || "BMT";
   const hasil = await catatTransaksi({
     santriId, unit, jenis, kategori, subKategori, jumlah, keterangan, bulan, idempotencyKey,
     pin, validasiPin: jenis === "Tarik Tunai", petugasId: req.user.id,

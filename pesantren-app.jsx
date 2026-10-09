@@ -7768,15 +7768,39 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 
 function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnline }) {
   const dept = guru.departemen;
-  // KewenanganPanel (dept "admin") tidak memakai Sidebar (tidak ada tab di dalamnya).
-  // Semua departemen lain merender Sidebar yang bersifat fixed, jadi seluruh
-  // konten di sini (Header, KPI, panel) perlu digeser ke kanan agar tidak
-  // tertutup sidebar — bukan hanya konten di dalam panel itu sendiri.
-  const hasSidebar = dept !== "admin";
+  const isSuper = dept === "admin";
+  const [adminActiveScope, setAdminActiveScope] = useState("admin");
+  const [adminActiveUnit, setAdminActiveUnit] = useState(data.unitUsaha[0] || "BMT");
+
+  const effectiveDept = isSuper ? adminActiveScope : dept;
+  const effectiveUnit = isSuper ? adminActiveUnit : guru.unit;
+
+  // Modul non-admin merender Sidebar fixed di sebelah kiri, sehingga
+  // konten utama digeser dengan padding lg:pl-64 agar tidak tertutup sidebar.
+  const hasSidebar = effectiveDept !== "admin";
+
+  const ADMIN_SCOPES = [
+    { key: "admin", label: "Sistem & Admin", icon: Settings, desc: "Akun, Master Bagian, Kalender, Tampilan" },
+    { key: "sekretariat", label: "Sekretariat", icon: FileSignature, desc: "Santri, Dokumen, Persuratan" },
+    { key: "pengasuhan", label: "Pengasuhan", icon: ShieldCheck, desc: "Kedisiplinan, Perizinan, Absensi" },
+    { key: "pengajaran", label: "Pengajaran", icon: GraduationCap, desc: "Nilai Ujian, Prestasi, Rapor Akademik" },
+    { key: "lptq", label: "LPTQ", icon: BookOpen, desc: "Tahfidz Al-Qur'an, Ubudiyah, Rapor Tahfidz" },
+    { key: "administrasi", label: "Keuangan", icon: Wallet, desc: "Tagihan, Pembayaran, Infaq, Cashflow" },
+    { key: "unitusaha", label: "Unit Usaha & BMT", icon: Store, desc: "BMT Cashless, QR & PIN, Kasir Belanja" },
+  ];
 
   return (
     <div className={`max-w-[1400px] mx-auto px-4 sm:px-6 py-6 ${hasSidebar ? "lg:pl-64" : ""}`}>
-      <Header eyebrow={todayStr()} title={`Assalamu'alaikum, ${guru.nama}`} sub={`Bagian ${DEPT_META[dept]?.label || "-"}${guru.unit ? ` — ${guru.unit}` : ""}`} icon={DEPT_META[dept]?.icon} />
+      <Header
+        eyebrow={todayStr()}
+        title={`Assalamu'alaikum, ${guru.nama}`}
+        sub={
+          isSuper
+            ? `Superadmin — Mengelola Bagian ${ADMIN_SCOPES.find((s) => s.key === adminActiveScope)?.label || "Admin"}${adminActiveScope === "unitusaha" ? ` (${effectiveUnit})` : ""}`
+            : `Bagian ${DEPT_META[dept]?.label || "-"}${guru.unit ? ` — ${guru.unit}` : ""}`
+        }
+        icon={isSuper ? (ADMIN_SCOPES.find((s) => s.key === adminActiveScope)?.icon || Lock) : DEPT_META[dept]?.icon}
+      />
 
       <KpiRow items={[
         { icon: Users, label: "Total Santri", value: data.santri.length },
@@ -7785,10 +7809,87 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
         { icon: School, label: "Jumlah Kelas", value: data.kelas.length },
       ]} />
 
-      {dept === "admin" && <KewenanganPanel data={data} setData={setData} backendToken={backendToken} backendOnline={backendOnline} />}
-      {dept === "administrasi" && <KeuanganPanel data={data} setData={setData} petugas={guru.nama} onPrint={onPrint} backendToken={backendToken} backendOnline={backendOnline} />}
-      {dept === "unitusaha" && <UnitUsahaPanel data={data} setData={setData} unit={guru.unit} petugas={guru.nama} onPrint={onPrint} backendToken={backendToken} backendOnline={backendOnline} />}
-      {["pengasuhan", "pengajaran", "lptq", "sekretariat"].includes(dept) && <DepartmentContent scope={dept} data={data} setData={setData} onPrint={onPrint} petugas={guru.nama} backendToken={backendToken} backendOnline={backendOnline} />}
+      {/* Master Department Switcher Khusus Admin */}
+      {isSuper && (
+        <div className="mb-6 p-3.5 sm:p-4 bg-white/95 backdrop-blur-md border border-[#CFE3F0] rounded-2xl shadow-xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EAF4FB] pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-[#0C4A6E] uppercase tracking-wider">
+                Panel Superadmin — Akses Pengelolaan Seluruh Bagian
+              </span>
+            </div>
+            <span className="text-[11px] font-medium text-[#5B7C93]">
+              Bagian aktif: <strong className="text-[#0C4A6E] font-bold">{ADMIN_SCOPES.find((s) => s.key === adminActiveScope)?.label}</strong>
+              {adminActiveScope === "unitusaha" ? ` (${effectiveUnit})` : ""}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 p-1 bg-[#F4F8FB] rounded-xl border border-[#DCEDF7]">
+            {ADMIN_SCOPES.map((sc) => {
+              const isActive = adminActiveScope === sc.key;
+              const IconComp = sc.icon;
+              return (
+                <button
+                  key={sc.key}
+                  type="button"
+                  onClick={() => setAdminActiveScope(sc.key)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                    isActive
+                      ? "bg-gradient-to-r from-[#29AAE1] to-[#0C4A6E] text-white shadow-sm scale-[1.02]"
+                      : "text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-white/90"
+                  }`}
+                  title={sc.desc}
+                >
+                  <IconComp size={14} className={isActive ? "text-white" : "text-[#5B7C93]"} />
+                  <span>{sc.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {adminActiveScope === "unitusaha" && (
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#EAF4FB]">
+              <span className="text-xs font-semibold text-[#0C4A6E] flex items-center gap-1.5">
+                <Store size={13} /> Pilih Unit:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {data.unitUsaha.map((u) => {
+                  const isUnitActive = effectiveUnit === u;
+                  return (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => setAdminActiveUnit(u)}
+                      className={`text-xs px-3 py-1 rounded-full font-medium transition-all ${
+                        isUnitActive
+                          ? "bg-[#0C4A6E] text-white shadow-2xs font-bold scale-[1.02]"
+                          : "bg-white text-[#45657A] border border-[#CFE3F0] hover:bg-[#EAF4FB]"
+                      }`}
+                    >
+                      {u}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Render Panel Berdasarkan Bagian Aktif */}
+      {effectiveDept === "admin" && (
+        <KewenanganPanel data={data} setData={setData} backendToken={backendToken} backendOnline={backendOnline} />
+      )}
+      {effectiveDept === "administrasi" && (
+        <KeuanganPanel key="keuangan" data={data} setData={setData} petugas={guru.nama} onPrint={onPrint} backendToken={backendToken} backendOnline={backendOnline} />
+      )}
+      {effectiveDept === "unitusaha" && (
+        <UnitUsahaPanel key={`unit-${effectiveUnit}`} data={data} setData={setData} unit={effectiveUnit} petugas={guru.nama} onPrint={onPrint} backendToken={backendToken} backendOnline={backendOnline} />
+      )}
+      {["pengasuhan", "pengajaran", "lptq", "sekretariat"].includes(effectiveDept) && (
+        <DepartmentContent key={`dept-${effectiveDept}`} scope={effectiveDept} data={data} setData={setData} onPrint={onPrint} petugas={guru.nama} backendToken={backendToken} backendOnline={backendOnline} />
+      )}
     </div>
   );
 }

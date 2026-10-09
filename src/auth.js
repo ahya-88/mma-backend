@@ -345,7 +345,7 @@ function requireAdminUnitUsaha(req, res, next) {
 }
 
 function requireUnitUsaha(req, res, next) {
-  if (req.user?.role === "guru" && req.user.departemen === "unitusaha") return next();
+  if (isSuperAdmin(req.user) || (req.user?.role === "guru" && req.user.departemen === "unitusaha")) return next();
   res.status(403).json({ error: "Hanya staf Unit Usaha yang berwenang mengakses endpoint ini." });
 }
 
