@@ -2506,246 +2506,337 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const simpanTampilan = () => simpanTampilanKeBackend(tampilanForm, "Pengaturan tampilan tersimpan dan langsung diterapkan ke seluruh aplikasi.");
   const resetTampilan = () => simpanTampilanKeBackend(TAMPILAN_DEFAULT, "Tampilan dikembalikan ke pengaturan bawaan.");
 
+  const [adminTab, setAdminTab] = useState("ringkasan");
+  const adminMenus = [
+    { id: "ringkasan", label: "Ringkasan & Metrik", icon: TrendingUp, badge: "KPI" },
+    { id: "akun", label: "Kelola Akun Guru", icon: ShieldCheck, badge: `${guruList.length}` },
+    { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${data.unitUsaha.length}` },
+    { id: "tahun", label: "Kalender Akademik", icon: CalendarCheck },
+    { id: "tampilan", label: "Pengaturan Tampilan", icon: ImageIcon },
+  ];
+
   return (
     <div>
       {backendOnline === null && <p className="flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-4"><Loader2 size={13} className="shrink-0 animate-spin" />Menghubungkan ke server...</p>}
       {backendOnline === false && <p className="flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-4"><ShieldAlert size={13} className="shrink-0" />Tidak terhubung ke server. Semua aksi di bawah ini (akun, unit usaha, tahun ajaran, tampilan) tidak akan tersimpan — coba logout lalu login ulang.</p>}
 
-      <ArchCard title="Tambah Akun Guru" eyebrow="Satu Akun = Satu Bagian" icon={Lock}>
-        <p className="text-xs text-[#5B7C93] mb-3">Kalau seorang guru punya wewenang di lebih dari satu bagian, buatkan akun terpisah untuk tiap bagian (username berbeda-beda).</p>
-        <div className="flex flex-wrap gap-2 mb-3">
-          <input placeholder="Nama guru" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-          <select value={form.departemen} onChange={(e) => setForm({ ...form, departemen: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
-            {deptKeys.map((k) => <option key={k} value={k}>{DEPT_META[k].label}</option>)}
-          </select>
-          {form.departemen === "unitusaha" && (
-            <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
-              {data.unitUsaha.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2 mb-3">
-          <input placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-          <input type="password" placeholder="Kata sandi awal" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-        </div>
-        {formError && <p className="text-xs text-[#B5533C] mb-2">{formError}</p>}
-        <button onClick={addGuru} disabled={formBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{formBusy ? "Menyimpan..." : "Tambah Akun"}</button>
-      </ArchCard>
-
-      <StarDivider />
-
-      <ArchCard title="Bagian Unit Usaha" eyebrow="Kantin · Kopel · Dapur · BMT · dan lainnya" icon={Package}>
-        <p className="text-xs text-[#5B7C93] mb-3">Tambahkan bagian baru di bawah Unit Usaha kapan saja (mis. Toko Buku, Laundry). Bagian yang baru dibuat langsung tersedia sebagai pilihan saat menambah akun guru.</p>
-        <div className="flex flex-wrap gap-2 mb-4">
-          <input placeholder="Nama bagian baru, mis. Toko Buku" value={unitBaruDraft} onChange={(e) => setUnitBaruDraft(e.target.value)} className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-          <button onClick={tambahUnitUsaha} disabled={backendOnline !== true} className="flex items-center gap-1 text-sm px-4 py-2 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />Tambah Bagian</button>
-        </div>
-        {unitError && <p className="text-xs text-[#B5533C] mb-3">{unitError}</p>}
-        <div className="flex flex-wrap gap-2">
-          {data.unitUsaha.map((u) => (
-            <span key={u} className="flex items-center gap-1.5 text-sm bg-[#EAF4FB] text-[#0C4A6E] px-3 py-1.5 rounded-full">
-              {u}
-              <button onClick={() => hapusUnitUsaha(u)} disabled={backendOnline !== true} className="text-[#5B7C93] hover:text-[#B5533C] disabled:opacity-50"><X size={13} /></button>
-            </span>
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
+        <aside className="w-full lg:w-64 shrink-0 bg-white/90 backdrop-blur-md rounded-2xl border border-[#CFE3F0] p-3.5 shadow-sm lg:sticky lg:top-20 z-10 space-y-1.5">
+          <div className="px-3 py-2 border-b border-[#EAF4FB] mb-1 flex items-center justify-between">
+            <p className="text-[11px] font-bold text-[#5B7C93] uppercase tracking-wider">Menu Navigasi Admin</p>
+            <span className="text-[10px] bg-[#0C4A6E]/10 text-[#0C4A6E] font-bold px-2 py-0.5 rounded-full">5 Tab</span>
+          </div>
+          {adminMenus.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setAdminTab(m.id)}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                adminTab === m.id
+                  ? "btn-gradient text-white shadow-md scale-[1.02]"
+                  : "text-[#45657A] hover:bg-[#EAF4FB] hover:text-[#0C4A6E]"
+              }`}
+            >
+              <span className="flex items-center gap-2.5">
+                <m.icon size={16} />
+                {m.label}
+              </span>
+              {m.badge && (
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    adminTab === m.id ? "bg-white/20 text-white" : "bg-[#EAF4FB] text-[#0C4A6E]"
+                  }`}
+                >
+                  {m.badge}
+                </span>
+              )}
+            </button>
           ))}
-          {!data.unitUsaha.length && <EmptyState text="Belum ada bagian Unit Usaha." />}
-        </div>
-      </ArchCard>
+        </aside>
 
-      <StarDivider />
-
-      <ArchCard title="Kalender Akademik" eyebrow="Tahun Ajaran & Periode Laporan" icon={CalendarCheck} tone="gold">
-        <p className="text-xs text-[#5B7C93] mb-4">Tahun ajaran yang aktif menentukan pilihan bulan di seluruh modul Keuangan (Tagihan, Infaq, Cashflow) dan pengelompokan Laporan Bulanan/Semester/Tahunan. Setiap tahun ajaran baru, tambahkan lalu aktifkan di sini — data lama tetap tersimpan dan tetap bisa dilihat di Laporan.</p>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          <input type="number" placeholder="Tahun mulai, mis. 2027" value={tahunBaruDraft} onChange={(e) => { setTahunBaruDraft(e.target.value); setKalenderMsg(""); }} className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-          <button onClick={tambahTahunAjaran} disabled={backendOnline !== true} className="flex items-center gap-1 text-sm px-4 py-2 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />Tambah Tahun Ajaran</button>
-        </div>
-        {kalenderErr && <p className="text-xs text-[#B5533C] mb-3">{kalenderErr}</p>}
-        {!kalenderErr && kalenderMsg && <p className="text-xs text-[#15803D] mb-3">{kalenderMsg}</p>}
-
-        <div className="space-y-2.5">
-          {data.tahunAjaran.slice().sort((a, b) => b.tahunMulai - a.tahunMulai).map((t) => (
-            <div key={t.id} className={`border rounded-xl p-3.5 ${t.aktif ? "border-[#0C4A6E] bg-[#EAF4FB]" : "border-[#DCEDF7]"}`}>
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-[#17242E]">Tahun Ajaran {t.label}</p>
-                  {t.aktif && <span className="text-[10px] font-medium btn-gradient px-2 py-0.5 rounded-full">AKTIF</span>}
+        <div className="flex-1 min-w-0 w-full space-y-5">
+          {adminTab === "ringkasan" && (
+            <ArchCard title="Pusat Pemantauan & Metrik Operasional" eyebrow="Monitoring Real-Time Eksekutif" icon={TrendingUp}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
+                <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
+                  <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {(data.santri || []).length}
+                  </p>
+                  <p className="text-xs font-semibold text-[#17242E] mt-1">Total Santri</p>
+                  <p className="text-[10px] text-[#5B7C93]">Terdaftar aktif</p>
                 </div>
-                <div className="flex items-center gap-1">
-                  {!t.aktif && <button onClick={() => aktifkanTahunAjaran(t.id)} disabled={backendOnline !== true} className="text-xs px-3 py-1.5 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50">Aktifkan</button>}
-                  {!t.aktif && <IconBtn onClick={() => hapusTahunAjaran(t.id)} title="Hapus" disabled={backendOnline !== true}><Trash2 size={15} /></IconBtn>}
+                <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
+                  <p className="text-base sm:text-lg font-bold text-[#15803D]" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {rupiah((data.santri || []).reduce((acc, s) => acc + (Number(s.saldo) || 0), 0))}
+                  </p>
+                  <p className="text-xs font-semibold text-[#17242E] mt-1">Saldo BMT Santri</p>
+                  <p className="text-[10px] text-[#5B7C93]">Akumulasi cashless</p>
+                </div>
+                <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
+                  <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {guruList.length}
+                  </p>
+                  <p className="text-xs font-semibold text-[#17242E] mt-1">Akun Petugas</p>
+                  <p className="text-[10px] text-[#5B7C93]">Seluruh bagian</p>
+                </div>
+                <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
+                  <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {data.unitUsaha.length}
+                  </p>
+                  <p className="text-xs font-semibold text-[#17242E] mt-1">Unit Usaha</p>
+                  <p className="text-[10px] text-[#5B7C93]">Kantin, BMT, dll</p>
+                </div>
+                <div className="border border-[#0C4A6E] rounded-xl p-3.5 text-center bg-[#EAF4FB] shadow-sm transition-all hover:scale-[1.02] col-span-2 sm:col-span-1">
+                  <p className="text-sm sm:text-base font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {data.tahunAjaran.find((t) => t.aktif)?.label || "Aktif"}
+                  </p>
+                  <p className="text-xs font-semibold text-[#0C4A6E] mt-1">Tahun Ajaran</p>
+                  <p className="text-[10px] text-[#15803D] font-bold uppercase">Sedang Berjalan</p>
                 </div>
               </div>
-              <p className="text-xs text-[#5B7C93]">Semester Ganjil: {t.semesterGanjil[0]} – {t.semesterGanjil[t.semesterGanjil.length - 1]}</p>
-              <p className="text-xs text-[#5B7C93]">Semester Genap: {t.semesterGenap[0]} – {t.semesterGenap[t.semesterGenap.length - 1]}</p>
-            </div>
-          ))}
-        </div>
-      </ArchCard>
+            </ArchCard>
+          )}
 
-      <StarDivider />
+          {adminTab === "akun" && (
+            <>
+              <ArchCard title="Tambah Akun Guru" eyebrow="Satu Akun = Satu Bagian" icon={Lock}>
+                <p className="text-xs text-[#5B7C93] mb-3">Kalau seorang guru punya wewenang di lebih dari satu bagian, buatkan akun terpisah untuk tiap bagian (username berbeda-beda).</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <input placeholder="Nama guru" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                  <select value={form.departemen} onChange={(e) => setForm({ ...form, departemen: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+                    {deptKeys.map((k) => <option key={k} value={k}>{DEPT_META[k].label}</option>)}
+                  </select>
+                  {form.departemen === "unitusaha" && (
+                    <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+                      {data.unitUsaha.map((u) => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <input placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                  <input type="password" placeholder="Kata sandi awal" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                </div>
+                {formError && <p className="text-xs text-[#B5533C] mb-2">{formError}</p>}
+                <button onClick={addGuru} disabled={formBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{formBusy ? "Menyimpan..." : "Tambah Akun"}</button>
+              </ArchCard>
 
-      <ArchCard title="Akun Guru per Bagian" eyebrow={`${guruList.length} Akun Terdaftar`} icon={ShieldCheck} tone="gold">
-        {guruFetch.loading && <p className="flex items-center gap-1.5 text-xs text-[#5B7C93] mb-3"><Loader2 size={13} className="shrink-0 animate-spin" />Memuat daftar akun...</p>}
-        {guruFetch.error && <p className="text-xs text-[#B5533C] mb-3">{guruFetch.error}</p>}
-        {guruActionError && <p className="text-xs text-[#B5533C] mb-3">{guruActionError}</p>}
-        <div className="space-y-4">
-          {deptKeys.map((dep) => {
-            const list = guruList.filter((g) => g.departemen === dep);
-            return (
-              <div key={dep}>
-                <p className="text-xs font-medium text-[#0C4A6E] uppercase tracking-wide mb-1.5">{DEPT_META[dep].label} <span className="text-[#5B7C93] normal-case">({list.length} akun)</span></p>
-                <div className="space-y-2 mb-3">
-                  {list.map((g) => {
-                    const sedangEdit = editingGuruId === g.id;
-                    const draft = guruDraft[g.id] || { nama: g.nama, username: g.username };
-                    const sedangSibuk = guruBusyId === g.id;
+              <StarDivider />
+
+              <ArchCard title="Akun Guru per Bagian" eyebrow={`${guruList.length} Akun Terdaftar`} icon={ShieldCheck} tone="gold">
+                {guruFetch.loading && <p className="flex items-center gap-1.5 text-xs text-[#5B7C93] mb-3"><Loader2 size={13} className="shrink-0 animate-spin" />Memuat daftar akun...</p>}
+                {guruFetch.error && <p className="text-xs text-[#B5533C] mb-3">{guruFetch.error}</p>}
+                {guruActionError && <p className="text-xs text-[#B5533C] mb-3">{guruActionError}</p>}
+                <div className="space-y-4">
+                  {deptKeys.map((dep) => {
+                    const list = guruList.filter((g) => g.departemen === dep);
                     return (
-                    <div key={g.id} className="border border-[#DCEDF7] rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-2 gap-2">
-                        {sedangEdit ? (
-                          <div className="flex flex-wrap gap-1.5 flex-1">
-                            <input value={draft.nama} onChange={(e) => updateGuruField(g.id, "nama", e.target.value)} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-sm flex-1 min-w-[110px]" placeholder="Nama" />
-                            <input value={draft.username} onChange={(e) => updateGuruField(g.id, "username", e.target.value)} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-sm flex-1 min-w-[110px]" placeholder="Username" />
-                            <div className="flex items-center gap-1 w-full">
-                              <input type="password" placeholder="Kata sandi baru (opsional)" value={guruPwDraft[g.id] || ""} onChange={(e) => setGuruPwDraft((d) => ({ ...d, [g.id]: e.target.value }))} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-sm flex-1" />
-                              <button onClick={() => simpanPasswordGuru(g.id)} disabled={sedangSibuk || backendOnline !== true} className="text-xs px-2.5 py-1 rounded-xl btn-gradient  shrink-0 disabled:opacity-50">Ubah Sandi</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div><p className="text-sm font-medium text-[#17242E]">{g.nama}</p><p className="text-xs text-[#5B7C93]">Username: {g.username}</p></div>
-                        )}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button onClick={() => sedangEdit ? selesaiEditGuru(g) : bukaEditGuru(g)} disabled={sedangSibuk} className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors duration-150 disabled:opacity-50 ${sedangEdit ? "bg-[#E3F0E8] text-[#15803D] hover:bg-[#D3E6DA]" : "bg-[#EAF4FB] text-[#0C4A6E] hover:bg-[#DCEEFB]"}`}>{sedangEdit ? <Check size={13} /> : <Pencil size={13} />}{sedangEdit ? "Selesai" : "Edit"}</button>
-                          <button onClick={() => delGuru(g.id)} disabled={sedangSibuk || backendOnline !== true} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg bg-[#FBE4E1] text-[#96271A] hover:bg-[#F6D3CE] transition-colors duration-150 disabled:opacity-50"><Trash2 size={13} />Hapus</button>
+                      <div key={dep}>
+                        <p className="text-xs font-medium text-[#0C4A6E] uppercase tracking-wide mb-1.5">{DEPT_META[dep].label} <span className="text-[#5B7C93] normal-case">({list.length} akun)</span></p>
+                        <div className="space-y-2 mb-3">
+                          {list.map((g) => {
+                            const sedangEdit = editingGuruId === g.id;
+                            const draft = guruDraft[g.id] || { nama: g.nama, username: g.username };
+                            const sedangSibuk = guruBusyId === g.id;
+                            return (
+                              <div key={g.id} className="border border-[#DCEDF7] rounded-xl p-3">
+                                <div className="flex items-center justify-between mb-2 gap-2">
+                                  {sedangEdit ? (
+                                    <div className="flex flex-wrap gap-1.5 flex-1">
+                                      <input value={draft.nama} onChange={(e) => updateGuruField(g.id, "nama", e.target.value)} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-sm flex-1 min-w-[110px]" placeholder="Nama" />
+                                      <input value={draft.username} onChange={(e) => updateGuruField(g.id, "username", e.target.value)} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-sm flex-1 min-w-[110px]" placeholder="Username" />
+                                      <div className="flex items-center gap-1 w-full">
+                                        <input type="password" placeholder="Kata sandi baru (opsional)" value={guruPwDraft[g.id] || ""} onChange={(e) => setGuruPwDraft((d) => ({ ...d, [g.id]: e.target.value }))} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-sm flex-1" />
+                                        <button onClick={() => simpanPasswordGuru(g.id)} disabled={sedangSibuk || backendOnline !== true} className="text-xs px-2.5 py-1 rounded-xl btn-gradient  shrink-0 disabled:opacity-50">Ubah Sandi</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div><p className="text-sm font-medium text-[#17242E]">{g.nama}</p><p className="text-xs text-[#5B7C93]">Username: {g.username}</p></div>
+                                  )}
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button onClick={() => sedangEdit ? selesaiEditGuru(g) : bukaEditGuru(g)} disabled={sedangSibuk} className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors duration-150 disabled:opacity-50 ${sedangEdit ? "bg-[#E3F0E8] text-[#15803D] hover:bg-[#D3E6DA]" : "bg-[#EAF4FB] text-[#0C4A6E] hover:bg-[#DCEEFB]"}`}>{sedangEdit ? <Check size={13} /> : <Pencil size={13} />}{sedangEdit ? "Selesai" : "Edit"}</button>
+                                    <button onClick={() => delGuru(g.id)} disabled={sedangSibuk || backendOnline !== true} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg bg-[#FBE4E1] text-[#96271A] hover:bg-[#F6D3CE] transition-colors duration-150 disabled:opacity-50"><Trash2 size={13} />Hapus</button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {!list.length && <p className="text-xs text-[#8FB0C7] pl-1">Belum ada akun di bagian ini.</p>}
                         </div>
                       </div>
-                    </div>
                     );
                   })}
-                  {!list.length && <p className="text-xs text-[#8FB0C7] pl-1">Belum ada akun di bagian ini.</p>}
+                </div>
+              </ArchCard>
+            </>
+          )}
+
+          {adminTab === "unit" && (
+            <ArchCard title="Bagian Unit Usaha" eyebrow="Kantin · Kopel · Dapur · BMT · dan lainnya" icon={Package}>
+              <p className="text-xs text-[#5B7C93] mb-3">Tambahkan bagian baru di bawah Unit Usaha kapan saja (mis. Toko Buku, Laundry). Bagian yang baru dibuat langsung tersedia sebagai pilihan saat menambah akun guru.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <input placeholder="Nama bagian baru, mis. Toko Buku" value={unitBaruDraft} onChange={(e) => setUnitBaruDraft(e.target.value)} className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                <button onClick={tambahUnitUsaha} disabled={backendOnline !== true} className="flex items-center gap-1 text-sm px-4 py-2 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />Tambah Bagian</button>
+              </div>
+              {unitError && <p className="text-xs text-[#B5533C] mb-3">{unitError}</p>}
+              <div className="flex flex-wrap gap-2">
+                {data.unitUsaha.map((u) => (
+                  <span key={u} className="flex items-center gap-1.5 text-sm bg-[#EAF4FB] text-[#0C4A6E] px-3 py-1.5 rounded-full">
+                    {u}
+                    <button onClick={() => hapusUnitUsaha(u)} disabled={backendOnline !== true} className="text-[#5B7C93] hover:text-[#B5533C] disabled:opacity-50"><X size={13} /></button>
+                  </span>
+                ))}
+                {!data.unitUsaha.length && <EmptyState text="Belum ada bagian Unit Usaha." />}
+              </div>
+            </ArchCard>
+          )}
+
+          {adminTab === "tahun" && (
+            <ArchCard title="Kalender Akademik" eyebrow="Tahun Ajaran & Periode Laporan" icon={CalendarCheck} tone="gold">
+              <p className="text-xs text-[#5B7C93] mb-4">Tahun ajaran yang aktif menentukan pilihan bulan di seluruh modul Keuangan (Tagihan, Infaq, Cashflow) dan pengelompokan Laporan Bulanan/Semester/Tahunan. Setiap tahun ajaran baru, tambahkan lalu aktifkan di sini — data lama tetap tersimpan dan tetap bisa dilihat di Laporan.</p>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                <input type="number" placeholder="Tahun mulai, mis. 2027" value={tahunBaruDraft} onChange={(e) => { setTahunBaruDraft(e.target.value); setKalenderMsg(""); }} className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                <button onClick={tambahTahunAjaran} disabled={backendOnline !== true} className="flex items-center gap-1 text-sm px-4 py-2 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />Tambah Tahun Ajaran</button>
+              </div>
+              {kalenderErr && <p className="text-xs text-[#B5533C] mb-3">{kalenderErr}</p>}
+              {!kalenderErr && kalenderMsg && <p className="text-xs text-[#15803D] mb-3">{kalenderMsg}</p>}
+
+              <div className="space-y-2.5">
+                {data.tahunAjaran.slice().sort((a, b) => b.tahunMulai - a.tahunMulai).map((t) => (
+                  <div key={t.id} className={`border rounded-xl p-3.5 ${t.aktif ? "border-[#0C4A6E] bg-[#EAF4FB]" : "border-[#DCEDF7]"}`}>
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-[#17242E]">Tahun Ajaran {t.label}</p>
+                        {t.aktif && <span className="text-[10px] font-medium btn-gradient px-2 py-0.5 rounded-full">AKTIF</span>}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {!t.aktif && <button onClick={() => aktifkanTahunAjaran(t.id)} disabled={backendOnline !== true} className="text-xs px-3 py-1.5 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50">Aktifkan</button>}
+                        {!t.aktif && <IconBtn onClick={() => hapusTahunAjaran(t.id)} title="Hapus" disabled={backendOnline !== true}><Trash2 size={15} /></IconBtn>}
+                      </div>
+                    </div>
+                    <p className="text-xs text-[#5B7C93]">Semester Ganjil: {t.semesterGanjil[0]} – {t.semesterGanjil[t.semesterGanjil.length - 1]}</p>
+                    <p className="text-xs text-[#5B7C93]">Semester Genap: {t.semesterGenap[0]} – {t.semesterGenap[t.semesterGenap.length - 1]}</p>
+                  </div>
+                ))}
+              </div>
+            </ArchCard>
+          )}
+
+          {adminTab === "tampilan" && (
+            <ArchCard title="Tampilan Aplikasi" eyebrow="Logo, Foto, & Warna Tema" icon={ImageIcon} tone="gold">
+              <p className="text-xs text-[#5B7C93] mb-4">Perubahan di sini berlaku untuk seluruh aplikasi (layar login, sidebar, tombol, dsb). Dokumen resmi cetak (Rapor, Kwitansi, Surat, Kop Surat) tidak terpengaruh — pengaturannya tetap terpisah di menu masing-masing.</p>
+
+              <div className="grid sm:grid-cols-2 gap-5 mb-5">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Logo Aplikasi</p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-14 h-14 rounded-full bg-[#F4F8FB] border border-[#DCEDF7] flex items-center justify-center overflow-hidden shrink-0">
+                      <img src={tampilanForm.logoUrl || LOGO_MARK_DEFAULT} alt="Pratinjau logo" className="w-10 h-10 object-contain" />
+                    </div>
+                    <input type="file" accept="image/*" onChange={pilihLogoAplikasi} className="text-xs text-[#45657A]" />
+                  </div>
+                  {tampilanForm.logoUrl && <button onClick={() => setTampilanForm((f) => ({ ...f, logoUrl: "" }))} className="text-xs text-[#B5533C] hover:underline">Pakai logo bawaan</button>}
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Foto Gedung / Latar Login</p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-20 h-14 rounded-lg bg-[#F4F8FB] border border-[#DCEDF7] flex items-center justify-center overflow-hidden shrink-0">
+                      <img src={tampilanForm.buildingPhotoUrl || BUILDING_PHOTO_DEFAULT} alt="Pratinjau foto gedung" className="w-full h-full object-cover" />
+                    </div>
+                    <input type="file" accept="image/*" onChange={pilihFotoGedung} className="text-xs text-[#45657A]" />
+                  </div>
+                  {tampilanForm.buildingPhotoUrl && <button onClick={() => setTampilanForm((f) => ({ ...f, buildingPhotoUrl: "" }))} className="text-xs text-[#B5533C] hover:underline">Pakai foto bawaan</button>}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </ArchCard>
 
-      <StarDivider />
-
-      <ArchCard title="Tampilan Aplikasi" eyebrow="Logo, Foto, & Warna Tema" icon={ImageIcon} tone="gold">
-        <p className="text-xs text-[#5B7C93] mb-4">Perubahan di sini berlaku untuk seluruh aplikasi (layar login, sidebar, tombol, dsb). Dokumen resmi cetak (Rapor, Kwitansi, Surat, Kop Surat) tidak terpengaruh — pengaturannya tetap terpisah di menu masing-masing.</p>
-
-        <div className="grid sm:grid-cols-2 gap-5 mb-5">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Logo Aplikasi</p>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-14 h-14 rounded-full bg-[#F4F8FB] border border-[#DCEDF7] flex items-center justify-center overflow-hidden shrink-0">
-                <img src={tampilanForm.logoUrl || LOGO_MARK_DEFAULT} alt="Pratinjau logo" className="w-10 h-10 object-contain" />
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Nama Aplikasi</p>
+                <input value={tampilanForm.namaAplikasi} onChange={(e) => setTampilanForm((f) => ({ ...f, namaAplikasi: e.target.value }))} placeholder="Ma'had Mudaiyatul Anwar" className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
               </div>
-              <input type="file" accept="image/*" onChange={pilihLogoAplikasi} className="text-xs text-[#45657A]" />
-            </div>
-            {tampilanForm.logoUrl && <button onClick={() => setTampilanForm((f) => ({ ...f, logoUrl: "" }))} className="text-xs text-[#B5533C] hover:underline">Pakai logo bawaan</button>}
-          </div>
 
-          <div>
-            <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Foto Gedung / Latar Login</p>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-20 h-14 rounded-lg bg-[#F4F8FB] border border-[#DCEDF7] flex items-center justify-center overflow-hidden shrink-0">
-                <img src={tampilanForm.buildingPhotoUrl || BUILDING_PHOTO_DEFAULT} alt="Pratinjau foto gedung" className="w-full h-full object-cover" />
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Warna Tema</p>
+                <div className="flex flex-wrap gap-5">
+                  <div className="flex items-center gap-2.5">
+                    <input type="color" value={tampilanForm.warnaPrimer} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaPrimer: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
+                    <div><p className="text-xs font-medium text-[#17242E]">Warna Utama</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaPrimer}</p></div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <input type="color" value={tampilanForm.warnaSekunder} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaSekunder: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
+                    <div><p className="text-xs font-medium text-[#17242E]">Warna Gelap</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaSekunder}</p></div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <input type="color" value={tampilanForm.warnaAksenBg} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaAksenBg: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
+                    <div><p className="text-xs font-medium text-[#17242E]">Aksen Latar</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaAksenBg}</p></div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-16 h-10 rounded-lg" style={{ background: `linear-gradient(135deg, ${tampilanForm.warnaPrimer}, ${tampilanForm.warnaSekunder})` }} />
+                    <p className="text-[11px] text-[#5B7C93]">Pratinjau gradasi</p>
+                  </div>
+                </div>
               </div>
-              <input type="file" accept="image/*" onChange={pilihFotoGedung} className="text-xs text-[#45657A]" />
-            </div>
-            {tampilanForm.buildingPhotoUrl && <button onClick={() => setTampilanForm((f) => ({ ...f, buildingPhotoUrl: "" }))} className="text-xs text-[#B5533C] hover:underline">Pakai foto bawaan</button>}
-          </div>
-        </div>
 
-        <div className="mb-5">
-          <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Nama Aplikasi</p>
-          <input value={tampilanForm.namaAplikasi} onChange={(e) => setTampilanForm((f) => ({ ...f, namaAplikasi: e.target.value }))} placeholder="Ma'had Mudaiyatul Anwar" className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-        </div>
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Warna Teks & Latar Halaman</p>
+                <div className="flex flex-wrap gap-5">
+                  <div className="flex items-center gap-2.5">
+                    <input type="color" value={tampilanForm.warnaTeks} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaTeks: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
+                    <div><p className="text-xs font-medium text-[#17242E]">Teks Utama</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaTeks}</p></div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <input type="color" value={tampilanForm.warnaTeksMuted} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaTeksMuted: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
+                    <div><p className="text-xs font-medium text-[#17242E]">Teks Sekunder</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaTeksMuted}</p></div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <input type="color" value={tampilanForm.warnaBorder} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaBorder: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
+                    <div><p className="text-xs font-medium text-[#17242E]">Border / Garis</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaBorder}</p></div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <input type="color" value={tampilanForm.warnaLatarHalaman} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaLatarHalaman: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
+                    <div><p className="text-xs font-medium text-[#17242E]">Latar Halaman</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaLatarHalaman}</p></div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-[#5B7C93] mt-2">Berlaku untuk teks, border/garis tabel, dan warna latar di seluruh aplikasi (login, sidebar, kartu, tabel, form). Warna status (sukses/gagal/peringatan) tetap tidak berubah agar makna warna tetap jelas.</p>
+              </div>
 
-        <div className="mb-5">
-          <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Warna Tema</p>
-          <div className="flex flex-wrap gap-5">
-            <div className="flex items-center gap-2.5">
-              <input type="color" value={tampilanForm.warnaPrimer} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaPrimer: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
-              <div><p className="text-xs font-medium text-[#17242E]">Warna Utama</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaPrimer}</p></div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <input type="color" value={tampilanForm.warnaSekunder} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaSekunder: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
-              <div><p className="text-xs font-medium text-[#17242E]">Warna Gelap</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaSekunder}</p></div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <input type="color" value={tampilanForm.warnaAksenBg} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaAksenBg: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
-              <div><p className="text-xs font-medium text-[#17242E]">Aksen Latar</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaAksenBg}</p></div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <div className="w-16 h-10 rounded-lg" style={{ background: `linear-gradient(135deg, ${tampilanForm.warnaPrimer}, ${tampilanForm.warnaSekunder})` }} />
-              <p className="text-[11px] text-[#5B7C93]">Pratinjau gradasi</p>
-            </div>
-          </div>
-        </div>
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Font</p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[11px] text-[#5B7C93] mb-1">Font Judul</p>
+                    <select value={tampilanForm.fontJudul} onChange={(e) => setTampilanForm((f) => ({ ...f, fontJudul: e.target.value }))} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+                      {FONT_JUDUL_LIST.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-[#5B7C93] mb-1">Font Isi</p>
+                    <select value={tampilanForm.fontIsi} onChange={(e) => setTampilanForm((f) => ({ ...f, fontIsi: e.target.value }))} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+                      {FONT_ISI_LIST.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-        <div className="mb-5">
-          <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Warna Teks & Latar Halaman</p>
-          <div className="flex flex-wrap gap-5">
-            <div className="flex items-center gap-2.5">
-              <input type="color" value={tampilanForm.warnaTeks} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaTeks: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
-              <div><p className="text-xs font-medium text-[#17242E]">Teks Utama</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaTeks}</p></div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <input type="color" value={tampilanForm.warnaTeksMuted} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaTeksMuted: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
-              <div><p className="text-xs font-medium text-[#17242E]">Teks Sekunder</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaTeksMuted}</p></div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <input type="color" value={tampilanForm.warnaBorder} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaBorder: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
-              <div><p className="text-xs font-medium text-[#17242E]">Border / Garis</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaBorder}</p></div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <input type="color" value={tampilanForm.warnaLatarHalaman} onChange={(e) => setTampilanForm((f) => ({ ...f, warnaLatarHalaman: e.target.value }))} className="w-10 h-10 rounded-lg border border-[#CFE3F0] cursor-pointer" />
-              <div><p className="text-xs font-medium text-[#17242E]">Latar Halaman</p><p className="text-[11px] text-[#5B7C93] uppercase">{tampilanForm.warnaLatarHalaman}</p></div>
-            </div>
-          </div>
-          <p className="text-[11px] text-[#5B7C93] mt-2">Berlaku untuk teks, border/garis tabel, dan warna latar di seluruh aplikasi (login, sidebar, kartu, tabel, form). Warna status (sukses/gagal/peringatan) tetap tidak berubah agar makna warna tetap jelas.</p>
-        </div>
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Gaya Background</p>
+                <div className="flex flex-wrap gap-2">
+                  {BACKGROUND_STYLE_LIST.map((g) => (
+                    <button key={g.key} onClick={() => setTampilanForm((f) => ({ ...f, gayaBackground: g.key }))} className={`text-xs px-3.5 py-2 rounded-xl border transition-all duration-200 ${tampilanForm.gayaBackground === g.key ? "btn-gradient border-[#0C4A6E]" : "border-[#CFE3F0] text-[#45657A]"}`}>{g.label}</button>
+                  ))}
+                </div>
+              </div>
 
-        <div className="mb-5">
-          <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Font</p>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div>
-              <p className="text-[11px] text-[#5B7C93] mb-1">Font Judul</p>
-              <select value={tampilanForm.fontJudul} onChange={(e) => setTampilanForm((f) => ({ ...f, fontJudul: e.target.value }))} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
-                {FONT_JUDUL_LIST.map((f) => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </div>
-            <div>
-              <p className="text-[11px] text-[#5B7C93] mb-1">Font Isi</p>
-              <select value={tampilanForm.fontIsi} onChange={(e) => setTampilanForm((f) => ({ ...f, fontIsi: e.target.value }))} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
-                {FONT_ISI_LIST.map((f) => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </div>
-          </div>
+              {tampilanMsg && <p className={`text-xs mb-3 ${tampilanIsErr ? "text-[#B5533C]" : "text-[#15803D]"}`}>{tampilanMsg}</p>}
+              <div className="flex flex-wrap gap-2">
+                <button onClick={simpanTampilan} disabled={tampilanBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Check size={15} />{tampilanBusy ? "Menyimpan..." : "Simpan Pengaturan Tampilan"}</button>
+                <button onClick={resetTampilan} disabled={tampilanBusy || backendOnline !== true} className="border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60 disabled:opacity-50">Kembalikan ke Bawaan</button>
+              </div>
+            </ArchCard>
+          )}
         </div>
-
-        <div className="mb-5">
-          <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-2">Gaya Background</p>
-          <div className="flex flex-wrap gap-2">
-            {BACKGROUND_STYLE_LIST.map((g) => (
-              <button key={g.key} onClick={() => setTampilanForm((f) => ({ ...f, gayaBackground: g.key }))} className={`text-xs px-3.5 py-2 rounded-xl border transition-all duration-200 ${tampilanForm.gayaBackground === g.key ? "btn-gradient border-[#0C4A6E]" : "border-[#CFE3F0] text-[#45657A]"}`}>{g.label}</button>
-            ))}
-          </div>
-        </div>
-
-        {tampilanMsg && <p className={`text-xs mb-3 ${tampilanIsErr ? "text-[#B5533C]" : "text-[#15803D]"}`}>{tampilanMsg}</p>}
-        <div className="flex flex-wrap gap-2">
-          <button onClick={simpanTampilan} disabled={tampilanBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Check size={15} />{tampilanBusy ? "Menyimpan..." : "Simpan Pengaturan Tampilan"}</button>
-          <button onClick={resetTampilan} disabled={tampilanBusy || backendOnline !== true} className="border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60 disabled:opacity-50">Kembalikan ke Bawaan</button>
-        </div>
-      </ArchCard>
+      </div>
     </div>
-
   );
 }
 
