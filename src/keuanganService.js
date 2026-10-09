@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { query, queryOne, queryAll } = require("./db");
 const { CashlessError } = require("./cashlessService");
+const { recordAudit } = require("./auditLog");
 
 const uid = () => crypto.randomUUID();
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -46,10 +47,11 @@ async function catatTransaksiUnitUsaha({ jenis, unitAsal, unitTujuan, jumlah, ke
   return queryOne('SELECT * FROM "TransaksiUnitUsaha" WHERE "id" = $1', [id]);
 }
 
-async function hapusTransaksiUnitUsaha(id) {
+async function hapusTransaksiUnitUsaha(id, actorId) {
   const row = await queryOne('SELECT * FROM "TransaksiUnitUsaha" WHERE "id" = $1', [id]);
   if (!row) throw new CashlessError(404, "Transaksi unit usaha tidak ditemukan.");
   await query('DELETE FROM "TransaksiUnitUsaha" WHERE "id" = $1', [id]);
+  await recordAudit({ actorId, actorRole: "guru", action: "keuangan.transaksi_unit_deleted", targetType: "TransaksiUnitUsaha", targetId: id });
   return { id, deleted: true };
 }
 
@@ -66,10 +68,10 @@ async function laporanCashflowUnitUsaha({ unit } = {}) {
   return {
     unit: k || "Semua",
     ringkasan: {
-      Masuk: ringkasan["Masuk"] || 0,
-      Keluar: ringkasan["Keluar"] || 0,
-      Transfer: ringkasan["Transfer"] || 0,
-      Neto: (ringkasan["Masuk"] || 0) - (ringkasan["Keluar"] || 0),
+      Masuk: ringkasan["Dana Masuk"] || 0,
+      Keluar: ringkasan["Dana Keluar"] || 0,
+      Transfer: ringkasan["Transfer Antar Bagian"] || 0,
+      Neto: (ringkasan["Dana Masuk"] || 0) - (ringkasan["Dana Keluar"] || 0),
     },
   };
 }

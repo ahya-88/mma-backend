@@ -2,7 +2,8 @@ const express = require("express");
 const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction } = require("../db");
 const { requireAuth, isSuperAdmin } = require("../auth");
-const { CashlessError, FACE_MODEL, getSantriRow } = require("../cashlessService");
+const { CashlessError, getSantriRow } = require("../cashlessService");
+const { FACE_MODEL } = require("../db"); // Perbaikan: FACE_MODEL dari db.js
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();

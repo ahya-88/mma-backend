@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { query, queryOne, queryAll } = require("./db");
+const { query, queryOne, queryAll, withTransaction } = require("./db");
 const { CashlessError, getSantriRow, toPublicSantri } = require("./cashlessService");
 
 const uid = () => crypto.randomUUID();
@@ -85,15 +85,19 @@ async function prosesPerizinan({ id, statusBaru, disetujuiOleh }) {
   if (!["Disetujui", "Ditolak"].includes(statusBaru)) {
     throw new CashlessError(400, "Status baru harus 'Disetujui' atau 'Ditolak'.");
   }
-  const row = await queryOne('SELECT * FROM "Perizinan" WHERE "id" = $1', [id]);
-  if (!row) throw new CashlessError(404, "Data perizinan tidak ditemukan.");
+  return withTransaction(async (client) => {
+    const row = await client.query('SELECT * FROM "Perizinan" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row.rowCount) throw new CashlessError(404, "Data perizinan tidak ditemukan.");
+    if (row.rows[0].status !== "Menunggu") throw new CashlessError(400, "Perizinan ini sudah diproses.");
 
-  await query(
-    'UPDATE "Perizinan" SET "status" = $1, "disetujuiOleh" = $2, "tanggalProses" = $3 WHERE "id" = $4',
-    [statusBaru, disetujuiOleh || null, todayISO(), id],
-  );
+    await client.query(
+      'UPDATE "Perizinan" SET "status" = $1, "disetujuiOleh" = $2, "tanggalProses" = $3 WHERE "id" = $4',
+      [statusBaru, disetujuiOleh || null, todayISO(), id],
+    );
 
-  return queryOne('SELECT * FROM "Perizinan" WHERE "id" = $1', [id]);
+    const updated = await client.query('SELECT * FROM "Perizinan" WHERE "id" = $1', [id]);
+    return updated.rows[0];
+  });
 }
 
 // Pelanggaran

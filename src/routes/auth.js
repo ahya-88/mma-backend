@@ -6,7 +6,7 @@ const asyncHandler = require("../asyncHandler");
 const router = express.Router();
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 3000,
+  limit: 20, // Perbaikan: Maksimal 20 login per 15 menit per IP
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit." },

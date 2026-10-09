@@ -65,7 +65,8 @@ app.use(cors({
       .map((o) => o.trim())
       .filter(Boolean);
     const allowed = customOrigins.length ? customOrigins : allowedOrigins;
-    if (!origin || allowed.includes(origin) || (!customOrigins.length && /localhost|capacitor|railway\.app|ionic/i.test(origin))) {
+    // Perbaikan: gunakan regex yang ketat untuk railway.app
+    if (!origin || allowed.includes(origin) || (!customOrigins.length && /localhost|capacitor|ionic/i.test(origin)) || (!customOrigins.length && /^https:\/\/.*\.up\.railway\.app$/i.test(origin))) {
       return callback(null, true);
     }
     return callback(null, false);
@@ -77,7 +78,7 @@ app.use(cors({
 app.use(compression());
 app.use("/api", rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 60000,
+  limit: 1000, // Perbaikan: Batasi 1000 req/15 menit
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Terlalu banyak permintaan. Silakan coba lagi nanti." },

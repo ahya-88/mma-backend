@@ -151,7 +151,7 @@ router.get("/anggaran", requireAuth, asyncHandler(async (req, res) => {
   })));
 }));
 
-router.post("/anggaran", requireAuth, asyncHandler(async (req, res) => {
+router.post("/anggaran", requireAuth, requireAdministrasi, asyncHandler(async (req, res) => {
   const { namaKegiatan, unitPengaju, kategori, bulanRencana, totalAnggaran, rincian, catatan } = req.body || {};
   const nominal = Number(totalAnggaran);
 
