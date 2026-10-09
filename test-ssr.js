@@ -17,9 +17,6 @@ esbuild.buildSync({
 const React = require('react');
 const ReactDOMServer = require('react-dom/server');
 
-// stub modules
-const React = require('react');
-const ReactDOMServer = require('react-dom/server');
 global.React = React; // Provide React globally
 
 const m = require('module');

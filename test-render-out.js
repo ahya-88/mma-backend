@@ -1,8 +1,6 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -16,14 +14,6 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // pesantren-app.jsx
@@ -32,12 +22,12 @@ __export(pesantren_app_exports, {
   default: () => App
 });
 module.exports = __toCommonJS(pesantren_app_exports);
-var import_react = require("react");
-var import_lucide_react = require("lucide-react");
-var import_html2canvas = __toESM(require("html2canvas"));
-var import_jspdf = __toESM(require("jspdf"));
-var import_qrcode = __toESM(require("qrcode"));
 var import_jsx_runtime = require("react/jsx-runtime");
+var { useState, useRef, useEffect, ErrorBoundary: ReactErrorBoundary } = window.React || { useState: () => [], useRef: () => null, useEffect: () => null };
+var { BookOpen, CalendarCheck, GraduationCap, ClipboardList, AlertTriangle, Wallet, Users, LogOut, ChevronRight, Plus, Trash2, User, Moon, ShieldCheck, School, Award, Check, X, Lock, Pencil, Printer, Package, FileText, TrendingUp, TrendingDown, Eye, EyeOff, Gift, UserCheck, Mail, Inbox, Archive, Settings, FileSignature, Landmark, Send, Search, Download, Loader2, Bell, Home, Image: ImageIcon, ShieldAlert, Clock, QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle, Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square } = window.lucide || {};
+var html2canvas = window.html2canvas;
+var jsPDF = window.jspdf?.jsPDF || window.jsPDF;
+var QRCode = window.QRCode;
 var KELAS_SEED = ["Tahfidz 1A", "Tahfidz 1B", "Tahfidz 2A"];
 var GURU_SEED = [
   { id: "g1", nama: "Ustadz Fahmi", username: "fahmi", departemen: "pengasuhan", password: "guru123" },
@@ -434,9 +424,9 @@ function KpiRow({ items }) {
 }
 function Breadcrumb({ items }) {
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1.5 text-[12px] text-[#5B7C93] mb-4 flex-wrap", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Home, { size: 13, className: "text-[#8FA3B3]" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Home, { size: 13, className: "text-[#8FA3B3]" }),
     items.map((it, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "flex items-center gap-1.5", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ChevronRight, { size: 12, className: "text-[#C7D5DE]" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, { size: 12, className: "text-[#C7D5DE]" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: i === items.length - 1 ? "text-[#0A2540] font-semibold" : "hover:text-[#0A2540]", children: it })
     ] }, i))
   ] });
@@ -480,7 +470,7 @@ function StatusPill({ status }) {
     status
   ] });
 }
-function EmptyState({ text, icon: Icon = import_lucide_react.Inbox }) {
+function EmptyState({ text, icon: Icon = Inbox }) {
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "text-center py-10 px-4 flex flex-col items-center justify-center", children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-12 h-12 rounded-2xl bg-[#F0F4F8] border border-[#E3E8EE] flex items-center justify-center text-[#8FA3B3] mb-3", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, { size: 22, strokeWidth: 1.6 }) }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm font-medium text-[#5B7C93] max-w-sm", children: text })
@@ -517,14 +507,14 @@ function ChipFilterBar({ options, value, onChange, includeSemua }) {
   )) });
 }
 function SantriSearchSelect({ santriList, value, onChange, placeholder }) {
-  const [query, setQuery] = (0, import_react.useState)("");
-  const [open, setOpen] = (0, import_react.useState)(false);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
   const selected = santriList.find((s) => s.id === value);
   const q = query.trim().toLowerCase();
   const filtered = q ? santriList.filter((s) => s.nama.toLowerCase().includes(q) || (s.nis || "").toLowerCase().includes(q) || (s.nisn || "").toLowerCase().includes(q)) : santriList;
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative flex-1 min-w-[160px]", children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Search, { size: 14, className: "absolute left-3 top-1/2 -translate-y-1/2 text-[#8FB0C7] pointer-events-none" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Search, { size: 14, className: "absolute left-3 top-1/2 -translate-y-1/2 text-[#8FB0C7] pointer-events-none" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         "input",
         {
@@ -582,7 +572,7 @@ function Header({ eyebrow, title, sub, icon: Icon }) {
   ] });
 }
 function Sidebar({ tabs, active, onChange }) {
-  const itemRefs = (0, import_react.useRef)([]);
+  const itemRefs = useRef([]);
   itemRefs.current = [];
   const registerRef = (el) => el && itemRefs.current.push(el);
   const handleKeyDown = (e) => {
@@ -652,8 +642,8 @@ function Sidebar({ tabs, active, onChange }) {
   ] });
 }
 function PrintOverlay({ content, onClose }) {
-  const [mengunduh, setMengunduh] = (0, import_react.useState)(false);
-  const [errorUnduh, setErrorUnduh] = (0, import_react.useState)("");
+  const [mengunduh, setMengunduh] = useState(false);
+  const [errorUnduh, setErrorUnduh] = useState("");
   if (!content) return null;
   const unduhPdf = async () => {
     setErrorUnduh("");
@@ -662,10 +652,10 @@ function PrintOverlay({ content, onClose }) {
       const area = document.getElementById("print-area");
       const halaman = Array.from(area.querySelectorAll(".pdf-page"));
       const target = halaman.length ? halaman : [area.firstElementChild || area];
-      const pdf = new import_jspdf.default({ unit: "mm", format: "a4" });
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
       const lebarHalaman = 210, tinggiHalaman = 297;
       for (let i = 0; i < target.length; i++) {
-        const canvas = await (0, import_html2canvas.default)(target[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+        const canvas = await html2canvas(target[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
         const dataUrl = canvas.toDataURL("image/png");
         let w = lebarHalaman;
         let h = canvas.height * w / canvas.width;
@@ -690,11 +680,11 @@ function PrintOverlay({ content, onClose }) {
       errorUnduh && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs bg-white text-[#96271A] px-3 py-1.5 rounded-lg shadow", children: errorUnduh }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => window.print(), className: "flex items-center gap-1.5 bg-[#0C4A6E] text-white text-sm px-5 py-2.5 rounded-xl hover:bg-[#0B3A57] hover:shadow-lg active:scale-95", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 16 }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 16 }),
           "Cetak"
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: unduhPdf, disabled: mengunduh, className: "flex items-center gap-1.5 bg-white border border-[#0C4A6E] text-[#0C4A6E] text-sm px-5 py-2.5 rounded-xl hover:bg-[#EAF4FB] active:scale-95 disabled:opacity-60", children: [
-          mengunduh ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 16, className: "animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Download, { size: 16 }),
+          mengunduh ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 16, className: "animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 16 }),
           mengunduh ? "Membuat PDF..." : "Download PDF"
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: onClose, className: "bg-white border border-[#CFE3F0] text-[#45657A] text-sm px-5 py-2.5 rounded-xl", children: "Tutup" })
@@ -1195,23 +1185,23 @@ function RaportContent({ jenis, santri, wali, tahunAjaran, semester, ringkasanRo
   ] });
 }
 var ROLE_META = {
-  guru: { label: "Guru / Ustadz", icon: import_lucide_react.GraduationCap },
-  wali: { label: "Wali Santri", icon: import_lucide_react.Users }
+  guru: { label: "Guru / Ustadz", icon: GraduationCap },
+  wali: { label: "Wali Santri", icon: Users }
 };
 function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
-  const [step, setStep] = (0, import_react.useState)("login");
-  const [username, setUsername] = (0, import_react.useState)("");
-  const [password, setPassword] = (0, import_react.useState)("");
-  const [showPw, setShowPw] = (0, import_react.useState)(false);
-  const [error, setError] = (0, import_react.useState)("");
-  const [selectedUser, setSelectedUser] = (0, import_react.useState)(null);
-  const [selectedRole, setSelectedRole] = (0, import_react.useState)(null);
-  const [newPw1, setNewPw1] = (0, import_react.useState)("");
-  const [newPw2, setNewPw2] = (0, import_react.useState)("");
-  const [resetError, setResetError] = (0, import_react.useState)("");
-  const [resetDone, setResetDone] = (0, import_react.useState)(false);
-  const [loginBusy, setLoginBusy] = (0, import_react.useState)(false);
-  const [activeTabRole, setActiveTabRole] = (0, import_react.useState)("guru");
+  const [step, setStep] = useState("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [newPw1, setNewPw1] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetDone, setResetDone] = useState(false);
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [activeTabRole, setActiveTabRole] = useState("guru");
   const cariAkun = (u) => {
     const guru = (users.guru || []).find((g) => g.username === u);
     if (guru) return { role: "guru", akun: guru };
@@ -1271,7 +1261,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "absolute inset-0 opacity-[0.06]", style: { backgroundImage: "radial-gradient(circle, white 1.5px, transparent 1.5px)", backgroundSize: "28px 28px" } }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative z-10 flex items-center justify-between", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "inline-flex items-center gap-2 text-[11px] tracking-[0.16em] uppercase font-semibold text-white/80 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3.5 py-1", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldCheck, { size: 13, className: "text-[#29AAE1]" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldCheck, { size: 13, className: "text-[#29AAE1]" }),
           " Sistem Informasi Terpadu"
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[11px] text-white/60 tracking-wider", children: "v3.0 Aurora" })
@@ -1282,10 +1272,10 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", { className: "text-3xl xl:text-4xl font-bold mb-4 leading-tight text-white tracking-tight", style: { fontFamily: "'Fraunces', serif" }, children: namaAplikasi }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-white/85 mb-8 leading-relaxed max-w-md font-light", children: "Portal terintegrasi untuk Guru, Wali Santri, Akademik, Tahfidz, Keuangan, dan Unit Usaha. Seluruh layanan pesantren dalam satu genggaman." }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "grid grid-cols-2 gap-3 max-w-md", children: [
-          [import_lucide_react.Users, "Wali Santri", "Pantau nilai & tabungan"],
-          [import_lucide_react.GraduationCap, "Guru & Ustadz", "Presensi & penilaian"],
-          [import_lucide_react.BookOpen, "LPTQ & Tahfidz", "Mutaba'ah & hafalan"],
-          [import_lucide_react.Wallet, "Keuangan & BMT", "Tagihan & cashless"]
+          [Users, "Wali Santri", "Pantau nilai & tabungan"],
+          [GraduationCap, "Guru & Ustadz", "Presensi & penilaian"],
+          [BookOpen, "LPTQ & Tahfidz", "Mutaba'ah & hafalan"],
+          [Wallet, "Keuangan & BMT", "Tagihan & cashless"]
         ].map(([Icon, title, desc]) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-start gap-2.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center shrink-0 mt-0.5", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, { size: 14, className: "text-white" }) }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "min-w-0", children: [
@@ -1323,7 +1313,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
                 onClick: () => setActiveTabRole("guru"),
                 className: `flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${activeTabRole === "guru" ? "bg-white text-[#0C4A6E] shadow-xs" : "text-[#5B7C93] hover:text-[#0C4A6E]"}`,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.GraduationCap, { size: 14 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GraduationCap, { size: 14 }),
                   " Guru / Ustadz"
                 ]
               }
@@ -1335,7 +1325,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
                 onClick: () => setActiveTabRole("wali"),
                 className: `flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${activeTabRole === "wali" ? "bg-white text-[#0C4A6E] shadow-xs" : "text-[#5B7C93] hover:text-[#0C4A6E]"}`,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Users, { size: 14 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Users, { size: 14 }),
                   " Wali Santri"
                 ]
               }
@@ -1348,7 +1338,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-4", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "text-xs font-semibold text-[#0A2540] mb-1.5 block", children: "Username" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.User, { size: 15, className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FA3B3] pointer-events-none" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(User, { size: 15, className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FA3B3] pointer-events-none" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                   "input",
                   {
@@ -1378,7 +1368,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
                 )
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Lock, { size: 15, className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FA3B3] pointer-events-none" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Lock, { size: 15, className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FA3B3] pointer-events-none" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                   "input",
                   {
@@ -1395,13 +1385,13 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
                     type: "button",
                     onClick: () => setShowPw((v) => !v),
                     className: "absolute right-3 top-1/2 -translate-y-1/2 text-[#8FA3B3] hover:text-[#0C4A6E] transition-colors",
-                    children: showPw ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.EyeOff, { size: 16 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Eye, { size: 16 })
+                    children: showPw ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EyeOff, { size: 16 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, { size: 16 })
                   }
                 )
               ] })
             ] }),
             error && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-4 p-2.5 rounded-xl bg-[#FEF3F2] border border-[#FECDCA] text-xs font-medium text-[#B42318] flex items-center gap-2", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.AlertTriangle, { size: 14, className: "shrink-0" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertTriangle, { size: 14, className: "shrink-0" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: error })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -1411,7 +1401,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
                 disabled: loginBusy,
                 className: "w-full h-11 btn-gradient text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-60",
                 children: loginBusy ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 16, className: "animate-spin" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 16, className: "animate-spin" }),
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Memeriksa Akun..." })
                 ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Masuk ke Dashboard" })
               }
@@ -1434,7 +1424,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
               ] })
             ] }),
             resetDone ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "text-center py-4", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-12 h-12 rounded-full bg-[#ECFDF3] border border-[#A6F4C5] text-[#027A48] flex items-center justify-center mx-auto mb-3", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 24 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-12 h-12 rounded-full bg-[#ECFDF3] border border-[#A6F4C5] text-[#027A48] flex items-center justify-center mx-auto mb-3", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 24 }) }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm font-semibold text-[#027A48] mb-1", children: "Kata sandi berhasil diperbarui!" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-4", children: "Silakan gunakan kata sandi baru untuk masuk." }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -1517,7 +1507,7 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
       ] })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex-1 max-w-md hidden md:block", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Search, { size: 15, className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FA3B3] pointer-events-none" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Search, { size: 15, className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FA3B3] pointer-events-none" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         "input",
         {
@@ -1548,7 +1538,7 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
         {
           className: "w-9 h-9 rounded-xl flex items-center justify-center text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#F4F8FB] transition-colors relative",
           title: "Notifikasi",
-          children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Bell, { size: 17, strokeWidth: 1.8 })
+          children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Bell, { size: 17, strokeWidth: 1.8 })
         }
       ),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 pl-2 sm:pl-3 sm:border-l border-[#E3E8EE]", children: [
@@ -1564,23 +1554,23 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
           onClick: onLogout,
           className: "w-8 h-8 rounded-lg flex items-center justify-center text-[#5B7C93] hover:bg-[#FEF3F2] hover:text-[#B42318] transition-colors ml-1",
           title: "Keluar dari akun",
-          children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.LogOut, { size: 16, strokeWidth: 1.8 })
+          children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LogOut, { size: 16, strokeWidth: 1.8 })
         }
       )
     ] })
   ] });
 }
 var FIN_TABS = [
-  { key: "tagihan", label: "Tagihan & Pembayaran", icon: import_lucide_react.Wallet },
-  { key: "infaq", label: "Infaq Bulanan", icon: import_lucide_react.Gift },
-  { key: "anggaran", label: "Pengajuan Anggaran", icon: import_lucide_react.Landmark },
-  { key: "cashflow", label: "Cashflow Bulanan", icon: import_lucide_react.TrendingUp },
-  { key: "laporan", label: "Laporan", icon: import_lucide_react.FileText },
-  { key: "inventaris", label: "Inventaris", icon: import_lucide_react.Package }
+  { key: "tagihan", label: "Tagihan & Pembayaran", icon: Wallet },
+  { key: "infaq", label: "Infaq Bulanan", icon: Gift },
+  { key: "anggaran", label: "Pengajuan Anggaran", icon: Landmark },
+  { key: "cashflow", label: "Cashflow Bulanan", icon: TrendingUp },
+  { key: "laporan", label: "Laporan", icon: FileText },
+  { key: "inventaris", label: "Inventaris", icon: Package }
 ];
 var STATUS_ANGGARAN = ["Diajukan", "Disetujui", "Ditolak", "Direalisasikan"];
 function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendOnline }) {
-  const [tab, setTab] = (0, import_react.useState)("tagihan");
+  const [tab, setTab] = useState("tagihan");
   const tahunAjaranAktif = data.tahunAjaran.find((t) => t.aktif) || data.tahunAjaran[0];
   const bulanAktif = tahunAjaranAktif ? tahunAjaranAktif.bulan : BULAN_OPSI;
   const semesterGroupsAktif = data.tahunAjaran.slice().sort((a, b) => b.tahunMulai - a.tahunMulai).flatMap((t) => [
@@ -1588,14 +1578,14 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
     { label: `Semester Genap ${t.label}`, bulan: t.semesterGenap }
   ]);
   const tahunGroupsAktif = data.tahunAjaran.slice().sort((a, b) => b.tahunMulai - a.tahunMulai).map((t) => ({ label: `Tahun Ajaran ${t.label}`, bulan: t.bulan }));
-  const [keuanganError, setKeuanganError] = (0, import_react.useState)("");
-  const [tagihanForm, setTagihanForm] = (0, import_react.useState)({ target: "satu", santriId: data.santri[0]?.id || "", kelas: data.kelas[0] || "", jenis: "Syahriyah", jumlah: "", bulan: bulanAktif[0] });
-  const [filterStatus, setFilterStatus] = (0, import_react.useState)("Semua");
-  const [bayarForm, setBayarForm] = (0, import_react.useState)({});
-  const [editingBayarId, setEditingBayarId] = (0, import_react.useState)(null);
-  const [editBayarDraft, setEditBayarDraft] = (0, import_react.useState)({ jumlah: "", jumlahDibayar: "" });
-  const [tagihanFetch, setTagihanFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [tagihanBusy, setTagihanBusy] = (0, import_react.useState)(false);
+  const [keuanganError, setKeuanganError] = useState("");
+  const [tagihanForm, setTagihanForm] = useState({ target: "satu", santriId: data.santri[0]?.id || "", kelas: data.kelas[0] || "", jenis: "Syahriyah", jumlah: "", bulan: bulanAktif[0] });
+  const [filterStatus, setFilterStatus] = useState("Semua");
+  const [bayarForm, setBayarForm] = useState({});
+  const [editingBayarId, setEditingBayarId] = useState(null);
+  const [editBayarDraft, setEditBayarDraft] = useState({ jumlah: "", jumlahDibayar: "" });
+  const [tagihanFetch, setTagihanFetch] = useState({ loading: false, error: "", data: [] });
+  const [tagihanBusy, setTagihanBusy] = useState(false);
   const bukaEditNominal = (t) => {
     setEditingBayarId(t.id);
     setEditBayarDraft({ jumlah: t.jumlah, jumlahDibayar: t.jumlahDibayar || 0 });
@@ -1615,7 +1605,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
       setData((d) => ({ ...d, tagihan: rows.map((r) => ({ id: r.id, santriId: r.santriId, jenis: r.jenis, jumlah: r.jumlah, bulan: r.bulan, jumlahDibayar: r.jumlahDibayar, tanggalBayar: r.tanggalBayarISO ? formatTanggalISO(r.tanggalBayarISO) : null })) }));
     }).catch((e) => setTagihanFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatTagihan, [backendToken]);
+  useEffect(muatTagihan, [backendToken]);
   const simpanEditNominal = async (id) => {
     setKeuanganError("");
     const jumlahBaru = Number(editBayarDraft.jumlah);
@@ -1708,10 +1698,10 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
   const totalBelumLunas = data.tagihan.reduce((a, b) => a + Math.max(0, b.jumlah - (b.jumlahDibayar || 0)), 0);
   const jumlahBelumLunas = data.tagihan.filter((t) => statusTagihan(t) !== "Lunas").length;
   const namaSantri = (id) => data.santri.find((s) => s.id === id)?.nama || "(dihapus)";
-  const [cfForm, setCfForm] = (0, import_react.useState)({ bulan: bulanAktif[0], jenis: "Masuk", kategori: KATEGORI_CASHFLOW[0], jumlah: "", keterangan: "" });
-  const [cfBulanFilter, setCfBulanFilter] = (0, import_react.useState)(bulanAktif[0]);
-  const [cashflowFetch, setCashflowFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [cashflowBusy, setCashflowBusy] = (0, import_react.useState)(false);
+  const [cfForm, setCfForm] = useState({ bulan: bulanAktif[0], jenis: "Masuk", kategori: KATEGORI_CASHFLOW[0], jumlah: "", keterangan: "" });
+  const [cfBulanFilter, setCfBulanFilter] = useState(bulanAktif[0]);
+  const [cashflowFetch, setCashflowFetch] = useState({ loading: false, error: "", data: [] });
+  const [cashflowBusy, setCashflowBusy] = useState(false);
   const muatCashflow = () => {
     if (!backendToken) {
       setCashflowFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] });
@@ -1723,7 +1713,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
       setData((d) => ({ ...d, cashflow: rows.map((r) => ({ id: r.id, bulan: r.bulan, tanggal: formatTanggalISO(r.tanggalISO), jenis: r.jenis, kategori: r.kategori, jumlah: r.jumlah, keterangan: r.keterangan })) }));
     }).catch((e) => setCashflowFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatCashflow, [backendToken]);
+  useEffect(muatCashflow, [backendToken]);
   const addCashflow = async () => {
     setKeuanganError("");
     if (!cfForm.jumlah) return;
@@ -1760,14 +1750,14 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
   const cfKeluar = cfBulanIni.filter((c) => c.jenis === "Keluar").reduce((a, b) => a + b.jumlah, 0);
   const saldoKasTotal = data.cashflow.reduce((a, c) => a + (c.jenis === "Masuk" ? c.jumlah : -c.jumlah), 0);
   const kosongPengajuanForm = { namaKegiatan: "", unitPengaju: "", ketuaBagianNama: "", kategori: KATEGORI_CASHFLOW[0], bulanRencana: bulanAktif[0], catatan: "" };
-  const [pengajuanForm, setPengajuanForm] = (0, import_react.useState)(kosongPengajuanForm);
-  const [rincianDraft, setRincianDraft] = (0, import_react.useState)([]);
-  const [rincianItemForm, setRincianItemForm] = (0, import_react.useState)({ uraian: "", qty: "1", hargaSatuan: "" });
-  const [anggaranFilterStatus, setAnggaranFilterStatus] = (0, import_react.useState)("Semua");
-  const [realisasiDraft, setRealisasiDraft] = (0, import_react.useState)({});
-  const [pimpinanPilihan, setPimpinanPilihan] = (0, import_react.useState)({});
-  const [anggaranFetch, setAnggaranFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [anggaranBusy, setAnggaranBusy] = (0, import_react.useState)(false);
+  const [pengajuanForm, setPengajuanForm] = useState(kosongPengajuanForm);
+  const [rincianDraft, setRincianDraft] = useState([]);
+  const [rincianItemForm, setRincianItemForm] = useState({ uraian: "", qty: "1", hargaSatuan: "" });
+  const [anggaranFilterStatus, setAnggaranFilterStatus] = useState("Semua");
+  const [realisasiDraft, setRealisasiDraft] = useState({});
+  const [pimpinanPilihan, setPimpinanPilihan] = useState({});
+  const [anggaranFetch, setAnggaranFetch] = useState({ loading: false, error: "", data: [] });
+  const [anggaranBusy, setAnggaranBusy] = useState(false);
   const tambahRincianItem = () => {
     if (!rincianItemForm.uraian || !rincianItemForm.qty || !rincianItemForm.hargaSatuan) return;
     const qty = Number(rincianItemForm.qty), hargaSatuan = Number(rincianItemForm.hargaSatuan);
@@ -1805,7 +1795,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
       setData((d) => ({ ...d, pengajuanAnggaran: rows.map(petaAnggaran) }));
     }).catch((e) => setAnggaranFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatAnggaran, [backendToken]);
+  useEffect(muatAnggaran, [backendToken]);
   const ajukanAnggaran = async () => {
     setKeuanganError("");
     if (!pengajuanForm.namaKegiatan || !rincianDraft.length) return;
@@ -1892,8 +1882,8 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
   };
   const cetakPengajuan = (p) => onPrint(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PengajuanAnggaranContent, { pengajuan: p, petugas, pimpinan: data.pimpinanList.find((pp) => pp.id === p.pimpinanId) }));
   const pengajuanTampil = data.pengajuanAnggaran.filter((p) => anggaranFilterStatus === "Semua" || p.status === anggaranFilterStatus);
-  const [infaqForm, setInfaqForm] = (0, import_react.useState)({ sumber: "", bulan: bulanAktif[0], jumlah: "", keterangan: "" });
-  const [infaqBulanFilter, setInfaqBulanFilter] = (0, import_react.useState)(bulanAktif[0]);
+  const [infaqForm, setInfaqForm] = useState({ sumber: "", bulan: bulanAktif[0], jumlah: "", keterangan: "" });
+  const [infaqBulanFilter, setInfaqBulanFilter] = useState(bulanAktif[0]);
   const semuaInfaq = data.cashflow.filter((c) => c.kategori === "Infaq/Donasi");
   const catatInfaq = async () => {
     setKeuanganError("");
@@ -1919,9 +1909,9 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
   });
   const totalInfaqTahunIni = semuaInfaq.reduce((a, c) => a + c.jumlah, 0);
   const infaqBulanTerpilih = semuaInfaq.filter((c) => c.bulan === infaqBulanFilter);
-  const [periodeTipe, setPeriodeTipe] = (0, import_react.useState)("bulanan");
+  const [periodeTipe, setPeriodeTipe] = useState("bulanan");
   const groupsFor = periodeTipe === "bulanan" ? bulanAktif.slice().reverse().map((b) => ({ label: b, bulan: [b] })) : periodeTipe === "semester" ? semesterGroupsAktif : tahunGroupsAktif;
-  const [periodeIdx, setPeriodeIdx] = (0, import_react.useState)(0);
+  const [periodeIdx, setPeriodeIdx] = useState(0);
   const hitungAgregat = (bulanList) => {
     const cf = data.cashflow.filter((c) => bulanList.includes(c.bulan));
     const tg = data.tagihan.filter((t) => bulanList.includes(t.bulan));
@@ -1963,9 +1953,9 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
     onPrint(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LaporanContent, { judul: `Laporan ${periodeTipe === "bulanan" ? "Bulanan" : periodeTipe === "semester" ? "Semester" : "Tahunan"}`, periodeLabel: periodeAktif.label, ringkasan, rincianMasuk: rincianMasukKategori, rincianKeluar: rincianKeluarKategori }));
   };
   const kosongInv = { nama: "", kategori: KATEGORI_INVENTARIS[0], jumlah: "", kondisi: "Baik", lokasi: "", tanggal: "", keterangan: "" };
-  const [invForm, setInvForm] = (0, import_react.useState)(kosongInv);
-  const [showInvForm, setShowInvForm] = (0, import_react.useState)(false);
-  const [editingInvId, setEditingInvId] = (0, import_react.useState)(null);
+  const [invForm, setInvForm] = useState(kosongInv);
+  const [showInvForm, setShowInvForm] = useState(false);
+  const [editingInvId, setEditingInvId] = useState(null);
   const bukaTambahInv = () => {
     setInvForm(kosongInv);
     setEditingInvId(null);
@@ -1991,11 +1981,11 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Breadcrumb, { items: ["Keuangan", FIN_TABS.find((t) => t.key === tab)?.label || ""] }),
       tab === "tagihan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-5", children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Tagihan tidak bisa diproses \u2014 coba logout lalu login ulang."
         ] }),
         tagihanFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C]", children: tagihanFetch.error }),
@@ -2014,7 +2004,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs font-medium text-[#5B7C93] mt-1", children: "Tagihan Tertunggak" })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Buat Tagihan", eyebrow: "Penagihan", icon: import_lucide_react.Wallet, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Buat Tagihan", eyebrow: "Penagihan", icon: Wallet, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-1.5 mb-3", children: [{ k: "satu", l: "Satu Santri" }, { k: "kelas", l: "Satu Kelas" }, { k: "semua", l: "Semua Santri" }].map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setTagihanForm({ ...tagihanForm, target: o.k }), className: `text-xs px-3 py-1.5 rounded-full border transition-all duration-200 ${tagihanForm.target === o.k ? "btn-gradient border-[#0C4A6E]" : "border-[#CFE3F0] text-[#45657A]"}`, children: o.l }, o.k)) }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-4", children: [
             tagihanForm.target === "satu" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: tagihanForm.santriId, onChange: (e) => setTagihanForm({ ...tagihanForm, santriId: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: data.santri.map((s) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: s.id, children: s.nama }, s.id)) }),
@@ -2028,7 +2018,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: tagihanForm.bulan, onChange: (e) => setTagihanForm({ ...tagihanForm, bulan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: bulanAktif.map((b) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: b }, b)) }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Nominal (Rp)", value: tagihanForm.jumlah, onChange: (e) => setTagihanForm({ ...tagihanForm, jumlah: e.target.value }), className: "w-36 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: buatTagihan, disabled: tagihanBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               tagihanBusy ? "Memproses..." : "Terbitkan"
             ] })
           ] }),
@@ -2050,8 +2040,8 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 shrink-0", children: [
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusPill, { status: statusTagihan(t) }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => editingBayarId === t.id ? batalEditNominal() : bukaEditNominal(t), title: "Edit nominal", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 15 }) }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delTagihan(t.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => editingBayarId === t.id ? batalEditNominal() : bukaEditNominal(t), title: "Edit nominal", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 15 }) }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delTagihan(t.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
                 ] })
               ] }),
               editingBayarId === t.id ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-3 bg-[#F0F8FE] mt-1.5", children: [
@@ -2076,7 +2066,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => catatPembayaran(t.id), className: "text-xs btn-gradient px-3 py-1 rounded-xl  hover:shadow-lg active:scale-95", children: "Catat Pembayaran" })
                 ] }),
                 t.jumlahDibayar > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => cetakKwitansi(t), className: "flex items-center gap-1 text-xs text-[#0C4A6E] mt-1.5 underline", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 12 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 12 }),
                   "Cetak Kwitansi"
                 ] })
               ] })
@@ -2087,11 +2077,11 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
       ] }),
       tab === "infaq" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-5", children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Infaq tidak bisa dicatat \u2014 coba logout lalu login ulang."
         ] }),
         cashflowFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C]", children: cashflowFetch.error }),
@@ -2113,14 +2103,14 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93] mt-0.5", children: "Donatur Bulan Ini" })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Infaq / Donasi", eyebrow: "Pemasukan Non-Tagihan", icon: import_lucide_react.Gift, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Infaq / Donasi", eyebrow: "Pemasukan Non-Tagihan", icon: Gift, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-5", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Sumber (nama donatur/instansi)", value: infaqForm.sumber, onChange: (e) => setInfaqForm({ ...infaqForm, sumber: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: infaqForm.bulan, onChange: (e) => setInfaqForm({ ...infaqForm, bulan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: bulanAktif.map((b) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: b }, b)) }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Nominal (Rp)", value: infaqForm.jumlah, onChange: (e) => setInfaqForm({ ...infaqForm, jumlah: e.target.value }), className: "w-36 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Keterangan (opsional)", value: infaqForm.keterangan, onChange: (e) => setInfaqForm({ ...infaqForm, keterangan: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: catatInfaq, disabled: cashflowBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               cashflowBusy ? "Menyimpan..." : "Catat"
             ] })
           ] }),
@@ -2145,7 +2135,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 shrink-0", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-medium text-[#0C4A6E]", children: rupiah(c.jumlah) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delCashflow(c.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delCashflow(c.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
               ] })
             ] }, c.id)),
             !infaqBulanTerpilih.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada infaq tercatat bulan ini." })
@@ -2154,16 +2144,16 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
       ] }),
       tab === "anggaran" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-5", children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Pengajuan anggaran tidak bisa diproses \u2014 coba logout lalu login ulang."
         ] }),
         anggaranFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C]", children: anggaranFetch.error }),
         keuanganError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C]", children: keuanganError }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Ajukan Anggaran Baru", eyebrow: "Rencana Kebutuhan Dana", icon: import_lucide_react.Landmark, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Ajukan Anggaran Baru", eyebrow: "Rencana Kebutuhan Dana", icon: Landmark, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama kegiatan / kebutuhan", value: pengajuanForm.namaKegiatan, onChange: (e) => setPengajuanForm({ ...pengajuanForm, namaKegiatan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Unit / bagian pengaju", value: pengajuanForm.unitPengaju, onChange: (e) => setPengajuanForm({ ...pengajuanForm, unitPengaju: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
@@ -2179,7 +2169,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", min: "1", placeholder: "Jumlah", value: rincianItemForm.qty, onChange: (e) => setRincianItemForm({ ...rincianItemForm, qty: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Harga satuan (Rp)", value: rincianItemForm.hargaSatuan, onChange: (e) => setRincianItemForm({ ...rincianItemForm, hargaSatuan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: tambahRincianItem, className: "flex items-center justify-center gap-1 border border-[#CFE3F0] text-[#0C4A6E] text-sm px-3 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               "Tambah"
             ] })
           ] }),
@@ -2198,7 +2188,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-medium", children: rupiah(r.subtotal) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusRincianItem(r.id), title: "Hapus baris", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusRincianItem(r.id), title: "Hapus baris", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
               ] })
             ] }, r.id)),
             !rincianDraft.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] py-2", children: "Belum ada rincian ditambahkan." })
@@ -2209,11 +2199,11 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", { placeholder: "Catatan tambahan (opsional)", value: pengajuanForm.catatan, onChange: (e) => setPengajuanForm({ ...pengajuanForm, catatan: e.target.value }), rows: 2, className: "w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-3" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: ajukanAnggaran, disabled: anggaranBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             anggaranBusy ? "Mengirim..." : "Ajukan Anggaran"
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Daftar Pengajuan Anggaran", eyebrow: `${data.pengajuanAnggaran.length} Pengajuan Tercatat`, icon: import_lucide_react.ClipboardList, tone: "gold", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Daftar Pengajuan Anggaran", eyebrow: `${data.pengajuanAnggaran.length} Pengajuan Tercatat`, icon: ClipboardList, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChipFilterBar, { options: STATUS_ANGGARAN, value: anggaranFilterStatus, onChange: setAnggaranFilterStatus, includeSemua: true }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "divide-y divide-[#DCEDF7]", children: [
             pengajuanTampil.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-3 text-sm", children: [
@@ -2241,13 +2231,13 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
                   ] }, pm.id)) }),
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setujuiAnggaran(p.id), className: "text-xs px-2.5 py-1 rounded-xl bg-[#15803D] text-white hover:opacity-90", children: "Setujui" }),
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => tolakAnggaran(p.id), className: "text-xs px-2.5 py-1 rounded-xl border border-[#F3C9C2] text-[#96271A] hover:bg-[#FBE4E1]", children: "Tolak" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusPengajuan(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusPengajuan(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
                 ] }),
                 p.status === "Disetujui" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: `Jumlah realisasi (default ${p.totalAnggaran})`, value: realisasiDraft[p.id] || "", onChange: (e) => setRealisasiDraft((r) => ({ ...r, [p.id]: e.target.value })), className: "text-xs border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 w-56" }),
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => realisasikanAnggaran(p.id), className: "text-xs px-2.5 py-1 rounded-xl btn-gradient ", children: "Realisasikan" })
                 ] }),
-                p.status === "Ditolak" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusPengajuan(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) }),
+                p.status === "Ditolak" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusPengajuan(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) }),
                 p.status === "Direalisasikan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-[11px] text-[#5B7C93]", children: [
                   "Direalisasikan ",
                   rupiah(p.realisasi?.jumlah),
@@ -2256,7 +2246,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
                   " \xB7 tercatat di Cashflow"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => cetakPengajuan(p), className: "flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white/60 hover:backdrop-blur-sm ml-auto", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 13 }),
                   "Cetak"
                 ] })
               ] })
@@ -2267,11 +2257,11 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
       ] }),
       tab === "cashflow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-5", children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Transaksi kas tidak bisa dicatat \u2014 coba logout lalu login ulang."
         ] }),
         cashflowFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C]", children: cashflowFetch.error }),
@@ -2298,16 +2288,16 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93] mt-0.5", children: "Saldo Kas Total" })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Transaksi Kas", eyebrow: "Cashflow Pondok", icon: import_lucide_react.TrendingUp, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Transaksi Kas", eyebrow: "Cashflow Pondok", icon: TrendingUp, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-4", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: cfForm.bulan, onChange: (e) => setCfForm({ ...cfForm, bulan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: bulanAktif.map((b) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: b }, b)) }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-1.5", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => setCfForm({ ...cfForm, jenis: "Masuk" }), className: `flex items-center gap-1 text-xs px-3 py-2 rounded-xl border ${cfForm.jenis === "Masuk" ? "btn-gradient border-[#0C4A6E]" : "border-[#CFE3F0] text-[#45657A]"}`, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.TrendingUp, { size: 13 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrendingUp, { size: 13 }),
                 "Masuk"
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => setCfForm({ ...cfForm, jenis: "Keluar" }), className: `flex items-center gap-1 text-xs px-3 py-2 rounded-xl border ${cfForm.jenis === "Keluar" ? "bg-[#B5533C] text-white border-[#B5533C]" : "border-[#CFE3F0] text-[#45657A]"}`, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.TrendingDown, { size: 13 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrendingDown, { size: 13 }),
                 "Keluar"
               ] })
             ] }),
@@ -2315,7 +2305,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Nominal (Rp)", value: cfForm.jumlah, onChange: (e) => setCfForm({ ...cfForm, jumlah: e.target.value }), className: "w-36 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Keterangan", value: cfForm.keterangan, onChange: (e) => setCfForm({ ...cfForm, keterangan: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addCashflow, disabled: cashflowBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               cashflowBusy ? "Menyimpan..." : "Catat"
             ] })
           ] }),
@@ -2323,7 +2313,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "divide-y divide-[#DCEDF7]", children: [
             cfBulanIni.slice().reverse().map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between py-2.5 text-sm gap-2", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "min-w-0 flex items-center gap-2", children: [
-                c.jenis === "Masuk" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.TrendingUp, { size: 15, className: "text-[#0C4A6E] shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.TrendingDown, { size: 15, className: "text-[#B5533C] shrink-0" }),
+                c.jenis === "Masuk" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrendingUp, { size: 15, className: "text-[#0C4A6E] shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrendingDown, { size: 15, className: "text-[#B5533C] shrink-0" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "min-w-0", children: [
                   /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-[#17242E] truncate", children: [
                     c.kategori,
@@ -2341,14 +2331,14 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
                   c.jenis === "Masuk" ? "+" : "-",
                   rupiah(c.jumlah)
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delCashflow(c.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delCashflow(c.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
               ] })
             ] }, c.id)),
             !cfBulanIni.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada transaksi kas bulan ini." })
           ] })
         ] })
       ] }),
-      tab === "laporan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Laporan Keuangan", eyebrow: "Bulanan \xB7 Semester \xB7 Tahunan", icon: import_lucide_react.FileText, tone: "gold", children: [
+      tab === "laporan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Laporan Keuangan", eyebrow: "Bulanan \xB7 Semester \xB7 Tahunan", icon: FileText, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-1.5 mb-3", children: [{ k: "bulanan", l: "Bulanan" }, { k: "semester", l: "Semester" }, { k: "tahunan", l: "Tahunan" }].map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => {
           setPeriodeTipe(o.k);
           setPeriodeIdx(0);
@@ -2420,13 +2410,13 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: cetakLaporan, className: "flex items-center gap-1.5 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 15 }),
           "Cetak Laporan"
         ] })
       ] }),
-      tab === "inventaris" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Inventaris Pondok", eyebrow: `${data.inventaris.length} Item Tercatat`, icon: import_lucide_react.Package, children: [
+      tab === "inventaris" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Inventaris Pondok", eyebrow: `${data.inventaris.length} Item Tercatat`, icon: Package, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => showInvForm ? setShowInvForm(false) : bukaTambahInv(), className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  mb-4", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
           showInvForm ? "Tutup Form" : "Tambah Item"
         ] }),
         showInvForm && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-4 mb-5 bg-[#F0F8FE]", children: [
@@ -2440,7 +2430,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Keterangan tambahan", value: invForm.keterangan, onChange: (e) => setInvForm({ ...invForm, keterangan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm sm:col-span-3" })
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanInv, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             editingInvId ? "Simpan Perubahan" : "Simpan Item"
           ] })
         ] }),
@@ -2467,8 +2457,8 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1.5 shrink-0", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusPill, { status: it.kondisi === "Baik" ? "Lunas" : it.kondisi === "Dalam Perbaikan" ? "Sebagian" : "Belum Lunas" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditInv(it), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 15 }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delInv(it.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditInv(it), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 15 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delInv(it.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
             ] })
           ] }, it.id)),
           !data.inventaris.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada inventaris tercatat." })
@@ -2478,18 +2468,18 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
   ] });
 }
 var DEPT_META = {
-  admin: { label: "Admin", icon: import_lucide_react.Lock },
-  pengasuhan: { label: "Pengasuhan", icon: import_lucide_react.ShieldCheck },
-  pengajaran: { label: "Pengajaran", icon: import_lucide_react.GraduationCap },
-  lptq: { label: "LPTQ", icon: import_lucide_react.BookOpen },
-  administrasi: { label: "Administrasi", icon: import_lucide_react.Wallet },
-  unitusaha: { label: "Unit Usaha", icon: import_lucide_react.Package },
-  sekretariat: { label: "Sekretariat Pondok", icon: import_lucide_react.FileSignature }
+  admin: { label: "Admin", icon: Lock },
+  pengasuhan: { label: "Pengasuhan", icon: ShieldCheck },
+  pengajaran: { label: "Pengajaran", icon: GraduationCap },
+  lptq: { label: "LPTQ", icon: BookOpen },
+  administrasi: { label: "Administrasi", icon: Wallet },
+  unitusaha: { label: "Unit Usaha", icon: Package },
+  sekretariat: { label: "Sekretariat Pondok", icon: FileSignature }
 };
 function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const deptKeys = Object.keys(DEPT_META);
-  const [adminTab, setAdminTab] = (0, import_react.useState)("ringkasan");
-  const [guruFetch, setGuruFetch] = (0, import_react.useState)({ loading: true, error: "", data: [] });
+  const [adminTab, setAdminTab] = useState("ringkasan");
+  const [guruFetch, setGuruFetch] = useState({ loading: true, error: "", data: [] });
   const muatGuru = () => {
     if (!backendToken) {
       setGuruFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] });
@@ -2498,14 +2488,14 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     setGuruFetch((f) => ({ ...f, loading: true }));
     backendApi("/admin/guru", { token: backendToken }).then((rows) => setGuruFetch({ loading: false, error: "", data: Array.isArray(rows) ? rows : [] })).catch((e) => setGuruFetch({ loading: false, error: e.message || "Gagal memuat daftar akun.", data: [] }));
   };
-  (0, import_react.useEffect)(muatGuru, [backendToken]);
+  useEffect(muatGuru, [backendToken]);
   const guruList = Array.isArray(guruFetch.data) ? guruFetch.data : [];
-  const [guruBusyId, setGuruBusyId] = (0, import_react.useState)(null);
-  const [guruActionError, setGuruActionError] = (0, import_react.useState)("");
-  const [guruActionMsg, setGuruActionMsg] = (0, import_react.useState)("");
-  const [editingGuruId, setEditingGuruId] = (0, import_react.useState)(null);
-  const [guruDraft, setGuruDraft] = (0, import_react.useState)({});
-  const [guruPwDraft, setGuruPwDraft] = (0, import_react.useState)({});
+  const [guruBusyId, setGuruBusyId] = useState(null);
+  const [guruActionError, setGuruActionError] = useState("");
+  const [guruActionMsg, setGuruActionMsg] = useState("");
+  const [editingGuruId, setEditingGuruId] = useState(null);
+  const [guruDraft, setGuruDraft] = useState({});
+  const [guruPwDraft, setGuruPwDraft] = useState({});
   const bukaEditGuru = (g) => {
     setEditingGuruId(g.id);
     setGuruDraft((d) => ({ ...d, [g.id]: { nama: g.nama, username: g.username } }));
@@ -2605,9 +2595,9 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setGuruBusyId(null);
     }
   };
-  const [form, setForm] = (0, import_react.useState)({ nama: "", username: "", departemen: deptKeys[0], unit: data.unitUsaha[0] || "", password: "" });
-  const [formError, setFormError] = (0, import_react.useState)("");
-  const [formBusy, setFormBusy] = (0, import_react.useState)(false);
+  const [form, setForm] = useState({ nama: "", username: "", departemen: deptKeys[0], unit: data.unitUsaha[0] || "", password: "" });
+  const [formError, setFormError] = useState("");
+  const [formBusy, setFormBusy] = useState(false);
   const addGuru = async () => {
     if (!form.nama || !form.username || !form.password) {
       setFormError("Nama, username, dan kata sandi wajib diisi.");
@@ -2633,7 +2623,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setFormBusy(false);
     }
   };
-  const [refRows, setRefRows] = (0, import_react.useState)({ unit: [], tahun: [] });
+  const [refRows, setRefRows] = useState({ unit: [], tahun: [] });
   const muatReferensi = () => {
     if (!backendToken) return;
     Promise.all([backendApi("/admin/unit-usaha", { token: backendToken }), backendApi("/admin/tahun-ajaran", { token: backendToken })]).then(([unitRows, tahunRows]) => {
@@ -2646,9 +2636,9 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     }).catch(() => {
     });
   };
-  (0, import_react.useEffect)(muatReferensi, [backendToken]);
-  const [unitBaruDraft, setUnitBaruDraft] = (0, import_react.useState)("");
-  const [unitError, setUnitError] = (0, import_react.useState)("");
+  useEffect(muatReferensi, [backendToken]);
+  const [unitBaruDraft, setUnitBaruDraft] = useState("");
+  const [unitError, setUnitError] = useState("");
   const tambahUnitUsaha = async () => {
     const nama = unitBaruDraft.trim();
     if (!nama) return;
@@ -2679,9 +2669,9 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setUnitError(e.message || "Gagal menghapus bagian.");
     }
   };
-  const [tahunBaruDraft, setTahunBaruDraft] = (0, import_react.useState)("");
-  const [kalenderMsg, setKalenderMsg] = (0, import_react.useState)("");
-  const [kalenderErr, setKalenderErr] = (0, import_react.useState)("");
+  const [tahunBaruDraft, setTahunBaruDraft] = useState("");
+  const [kalenderMsg, setKalenderMsg] = useState("");
+  const [kalenderErr, setKalenderErr] = useState("");
   const tambahTahunAjaran = async () => {
     setKalenderErr("");
     if (!backendToken) {
@@ -2725,11 +2715,11 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setKalenderErr(e.message || "Gagal menghapus tahun ajaran.");
     }
   };
-  const [tampilanForm, setTampilanForm] = (0, import_react.useState)({ ...TAMPILAN_DEFAULT, ...data.tampilan });
-  const [tampilanMsg, setTampilanMsg] = (0, import_react.useState)("");
-  const [tampilanIsErr, setTampilanIsErr] = (0, import_react.useState)(false);
-  const [tampilanBusy, setTampilanBusy] = (0, import_react.useState)(false);
-  (0, import_react.useEffect)(() => {
+  const [tampilanForm, setTampilanForm] = useState({ ...TAMPILAN_DEFAULT, ...data.tampilan });
+  const [tampilanMsg, setTampilanMsg] = useState("");
+  const [tampilanIsErr, setTampilanIsErr] = useState(false);
+  const [tampilanBusy, setTampilanBusy] = useState(false);
+  useEffect(() => {
     setTampilanForm({ ...TAMPILAN_DEFAULT, ...data.tampilan });
   }, [data.tampilan]);
   const pilihLogoAplikasi = (e) => {
@@ -2767,11 +2757,11 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   };
   const simpanTampilan = () => simpanTampilanKeBackend(tampilanForm, "Pengaturan tampilan tersimpan dan langsung diterapkan ke seluruh aplikasi.");
   const resetTampilan = () => simpanTampilanKeBackend(TAMPILAN_DEFAULT, "Tampilan dikembalikan ke pengaturan bawaan.");
-  const [dbStatus, setDbStatus] = (0, import_react.useState)(null);
-  const [dbLoading, setDbLoading] = (0, import_react.useState)(false);
-  const [dbMsg, setDbMsg] = (0, import_react.useState)("");
-  const [dbIsErr, setDbIsErr] = (0, import_react.useState)(false);
-  const [dbSyncBusy, setDbSyncBusy] = (0, import_react.useState)(false);
+  const [dbStatus, setDbStatus] = useState(null);
+  const [dbLoading, setDbLoading] = useState(false);
+  const [dbMsg, setDbMsg] = useState("");
+  const [dbIsErr, setDbIsErr] = useState(false);
+  const [dbSyncBusy, setDbSyncBusy] = useState(false);
   const ambilDbStatus = async () => {
     if (!backendToken) return;
     setDbLoading(true);
@@ -2784,7 +2774,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setDbLoading(false);
     }
   };
-  (0, import_react.useEffect)(() => {
+  useEffect(() => {
     if (adminTab === "database") {
       ambilDbStatus();
     }
@@ -2870,20 +2860,20 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     }
   };
   const adminMenus = [
-    { id: "ringkasan", label: "Ringkasan & Metrik", icon: import_lucide_react.TrendingUp, badge: "KPI" },
-    { id: "akun", label: "Kelola Akun Guru", icon: import_lucide_react.ShieldCheck, badge: `${(guruList || []).length}` },
-    { id: "unit", label: "Bagian Unit Usaha", icon: import_lucide_react.Package, badge: `${(data?.unitUsaha || []).length}` },
-    { id: "tahun", label: "Kalender Akademik", icon: import_lucide_react.CalendarCheck },
-    { id: "tampilan", label: "Pengaturan Tampilan", icon: import_lucide_react.Image },
-    { id: "database", label: "Penyimpanan & Cadangan", icon: import_lucide_react.Database, badge: "Cloud" }
+    { id: "ringkasan", label: "Ringkasan & Metrik", icon: TrendingUp, badge: "KPI" },
+    { id: "akun", label: "Kelola Akun Guru", icon: ShieldCheck, badge: `${(guruList || []).length}` },
+    { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${(data?.unitUsaha || []).length}` },
+    { id: "tahun", label: "Kalender Akademik", icon: CalendarCheck },
+    { id: "tampilan", label: "Pengaturan Tampilan", icon: ImageIcon },
+    { id: "database", label: "Penyimpanan & Cadangan", icon: Database, badge: "Cloud" }
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
     backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-4", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
       "Menghubungkan ke server..."
     ] }),
     backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-4", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
       "Tidak terhubung ke server. Semua aksi di bawah ini (akun, unit usaha, tahun ajaran, tampilan) tidak akan tersimpan \u2014 coba logout lalu login ulang."
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-col lg:flex-row gap-5 items-start", children: [
@@ -2916,7 +2906,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
         ))
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 w-full space-y-5", children: [
-        adminTab === "ringkasan" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Pusat Pemantauan & Metrik Operasional", eyebrow: "Monitoring Real-Time Eksekutif", icon: import_lucide_react.TrendingUp, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2", children: [
+        adminTab === "ringkasan" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Pusat Pemantauan & Metrik Operasional", eyebrow: "Monitoring Real-Time Eksekutif", icon: TrendingUp, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-2xl font-bold text-[#0C4A6E]", style: { fontFamily: "'Fraunces', serif" }, children: (data?.santri || []).length }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs font-semibold text-[#17242E] mt-1", children: "Total Santri" }),
@@ -2944,7 +2934,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
           ] })
         ] }) }),
         adminTab === "akun" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Tambah Akun Guru", eyebrow: "Satu Akun = Satu Bagian", icon: import_lucide_react.Lock, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Tambah Akun Guru", eyebrow: "Satu Akun = Satu Bagian", icon: Lock, children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-3", children: "Kalau seorang guru punya wewenang di lebih dari satu bagian, buatkan akun terpisah untuk tiap bagian (username berbeda-beda)." }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-3", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama guru", value: form.nama, onChange: (e) => setForm({ ...form, nama: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
@@ -2957,14 +2947,14 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
             ] }),
             formError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-2", children: formError }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addGuru, disabled: formBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               formBusy ? "Menyimpan..." : "Tambah Akun"
             ] })
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StarDivider, {}),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Akun Guru per Bagian", eyebrow: `${guruList.length} Akun Terdaftar`, icon: import_lucide_react.ShieldCheck, tone: "gold", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Akun Guru per Bagian", eyebrow: `${guruList.length} Akun Terdaftar`, icon: ShieldCheck, tone: "gold", children: [
             guruFetch.loading && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] mb-3", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
               "Memuat daftar akun..."
             ] }),
             guruFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: guruFetch.error }),
@@ -3004,11 +2994,11 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                       ] }),
                       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1.5 shrink-0", children: [
                         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => sedangEdit ? selesaiEditGuru(g) : bukaEditGuru(g), disabled: sedangSibuk, className: `flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors duration-150 disabled:opacity-50 ${sedangEdit ? "bg-[#E3F0E8] text-[#15803D] hover:bg-[#D3E6DA]" : "bg-[#EAF4FB] text-[#0C4A6E] hover:bg-[#DCEEFB]"}`, children: [
-                          sedangEdit ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 13 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 13 }),
+                          sedangEdit ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 13 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 13 }),
                           sedangEdit ? "Selesai" : "Edit"
                         ] }),
                         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => delGuru(g.id), disabled: sedangSibuk || backendOnline !== true, className: "flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg bg-[#FBE4E1] text-[#96271A] hover:bg-[#F6D3CE] transition-colors duration-150 disabled:opacity-50", children: [
-                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 13 }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 13 }),
                           "Hapus"
                         ] })
                       ] })
@@ -3020,12 +3010,12 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
             }) })
           ] })
         ] }),
-        adminTab === "unit" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Bagian Unit Usaha", eyebrow: "Kantin \xB7 Kopel \xB7 Dapur \xB7 BMT \xB7 dan lainnya", icon: import_lucide_react.Package, children: [
+        adminTab === "unit" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Bagian Unit Usaha", eyebrow: "Kantin \xB7 Kopel \xB7 Dapur \xB7 BMT \xB7 dan lainnya", icon: Package, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-3", children: "Tambahkan bagian baru di bawah Unit Usaha kapan saja (mis. Toko Buku, Laundry). Bagian yang baru dibuat langsung tersedia sebagai pilihan saat menambah akun guru." }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-4", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama bagian baru, mis. Toko Buku", value: unitBaruDraft, onChange: (e) => setUnitBaruDraft(e.target.value), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: tambahUnitUsaha, disabled: backendOnline !== true, className: "flex items-center gap-1 text-sm px-4 py-2 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               "Tambah Bagian"
             ] })
           ] }),
@@ -3033,12 +3023,12 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
             data.unitUsaha.map((u) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "flex items-center gap-1.5 text-sm bg-[#EAF4FB] text-[#0C4A6E] px-3 py-1.5 rounded-full", children: [
               u,
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => hapusUnitUsaha(u), disabled: backendOnline !== true, className: "text-[#5B7C93] hover:text-[#B5533C] disabled:opacity-50", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 13 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => hapusUnitUsaha(u), disabled: backendOnline !== true, className: "text-[#5B7C93] hover:text-[#B5533C] disabled:opacity-50", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 13 }) })
             ] }, u)),
             !data.unitUsaha.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada bagian Unit Usaha." })
           ] })
         ] }),
-        adminTab === "tahun" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Kalender Akademik", eyebrow: "Tahun Ajaran & Periode Laporan", icon: import_lucide_react.CalendarCheck, tone: "gold", children: [
+        adminTab === "tahun" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Kalender Akademik", eyebrow: "Tahun Ajaran & Periode Laporan", icon: CalendarCheck, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-4", children: "Tahun ajaran yang aktif menentukan pilihan bulan di seluruh modul Keuangan (Tagihan, Infaq, Cashflow) dan pengelompokan Laporan Bulanan/Semester/Tahunan. Setiap tahun ajaran baru, tambahkan lalu aktifkan di sini \u2014 data lama tetap tersimpan dan tetap bisa dilihat di Laporan." }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-4", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Tahun mulai, mis. 2027", value: tahunBaruDraft, onChange: (e) => {
@@ -3046,7 +3036,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
               setKalenderMsg("");
             }, className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: tambahTahunAjaran, disabled: backendOnline !== true, className: "flex items-center gap-1 text-sm px-4 py-2 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               "Tambah Tahun Ajaran"
             ] })
           ] }),
@@ -3063,7 +3053,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [
                 !t.aktif && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => aktifkanTahunAjaran(t.id), disabled: backendOnline !== true, className: "text-xs px-3 py-1.5 rounded-xl btn-gradient  hover:shadow-lg active:scale-95 disabled:opacity-50", children: "Aktifkan" }),
-                !t.aktif && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusTahunAjaran(t.id), title: "Hapus", disabled: backendOnline !== true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                !t.aktif && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusTahunAjaran(t.id), title: "Hapus", disabled: backendOnline !== true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
               ] })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-xs text-[#5B7C93]", children: [
@@ -3080,7 +3070,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
             ] })
           ] }, t.id)) })
         ] }),
-        adminTab === "tampilan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Tampilan Aplikasi", eyebrow: "Logo, Foto, & Warna Tema", icon: import_lucide_react.Image, tone: "gold", children: [
+        adminTab === "tampilan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Tampilan Aplikasi", eyebrow: "Logo, Foto, & Warna Tema", icon: ImageIcon, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-4", children: "Perubahan di sini berlaku untuk seluruh aplikasi (layar login, sidebar, tombol, dsb). Dokumen resmi cetak (Rapor, Kwitansi, Surat, Kop Surat) tidak terpengaruh \u2014 pengaturannya tetap terpisah di menu masing-masing." }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-5 mb-5", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
@@ -3188,13 +3178,13 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
           tampilanMsg && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: `text-xs mb-3 ${tampilanIsErr ? "text-[#B5533C]" : "text-[#15803D]"}`, children: tampilanMsg }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanTampilan, disabled: tampilanBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 15 }),
               tampilanBusy ? "Menyimpan..." : "Simpan Pengaturan Tampilan"
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: resetTampilan, disabled: tampilanBusy || backendOnline !== true, className: "border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60 disabled:opacity-50", children: "Kembalikan ke Bawaan" })
           ] })
         ] }),
-        adminTab === "database" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Penyimpanan & Cadangan Data", eyebrow: "Keamanan & Data Persistence", icon: import_lucide_react.Database, tone: "gold", children: [
+        adminTab === "database" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Penyimpanan & Cadangan Data", eyebrow: "Keamanan & Data Persistence", icon: Database, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-4", children: "Sistem terhubung ke Managed PostgreSQL Cloud Database. Seluruh data transaksi, santri, tagihan, dan pengaturan tersimpan terisolasi di server database sehingga tidak akan hilang atau ter-reset saat aplikasi di-deploy ulang." }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-4 rounded-xl border border-[#CFE3F0] bg-[#F4F8FB] mb-5 space-y-3", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between flex-wrap gap-2", children: [
@@ -3209,7 +3199,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                   disabled: dbLoading,
                   className: "text-xs text-[#0C4A6E] font-medium hover:underline flex items-center gap-1",
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.RefreshCw, { size: 12, className: dbLoading ? "animate-spin" : "" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 12, className: dbLoading ? "animate-spin" : "" }),
                     " Perbarui Status"
                   ]
                 }
@@ -3239,7 +3229,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
             ] })
           ] }),
           dbMsg && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: `p-3 rounded-xl text-xs mb-4 flex items-center gap-2 ${dbIsErr ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-800 border border-emerald-200"}`, children: [
-            dbIsErr ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.AlertCircle, { size: 15, className: "shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.CheckCircle2, { size: 15, className: "shrink-0" }),
+            dbIsErr ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertCircle, { size: 15, className: "shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CheckCircle2, { size: 15, className: "shrink-0" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: dbMsg })
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-4", children: [
@@ -3254,7 +3244,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                     disabled: dbLoading,
                     className: "btn-gradient text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50",
                     children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Download, { size: 14 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 14 }),
                       " Unduh Berkas Backup (.JSON)"
                     ]
                   }
@@ -3266,7 +3256,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                     disabled: dbLoading,
                     className: "border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-slate-50 text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs disabled:opacity-50",
                     children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.HardDrive, { size: 14 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HardDrive, { size: 14 }),
                       " Simpan Snapshot di Server"
                     ]
                   }
@@ -3287,7 +3277,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                   disabled: dbSyncBusy || !backendToken,
                   className: "border border-[#0C4A6E] text-[#0C4A6E] bg-white hover:bg-[#EAF4FB] text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs active:scale-95 disabled:opacity-50",
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.RefreshCw, { size: 14, className: dbSyncBusy ? "animate-spin" : "" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 14, className: dbSyncBusy ? "animate-spin" : "" }),
                     dbSyncBusy ? "Menyinkronkan..." : `Simpan ${(data?.santri || []).length} Santri Lokal ke Server Cloud`
                   ]
                 }
@@ -3303,20 +3293,20 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
   const isBMT = unit === "BMT";
   const jumlahPermintaanMenunggu = isBMT ? (data.permintaanBMT || []).filter((p) => p.status === "Menunggu").length : 0;
   const UNIT_TABS = isBMT ? [
-    { key: "transaksi", label: "Transaksi Cashless", icon: import_lucide_react.Wallet },
-    { key: "qr", label: "QR Santri", icon: import_lucide_react.QrCode },
-    { key: "riwayat", label: "Riwayat Semua Unit", icon: import_lucide_react.Search },
-    { key: "permintaan", label: `Permintaan Wali${jumlahPermintaanMenunggu ? ` (${jumlahPermintaanMenunggu})` : ""}`, icon: import_lucide_react.Bell },
-    { key: "keuangan-unit", label: "Keuangan Unit Usaha", icon: import_lucide_react.Landmark },
-    { key: "cashflow", label: "Cashflow Unit", icon: import_lucide_react.TrendingUp },
-    { key: "laporan", label: "Laporan", icon: import_lucide_react.FileText }
+    { key: "transaksi", label: "Transaksi Cashless", icon: Wallet },
+    { key: "qr", label: "QR Santri", icon: QrCode },
+    { key: "riwayat", label: "Riwayat Semua Unit", icon: Search },
+    { key: "permintaan", label: `Permintaan Wali${jumlahPermintaanMenunggu ? ` (${jumlahPermintaanMenunggu})` : ""}`, icon: Bell },
+    { key: "keuangan-unit", label: "Keuangan Unit Usaha", icon: Landmark },
+    { key: "cashflow", label: "Cashflow Unit", icon: TrendingUp },
+    { key: "laporan", label: "Laporan", icon: FileText }
   ] : [
-    { key: "katalog", label: "Katalog & Stok", icon: import_lucide_react.Package },
-    { key: "transaksi", label: "Riwayat Transaksi", icon: import_lucide_react.Wallet },
-    { key: "cashflow", label: "Cashflow Unit", icon: import_lucide_react.TrendingUp },
-    { key: "laporan", label: "Laporan", icon: import_lucide_react.FileText }
+    { key: "katalog", label: "Katalog & Stok", icon: Package },
+    { key: "transaksi", label: "Riwayat Transaksi", icon: Wallet },
+    { key: "cashflow", label: "Cashflow Unit", icon: TrendingUp },
+    { key: "laporan", label: "Laporan", icon: FileText }
   ];
-  const [tab, setTab] = (0, import_react.useState)(isBMT ? "transaksi" : "katalog");
+  const [tab, setTab] = useState(isBMT ? "transaksi" : "katalog");
   const tahunAjaranAktif = data.tahunAjaran.find((t) => t.aktif) || data.tahunAjaran[0];
   const bulanAktif = tahunAjaranAktif ? tahunAjaranAktif.bulan : BULAN_OPSI;
   const semesterGroupsAktif = data.tahunAjaran.slice().sort((a, b) => b.tahunMulai - a.tahunMulai).flatMap((t) => [
@@ -3343,11 +3333,11 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
     } catch (_) {
     }
   };
-  const [produkList, setProdukList] = (0, import_react.useState)([]);
-  const [produkLoading, setProdukLoading] = (0, import_react.useState)(false);
-  const [produkError, setProdukError] = (0, import_react.useState)("");
-  const [produkCari, setProdukCari] = (0, import_react.useState)("");
-  const [produkKategoriFilter, setProdukKategoriFilter] = (0, import_react.useState)("Semua");
+  const [produkList, setProdukList] = useState([]);
+  const [produkLoading, setProdukLoading] = useState(false);
+  const [produkError, setProdukError] = useState("");
+  const [produkCari, setProdukCari] = useState("");
+  const [produkKategoriFilter, setProdukKategoriFilter] = useState("Semua");
   const muatProduk = () => {
     if (!backendToken || isBMT) return;
     setProdukLoading(true);
@@ -3360,10 +3350,10 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       setProdukLoading(false);
     });
   };
-  (0, import_react.useEffect)(muatProduk, [unit, backendToken, isBMT]);
-  const [modalProduk, setModalProduk] = (0, import_react.useState)(null);
-  const [modalProdukError, setModalProdukError] = (0, import_react.useState)("");
-  const [modalProdukBusy, setModalProdukBusy] = (0, import_react.useState)(false);
+  useEffect(muatProduk, [unit, backendToken, isBMT]);
+  const [modalProduk, setModalProduk] = useState(null);
+  const [modalProdukError, setModalProdukError] = useState("");
+  const [modalProdukBusy, setModalProdukBusy] = useState(false);
   const bukaTambahProduk = () => {
     setModalProduk({ nama: "", harga: "", kategori: "Makanan", barcode: "", stok: 0, aktif: true });
     setModalProdukError("");
@@ -3427,9 +3417,9 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       alert("Gagal merubah status produk: " + e.message);
     }
   };
-  const [modalOpname, setModalOpname] = (0, import_react.useState)(null);
-  const [modalOpnameError, setModalOpnameError] = (0, import_react.useState)("");
-  const [modalOpnameBusy, setModalOpnameBusy] = (0, import_react.useState)(false);
+  const [modalOpname, setModalOpname] = useState(null);
+  const [modalOpnameError, setModalOpnameError] = useState("");
+  const [modalOpnameBusy, setModalOpnameBusy] = useState(false);
   const bukaStokOpname = (p) => {
     setModalOpname({ produk: p, stokFisik: p.stok, alasan: "Penyesuaian Rutin", catatan: "" });
     setModalOpnameError("");
@@ -3460,14 +3450,14 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       setModalOpnameBusy(false);
     }
   };
-  const [cart, setCart] = (0, import_react.useState)([]);
-  const [kasirSantriId, setKasirSantriId] = (0, import_react.useState)(data.santri[0]?.id || "");
-  const [kasirBarcodeScan, setKasirBarcodeScan] = (0, import_react.useState)("");
-  const [kasirPin, setKasirPin] = (0, import_react.useState)("");
-  const [kasirBusy, setKasirBusy] = (0, import_react.useState)(false);
-  const [kasirError, setKasirError] = (0, import_react.useState)("");
-  const [kasirSuccessMsg, setKasirSuccessMsg] = (0, import_react.useState)("");
-  const [strukTerakhir, setStrukTerakhir] = (0, import_react.useState)(null);
+  const [cart, setCart] = useState([]);
+  const [kasirSantriId, setKasirSantriId] = useState(data.santri[0]?.id || "");
+  const [kasirBarcodeScan, setKasirBarcodeScan] = useState("");
+  const [kasirPin, setKasirPin] = useState("");
+  const [kasirBusy, setKasirBusy] = useState(false);
+  const [kasirError, setKasirError] = useState("");
+  const [kasirSuccessMsg, setKasirSuccessMsg] = useState("");
+  const [strukTerakhir, setStrukTerakhir] = useState(null);
   const santriKasir = data.santri.find((s) => s.id === kasirSantriId);
   const tambahItemKeCart = (p) => {
     playScanBeep();
@@ -3646,20 +3636,20 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       ] })
     );
   };
-  const [kartuList, setKartuList] = (0, import_react.useState)([]);
-  const [kartuLoading, setKartuLoading] = (0, import_react.useState)(false);
-  const [kartuError, setKartuError] = (0, import_react.useState)("");
-  const [kartuCari, setKartuCari] = (0, import_react.useState)("");
-  const [kartuFilterKelas, setKartuFilterKelas] = (0, import_react.useState)("Semua");
-  const [kartuFilterStatus, setKartuFilterStatus] = (0, import_react.useState)("Semua");
-  const [kartuQrMap, setKartuQrMap] = (0, import_react.useState)({});
-  const [pinFormOpenId, setPinFormOpenId] = (0, import_react.useState)(null);
-  const [pinFormValue, setPinFormValue] = (0, import_react.useState)("");
-  const [pinFormLihat, setPinFormLihat] = (0, import_react.useState)(false);
-  const [pinFormError, setPinFormError] = (0, import_react.useState)("");
-  const [pinFormSukses, setPinFormSukses] = (0, import_react.useState)("");
-  const [kartuAksiBusyId, setKartuAksiBusyId] = (0, import_react.useState)(null);
-  const [kartuNotice, setKartuNotice] = (0, import_react.useState)({ jenis: "", pesan: "" });
+  const [kartuList, setKartuList] = useState([]);
+  const [kartuLoading, setKartuLoading] = useState(false);
+  const [kartuError, setKartuError] = useState("");
+  const [kartuCari, setKartuCari] = useState("");
+  const [kartuFilterKelas, setKartuFilterKelas] = useState("Semua");
+  const [kartuFilterStatus, setKartuFilterStatus] = useState("Semua");
+  const [kartuQrMap, setKartuQrMap] = useState({});
+  const [pinFormOpenId, setPinFormOpenId] = useState(null);
+  const [pinFormValue, setPinFormValue] = useState("");
+  const [pinFormLihat, setPinFormLihat] = useState(false);
+  const [pinFormError, setPinFormError] = useState("");
+  const [pinFormSukses, setPinFormSukses] = useState("");
+  const [kartuAksiBusyId, setKartuAksiBusyId] = useState(null);
+  const [kartuNotice, setKartuNotice] = useState({ jenis: "", pesan: "" });
   const muatKartu = async () => {
     setKartuLoading(true);
     setKartuError("");
@@ -3685,7 +3675,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
         const token = r.kartuToken || (r.kartuTerbit ? r.nis || r.id : null);
         if (token) {
           try {
-            qrs[r.id] = await import_qrcode.default.toDataURL(token, { width: 256, margin: 1, errorCorrectionLevel: "M" });
+            qrs[r.id] = await QRCode.toDataURL(token, { width: 256, margin: 1, errorCorrectionLevel: "M" });
           } catch (_) {
           }
         }
@@ -3707,7 +3697,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       setKartuLoading(false);
     }
   };
-  (0, import_react.useEffect)(() => {
+  useEffect(() => {
     if (tab === "qr" && isBMT) {
       muatKartu();
     }
@@ -3728,7 +3718,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
         });
       }
       const token = hasil?.kartuToken || crypto.randomUUID?.() || Date.now().toString();
-      const qrData = await import_qrcode.default.toDataURL(token, { width: 256, margin: 1, errorCorrectionLevel: "M" });
+      const qrData = await QRCode.toDataURL(token, { width: 256, margin: 1, errorCorrectionLevel: "M" });
       const tISO = (/* @__PURE__ */ new Date()).toISOString();
       setKartuList((prev) => prev.map((s) => s.id === santri.id ? { ...s, kartuTerbit: tISO, kartuToken: token } : s));
       setKartuQrMap((prev) => ({ ...prev, [santri.id]: qrData }));
@@ -3816,10 +3806,10 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       window.print();
     }
   };
-  const [txForm, setTxForm] = (0, import_react.useState)({ santriId: data.santri[0]?.id || "", jenis: "Top Up", kategori: "Jajan Harian", subKategori: SUBKATEGORI_KEBUTUHAN_KHUSUS[0], jumlah: "", keterangan: "" });
-  const [txError, setTxError] = (0, import_react.useState)("");
-  const [txInfo, setTxInfo] = (0, import_react.useState)("");
-  const [txBusy, setTxBusy] = (0, import_react.useState)(false);
+  const [txForm, setTxForm] = useState({ santriId: data.santri[0]?.id || "", jenis: "Top Up", kategori: "Jajan Harian", subKategori: SUBKATEGORI_KEBUTUHAN_KHUSUS[0], jumlah: "", keterangan: "" });
+  const [txError, setTxError] = useState("");
+  const [txInfo, setTxInfo] = useState("");
+  const [txBusy, setTxBusy] = useState(false);
   const transaksiUnit = data.transaksiCashless.filter((t) => t.unit === unit);
   const santriTerpilih = data.santri.find((s) => s.id === txForm.santriId);
   const terapkanSantriDariBackend = (santriId, publikSantri) => {
@@ -3885,10 +3875,10 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       setTxBusy(false);
     }
   };
-  const [riwayatSantriId, setRiwayatSantriId] = (0, import_react.useState)("");
+  const [riwayatSantriId, setRiwayatSantriId] = useState("");
   const santriRiwayatLokal = data.santri.find((s) => s.id === riwayatSantriId);
-  const [riwayatFetch, setRiwayatFetch] = (0, import_react.useState)({ loading: false, error: "", data: [], detail: null });
-  (0, import_react.useEffect)(() => {
+  const [riwayatFetch, setRiwayatFetch] = useState({ loading: false, error: "", data: [], detail: null });
+  useEffect(() => {
     if (!riwayatSantriId) {
       setRiwayatFetch({ loading: false, error: "", data: [], detail: null });
       return;
@@ -3922,10 +3912,10 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
     const khusus = bulanIni.filter((t) => t.jenis === "Tarik Tunai" && t.kategori === "Kebutuhan Khusus").reduce((a, t) => a + t.jumlah, 0);
     return { topUp, jajan, khusus };
   })() : null;
-  const [permintaanFilter, setPermintaanFilter] = (0, import_react.useState)("Semua");
-  const [catatanProses, setCatatanProses] = (0, import_react.useState)({});
-  const [permintaanFetch, setPermintaanFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [permintaanActionError, setPermintaanActionError] = (0, import_react.useState)("");
+  const [permintaanFilter, setPermintaanFilter] = useState("Semua");
+  const [catatanProses, setCatatanProses] = useState({});
+  const [permintaanFetch, setPermintaanFetch] = useState({ loading: false, error: "", data: [] });
+  const [permintaanActionError, setPermintaanActionError] = useState("");
   const muatPermintaan = () => {
     if (!backendToken) {
       setPermintaanFetch({ loading: false, error: "Tidak terhubung ke server cashless.", data: [] });
@@ -3934,7 +3924,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
     setPermintaanFetch((f) => ({ ...f, loading: true, error: "" }));
     backendApi(`/permintaan${permintaanFilter !== "Semua" ? `?status=${permintaanFilter}` : ""}`, { token: backendToken }).then((data2) => setPermintaanFetch({ loading: false, error: "", data: data2 })).catch((e) => setPermintaanFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(() => {
+  useEffect(() => {
     if (tab === "permintaan") muatPermintaan();
   }, [tab, permintaanFilter, backendToken]);
   const daftarPermintaan = permintaanFetch.data;
@@ -3957,15 +3947,15 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
     }
   };
   const daftarSemuaUnit = data.unitUsaha || ["Kantin", "Kopel", "Dapur", "BMT"];
-  const [keuanganUnitFilter, setKeuanganUnitFilter] = (0, import_react.useState)("Semua");
-  const [keuanganUnitTabType, setKeuanganUnitTabType] = (0, import_react.useState)("Dana Masuk");
-  const [keuanganUnitList, setKeuanganUnitList] = (0, import_react.useState)([]);
-  const [keuanganUnitAllList, setKeuanganUnitAllList] = (0, import_react.useState)([]);
-  const [keuanganUnitLaporan, setKeuanganUnitLaporan] = (0, import_react.useState)(null);
-  const [keuanganUnitLoading, setKeuanganUnitLoading] = (0, import_react.useState)(false);
-  const [keuanganUnitError, setKeuanganUnitError] = (0, import_react.useState)("");
-  const [keuanganUnitNotice, setKeuanganUnitNotice] = (0, import_react.useState)("");
-  const [keuanganUnitForm, setKeuanganUnitForm] = (0, import_react.useState)({
+  const [keuanganUnitFilter, setKeuanganUnitFilter] = useState("Semua");
+  const [keuanganUnitTabType, setKeuanganUnitTabType] = useState("Dana Masuk");
+  const [keuanganUnitList, setKeuanganUnitList] = useState([]);
+  const [keuanganUnitAllList, setKeuanganUnitAllList] = useState([]);
+  const [keuanganUnitLaporan, setKeuanganUnitLaporan] = useState(null);
+  const [keuanganUnitLoading, setKeuanganUnitLoading] = useState(false);
+  const [keuanganUnitError, setKeuanganUnitError] = useState("");
+  const [keuanganUnitNotice, setKeuanganUnitNotice] = useState("");
+  const [keuanganUnitForm, setKeuanganUnitForm] = useState({
     unitAsal: "Kantin",
     unitTujuan: "Kopel",
     jumlah: "",
@@ -3993,7 +3983,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       setKeuanganUnitLoading(false);
     }
   };
-  (0, import_react.useEffect)(() => {
+  useEffect(() => {
     if (tab === "keuangan-unit" && isBMT) {
       muatKeuanganUnit(keuanganUnitFilter);
     }
@@ -4062,8 +4052,8 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       setKeuanganUnitError(e.message || "Gagal menghapus transaksi unit usaha.");
     }
   };
-  const [cfForm, setCfForm] = (0, import_react.useState)({ bulan: bulanAktif[0], jenis: "Keluar", kategori: KATEGORI_UNIT_USAHA[0], jumlah: "", keterangan: "" });
-  const [cfBulanFilter, setCfBulanFilter] = (0, import_react.useState)(bulanAktif[0]);
+  const [cfForm, setCfForm] = useState({ bulan: bulanAktif[0], jenis: "Keluar", kategori: KATEGORI_UNIT_USAHA[0], jumlah: "", keterangan: "" });
+  const [cfBulanFilter, setCfBulanFilter] = useState(bulanAktif[0]);
   const addCashflowUnit = () => {
     if (!cfForm.jumlah) return;
     setData((d) => ({ ...d, cashflowUnit: [...d.cashflowUnit, { ...cfForm, id: uid(), unit, jumlah: Number(cfForm.jumlah), tanggal: todayStr() }] }));
@@ -4075,9 +4065,9 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
   const cfMasuk = cfBulanIni.filter((c) => c.jenis === "Masuk").reduce((a, b) => a + b.jumlah, 0);
   const cfKeluar = cfBulanIni.filter((c) => c.jenis === "Keluar").reduce((a, b) => a + b.jumlah, 0);
   const saldoUnitTotal = cashflowIniUnit.reduce((a, c) => a + (c.jenis === "Masuk" ? c.jumlah : -c.jumlah), 0);
-  const [periodeTipe, setPeriodeTipe] = (0, import_react.useState)("bulanan");
+  const [periodeTipe, setPeriodeTipe] = useState("bulanan");
   const groupsFor = periodeTipe === "bulanan" ? bulanAktif.slice().reverse().map((b) => ({ label: b, bulan: [b] })) : periodeTipe === "semester" ? semesterGroupsAktif : tahunGroupsAktif;
-  const [periodeIdx, setPeriodeIdx] = (0, import_react.useState)(0);
+  const [periodeIdx, setPeriodeIdx] = useState(0);
   const hitungAgregatUnit = (bulanList) => {
     const cf = cashflowIniUnit.filter((c) => bulanList.includes(c.bulan));
     const masuk = cf.filter((c) => c.jenis === "Masuk").reduce((a, b) => a + b.jumlah, 0);
@@ -4118,13 +4108,13 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Sidebar, { tabs: UNIT_TABS, active: tab, onChange: setTab }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 w-full", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Breadcrumb, { items: ["Unit Usaha", unit, UNIT_TABS.find((t) => t.key === tab)?.label || ""] }),
-      tab === "transaksi" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-5", children: isBMT ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: `Transaksi Cashless \u2014 ${unit}`, eyebrow: "Saldo Dompet Santri", icon: import_lucide_react.Wallet, children: [
+      tab === "transaksi" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-5", children: isBMT ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: `Transaksi Cashless \u2014 ${unit}`, eyebrow: "Saldo Dompet Santri", icon: Wallet, children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server cashless..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server cashless. Transaksi tidak bisa diproses \u2014 coba logout lalu login ulang, atau periksa status server backend."
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-2", children: [
@@ -4153,7 +4143,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
             ] }) : null
           ] }),
           isBlokirAktif(santriTerpilih) && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mt-1.5", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
             " Diblokir sampai ",
             formatTanggalISO(santriTerpilih.blokirCashless.sampaiISO),
             " \u2014 ",
@@ -4164,13 +4154,13 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Nominal (Rp)", value: txForm.jumlah, onChange: (e) => setTxForm({ ...txForm, jumlah: e.target.value }), className: "w-36 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Keterangan (opsional)", value: txForm.keterangan, onChange: (e) => setTxForm({ ...txForm, keterangan: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: catatTransaksi, disabled: txBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             txBusy ? "Memproses..." : "Catat"
           ] })
         ] }),
         txError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-2", children: txError }),
         txInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#8A6A0D] bg-[#FFF6DE] border border-[#F0E1AE] rounded-xl px-3 py-1.5 mb-2", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           txInfo
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mt-4 mb-1.5", children: [
@@ -4204,7 +4194,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           ] }, t.id)),
           !transaksiUnit.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada transaksi cashless." })
         ] })
-      ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: `Riwayat Transaksi \u2014 ${unit}`, eyebrow: "Daftar Pembelian Santri Tercatat", icon: import_lucide_react.Wallet, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "divide-y divide-[#DCEDF7] max-h-[30rem] overflow-y-auto", children: [
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: `Riwayat Transaksi \u2014 ${unit}`, eyebrow: "Daftar Pembelian Santri Tercatat", icon: Wallet, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "divide-y divide-[#DCEDF7] max-h-[30rem] overflow-y-auto", children: [
         transaksiUnit.slice().reverse().map((t) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between py-2.5 text-sm gap-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "min-w-0", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-[#17242E] truncate font-medium", children: [
@@ -4230,7 +4220,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
         ] }, t.id)),
         !transaksiUnit.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada riwayat transaksi di unit ini." })
       ] }) }) }),
-      tab === "katalog" && !isBMT && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-5", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: `Katalog Produk & Stok \u2014 ${unit}`, eyebrow: "Manajemen Harga, Barcode & Stok Opname", icon: import_lucide_react.Package, children: [
+      tab === "katalog" && !isBMT && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-5", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: `Katalog Produk & Stok \u2014 ${unit}`, eyebrow: "Manajemen Harga, Barcode & Stok Opname", icon: Package, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center justify-between gap-3 mb-4", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 flex-1 min-w-[200px]", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -4249,7 +4239,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                 onClick: muatProduk,
                 className: "border border-[#CFE3F0] text-[#0C4A6E] rounded-xl p-2 hover:bg-white text-xs",
                 title: "Segarkan data produk",
-                children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.RefreshCw, { size: 14, className: produkLoading ? "animate-spin" : "" })
+                children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 14, className: produkLoading ? "animate-spin" : "" })
               }
             )
           ] }),
@@ -4260,7 +4250,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
               onClick: bukaTambahProduk,
               className: "btn-gradient text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 font-semibold",
               children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 14 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 14 }),
                 " Tambah Produk Baru"
               ]
             }
@@ -4302,7 +4292,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                     className: "border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white rounded-lg px-2 py-1 text-[11px] inline-flex items-center gap-1",
                     title: "Penyesuaian Stok Opname",
                     children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ClipboardList, { size: 12 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ClipboardList, { size: 12 }),
                       " Opname"
                     ]
                   }
@@ -4315,7 +4305,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                     className: "border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white rounded-lg px-2 py-1 text-[11px] inline-flex items-center gap-1",
                     title: "Edit Data Produk",
                     children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 12 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 12 }),
                       " Edit"
                     ]
                   }
@@ -4353,7 +4343,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
         return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-5", children: [
           kartuNotice.pesan && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: `p-3.5 rounded-xl text-xs font-medium flex items-center justify-between gap-3 ${kartuNotice.jenis === "sukses" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"}`, children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
-              kartuNotice.jenis === "sukses" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.CheckCircle2, { size: 16, className: "text-emerald-600" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.AlertCircle, { size: 16, className: "text-rose-600" }),
+              kartuNotice.jenis === "sukses" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CheckCircle2, { size: 16, className: "text-emerald-600" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertCircle, { size: 16, className: "text-rose-600" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: kartuNotice.pesan })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setKartuNotice({ jenis: "", pesan: "" }), className: "text-xs hover:underline", children: "Tutup" })
@@ -4372,7 +4362,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                   disabled: kartuLoading,
                   className: "border border-[#CFE3F0] bg-white text-[#0C4A6E] text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs hover:bg-slate-50 transition-colors disabled:opacity-50",
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.RefreshCw, { size: 13, className: kartuLoading ? "animate-spin" : "" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 13, className: kartuLoading ? "animate-spin" : "" }),
                     "Segarkan"
                   ]
                 }
@@ -4385,7 +4375,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                   disabled: filteredKartu.length === 0,
                   className: "btn-gradient text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs disabled:opacity-50",
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 13 }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 13 }),
                     "Cetak Kartu (",
                     filteredKartu.length,
                     ")"
@@ -4416,10 +4406,10 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[10px] text-[#0284C7]", children: "Otorisasi debit aktif" })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Daftar Kartu Santri", eyebrow: "Katalog QR & Kartu", icon: import_lucide_react.QrCode, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Daftar Kartu Santri", eyebrow: "Katalog QR & Kartu", icon: QrCode, children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-col md:flex-row gap-3 mb-4 items-stretch md:items-center justify-between", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative flex-1 min-w-[200px] max-w-md", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Search, { size: 15, className: "absolute left-3 top-3 text-[#5B7C93]" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Search, { size: 15, className: "absolute left-3 top-3 text-[#5B7C93]" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                   "input",
                   {
@@ -4463,7 +4453,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
               ] })
             ] }),
             kartuLoading ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-16 text-center text-sm text-[#5B7C93] flex flex-col items-center justify-center gap-2", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 24, className: "animate-spin text-[#0C4A6E]" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 24, className: "animate-spin text-[#0C4A6E]" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Memuat data kartu & QR santri..." })
             ] }) : filteredKartu.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "py-16 text-center text-sm text-[#5B7C93] border border-dashed border-[#CFE3F0] rounded-xl bg-slate-50/50", children: "Santri tidak ditemukan dengan kriteria pencarian ini." }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "grid md:grid-cols-2 xl:grid-cols-3 gap-4", children: filteredKartu.map((s) => {
               const qrData = kartuQrMap[s.id];
@@ -4495,7 +4485,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                             punyaQr ? "QR Aktif" : "Belum Terbit"
                           ] }),
                           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: `inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${s.punyaPin ? "bg-blue-50 text-[#0284C7] border border-blue-200" : "bg-slate-100 text-slate-600 border border-slate-200"}`, children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Lock, { size: 9 }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Lock, { size: 9 }),
                             s.punyaPin ? "PIN Aktif" : "PIN Kosong"
                           ] })
                         ] }),
@@ -4513,7 +4503,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                           style: { imageRendering: "pixelated" }
                         }
                       ) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "w-20 h-20 rounded-lg border border-dashed border-[#CFE3F0] bg-slate-50 flex flex-col items-center justify-center p-1 text-center", children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.QrCode, { size: 20, className: "text-slate-400 mb-1" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(QrCode, { size: 20, className: "text-slate-400 mb-1" }),
                         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[8px] text-slate-500 font-medium", children: "Belum Ada QR" })
                       ] }) })
                     ] }),
@@ -4525,7 +4515,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                         children: [
                           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [
                             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { className: "text-[11px] font-semibold text-[#0C4A6E] flex items-center gap-1", children: [
-                              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Lock, { size: 12 }),
+                              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Lock, { size: 12 }),
                               s.punyaPin ? "Ubah PIN Debit (4\u20136 Angka)" : "Atur PIN Debit (4\u20136 Angka)"
                             ] }),
                             /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -4563,7 +4553,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                                 type: "button",
                                 onClick: () => setPinFormLihat(!pinFormLihat),
                                 className: "absolute right-2.5 top-2 text-slate-400 hover:text-slate-600",
-                                children: pinFormLihat ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.EyeOff, { size: 13 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Eye, { size: 13 })
+                                children: pinFormLihat ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EyeOff, { size: 13 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, { size: 13 })
                               }
                             )
                           ] }),
@@ -4605,7 +4595,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                           className: `text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-colors ${punyaQr ? "border-amber-200 bg-amber-50/50 hover:bg-amber-100/70 text-amber-800" : "border-[#CFE3F0] bg-white hover:bg-slate-50 text-[#0C4A6E]"} disabled:opacity-50`,
                           title: punyaQr ? "Terbitkan ulang QR baru (QR lama tidak berlaku)" : "Terbitkan QR santri",
                           children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.RefreshCw, { size: 11, className: isBusy ? "animate-spin" : "" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 11, className: isBusy ? "animate-spin" : "" }),
                             punyaQr ? "Ganti QR" : "Terbitkan QR"
                           ]
                         }
@@ -4626,7 +4616,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                           },
                           className: "text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#CFE3F0] bg-white hover:bg-slate-50 text-[#0C4A6E] flex items-center gap-1",
                           children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Lock, { size: 11 }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Lock, { size: 11 }),
                             s.punyaPin ? "Ubah PIN" : "Atur PIN"
                           ]
                         }
@@ -4639,7 +4629,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                           className: "text-[11px] font-semibold px-2 py-1.5 rounded-lg border border-[#CFE3F0] bg-white hover:bg-slate-50 text-[#5B7C93] flex items-center gap-1",
                           title: "Unduh file PNG QR Code santri",
                           children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Download, { size: 11 }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 11 }),
                             "Unduh"
                           ]
                         }
@@ -4652,7 +4642,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                           className: "text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#CFE3F0] bg-white hover:bg-slate-50 text-[#0C4A6E] flex items-center gap-1 ml-auto",
                           title: "Cetak ID Card santri ini",
                           children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 11 }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 11 }),
                             "Cetak"
                           ]
                         }
@@ -4666,7 +4656,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           ] })
         ] });
       })(),
-      tab === "riwayat" && isBMT && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-5", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Riwayat Transaksi Santri \u2014 Semua Unit", eyebrow: "Kantin \xB7 Kopel \xB7 Dapur \xB7 BMT", icon: import_lucide_react.Search, children: [
+      tab === "riwayat" && isBMT && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-5", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Riwayat Transaksi Santri \u2014 Semua Unit", eyebrow: "Kantin \xB7 Kopel \xB7 Dapur \xB7 BMT", icon: Search, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SantriSearchSelect, { santriList: data.santri, value: riwayatSantriId, onChange: setRiwayatSantriId, placeholder: "Cari No. Induk / NISN / Nama santri..." }),
         !santriRiwayat && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "mt-3", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Pilih santri untuk melihat riwayat transaksi cashless lintas unit." }) }),
         santriRiwayat && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mt-4", children: [
@@ -4707,13 +4697,13 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           riwayatFetch.loading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-2", children: "Memuat data dari server..." }),
           riwayatFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-2", children: riwayatFetch.error }),
           isBlokirAktif(santriRiwayat) ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
             " Diblokir sampai ",
             formatTanggalISO(santriRiwayat.blokirCashless.sampaiISO),
             " \u2014 ",
             santriRiwayat.blokirCashless.alasan
           ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#15803D] bg-[#E3F0E8] rounded-xl px-3 py-1.5 mb-3", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
             " Tidak sedang diblokir"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-1.5", children: [
@@ -4750,7 +4740,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           ] })
         ] })
       ] }) }),
-      tab === "permintaan" && isBMT && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-5", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Permintaan Wali Santri", eyebrow: "Ubah Limit Jajan Harian \xB7 Ubah Durasi Blokir \xB7 Buka Blokir \xB7 Top Up Saldo", icon: import_lucide_react.Bell, children: [
+      tab === "permintaan" && isBMT && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-5", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Permintaan Wali Santri", eyebrow: "Ubah Limit Jajan Harian \xB7 Ubah Durasi Blokir \xB7 Buka Blokir \xB7 Top Up Saldo", icon: Bell, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChipFilterBar, { options: ["Menunggu", "Disetujui", "Ditolak"], value: permintaanFilter, onChange: setPermintaanFilter, includeSemua: true }),
         permintaanFetch.loading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-2", children: "Memuat dari server..." }),
         permintaanFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-2", children: permintaanFetch.error }),
@@ -4795,11 +4785,11 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
               p.status === "Menunggu" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center gap-2 mt-2", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Catatan BMT (opsional)", value: catatanProses[p.id] || "", onChange: (e) => setCatatanProses({ ...catatanProses, [p.id]: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => prosesPermintaan(p.id, true), className: "flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl bg-[#E3F0E8] text-[#15803D] hover:bg-[#d3ecdd]", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 13 }),
                   "Setujui"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => prosesPermintaan(p.id, false), className: "flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl bg-[#FBE4E1] text-[#96271A] hover:bg-[#f6d5cf]", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 13 }),
                   "Tolak"
                 ] })
               ] })
@@ -4813,15 +4803,15 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
         {
           title: "Keuangan & Arus Kas Unit Usaha",
           eyebrow: "Pantau saldo unit usaha, dana masuk (injeksi modal), dana keluar (pencairan saldo/operasional), dan transfer antar bagian secara akurat.",
-          icon: import_lucide_react.Landmark,
+          icon: Landmark,
           children: [
             keuanganUnitNotice && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 p-3 text-xs rounded-xl bg-[#E3F0E8] text-[#15803D] border border-[#CFE3D6] mb-4", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.CheckCircle2, { size: 16, className: "shrink-0" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CheckCircle2, { size: 16, className: "shrink-0" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: keuanganUnitNotice })
             ] }),
             keuanganUnitError && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between p-3 text-xs rounded-xl bg-[#FBE4E1] text-[#96271A] border border-[#F3C9C2] mb-4", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.AlertCircle, { size: 16, className: "shrink-0" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertCircle, { size: 16, className: "shrink-0" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: keuanganUnitError })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -5012,13 +5002,13 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                       onClick: () => muatKeuanganUnit(keuanganUnitFilter),
                       title: "Muat ulang data",
                       className: "p-1.5 rounded-xl border border-[#CFE3F0] bg-white/70 text-[#45657A] hover:bg-white transition-colors",
-                      children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.RefreshCw, { size: 14, className: keuanganUnitLoading ? "animate-spin" : "" })
+                      children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 14, className: keuanganUnitLoading ? "animate-spin" : "" })
                     }
                   )
                 ] })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl overflow-hidden shadow-xs", children: keuanganUnitLoading && !keuanganUnitList.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-8 text-center text-xs text-[#0284c7] font-semibold flex items-center justify-center gap-2", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 16, className: "animate-spin" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 16, className: "animate-spin" }),
                 "Memuat data riwayat transaksi unit usaha..."
               ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "overflow-x-auto", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "w-full text-left text-xs border-collapse", children: [
@@ -5050,7 +5040,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                           onClick: () => handleHapusTransaksiUnit(item.id),
                           className: "inline-flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-[#FCA5A5] text-[#B91C1C] hover:bg-[#FEE2E2] transition-colors",
                           children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 12 }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 12 }),
                             " Hapus"
                           ]
                         }
@@ -5087,16 +5077,16 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93] mt-0.5", children: "Saldo Unit Total" })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: `Cashflow \u2014 ${unit}`, eyebrow: "Penjualan otomatis tercatat dari Transaksi Cashless", icon: import_lucide_react.TrendingUp, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: `Cashflow \u2014 ${unit}`, eyebrow: "Penjualan otomatis tercatat dari Transaksi Cashless", icon: TrendingUp, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-4", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: cfForm.bulan, onChange: (e) => setCfForm({ ...cfForm, bulan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: bulanAktif.map((b) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: b }, b)) }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-1.5", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => setCfForm({ ...cfForm, jenis: "Masuk" }), className: `flex items-center gap-1 text-xs px-3 py-2 rounded-xl border ${cfForm.jenis === "Masuk" ? "btn-gradient border-[#0C4A6E]" : "border-[#CFE3F0] text-[#45657A]"}`, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.TrendingUp, { size: 13 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrendingUp, { size: 13 }),
                 "Masuk"
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => setCfForm({ ...cfForm, jenis: "Keluar" }), className: `flex items-center gap-1 text-xs px-3 py-2 rounded-xl border ${cfForm.jenis === "Keluar" ? "bg-[#B5533C] text-white border-[#B5533C]" : "border-[#CFE3F0] text-[#45657A]"}`, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.TrendingDown, { size: 13 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrendingDown, { size: 13 }),
                 "Keluar"
               ] })
             ] }),
@@ -5104,7 +5094,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Nominal (Rp)", value: cfForm.jumlah, onChange: (e) => setCfForm({ ...cfForm, jumlah: e.target.value }), className: "w-36 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Keterangan", value: cfForm.keterangan, onChange: (e) => setCfForm({ ...cfForm, keterangan: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addCashflowUnit, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               "Catat"
             ] })
           ] }),
@@ -5112,7 +5102,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "divide-y divide-[#DCEDF7]", children: [
             cfBulanIni.slice().reverse().map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between py-2.5 text-sm gap-2", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "min-w-0 flex items-center gap-2", children: [
-                c.jenis === "Masuk" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.TrendingUp, { size: 15, className: "text-[#0C4A6E] shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.TrendingDown, { size: 15, className: "text-[#B5533C] shrink-0" }),
+                c.jenis === "Masuk" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrendingUp, { size: 15, className: "text-[#0C4A6E] shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrendingDown, { size: 15, className: "text-[#B5533C] shrink-0" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "min-w-0", children: [
                   /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-[#17242E] truncate", children: [
                     c.kategori,
@@ -5130,14 +5120,14 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                   c.jenis === "Masuk" ? "+" : "-",
                   rupiah(c.jumlah)
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delCashflowUnit(c.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delCashflowUnit(c.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
               ] })
             ] }, c.id)),
             !cfBulanIni.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada transaksi kas bulan ini." })
           ] })
         ] })
       ] }),
-      tab === "laporan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: `Laporan ${unit}`, eyebrow: "Bulanan \xB7 Semester \xB7 Tahunan", icon: import_lucide_react.FileText, tone: "gold", children: [
+      tab === "laporan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: `Laporan ${unit}`, eyebrow: "Bulanan \xB7 Semester \xB7 Tahunan", icon: FileText, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-1.5 mb-3", children: [{ k: "bulanan", l: "Bulanan" }, { k: "semester", l: "Semester" }, { k: "tahunan", l: "Tahunan" }].map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => {
           setPeriodeTipe(o.k);
           setPeriodeIdx(0);
@@ -5208,14 +5198,14 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: cetakLaporanUnit, className: "flex items-center gap-1.5 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 15 }),
           "Cetak Laporan"
         ] })
       ] }),
       modalProduk && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white rounded-2xl max-w-md w-full p-5 border border-[#CFE3F0] shadow-2xl space-y-3", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between border-b pb-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h4", { className: "font-semibold text-sm text-[#0C4A6E]", children: modalProduk.id ? "Edit Data Produk" : `Tambah Produk Baru \u2014 ${unit}` }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: () => setModalProduk(null), className: "text-[#5B7C93] hover:text-[#17242E]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 16 }) })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: () => setModalProduk(null), className: "text-[#5B7C93] hover:text-[#17242E]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 16 }) })
         ] }),
         modalProdukError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-red-600 bg-red-50 p-2 rounded-lg", children: modalProdukError }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-2 text-xs", children: [
@@ -5323,7 +5313,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       modalOpname && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white rounded-2xl max-w-sm w-full p-5 border border-[#CFE3F0] shadow-2xl space-y-3", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between border-b pb-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h4", { className: "font-semibold text-sm text-[#0C4A6E]", children: "Stok Opname Produk" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: () => setModalOpname(null), className: "text-[#5B7C93] hover:text-[#17242E]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 16 }) })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: () => setModalOpname(null), className: "text-[#5B7C93] hover:text-[#17242E]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 16 }) })
         ] }),
         modalOpnameError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-red-600 bg-red-50 p-2 rounded-lg", children: modalOpnameError }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "text-xs space-y-2", children: [
@@ -5556,43 +5546,45 @@ function SuratKeluarContent({ surat, jenis, bagian, kepanitiaan, kop }) {
 }
 var SCOPE_TABS = {
   pengasuhan: [
-    { key: "master-santri", label: "Master Data Santri", icon: import_lucide_react.User },
-    { key: "absensi", label: "Absensi", icon: import_lucide_react.ClipboardList },
-    { key: "perizinan", label: "Perizinan", icon: import_lucide_react.CalendarCheck },
-    { key: "pelanggaran", label: "Disiplin", icon: import_lucide_react.AlertTriangle },
-    { key: "penilaian-kegiatan", label: "Penilaian Kegiatan", icon: import_lucide_react.Award },
-    { key: "raport-mental", label: "Rapor Mental", icon: import_lucide_react.FileText }
+    { key: "master-santri", label: "Master Data Santri", icon: User },
+    { key: "absensi", label: "Absensi", icon: ClipboardList },
+    { key: "perizinan", label: "Perizinan", icon: CalendarCheck },
+    { key: "pelanggaran", label: "Disiplin", icon: AlertTriangle },
+    { key: "penilaian-kegiatan", label: "Penilaian Kegiatan", icon: Award },
+    { key: "raport-mental", label: "Rapor Mental", icon: FileText }
   ],
   pengajaran: [
-    { key: "kelas", label: "Kelas", icon: import_lucide_react.School },
-    { key: "prestasi", label: "Prestasi", icon: import_lucide_react.Award },
-    { key: "nilai", label: "Riwayat Akademik", icon: import_lucide_react.GraduationCap },
-    { key: "raport-akademik", label: "Rapor Akademik", icon: import_lucide_react.FileText }
+    { key: "kelas", label: "Kelas", icon: School },
+    { key: "prestasi", label: "Prestasi", icon: Award },
+    { key: "nilai", label: "Riwayat Akademik", icon: GraduationCap },
+    { key: "raport-akademik", label: "Rapor Akademik", icon: FileText }
   ],
   lptq: [
-    { key: "halaqoh", label: "Halaqoh", icon: import_lucide_react.BookOpen },
-    { key: "hafalan", label: "Tahfidz & Mengaji", icon: import_lucide_react.BookOpen },
-    { key: "ubudiyah", label: "Ubudiyah & Doa", icon: import_lucide_react.Award },
-    { key: "raport-tahfidz", label: "Rapor Tahfidz", icon: import_lucide_react.FileText }
+    { key: "halaqoh", label: "Halaqoh", icon: BookOpen },
+    { key: "hafalan", label: "Tahfidz & Mengaji", icon: BookOpen },
+    { key: "ubudiyah", label: "Ubudiyah & Doa", icon: Award },
+    { key: "raport-tahfidz", label: "Rapor Tahfidz", icon: FileText }
   ],
   sekretariat: [
-    { key: "santri", label: "Data Santri", icon: import_lucide_react.User },
-    { key: "alumni", label: "Data Alumni", icon: import_lucide_react.UserCheck },
-    { key: "wali", label: "Data Wali", icon: import_lucide_react.Users },
-    { key: "surat-keluar", label: "Surat Keluar", icon: import_lucide_react.Send },
-    { key: "surat-masuk", label: "Surat Masuk", icon: import_lucide_react.Inbox },
-    { key: "arsip", label: "Arsip Digital", icon: import_lucide_react.Archive },
-    { key: "pengaturan-surat", label: "Kop & Jenis Surat", icon: import_lucide_react.Settings }
+    { key: "santri", label: "Data Santri", icon: User },
+    { key: "daftar-ulang", label: "Kenaikan & Daftar Ulang", icon: RefreshCw },
+    { key: "alumni", label: "Data Alumni", icon: UserCheck },
+    { key: "wali", label: "Data Wali", icon: Users },
+    { key: "surat-keluar", label: "Surat Keluar", icon: Send },
+    { key: "surat-masuk", label: "Surat Masuk", icon: Inbox },
+    { key: "arsip", label: "Arsip Digital", icon: Archive },
+    { key: "pengaturan-surat", label: "Kop & Jenis Surat", icon: Settings }
   ]
 };
 function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToken, backendOnline }) {
   const tabs = SCOPE_TABS[scope];
-  const [tab, setTab] = (0, import_react.useState)(tabs[0].key);
-  const [kelasFilter, setKelasFilter] = (0, import_react.useState)("Semua");
-  const santriTampil = kelasFilter === "Semua" ? data.santri : data.santri.filter((s) => s.kelas === kelasFilter);
+  const [tab, setTab] = useState(tabs[0].key);
+  const [kelasFilter, setKelasFilter] = useState("Semua");
+  const santriAktifList = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif");
+  const santriTampil = kelasFilter === "Semua" ? santriAktifList : santriAktifList.filter((s) => s.kelas === kelasFilter);
   const namaSantri = (id) => data.santri.find((s) => s.id === id)?.nama || "(santri dihapus)";
   const tahunAjaranAktifDept = data.tahunAjaran.find((t) => t.aktif) || data.tahunAjaran[0];
-  const [kegiatanForm, setKegiatanForm] = (0, import_react.useState)({ santriId: "", nama: "", keterangan: "" });
+  const [kegiatanForm, setKegiatanForm] = useState({ santriId: "", nama: "", keterangan: "" });
   const addKegiatan = () => {
     if (!kegiatanForm.santriId || !kegiatanForm.nama) return;
     setData((d) => ({ ...d, kegiatan: [...d.kegiatan, { ...kegiatanForm, id: uid(), tanggal: todayStr() }] }));
@@ -5603,8 +5595,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const isPengajaran = scope === "pengajaran";
   const isLPTQ = scope === "lptq";
   const isSekretariat = scope === "sekretariat";
-  const [pengasuhanError, setPengasuhanError] = (0, import_react.useState)("");
-  const [santriFetch, setSantriFetch] = (0, import_react.useState)({ loading: false, error: "" });
+  const [pengasuhanError, setPengasuhanError] = useState("");
+  const [santriFetch, setSantriFetch] = useState({ loading: false, error: "" });
   const muatSantriBiodata = () => {
     if (!isSekretariat) return;
     if (!backendToken) {
@@ -5621,10 +5613,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       });
     }).catch((e) => setSantriFetch({ loading: false, error: e.message }));
   };
-  (0, import_react.useEffect)(muatSantriBiodata, [isSekretariat, backendToken]);
-  const [santriSaveError, setSantriSaveError] = (0, import_react.useState)("");
-  const [absensiFetch, setAbsensiFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [absensiBusyId, setAbsensiBusyId] = (0, import_react.useState)("");
+  useEffect(muatSantriBiodata, [isSekretariat, backendToken]);
+  const [santriSaveError, setSantriSaveError] = useState("");
+  const [absensiFetch, setAbsensiFetch] = useState({ loading: false, error: "", data: [] });
+  const [absensiBusyId, setAbsensiBusyId] = useState("");
   const muatAbsensi = () => {
     if (!isPengasuhan) return;
     if (!backendToken) {
@@ -5637,7 +5629,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setData((d) => ({ ...d, absensi: rows.map((r) => ({ id: r.id, santriId: r.santriId, status: r.status, keterangan: r.keterangan, tanggal: formatTanggalISO(r.tanggalISO) })) }));
     }).catch((e) => setAbsensiFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatAbsensi, [isPengasuhan, backendToken]);
+  useEffect(muatAbsensi, [isPengasuhan, backendToken]);
   const statusAbsensi = (santriId) => absensiFetch.data.find((a) => a.santriId === santriId)?.status || null;
   const setStatusAbsensi = async (santriId, status) => {
     setPengasuhanError("");
@@ -5657,9 +5649,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setAbsensiBusyId("");
     }
   };
-  const [izinForm, setIzinForm] = (0, import_react.useState)({ santriId: "", jenis: "Pulang", keterangan: "" });
-  const [izinFetch, setIzinFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [izinBusy, setIzinBusy] = (0, import_react.useState)(false);
+  const [izinForm, setIzinForm] = useState({ santriId: "", jenis: "Pulang", keterangan: "" });
+  const [izinFetch, setIzinFetch] = useState({ loading: false, error: "", data: [] });
+  const [izinBusy, setIzinBusy] = useState(false);
   const muatPerizinan = () => {
     if (!isPengasuhan) return;
     if (!backendToken) {
@@ -5672,7 +5664,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setData((d) => ({ ...d, perizinan: rows.map((r) => ({ id: r.id, santriId: r.santriId, jenis: r.jenis, keterangan: r.alasan, tanggal: formatTanggalISO(r.tanggalKeluar), status: r.status })) }));
     }).catch((e) => setIzinFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatPerizinan, [isPengasuhan, backendToken]);
+  useEffect(muatPerizinan, [isPengasuhan, backendToken]);
   const addIzin = async () => {
     setPengasuhanError("");
     if (!izinForm.santriId) return;
@@ -5706,9 +5698,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setPengasuhanError(e.message);
     }
   };
-  const [pelForm, setPelForm] = (0, import_react.useState)({ santriId: "", jenis: "", poin: 5 });
-  const [pelFetch, setPelFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [pelBusy, setPelBusy] = (0, import_react.useState)(false);
+  const [pelForm, setPelForm] = useState({ santriId: "", jenis: "", poin: 5 });
+  const [pelFetch, setPelFetch] = useState({ loading: false, error: "", data: [] });
+  const [pelBusy, setPelBusy] = useState(false);
   const muatPelanggaran = () => {
     if (!isPengasuhan) return;
     if (!backendToken) {
@@ -5721,7 +5713,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setData((d) => ({ ...d, pelanggaran: rows.map((r) => ({ id: r.id, santriId: r.santriId, jenis: r.jenis, poin: r.poin, tanggal: formatTanggalISO(r.tanggalISO) })) }));
     }).catch((e) => setPelFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatPelanggaran, [isPengasuhan, backendToken]);
+  useEffect(muatPelanggaran, [isPengasuhan, backendToken]);
   const addPel = async () => {
     setPengasuhanError("");
     if (!pelForm.santriId || !pelForm.jenis) return;
@@ -5757,10 +5749,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
   const perizinanTampil = isPengasuhan ? izinFetch.data : data.perizinan;
   const pelanggaranTampil = isPengasuhan ? pelFetch.data : data.pelanggaran;
-  const [nilaiForm, setNilaiForm] = (0, import_react.useState)({ santriId: "", mapel: "", nilai: "" });
-  const [nilaiPanel, setNilaiPanel] = (0, import_react.useState)(false);
-  const [nilaiFetch, setNilaiFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [nilaiBusy, setNilaiBusy] = (0, import_react.useState)(false);
+  const [nilaiForm, setNilaiForm] = useState({ santriId: "", mapel: "", nilai: "" });
+  const [nilaiPanel, setNilaiPanel] = useState(false);
+  const [nilaiFetch, setNilaiFetch] = useState({ loading: false, error: "", data: [] });
+  const [nilaiBusy, setNilaiBusy] = useState(false);
   const muatNilai = () => {
     if (!isPengajaran) return;
     if (!backendToken) {
@@ -5773,7 +5765,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setData((d) => ({ ...d, nilai: rows.map((r) => ({ id: r.id, santriId: r.santriId, mapel: r.mapel, nilai: r.nilai, tanggal: formatTanggalISO(r.tanggalISO) })) }));
     }).catch((e) => setNilaiFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatNilai, [isPengajaran, backendToken]);
+  useEffect(muatNilai, [isPengajaran, backendToken]);
   const addNilai = async () => {
     setPengasuhanError("");
     if (!nilaiForm.santriId || !nilaiForm.mapel || !nilaiForm.nilai) return;
@@ -5807,9 +5799,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setPengasuhanError(e.message);
     }
   };
-  const [prestasiForm, setPrestasiForm] = (0, import_react.useState)({ santriId: "", judul: "", tingkat: TINGKAT_PRESTASI[0] });
-  const [prestasiFetch, setPrestasiFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [prestasiBusy, setPrestasiBusy] = (0, import_react.useState)(false);
+  const [prestasiForm, setPrestasiForm] = useState({ santriId: "", judul: "", tingkat: TINGKAT_PRESTASI[0] });
+  const [prestasiFetch, setPrestasiFetch] = useState({ loading: false, error: "", data: [] });
+  const [prestasiBusy, setPrestasiBusy] = useState(false);
   const muatPrestasi = () => {
     if (!isPengajaran) return;
     if (!backendToken) {
@@ -5822,7 +5814,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setData((d) => ({ ...d, prestasi: rows.map((r) => ({ id: r.id, santriId: r.santriId, judul: r.judul, tingkat: r.tingkat, tanggal: formatTanggalISO(r.tanggalISO) })) }));
     }).catch((e) => setPrestasiFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatPrestasi, [isPengajaran, backendToken]);
+  useEffect(muatPrestasi, [isPengajaran, backendToken]);
   const addPrestasi = async () => {
     setPengasuhanError("");
     if (!prestasiForm.santriId || !prestasiForm.judul) return;
@@ -5856,9 +5848,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setPengasuhanError(e.message);
     }
   };
-  const [hafalanForm, setHafalanForm] = (0, import_react.useState)({ santriId: "", juz: "" });
-  const [hafalanFetch, setHafalanFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [hafalanBusy, setHafalanBusy] = (0, import_react.useState)(false);
+  const [hafalanForm, setHafalanForm] = useState({ santriId: "", juz: "" });
+  const [hafalanFetch, setHafalanFetch] = useState({ loading: false, error: "", data: [] });
+  const [hafalanBusy, setHafalanBusy] = useState(false);
   const muatHafalan = () => {
     if (!isLPTQ) return;
     if (!backendToken) {
@@ -5871,7 +5863,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setData((d) => ({ ...d, hafalan: rows.map((r) => ({ id: r.id, santriId: r.santriId, juz: r.juz, tanggal: formatTanggalISO(r.tanggalISO) })) }));
     }).catch((e) => setHafalanFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatHafalan, [isLPTQ, backendToken]);
+  useEffect(muatHafalan, [isLPTQ, backendToken]);
   const addHafalan = async () => {
     setPengasuhanError("");
     if (!hafalanForm.santriId || !hafalanForm.juz) return;
@@ -5906,8 +5898,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     }
   };
   const kegiatanPengasuhanList = Object.keys(data.indikatorKegiatan);
-  const [pkForm, setPkForm] = (0, import_react.useState)({ santriId: "", kegiatan: kegiatanPengasuhanList[0], skor: {}, catatan: "" });
-  const [itemBaruPk, setItemBaruPk] = (0, import_react.useState)("");
+  const [pkForm, setPkForm] = useState({ santriId: "", kegiatan: kegiatanPengasuhanList[0], skor: {}, catatan: "" });
+  const [itemBaruPk, setItemBaruPk] = useState("");
   const setSkorIndikator = (indikator, val) => setPkForm((f) => ({ ...f, skor: { ...f.skor, [indikator]: val } }));
   const gantiKegiatanPk = (keg) => setPkForm({ santriId: pkForm.santriId, kegiatan: keg, skor: {}, catatan: "" });
   const rataSkor = (entry) => {
@@ -5938,7 +5930,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       return { ...f, skor };
     });
   };
-  const [rmForm, setRmForm] = (0, import_react.useState)({ santriId: "", semester: "Ganjil", catatan: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [rmForm, setRmForm] = useState({ santriId: "", semester: "Ganjil", catatan: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
   const rmRingkasan = (santriId) => {
     const entries = data.penilaianKegiatan.filter((p) => p.santriId === santriId);
     const rows = [];
@@ -5969,7 +5961,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     const existing = data.raportMental.find((r) => r.santriId === rmForm.santriId && r.tahunAjaran === tahunLabel && r.semester === rmForm.semester);
     onPrint(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RaportContent, { jenis: "Mental", santri, wali, tahunAjaran: tahunLabel, semester: rmForm.semester, ringkasanRows: existing?.ringkasanRows || rmRingkasan(rmForm.santriId), catatan: existing?.catatan || rmForm.catatan, penandaTangan: existing?.namaPembina || rmForm.namaPembina, tanggalCetak: existing?.tanggalCetak || rmForm.tanggalCetak, pimpinan: data.pimpinanList.find((p) => p.id === (existing?.pimpinanId || rmForm.pimpinanId)), kop: data.kopSurat }));
   };
-  const [raForm, setRaForm] = (0, import_react.useState)({ santriId: "", semester: "Ganjil", catatan: "", peringkat: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [raForm, setRaForm] = useState({ santriId: "", semester: "Ganjil", catatan: "", peringkat: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
   const raRingkasan = (santriId) => {
     const map = {};
     data.nilai.filter((n) => n.santriId === santriId).forEach((n) => {
@@ -5996,12 +5988,12 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     const existing = data.raportAkademik.find((r) => r.santriId === raForm.santriId && r.tahunAjaran === tahunLabel && r.semester === raForm.semester);
     onPrint(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RaportContent, { jenis: "Akademik", santri, wali, tahunAjaran: tahunLabel, semester: raForm.semester, ringkasanRows: existing?.ringkasanRows || raRingkasan(raForm.santriId), catatan: existing?.catatan || raForm.catatan, predikatAkhir: existing?.peringkat || raForm.peringkat ? `Peringkat ke-${existing?.peringkat || raForm.peringkat} di kelas` : void 0, penandaTangan: existing?.namaPembina || raForm.namaPembina, tanggalCetak: existing?.tanggalCetak || raForm.tanggalCetak, pimpinan: data.pimpinanList.find((p) => p.id === (existing?.pimpinanId || raForm.pimpinanId)), kop: data.kopSurat }));
   };
-  const [ubForm, setUbForm] = (0, import_react.useState)({ santriId: "", jenis: "Ubudiyah", materi: data.materiUbudiyah[0] || "", predikat: PREDIKAT_LIST[0], catatan: "" });
-  const [ubPanel, setUbPanel] = (0, import_react.useState)(false);
-  const [itemBaruUb, setItemBaruUb] = (0, import_react.useState)("");
+  const [ubForm, setUbForm] = useState({ santriId: "", jenis: "Ubudiyah", materi: data.materiUbudiyah[0] || "", predikat: PREDIKAT_LIST[0], catatan: "" });
+  const [ubPanel, setUbPanel] = useState(false);
+  const [itemBaruUb, setItemBaruUb] = useState("");
   const gantiJenisUb = (j) => setUbForm({ ...ubForm, jenis: j, materi: (j === "Ubudiyah" ? data.materiUbudiyah : data.materiDoa)[0] || "" });
-  const [ubudiyahFetch, setUbudiyahFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
-  const [ubudiyahBusy, setUbudiyahBusy] = (0, import_react.useState)(false);
+  const [ubudiyahFetch, setUbudiyahFetch] = useState({ loading: false, error: "", data: [] });
+  const [ubudiyahBusy, setUbudiyahBusy] = useState(false);
   const muatUbudiyah = () => {
     if (!isLPTQ) return;
     if (!backendToken) {
@@ -6014,7 +6006,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setData((d) => ({ ...d, penilaianUbudiyah: rows.map((r) => ({ id: r.id, santriId: r.santriId, jenis: r.jenis, materi: r.materi, predikat: r.predikat, catatan: r.catatan, tanggal: formatTanggalISO(r.tanggalISO) })) }));
     }).catch((e) => setUbudiyahFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatUbudiyah, [isLPTQ, backendToken]);
+  useEffect(muatUbudiyah, [isLPTQ, backendToken]);
   const addUbudiyah = async () => {
     setPengasuhanError("");
     if (!ubForm.santriId || !ubForm.materi) return;
@@ -6062,7 +6054,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     setData((d) => ({ ...d, [key]: d[key].filter((x) => x !== item) }));
     setUbForm((f) => f.jenis === jenis && f.materi === item ? { ...f, materi: "" } : f);
   };
-  const [rtForm, setRtForm] = (0, import_react.useState)({ santriId: "", semester: "Ganjil", catatan: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [rtForm, setRtForm] = useState({ santriId: "", semester: "Ganjil", catatan: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
   const rtRingkasan = (santriId) => {
     const hafalanList = data.hafalan.filter((h) => h.santriId === santriId).slice().reverse().slice(0, 6).map((h) => ({ label: `Setoran \u2014 ${h.tanggal}`, value: h.juz }));
     const ubList = data.penilaianUbudiyah.filter((u) => u.santriId === santriId).map((u) => ({ label: `${u.jenis}: ${u.materi}`, value: u.predikat }));
@@ -6084,8 +6076,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     const existing = data.raportTahfidz.find((r) => r.santriId === rtForm.santriId && r.tahunAjaran === tahunLabel && r.semester === rtForm.semester);
     onPrint(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RaportContent, { jenis: "Tahfidz", santri, wali, tahunAjaran: tahunLabel, semester: rtForm.semester, ringkasanRows: existing?.ringkasanRows || rtRingkasan(rtForm.santriId), catatan: existing?.catatan || rtForm.catatan, penandaTangan: existing?.namaPembina || rtForm.namaPembina, tanggalCetak: existing?.tanggalCetak || rtForm.tanggalCetak, pimpinan: data.pimpinanList.find((p) => p.id === (existing?.pimpinanId || rtForm.pimpinanId)), kop: data.kopSurat }));
   };
-  const [profilSantriId, setProfilSantriId] = (0, import_react.useState)("");
-  const [aksiPanel, setAksiPanel] = (0, import_react.useState)(null);
+  const [profilSantriId, setProfilSantriId] = useState("");
+  const [aksiPanel, setAksiPanel] = useState(null);
   const bukaAksiSantri = (jenis, santriId) => {
     setAksiPanel(jenis);
     if (jenis === "izin") setIzinForm((f) => ({ ...f, santriId }));
@@ -6093,11 +6085,11 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     if (jenis === "penilaian") setPkForm((f) => ({ ...f, santriId }));
     if (jenis === "rapor") setRmForm((f) => ({ ...f, santriId }));
   };
-  const [showSantriForm, setShowSantriForm] = (0, import_react.useState)(false);
-  const [editingSantriId, setEditingSantriId] = (0, import_react.useState)(null);
-  const [detailSantriId, setDetailSantriId] = (0, import_react.useState)(null);
+  const [showSantriForm, setShowSantriForm] = useState(false);
+  const [editingSantriId, setEditingSantriId] = useState(null);
+  const [detailSantriId, setDetailSantriId] = useState(null);
   const kosongSantriForm = { nama: "", kelas: data.kelas[0] || "", waliId: data.wali[0]?.id || "", nis: "", nisn: "", jenisKelamin: "Laki-laki", tempatLahir: "", tanggalLahir: "", alamat: "", asrama: "", golDarah: "", noDarurat: "", catatanKesehatan: "", halaqoh: "", foto: "", limitJajanHarian: "", namaAyah: "", namaIbu: "", asalSekolah: "", programPilihan: "", citaCita: "", pendidikanSD: "", tahunSD: "", pendidikanSMP: "", tahunSMP: "", pendidikanSMA: "", tahunSMA: "" };
-  const [santriForm, setSantriForm] = (0, import_react.useState)(kosongSantriForm);
+  const [santriForm, setSantriForm] = useState(kosongSantriForm);
   const bukaTambahSantri = () => {
     setSantriForm(kosongSantriForm);
     setEditingSantriId(null);
@@ -6172,14 +6164,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       }
     }
   };
-  const [showImporModal, setShowImporModal] = (0, import_react.useState)(false);
-  const [imporFileText, setImporFileText] = (0, import_react.useState)("");
-  const [imporFileName, setImporFileName] = (0, import_react.useState)("");
-  const [imporBatchName, setImporBatchName] = (0, import_react.useState)(`Impor Santri ${(/* @__PURE__ */ new Date()).toLocaleDateString("id-ID")}`);
-  const [imporDryRunResult, setImporDryRunResult] = (0, import_react.useState)(null);
-  const [imporLoading, setImporLoading] = (0, import_react.useState)(false);
-  const [imporError, setImporError] = (0, import_react.useState)("");
-  const [imporSuccess, setImporSuccess] = (0, import_react.useState)("");
+  const [showImporModal, setShowImporModal] = useState(false);
+  const [imporFileText, setImporFileText] = useState("");
+  const [imporFileName, setImporFileName] = useState("");
+  const [imporBatchName, setImporBatchName] = useState(`Impor Santri ${(/* @__PURE__ */ new Date()).toLocaleDateString("id-ID")}`);
+  const [imporDryRunResult, setImporDryRunResult] = useState(null);
+  const [imporLoading, setImporLoading] = useState(false);
+  const [imporError, setImporError] = useState("");
+  const [imporSuccess, setImporSuccess] = useState("");
   const parseSantriCSV = (text) => {
     const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
     if (lines.length < 2) return [];
@@ -6294,27 +6286,240 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setImporLoading(false);
     }
   };
-  const [meluluskanId, setMeluluskanId] = (0, import_react.useState)(null);
-  const [lulusForm, setLulusForm] = (0, import_react.useState)({ tahunLulus: String((/* @__PURE__ */ new Date()).getFullYear()), statusSaatIni: "Melanjutkan Pendidikan", instansiTujuan: "", noHp: "" });
+  const [santriSearch, setSantriSearch] = useState("");
+  const [santriKelasFilter, setSantriKelasFilter] = useState("Semua");
+  const [santriAsramaFilter, setSantriAsramaFilter] = useState("Semua");
+  const [santriGenderFilter, setSantriGenderFilter] = useState("Semua");
+  const [santriPage, setSantriPage] = useState(1);
+  const [santriLimit, setSantriLimit] = useState(25);
+  const [detailSantriData, setDetailSantriData] = useState(null);
+  const [riwayatDaftarUlangModal, setRiwayatDaftarUlangModal] = useState([]);
+  const [loadingRiwayatDU, setLoadingRiwayatDU] = useState(false);
+  const [promosiKelasAsal, setPromosiKelasAsal] = useState("");
+  const [promosiKelasTujuan, setPromosiKelasTujuan] = useState("");
+  const [promosiAsramaTujuan, setPromosiAsramaTujuan] = useState("");
+  const [promosiTerpilihIds, setPromosiTerpilihIds] = useState(/* @__PURE__ */ new Set());
+  const [promosiLoading, setPromosiLoading] = useState(false);
+  const [promosiMsg, setPromosiMsg] = useState("");
+  const [promosiError, setPromosiError] = useState("");
+  const [luluskanKelasAsal, setLuluskanKelasAsal] = useState("");
+  const [luluskanTahun, setLuluskanTahun] = useState(String((/* @__PURE__ */ new Date()).getFullYear()));
+  const [luluskanStatus, setLuluskanStatus] = useState("Melanjutkan Pendidikan");
+  const [luluskanTerpilihIds, setLuluskanTerpilihIds] = useState(/* @__PURE__ */ new Set());
+  const [luluskanLoading, setLuluskanLoading] = useState(false);
+  const [luluskanMsg, setLuluskanMsg] = useState("");
+  const [luluskanError, setLuluskanError] = useState("");
+  const [duMode, setDuMode] = useState("promosi");
+  const togglePilihPromosi = (id) => {
+    setPromosiTerpilihIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSemuaPromosi = (santriList) => {
+    if (promosiTerpilihIds.size === santriList.length && santriList.length > 0) {
+      setPromosiTerpilihIds(/* @__PURE__ */ new Set());
+    } else {
+      setPromosiTerpilihIds(new Set(santriList.map((s) => s.id)));
+    }
+  };
+  const togglePilihLuluskan = (id) => {
+    setLuluskanTerpilihIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSemuaLuluskan = (santriList) => {
+    if (luluskanTerpilihIds.size === santriList.length && santriList.length > 0) {
+      setLuluskanTerpilihIds(/* @__PURE__ */ new Set());
+    } else {
+      setLuluskanTerpilihIds(new Set(santriList.map((s) => s.id)));
+    }
+  };
+  const bukaDetailSantri = async (s) => {
+    setDetailSantriData(s);
+    setRiwayatDaftarUlangModal([]);
+    if (backendToken) {
+      setLoadingRiwayatDU(true);
+      try {
+        const rows = await backendApi(`/daftar-ulang/riwayat/${s.id}`, { token: backendToken });
+        setRiwayatDaftarUlangModal(rows || []);
+      } catch (_) {
+        setRiwayatDaftarUlangModal([]);
+      } finally {
+        setLoadingRiwayatDU(false);
+      }
+    }
+  };
+  const tutupDetailSantri = () => {
+    setDetailSantriData(null);
+    setRiwayatDaftarUlangModal([]);
+  };
+  const eksporSantriAktifCSV = () => {
+    const aktif = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif");
+    const headers = ["No", "Nama", "No Stambuk (NIS)", "NISN", "Kelas", "Kamar / Asrama", "Jenis Kelamin", "Nama Wali", "No HP Wali", "Alamat", "Saldo Cashless"];
+    const rows = aktif.map((s, idx) => {
+      const wali = data.wali.find((w) => w.id === s.waliId);
+      return [
+        idx + 1,
+        `"${(s.nama || "").replace(/"/g, '""')}"`,
+        `"${s.nis || ""}"`,
+        `"${s.nisn || ""}"`,
+        `"${s.kelas || ""}"`,
+        `"${(s.asrama || "").replace(/"/g, '""')}"`,
+        `"${s.jenisKelamin || ""}"`,
+        `"${(wali?.nama || "").replace(/"/g, '""')}"`,
+        `"${wali?.hp || ""}"`,
+        `"${(s.alamat || "").replace(/"/g, '""')}"`,
+        s.saldo || 0
+      ].join(",");
+    });
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Data_Santri_Aktif_MMA_${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+  const jalankanPromosiMassal = async () => {
+    if (!promosiKelasAsal || !promosiKelasTujuan) {
+      setPromosiError("Pilih kelas asal dan isi kelas baru tujuan.");
+      return;
+    }
+    if (promosiTerpilihIds.size === 0) {
+      setPromosiError("Pilih minimal 1 santri untuk dipromosikan.");
+      return;
+    }
+    const tahunAktif = data.tahunAjaran.find((t) => t.aktif) || data.tahunAjaran[0];
+    if (!tahunAktif) {
+      setPromosiError("Tahun ajaran aktif belum ditentukan.");
+      return;
+    }
+    setPromosiLoading(true);
+    setPromosiError("");
+    setPromosiMsg("");
+    const items = Array.from(promosiTerpilihIds).map((id) => ({
+      santriId: id,
+      kelasBaru: promosiKelasTujuan.trim(),
+      asramaBaru: promosiAsramaTujuan.trim() || void 0,
+      status: "Aktif"
+    }));
+    try {
+      if (backendToken) {
+        await backendApi("/daftar-ulang/promosi-massal", {
+          method: "POST",
+          token: backendToken,
+          body: { tahunAjaranId: tahunAktif.id, items }
+        });
+      }
+      setData((d) => ({
+        ...d,
+        santri: d.santri.map((s) => {
+          if (promosiTerpilihIds.has(s.id)) {
+            let rw = [];
+            try {
+              rw = s.riwayatKelas ? typeof s.riwayatKelas === "string" ? JSON.parse(s.riwayatKelas) : s.riwayatKelas : [];
+            } catch (_) {
+            }
+            return {
+              ...s,
+              kelas: promosiKelasTujuan.trim(),
+              asrama: promosiAsramaTujuan.trim() || s.asrama,
+              riwayatKelas: [...Array.isArray(rw) ? rw : [], { kelas: promosiKelasTujuan.trim(), asrama: promosiAsramaTujuan.trim() || s.asrama, tanggal: todayStr(), tahunAjaran: tahunAktif?.label || "-" }]
+            };
+          }
+          return s;
+        })
+      }));
+      setPromosiMsg(`Alhamdulillah, berhasil mempromosikan ${items.length} santri ke kelas ${promosiKelasTujuan}!`);
+      setPromosiTerpilihIds(/* @__PURE__ */ new Set());
+    } catch (e) {
+      setPromosiError(e.message || "Gagal memproses kenaikan kelas.");
+    } finally {
+      setPromosiLoading(false);
+    }
+  };
+  const jalankanLuluskanMassal = async () => {
+    if (luluskanTerpilihIds.size === 0) {
+      setLuluskanError("Pilih minimal 1 santri untuk diluluskan.");
+      return;
+    }
+    setLuluskanLoading(true);
+    setLuluskanError("");
+    setLuluskanMsg("");
+    const santriIds = Array.from(luluskanTerpilihIds);
+    try {
+      if (backendToken) {
+        await backendApi("/daftar-ulang/luluskan-massal", {
+          method: "POST",
+          token: backendToken,
+          body: { tahunLulus: luluskanTahun, santriIds, statusSaatIni: luluskanStatus }
+        });
+      }
+      const lulusList = data.santri.filter((s) => luluskanTerpilihIds.has(s.id));
+      setData((d) => ({
+        ...d,
+        alumni: [
+          ...d.alumni,
+          ...lulusList.map((s) => ({
+            id: uid(),
+            nama: s.nama,
+            nis: s.nis,
+            kelasTerakhir: s.kelas,
+            tahunLulus: luluskanTahun,
+            statusSaatIni: luluskanStatus,
+            instansiTujuan: "",
+            noHp: s.noDarurat || "",
+            alamat: s.alamat || "",
+            keterangan: "Lulus Massal"
+          }))
+        ],
+        santri: d.santri.map((s) => luluskanTerpilihIds.has(s.id) ? { ...s, statusSantri: "Alumni" } : s)
+      }));
+      setLuluskanMsg(`Alhamdulillah, berhasil meluluskan ${santriIds.length} santri ke buku alumni.`);
+      setLuluskanTerpilihIds(/* @__PURE__ */ new Set());
+    } catch (e) {
+      setLuluskanError(e.message || "Gagal meluluskan santri.");
+    } finally {
+      setLuluskanLoading(false);
+    }
+  };
+  const [meluluskanId, setMeluluskanId] = useState(null);
+  const [lulusForm, setLulusForm] = useState({ tahunLulus: String((/* @__PURE__ */ new Date()).getFullYear()), statusSaatIni: "Melanjutkan Pendidikan", instansiTujuan: "", noHp: "" });
   const bukaLuluskan = (s) => {
     setMeluluskanId(s.id);
     setLulusForm({ tahunLulus: String((/* @__PURE__ */ new Date()).getFullYear()), statusSaatIni: "Melanjutkan Pendidikan", instansiTujuan: "", noHp: "" });
   };
-  const konfirmasiLuluskan = () => {
+  const konfirmasiLuluskan = async () => {
     const s = data.santri.find((x) => x.id === meluluskanId);
     if (!s) return;
+    if (backendToken) {
+      try {
+        await backendApi(`/santri/${meluluskanId}/luluskan`, { method: "POST", token: backendToken, body: lulusForm });
+      } catch (err) {
+        console.warn("Gagal meluluskan santri ke server:", err);
+      }
+    }
     setData((d) => ({
       ...d,
       alumni: [...d.alumni, { id: uid(), nama: s.nama, nis: s.nis, kelasTerakhir: s.kelas, ...lulusForm, alamat: s.alamat || "", keterangan: "" }],
-      santri: d.santri.filter((x) => x.id !== meluluskanId)
+      santri: d.santri.map((x) => x.id === meluluskanId ? { ...x, statusSantri: "Alumni" } : x)
     }));
     setMeluluskanId(null);
   };
   const kosongAlumniForm = { nama: "", nis: "", kelasTerakhir: "", tahunLulus: String((/* @__PURE__ */ new Date()).getFullYear()), statusSaatIni: "Melanjutkan Pendidikan", instansiTujuan: "", noHp: "", alamat: "", keterangan: "" };
-  const [alumniForm, setAlumniForm] = (0, import_react.useState)(kosongAlumniForm);
-  const [showAlumniForm, setShowAlumniForm] = (0, import_react.useState)(false);
-  const [editingAlumniId, setEditingAlumniId] = (0, import_react.useState)(null);
-  const [filterTahunLulus, setFilterTahunLulus] = (0, import_react.useState)("Semua");
+  const [alumniForm, setAlumniForm] = useState(kosongAlumniForm);
+  const [showAlumniForm, setShowAlumniForm] = useState(false);
+  const [editingAlumniId, setEditingAlumniId] = useState(null);
+  const [filterTahunLulus, setFilterTahunLulus] = useState("Semua");
   const bukaTambahAlumni = () => {
     setAlumniForm(kosongAlumniForm);
     setEditingAlumniId(null);
@@ -6339,9 +6544,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const delAlumni = (id) => setData((d) => ({ ...d, alumni: d.alumni.filter((a) => a.id !== id) }));
   const tahunLulusTersedia = ["Semua", ...Array.from(new Set(data.alumni.map((a) => a.tahunLulus))).sort().reverse()];
   const alumniTampil = filterTahunLulus === "Semua" ? data.alumni : data.alumni.filter((a) => a.tahunLulus === filterTahunLulus);
-  const [waliForm, setWaliForm] = (0, import_react.useState)({ nama: "", hp: "", username: "", password: "" });
-  const [editingWaliId, setEditingWaliId] = (0, import_react.useState)(null);
-  const [waliFormError, setWaliFormError] = (0, import_react.useState)("");
+  const [waliForm, setWaliForm] = useState({ nama: "", hp: "", username: "", password: "" });
+  const [editingWaliId, setEditingWaliId] = useState(null);
+  const [waliFormError, setWaliFormError] = useState("");
   const simpanWali = () => {
     setWaliFormError("");
     if (!waliForm.nama || !waliForm.hp) return;
@@ -6372,7 +6577,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     setWaliFormError("");
   };
   const delWali = (id) => setData((d) => ({ ...d, wali: d.wali.filter((w) => w.id !== id) }));
-  const [waliPwDraft, setWaliPwDraft] = (0, import_react.useState)({});
+  const [waliPwDraft, setWaliPwDraft] = useState({});
   const simpanPasswordWali = (waliId) => {
     const pw = waliPwDraft[waliId];
     if (!pw) return;
@@ -6399,9 +6604,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     namaPenyetuju: "",
     jabatanPenyetuju: ""
   };
-  const [suratForm, setSuratForm] = (0, import_react.useState)(kosongSuratForm);
-  const [editingSuratId, setEditingSuratId] = (0, import_react.useState)(null);
-  const [suratFilterStatus, setSuratFilterStatus] = (0, import_react.useState)("Semua");
+  const [suratForm, setSuratForm] = useState(kosongSuratForm);
+  const [editingSuratId, setEditingSuratId] = useState(null);
+  const [suratFilterStatus, setSuratFilterStatus] = useState("Semua");
   const jenisSuratTerpilih = data.jenisSurat.find((j) => j.id === suratForm.jenisId);
   const formatSuratTerpilih = jenisSuratTerpilih?.formatTataLetak || "Berperihal";
   const tipeIsiTerpilih = jenisSuratTerpilih?.tipeIsi || "Bebas";
@@ -6497,8 +6702,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       };
     });
   };
-  const [editNomorId, setEditNomorId] = (0, import_react.useState)(null);
-  const [editNomorValue, setEditNomorValue] = (0, import_react.useState)("");
+  const [editNomorId, setEditNomorId] = useState(null);
+  const [editNomorValue, setEditNomorValue] = useState("");
   const bukaEditNomor = (s) => {
     setEditNomorId(s.id);
     setEditNomorValue(s.nomorSurat || "");
@@ -6532,9 +6737,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const cetakSurat = (s) => onPrint(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SuratKeluarContent, { surat: s, jenis: data.jenisSurat.find((j) => j.id === s.jenisId), bagian: data.bagianList.find((b) => b.id === s.bagianId), kepanitiaan: data.kepanitiaanList.find((k) => k.id === s.kepanitiaanId), kop: data.kopSurat }));
   const suratKeluarTampil = data.suratKeluar.filter((s) => suratFilterStatus === "Semua" || s.status === suratFilterStatus).slice().reverse();
   const kosongSuratMasukForm = { nomorSuratAsal: "", pengirim: "", perihal: "", kategori: SURAT_MASUK_KATEGORI_OPSI[0], tujuan: SURAT_MASUK_TUJUAN_OPSI[0], tanggalSurat: "", catatan: "" };
-  const [suratMasukForm, setSuratMasukForm] = (0, import_react.useState)(kosongSuratMasukForm);
-  const [editingSuratMasukId, setEditingSuratMasukId] = (0, import_react.useState)(null);
-  const [suratMasukFilterStatus, setSuratMasukFilterStatus] = (0, import_react.useState)("Semua");
+  const [suratMasukForm, setSuratMasukForm] = useState(kosongSuratMasukForm);
+  const [editingSuratMasukId, setEditingSuratMasukId] = useState(null);
+  const [suratMasukFilterStatus, setSuratMasukFilterStatus] = useState("Semua");
   const simpanSuratMasuk = () => {
     if (!suratMasukForm.pengirim || !suratMasukForm.perihal) return;
     if (editingSuratMasukId) {
@@ -6556,9 +6761,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const hapusSuratMasuk = (id) => setData((d) => ({ ...d, suratMasuk: d.suratMasuk.filter((s) => s.id !== id) }));
   const ubahStatusSuratMasuk = (id, statusBaru) => setData((d) => ({ ...d, suratMasuk: d.suratMasuk.map((s) => s.id === id ? { ...s, status: statusBaru } : s) }));
   const suratMasukTampil = data.suratMasuk.filter((s) => suratMasukFilterStatus === "Semua" || s.status === suratMasukFilterStatus).slice().reverse();
-  const [arsipSearch, setArsipSearch] = (0, import_react.useState)("");
+  const [arsipSearch, setArsipSearch] = useState("");
   const kosongArsipForm = { judul: "", kategori: ARSIP_KATEGORI_OPSI[0], nomorReferensi: "", keterangan: "", bagianId: "" };
-  const [arsipForm, setArsipForm] = (0, import_react.useState)(kosongArsipForm);
+  const [arsipForm, setArsipForm] = useState(kosongArsipForm);
   const tambahArsipManual = () => {
     if (!arsipForm.judul) return;
     setData((d) => ({ ...d, arsipManual: [...d.arsipManual, { id: uid(), ...arsipForm, ditambahkanOleh: petugas || "-", tanggalCatat: todayStr() }] }));
@@ -6616,12 +6821,12 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       _raw: a
     }))
   ];
-  const [arsipFilterOrganisasi, setArsipFilterOrganisasi] = (0, import_react.useState)("Semua");
-  const [arsipFilterBagian, setArsipFilterBagian] = (0, import_react.useState)("Semua");
-  const [arsipFilterJenis, setArsipFilterJenis] = (0, import_react.useState)("Semua");
-  const [arsipFilterTahunHijri, setArsipFilterTahunHijri] = (0, import_react.useState)("Semua");
-  const [arsipFilterBulanHijri, setArsipFilterBulanHijri] = (0, import_react.useState)("Semua");
-  const [arsipFilterStatus, setArsipFilterStatus] = (0, import_react.useState)("Semua");
+  const [arsipFilterOrganisasi, setArsipFilterOrganisasi] = useState("Semua");
+  const [arsipFilterBagian, setArsipFilterBagian] = useState("Semua");
+  const [arsipFilterJenis, setArsipFilterJenis] = useState("Semua");
+  const [arsipFilterTahunHijri, setArsipFilterTahunHijri] = useState("Semua");
+  const [arsipFilterBulanHijri, setArsipFilterBulanHijri] = useState("Semua");
+  const [arsipFilterStatus, setArsipFilterStatus] = useState("Semua");
   const opsiOrganisasiArsip = ["Semua", ...Array.from(new Set(data.bagianList.map((b) => b.organisasi).filter(Boolean))), "Umum"];
   const opsiBagianArsip = ["Semua", ...data.bagianList.map((b) => b.nama), "Umum"];
   const opsiJenisArsip = ["Semua", ...data.jenisSurat.map((j) => j.nama)];
@@ -6661,7 +6866,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     unduhBlob(new Blob([csv], { type: "text/csv;charset=utf-8;" }), `Arsip-${labelKelompok.replace(/\s+/g, "_")}.csv`);
   };
   const exportArsipPDF = (items, labelKelompok) => {
-    const doc = new import_jspdf.default();
+    const doc = new jsPDF();
     doc.setFontSize(12);
     doc.text(`Arsip Digital \u2014 ${labelKelompok}`, 14, 15);
     doc.setFontSize(9);
@@ -6686,11 +6891,11 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     });
     doc.save(`Arsip-${labelKelompok.replace(/\s+/g, "_")}.pdf`);
   };
-  const [kopForm, setKopForm] = (0, import_react.useState)(data.kopSurat);
+  const [kopForm, setKopForm] = useState(data.kopSurat);
   const simpanKop = () => setData((d) => ({ ...d, kopSurat: kopForm }));
   const kosongPimpinanForm = { nama: "", jabatan: "" };
-  const [pimpinanForm, setPimpinanForm] = (0, import_react.useState)(kosongPimpinanForm);
-  const [editingPimpinanId, setEditingPimpinanId] = (0, import_react.useState)(null);
+  const [pimpinanForm, setPimpinanForm] = useState(kosongPimpinanForm);
+  const [editingPimpinanId, setEditingPimpinanId] = useState(null);
   const simpanPimpinan = () => {
     if (!pimpinanForm.nama) return;
     if (editingPimpinanId) {
@@ -6711,9 +6916,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
   const hapusPimpinan = (id) => setData((d) => ({ ...d, pimpinanList: d.pimpinanList.filter((p) => p.id !== id) }));
   const kosongBagianForm = { kode: "", nama: "", organisasi: "MMA", deskripsi: "" };
-  const [bagianForm, setBagianForm] = (0, import_react.useState)(kosongBagianForm);
-  const [editingBagianId, setEditingBagianId] = (0, import_react.useState)(null);
-  const [bagianError, setBagianError] = (0, import_react.useState)("");
+  const [bagianForm, setBagianForm] = useState(kosongBagianForm);
+  const [editingBagianId, setEditingBagianId] = useState(null);
+  const [bagianError, setBagianError] = useState("");
   const simpanBagian = () => {
     setBagianError("");
     if (!bagianForm.kode || !bagianForm.nama || !bagianForm.organisasi) return;
@@ -6745,9 +6950,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const pulihkanBagian = (id) => setData((d) => ({ ...d, bagianList: d.bagianList.map((b) => b.id === id ? { ...b, dihapus: false, aktif: true } : b) }));
   const toggleAktifBagian = (id) => setData((d) => ({ ...d, bagianList: d.bagianList.map((b) => b.id === id ? { ...b, aktif: !b.aktif } : b) }));
   const kosongKepanitiaanForm = { kode: "", nama: "" };
-  const [kepanitiaanForm, setKepanitiaanForm] = (0, import_react.useState)(kosongKepanitiaanForm);
-  const [editingKepanitiaanId, setEditingKepanitiaanId] = (0, import_react.useState)(null);
-  const [kepanitiaanError, setKepanitiaanError] = (0, import_react.useState)("");
+  const [kepanitiaanForm, setKepanitiaanForm] = useState(kosongKepanitiaanForm);
+  const [editingKepanitiaanId, setEditingKepanitiaanId] = useState(null);
+  const [kepanitiaanError, setKepanitiaanError] = useState("");
   const simpanKepanitiaan = () => {
     setKepanitiaanError("");
     if (!kepanitiaanForm.kode || !kepanitiaanForm.nama) return;
@@ -6776,9 +6981,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
   const hapusKepanitiaan = (id) => setData((d) => ({ ...d, kepanitiaanList: d.kepanitiaanList.filter((k) => k.id !== id) }));
   const kosongJenisForm = { kode: "", nama: "", kategori: "Keluar", formatTataLetak: "Berperihal", tipeIsi: "Bebas" };
-  const [jenisForm, setJenisForm] = (0, import_react.useState)(kosongJenisForm);
-  const [editingJenisId, setEditingJenisId] = (0, import_react.useState)(null);
-  const [jenisFormError, setJenisFormError] = (0, import_react.useState)("");
+  const [jenisForm, setJenisForm] = useState(kosongJenisForm);
+  const [editingJenisId, setEditingJenisId] = useState(null);
+  const [jenisFormError, setJenisFormError] = useState("");
   const simpanJenis = () => {
     setJenisFormError("");
     if (!jenisForm.kode || !jenisForm.nama) return;
@@ -6805,7 +7010,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     setEditingJenisId(null);
     setJenisFormError("");
   };
-  const [jenisHapusError, setJenisHapusError] = (0, import_react.useState)("");
+  const [jenisHapusError, setJenisHapusError] = useState("");
   const hapusJenis = (id) => {
     if (data.suratKeluar.some((s) => s.jenisId === id)) {
       setJenisHapusError("Jenis surat ini sudah dipakai pada surat yang tercatat \u2014 tidak bisa dihapus.");
@@ -6814,10 +7019,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     setJenisHapusError("");
     setData((d) => ({ ...d, jenisSurat: d.jenisSurat.filter((j) => j.id !== id) }));
   };
-  const [kelasForm, setKelasForm] = (0, import_react.useState)("");
-  const [waliKelasForm, setWaliKelasForm] = (0, import_react.useState)("");
-  const [editingKelas, setEditingKelas] = (0, import_react.useState)(null);
-  const [editKelasNama, setEditKelasNama] = (0, import_react.useState)("");
+  const [kelasForm, setKelasForm] = useState("");
+  const [waliKelasForm, setWaliKelasForm] = useState("");
+  const [editingKelas, setEditingKelas] = useState(null);
+  const [editKelasNama, setEditKelasNama] = useState("");
   const addKelas = () => {
     if (!kelasForm || data.kelas.includes(kelasForm)) return;
     setData((d) => ({ ...d, kelas: [...d.kelas, kelasForm], kelasInfo: { ...d.kelasInfo, [kelasForm]: { waliKelasId: waliKelasForm || null } } }));
@@ -6851,10 +7056,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     setEditingKelas(null);
     setEditKelasNama("");
   };
-  const [halaqohForm, setHalaqohForm] = (0, import_react.useState)("");
-  const [pembimbingHalaqohForm, setPembimbingHalaqohForm] = (0, import_react.useState)("");
-  const [editingHalaqoh, setEditingHalaqoh] = (0, import_react.useState)(null);
-  const [editHalaqohNama, setEditHalaqohNama] = (0, import_react.useState)("");
+  const [halaqohForm, setHalaqohForm] = useState("");
+  const [pembimbingHalaqohForm, setPembimbingHalaqohForm] = useState("");
+  const [editingHalaqoh, setEditingHalaqoh] = useState(null);
+  const [editHalaqohNama, setEditHalaqohNama] = useState("");
   const addHalaqoh = () => {
     if (!halaqohForm || (data.halaqoh || []).includes(halaqohForm)) return;
     setData((d) => ({ ...d, halaqoh: [...d.halaqoh || [], halaqohForm], halaqohInfo: { ...d.halaqohInfo, [halaqohForm]: { pembimbingId: pembimbingHalaqohForm || null } } }));
@@ -6892,7 +7097,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1 min-w-0 w-full", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Breadcrumb, { items: [DEPT_META[scope]?.label || "", tabs.find((t) => t.key === tab)?.label || ""] }),
       ["absensi", "perizinan", "pelanggaran", "nilai", "prestasi", "hafalan"].includes(tab) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChipFilterBar, { options: data.kelas, value: kelasFilter, onChange: setKelasFilter, includeSemua: true }),
-      tab === "kegiatan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Kegiatan Santri", eyebrow: "Pengasuhan", icon: import_lucide_react.ClipboardList, children: [
+      tab === "kegiatan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Kegiatan Santri", eyebrow: "Pengasuhan", icon: ClipboardList, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: kegiatanForm.santriId, onChange: (e) => setKegiatanForm({ ...kegiatanForm, santriId: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "Pilih santri" }),
@@ -6901,7 +7106,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama kegiatan", value: kegiatanForm.nama, onChange: (e) => setKegiatanForm({ ...kegiatanForm, nama: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Keterangan (opsional)", value: kegiatanForm.keterangan, onChange: (e) => setKegiatanForm({ ...kegiatanForm, keterangan: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addKegiatan, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             "Catat"
           ] })
         ] }),
@@ -6919,18 +7124,18 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 k.tanggal
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delKegiatan(k.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delKegiatan(k.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
           ] }, k.id)),
           !data.kegiatan.filter((k) => santriTampil.some((s) => s.id === k.santriId)).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada kegiatan tercatat." })
         ] })
       ] }),
-      tab === "absensi" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Absensi Harian", eyebrow: `Pengasuhan \u2014 ${todayStr()}`, icon: import_lucide_react.ClipboardList, children: [
+      tab === "absensi" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Absensi Harian", eyebrow: `Pengasuhan \u2014 ${todayStr()}`, icon: ClipboardList, children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Absensi tidak bisa dicatat \u2014 coba logout lalu login ulang."
         ] }),
         absensiFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: absensiFetch.error }),
@@ -6960,13 +7165,13 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           !santriTampil.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Tidak ada santri pada kelas ini." })
         ] })
       ] }),
-      tab === "perizinan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Perizinan Santri", eyebrow: "Pengasuhan", icon: import_lucide_react.CalendarCheck, children: [
+      tab === "perizinan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Perizinan Santri", eyebrow: "Pengasuhan", icon: CalendarCheck, children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Data izin tidak bisa dimuat/diproses \u2014 coba logout lalu login ulang."
         ] }),
         izinFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: izinFetch.error }),
@@ -7001,7 +7206,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Keterangan", value: izinForm.keterangan, onChange: (e) => setIzinForm({ ...izinForm, keterangan: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addIzin, disabled: izinBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             izinBusy ? "Mengirim..." : "Ajukan"
           ] })
         ] }),
@@ -7020,20 +7225,20 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               ] })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex items-center gap-1.5 shrink-0", children: p.status === "Menunggu" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => setIzinStatus(p.id, "Disetujui"), title: "Setujui", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 15 }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => setIzinStatus(p.id, "Ditolak"), title: "Tolak", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 15 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => setIzinStatus(p.id, "Disetujui"), title: "Setujui", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 15 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => setIzinStatus(p.id, "Ditolak"), title: "Tolak", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 15 }) })
             ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusPill, { status: p.status }) })
           ] }, p.id)),
           !perizinanTampil.filter((p) => santriTampil.some((s) => s.id === p.santriId)).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada pengajuan izin." })
         ] })
       ] }),
-      tab === "pelanggaran" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Pelanggaran", eyebrow: "Poin Kedisiplinan", icon: import_lucide_react.AlertTriangle, tone: "gold", children: [
+      tab === "pelanggaran" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Pelanggaran", eyebrow: "Poin Kedisiplinan", icon: AlertTriangle, tone: "gold", children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Data pelanggaran tidak bisa dimuat/diproses \u2014 coba logout lalu login ulang."
         ] }),
         pelFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: pelFetch.error }),
@@ -7060,7 +7265,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Jenis pelanggaran", value: pelForm.jenis, onChange: (e) => setPelForm({ ...pelForm, jenis: e.target.value }), className: "flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", value: pelForm.poin, onChange: (e) => setPelForm({ ...pelForm, poin: e.target.value }), className: "w-20 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addPel, disabled: pelBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             pelBusy ? "Menyimpan..." : "Catat"
           ] })
         ] }),
@@ -7077,13 +7282,13 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 p.poin,
                 " poin"
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delPel(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delPel(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
             ] })
           ] }, p.id)),
           !pelanggaranTampil.filter((p) => santriTampil.some((s) => s.id === p.santriId)).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada pelanggaran tercatat." })
         ] })
       ] }),
-      tab === "penilaian-kegiatan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Penilaian Kegiatan", eyebrow: "Pramuka \xB7 Pidato 3 Bahasa \xB7 Disiplin & Etika", icon: import_lucide_react.Award, tone: "gold", children: [
+      tab === "penilaian-kegiatan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Penilaian Kegiatan", eyebrow: "Pramuka \xB7 Pidato 3 Bahasa \xB7 Disiplin & Etika", icon: Award, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid grid-cols-2 gap-2.5 mb-4", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border border-[#DCEDF7] rounded-xl p-3 text-center", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-lg font-semibold text-[#0C4A6E]", style: { fontFamily: "'Fraunces', serif" }, children: data.penilaianKegiatan.length }),
@@ -7107,7 +7312,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-1.5 mb-2.5", children: [
             (data.indikatorKegiatan[pkForm.kegiatan] || []).map((ind) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "flex items-center gap-1 bg-white text-[#0C4A6E] text-xs pl-2.5 pr-1.5 py-1 rounded-full border border-[#CFE3F0]", children: [
               ind,
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => delIndikatorItem(pkForm.kegiatan, ind), className: "text-[#5B7C93] hover:text-[#B5533C]", title: "Hapus item", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 12 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => delIndikatorItem(pkForm.kegiatan, ind), className: "text-[#5B7C93] hover:text-[#B5533C]", title: "Hapus item", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 12 }) })
             ] }, ind)),
             !(data.indikatorKegiatan[pkForm.kegiatan] || []).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-xs text-[#5B7C93]", children: "Belum ada item untuk kegiatan ini." })
           ] }),
@@ -7122,7 +7327,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               addIndikatorItem(pkForm.kegiatan, itemBaruPk);
               setItemBaruPk("");
             }, className: "flex items-center gap-1 bg-white border border-[#0C4A6E] text-[#0C4A6E] text-xs px-3 py-1.5 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm shrink-0", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 13 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 13 }),
               "Tambah Item"
             ] })
           ] })
@@ -7141,7 +7346,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Catatan pembina (opsional)", value: pkForm.catatan, onChange: (e) => setPkForm({ ...pkForm, catatan: e.target.value }), className: "w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-3" }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addPenilaianKegiatan, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
           "Simpan Penilaian"
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mt-5 mb-1.5", children: "Riwayat Penilaian" }),
@@ -7161,13 +7366,13 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 shrink-0", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#0C4A6E]", children: rataSkor(p) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delPenilaianKegiatan(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delPenilaianKegiatan(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
             ] })
           ] }, p.id)),
           !data.penilaianKegiatan.filter((p) => santriTampil.some((s) => s.id === p.santriId)).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada penilaian kegiatan tercatat." })
         ] })
       ] }),
-      tab === "master-santri" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Master Data Santri", eyebrow: "Pencarian & Riwayat Lengkap \u2014 Pengasuhan", icon: import_lucide_react.User, children: [
+      tab === "master-santri" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Master Data Santri", eyebrow: "Pencarian & Riwayat Lengkap \u2014 Pengasuhan", icon: User, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-4", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-1.5", children: "Cari Santri (No. Induk / NISN / Nama)" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SantriSearchSelect, { santriList: data.santri, value: profilSantriId, onChange: (id) => {
@@ -7239,19 +7444,19 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-1.5", children: "Aksi Cepat" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => bukaAksiSantri("izin", s.id), className: "flex items-center gap-1.5 btn-gradient text-xs px-3.5 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 13 }),
                   "Input Izin"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => bukaAksiSantri("pelanggaran", s.id), className: "flex items-center gap-1.5 btn-gradient text-xs px-3.5 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 13 }),
                   "Input Pelanggaran"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => bukaAksiSantri("penilaian", s.id), className: "flex items-center gap-1.5 btn-gradient text-xs px-3.5 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 13 }),
                   "Input Penilaian"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => bukaAksiSantri("rapor", s.id), className: "flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] text-xs px-3.5 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.FileText, { size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FileText, { size: 13 }),
                   "Rapor Mental"
                 ] })
               ] })
@@ -7274,7 +7479,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   addIzin();
                   setAksiPanel(null);
                 }, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
                   "Ajukan"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setAksiPanel(null), className: "border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60", children: "Batal" })
@@ -7294,7 +7499,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   addPel();
                   setAksiPanel(null);
                 }, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
                   "Catat"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setAksiPanel(null), className: "border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60", children: "Batal" })
@@ -7319,7 +7524,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   addPenilaianKegiatan();
                   setAksiPanel(null);
                 }, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
                   "Simpan Penilaian"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setAksiPanel(null), className: "border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60", children: "Batal" })
@@ -7352,11 +7557,11 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanRaportMental, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
                   "Simpan Rapor"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: cetakRaportMental, className: "flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] text-sm px-4 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 15 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 15 }),
                   "Cetak Rapor"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setAksiPanel(null), className: "border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60", children: "Tutup" })
@@ -7442,7 +7647,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         })(),
         !profilSantriId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Cari dan pilih santri di atas untuk melihat data lengkapnya." })
       ] }),
-      tab === "raport-mental" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Rapor Mental Santri", eyebrow: "Kewenangan Pengasuhan", icon: import_lucide_react.FileText, tone: "gold", children: [
+      tab === "raport-mental" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Rapor Mental Santri", eyebrow: "Kewenangan Pengasuhan", icon: FileText, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-3", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: rmForm.santriId, onChange: (e) => setRmForm({ ...rmForm, santriId: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "Pilih santri" }),
@@ -7487,22 +7692,22 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanRaportMental, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             "Simpan Rapor"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: cetakRaportMental, className: "flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] text-sm px-4 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 15 }),
             "Cetak Rapor"
           ] })
         ] })
       ] }),
-      tab === "nilai" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Riwayat Akademik", eyebrow: "Pengajaran", icon: import_lucide_react.GraduationCap, children: [
+      tab === "nilai" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Riwayat Akademik", eyebrow: "Pengajaran", icon: GraduationCap, children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Nilai tidak bisa dicatat \u2014 coba logout lalu login ulang."
         ] }),
         nilaiFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: nilaiFetch.error }),
@@ -7543,7 +7748,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-1.5", children: "Aksi Cepat" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => setNilaiPanel(true), className: "flex items-center gap-1.5 btn-gradient text-xs px-3.5 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 13 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 13 }),
                 "Input Nilai"
               ] })
             ] }),
@@ -7561,7 +7766,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   addNilai();
                   setNilaiPanel(false);
                 }, disabled: nilaiBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
                   nilaiBusy ? "Menyimpan..." : "Simpan"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setNilaiPanel(false), className: "border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60", children: "Batal" })
@@ -7576,14 +7781,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: n.mapel }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#0C4A6E]", children: n.nilai }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delNilai(n.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delNilai(n.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
                 ] })
               ] }, n.id)) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada nilai tercatat untuk santri ini." }) })
             ] })
           ] });
         })() : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Cari dan pilih santri di atas untuk melihat & menginput riwayat akademiknya." })
       ] }),
-      tab === "raport-akademik" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Rapor Akademik Santri", eyebrow: "Kewenangan Pengajaran", icon: import_lucide_react.FileText, tone: "gold", children: [
+      tab === "raport-akademik" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Rapor Akademik Santri", eyebrow: "Kewenangan Pengajaran", icon: FileText, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-3", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: raForm.santriId, onChange: (e) => setRaForm({ ...raForm, santriId: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "Pilih santri" }),
@@ -7625,22 +7830,22 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanRaportAkademik, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             "Simpan Rapor"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: cetakRaportAkademik, className: "flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] text-sm px-4 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 15 }),
             "Cetak Rapor"
           ] })
         ] })
       ] }),
-      tab === "prestasi" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Prestasi Santri", eyebrow: "Pengajaran", icon: import_lucide_react.Award, tone: "gold", children: [
+      tab === "prestasi" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Prestasi Santri", eyebrow: "Pengajaran", icon: Award, tone: "gold", children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Prestasi tidak bisa dicatat \u2014 coba logout lalu login ulang."
         ] }),
         prestasiFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: prestasiFetch.error }),
@@ -7653,7 +7858,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Judul prestasi, mis. Juara 1 Pidato", value: prestasiForm.judul, onChange: (e) => setPrestasiForm({ ...prestasiForm, judul: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: prestasiForm.tingkat, onChange: (e) => setPrestasiForm({ ...prestasiForm, tingkat: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: TINGKAT_PRESTASI.map((t) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: t }, t)) }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addPrestasi, disabled: prestasiBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             prestasiBusy ? "Menyimpan..." : "Simpan"
           ] })
         ] }),
@@ -7671,18 +7876,18 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 p.tanggal
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delPrestasi(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delPrestasi(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
           ] }, p.id)),
           !data.prestasi.filter((p) => santriTampil.some((s) => s.id === p.santriId)).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada prestasi tercatat." })
         ] })
       ] }),
-      tab === "hafalan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Progress Tahfidz & Mengaji", eyebrow: "LPTQ", icon: import_lucide_react.BookOpen, children: [
+      tab === "hafalan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Progress Tahfidz & Mengaji", eyebrow: "LPTQ", icon: BookOpen, children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Setoran tidak bisa dicatat \u2014 coba logout lalu login ulang."
         ] }),
         hafalanFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: hafalanFetch.error }),
@@ -7694,7 +7899,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Juz / Surah / Materi mengaji", value: hafalanForm.juz, onChange: (e) => setHafalanForm({ ...hafalanForm, juz: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addHafalan, disabled: hafalanBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             hafalanBusy ? "Menyimpan..." : "Simpan"
           ] })
         ] }),
@@ -7707,19 +7912,19 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: h.tanggal }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delHafalan(h.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delHafalan(h.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
             ] })
           ] }, h.id)),
           !data.hafalan.filter((h) => santriTampil.some((s) => s.id === h.santriId)).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada setoran tercatat." })
         ] })
       ] }),
-      tab === "ubudiyah" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Ubudiyah & Doa Harian", eyebrow: "LPTQ", icon: import_lucide_react.Award, tone: "gold", children: [
+      tab === "ubudiyah" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Ubudiyah & Doa Harian", eyebrow: "LPTQ", icon: Award, tone: "gold", children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 13, className: "shrink-0 animate-spin" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 13, className: "shrink-0 animate-spin" }),
           "Menghubungkan ke server..."
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 13, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 13, className: "shrink-0" }),
           "Tidak terhubung ke server. Penilaian tidak bisa dicatat \u2014 coba logout lalu login ulang."
         ] }),
         ubudiyahFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: ubudiyahFetch.error }),
@@ -7733,7 +7938,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-1.5 mb-2.5", children: [
             (ubForm.jenis === "Ubudiyah" ? data.materiUbudiyah : data.materiDoa).map((m) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "flex items-center gap-1 bg-white text-[#0C4A6E] text-xs pl-2.5 pr-1.5 py-1 rounded-full border border-[#CFE3F0]", children: [
               m,
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => delMateriUb(ubForm.jenis, m), className: "text-[#5B7C93] hover:text-[#B5533C]", title: "Hapus item", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 12 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => delMateriUb(ubForm.jenis, m), className: "text-[#5B7C93] hover:text-[#B5533C]", title: "Hapus item", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 12 }) })
             ] }, m)),
             !(ubForm.jenis === "Ubudiyah" ? data.materiUbudiyah : data.materiDoa).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-xs text-[#5B7C93]", children: "Belum ada item materi." })
           ] }),
@@ -7748,7 +7953,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               addMateriUb(ubForm.jenis, itemBaruUb);
               setItemBaruUb("");
             }, className: "flex items-center gap-1 bg-white border border-[#0C4A6E] text-[#0C4A6E] text-xs px-3 py-1.5 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm shrink-0", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 13 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 13 }),
               "Tambah Item"
             ] })
           ] })
@@ -7783,7 +7988,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-1.5", children: "Aksi Cepat" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => setUbPanel(true), className: "flex items-center gap-1.5 btn-gradient text-xs px-3.5 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 13 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 13 }),
                 "Input ",
                 ubForm.jenis === "Ubudiyah" ? "Ubudiyah" : "Doa"
               ] })
@@ -7808,7 +8013,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   addUbudiyah();
                   setUbPanel(false);
                 }, disabled: ubudiyahBusy || backendOnline !== true, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
                   ubudiyahBusy ? "Menyimpan..." : "Simpan Penilaian"
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setUbPanel(false), className: "border border-[#CFE3F0] text-[#45657A] text-sm px-4 py-2 rounded-xl hover:bg-white/60", children: "Batal" })
@@ -7834,14 +8039,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 shrink-0", children: [
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-medium", style: { color: predikatColor(u.predikat) }, children: u.predikat }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delUbudiyah(u.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delUbudiyah(u.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
                 ] })
               ] }, u.id)) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada penilaian ubudiyah/doa untuk santri ini." }) })
             ] })
           ] });
         })() : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Cari dan pilih santri di atas untuk melihat & menginput penilaian ubudiyah/doa." })
       ] }),
-      tab === "raport-tahfidz" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Rapor Tahfidz Santri", eyebrow: "Kewenangan LPTQ", icon: import_lucide_react.FileText, tone: "gold", children: [
+      tab === "raport-tahfidz" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Rapor Tahfidz Santri", eyebrow: "Kewenangan LPTQ", icon: FileText, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-3", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: rtForm.santriId, onChange: (e) => setRtForm({ ...rtForm, santriId: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "Pilih santri" }),
@@ -7882,413 +8087,1192 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanRaportTahfidz, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             "Simpan Rapor"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: cetakRaportTahfidz, className: "flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] text-sm px-4 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 15 }),
             "Cetak Rapor"
           ] })
         ] })
       ] }),
-      tab === "santri" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Data Santri", eyebrow: `${data.santri.length} Santri Terdaftar`, icon: import_lucide_react.User, children: [
-        santriFetch.loading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-3", children: "Memuat data santri dari server\u2026" }),
-        santriFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: santriFetch.error }),
-        santriSaveError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: santriSaveError }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center gap-2 mb-4", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => showSantriForm ? batalFormSantri() : bukaTambahSantri(), className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
-            showSantriForm ? "Tutup Form" : "Tambah Santri Baru"
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-            "button",
-            {
-              type: "button",
-              onClick: unduhTemplateSantri,
-              className: "flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-gray-50 text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors",
-              title: "Unduh format template CSV/Excel untuk impor santri",
-              children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Download, { size: 14 }),
-                " Unduh Template CSV"
-              ]
-            }
-          ),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-            "button",
-            {
-              type: "button",
-              onClick: () => {
-                setShowImporModal(true);
-                setImporDryRunResult(null);
-                setImporError("");
-                setImporSuccess("");
-              },
-              className: "flex items-center gap-1.5 border border-[#0C4A6E] text-[#0C4A6E] bg-white hover:bg-[#EAF4FB] text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors shadow-sm",
-              title: "Unggah berkas CSV/Excel untuk impor santri masal",
-              children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.UploadCloud, { size: 14 }),
-                " Impor Excel / CSV"
-              ]
-            }
-          )
-        ] }),
-        showSantriForm && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-4 mb-5 bg-[#F0F8FE]", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-2", children: editingSantriId ? "Edit Data Pokok" : "Data Pokok" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-3 mb-4", children: [
-            santriForm.foto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: santriForm.foto, alt: "Foto santri", className: "w-16 h-16 rounded-full object-cover border border-[#CFE3F0]" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-16 h-16 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-lg font-semibold", children: (santriForm.nama || "?").split(" ").map((w) => w[0]).slice(0, 2).join("") }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "file", accept: "image/*", onChange: pilihFoto, className: "text-xs text-[#45657A]" }),
-              santriForm.foto && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setSantriForm({ ...santriForm, foto: "" }), className: "block text-[10px] text-[#B5533C] mt-1", children: "Hapus foto" })
+      tab === "santri" && (() => {
+        const asramaList = Array.from(new Set(santriAktifList.map((s) => s.asrama).filter(Boolean))).sort();
+        const q = santriSearch.trim().toLowerCase();
+        const santriFiltered = santriAktifList.filter((s) => {
+          if (santriKelasFilter !== "Semua" && s.kelas !== santriKelasFilter) return false;
+          if (santriAsramaFilter !== "Semua" && s.asrama !== santriAsramaFilter) return false;
+          if (santriGenderFilter !== "Semua" && s.jenisKelamin !== santriGenderFilter) return false;
+          if (q) {
+            const wali = (data.wali || []).find((w) => w.id === s.waliId);
+            const matchNama = (s.nama || "").toLowerCase().includes(q);
+            const matchNis = (s.nis || "").toLowerCase().includes(q);
+            const matchNisn = (s.nisn || "").toLowerCase().includes(q);
+            const matchWali = (wali?.nama || "").toLowerCase().includes(q);
+            if (!matchNama && !matchNis && !matchNisn && !matchWali) return false;
+          }
+          return true;
+        });
+        const totalSantriFiltered = santriFiltered.length;
+        const totalPagesSantri = Math.max(1, Math.ceil(totalSantriFiltered / santriLimit));
+        const santriPageClamped = Math.min(Math.max(1, santriPage), totalPagesSantri);
+        const santriPagingItems = santriFiltered.slice((santriPageClamped - 1) * santriLimit, santriPageClamped * santriLimit);
+        return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Data Santri", eyebrow: `${santriAktifList.length} Santri Aktif Terdaftar`, icon: User, children: [
+          santriFetch.loading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-3", children: "Memuat data santri dari server\u2026" }),
+          santriFetch.error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: santriFetch.error }),
+          santriSaveError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-3", children: santriSaveError }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-2xl bg-gradient-to-br from-[#EAF4FB] to-[#F4F9FD] border border-[#CFE3F0]/60", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-[#0C4A6E] mb-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(User, { size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-xs font-semibold", children: "Santri Aktif" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xl font-bold text-[#17242E]", children: santriAktifList.length }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-[#5B7C93]", children: "Kapasitas sistem: s.d. 2.000 santri" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-2xl bg-gradient-to-br from-[#EAF4FB] to-[#F4F9FD] border border-[#CFE3F0]/60", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-[#0C4A6E] mb-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(School, { size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-xs font-semibold", children: "Rombel Kelas" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xl font-bold text-[#17242E]", children: Array.from(new Set(santriAktifList.map((s) => s.kelas).filter(Boolean))).length }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-[#5B7C93]", children: "Kelas aktif terisi" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-2xl bg-gradient-to-br from-[#EAF4FB] to-[#F4F9FD] border border-[#CFE3F0]/60", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-[#0C4A6E] mb-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Home, { size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-xs font-semibold", children: "Kamar / Asrama" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xl font-bold text-[#17242E]", children: asramaList.length }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-[#5B7C93]", children: "Lokasi kamar tercatat" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-2xl bg-gradient-to-br from-[#EAF4FB] to-[#F4F9FD] border border-[#CFE3F0]/60", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-[#0C4A6E] mb-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GraduationCap, { size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-xs font-semibold", children: "Data Alumni" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xl font-bold text-[#17242E]", children: (data.alumni || []).length }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-[#5B7C93]", children: "Santri telah lulus" })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-3 gap-2 mb-4", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama lengkap", value: santriForm.nama, onChange: (e) => setSantriForm({ ...santriForm, nama: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "No. Stambuk", value: santriForm.nis, onChange: (e) => setSantriForm({ ...santriForm, nis: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "NISN", value: santriForm.nisn, onChange: (e) => setSantriForm({ ...santriForm, nisn: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: santriForm.jenisKelamin, onChange: (e) => setSantriForm({ ...santriForm, jenisKelamin: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Laki-laki" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Perempuan" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: santriForm.kelas, onChange: (e) => setSantriForm({ ...santriForm, kelas: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: data.kelas.map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: k }, k)) }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: santriForm.waliId, onChange: (e) => setSantriForm({ ...santriForm, waliId: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: data.wali.map((w) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: w.id, children: w.nama }, w.id)) }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Kamar / Asrama", value: santriForm.asrama, onChange: (e) => setSantriForm({ ...santriForm, asrama: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: santriForm.halaqoh, onChange: (e) => setSantriForm({ ...santriForm, halaqoh: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "Halaqoh (opsional)" }),
-              (data.halaqoh || []).map((h) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: h }, h))
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-2", children: "Kelahiran & Alamat" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-3 gap-2 mb-4", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Tempat lahir", value: santriForm.tempatLahir, onChange: (e) => setSantriForm({ ...santriForm, tempatLahir: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "date", value: santriForm.tanggalLahir, onChange: (e) => setSantriForm({ ...santriForm, tanggalLahir: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Golongan darah", value: santriForm.golDarah, onChange: (e) => setSantriForm({ ...santriForm, golDarah: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Alamat lengkap", value: santriForm.alamat, onChange: (e) => setSantriForm({ ...santriForm, alamat: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm sm:col-span-3" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-2", children: "Orang Tua & Riwayat Pendidikan (untuk cetak rapor)" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-3 gap-2 mb-2", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama Ayah", value: santriForm.namaAyah, onChange: (e) => setSantriForm({ ...santriForm, namaAyah: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama Ibu", value: santriForm.namaIbu, onChange: (e) => setSantriForm({ ...santriForm, namaIbu: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Asal Sekolah", value: santriForm.asalSekolah, onChange: (e) => setSantriForm({ ...santriForm, asalSekolah: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-3 gap-2 mb-2", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-1", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama SD", value: santriForm.pendidikanSD, onChange: (e) => setSantriForm({ ...santriForm, pendidikanSD: e.target.value }), className: "flex-1 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Tahun", value: santriForm.tahunSD, onChange: (e) => setSantriForm({ ...santriForm, tahunSD: e.target.value }), className: "w-24 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-1", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama SMP", value: santriForm.pendidikanSMP, onChange: (e) => setSantriForm({ ...santriForm, pendidikanSMP: e.target.value }), className: "flex-1 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Tahun", value: santriForm.tahunSMP, onChange: (e) => setSantriForm({ ...santriForm, tahunSMP: e.target.value }), className: "w-24 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-1", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama SMA/MA", value: santriForm.pendidikanSMA, onChange: (e) => setSantriForm({ ...santriForm, pendidikanSMA: e.target.value }), className: "flex-1 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Tahun", value: santriForm.tahunSMA, onChange: (e) => setSantriForm({ ...santriForm, tahunSMA: e.target.value }), className: "w-24 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-4", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Program Pilihan (mis. Tahfidz Al-Qur'an)", value: santriForm.programPilihan, onChange: (e) => setSantriForm({ ...santriForm, programPilihan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Cita-cita", value: santriForm.citaCita, onChange: (e) => setSantriForm({ ...santriForm, citaCita: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-2", children: "Kontak Darurat & Kesehatan" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-4", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "No. HP kontak darurat", value: santriForm.noDarurat, onChange: (e) => setSantriForm({ ...santriForm, noDarurat: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Catatan kesehatan (alergi, dsb.)", value: santriForm.catatanKesehatan, onChange: (e) => setSantriForm({ ...santriForm, catatanKesehatan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs uppercase tracking-wide text-[#5B7C93] mb-2", children: "Cashless" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "grid sm:grid-cols-2 gap-2 mb-4", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Limit jajan harian (Rp), kosongkan jika tidak dibatasi", value: santriForm.limitJajanHarian, onChange: (e) => setSantriForm({ ...santriForm, limitJajanHarian: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm sm:col-span-2" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanSantri, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
-            editingSantriId ? "Simpan Perubahan" : "Simpan Santri"
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "divide-y divide-[#DCEDF7]", children: [
-          data.santri.map((s) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-2.5", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between text-sm", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => setDetailSantriId(detailSantriId === s.id ? null : s.id), className: "text-left flex-1 flex items-center gap-2.5", children: [
-                s.foto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: s.foto, alt: s.nama, className: "w-8 h-8 rounded-full object-cover border border-[#CFE3F0] shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-8 h-8 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-xs font-semibold shrink-0", children: s.nama.split(" ").map((w) => w[0]).slice(0, 2).join("") }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#17242E] font-medium", children: s.nama }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-[#5B7C93]", children: [
-                    " \xB7 ",
-                    s.kelas,
-                    " \xB7 No. Stambuk ",
-                    s.nis || "-",
-                    " \xB7 NISN ",
-                    s.nisn || "-",
-                    " \xB7 Wali: ",
-                    data.wali.find((w) => w.id === s.waliId)?.nama || "-"
-                  ] })
-                ] })
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1 shrink-0", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => setDetailSantriId(detailSantriId === s.id ? null : s.id), title: "Lihat biodata", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.User, { size: 15 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditSantri(s), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 15 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => meluluskanId === s.id ? setMeluluskanId(null) : bukaLuluskan(s), title: "Luluskan", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.UserCheck, { size: 15 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delSantri(s.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
-              ] })
-            ] }),
-            detailSantriId === s.id && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mt-2 ml-1 grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-[#45657A] bg-[#F0F8FE] border border-[#DCEDF7] rounded-xl p-3", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Jenis kelamin:" }),
-                " ",
-                s.jenisKelamin || "-"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Kamar/Asrama:" }),
-                " ",
-                s.asrama || "-"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Tempat, Tgl Lahir:" }),
-                " ",
-                s.tempatLahir || "-",
-                s.tanggalLahir ? `, ${s.tanggalLahir}` : ""
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Golongan darah:" }),
-                " ",
-                s.golDarah || "-"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "sm:col-span-2", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Alamat:" }),
-                " ",
-                s.alamat || "-"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Kontak darurat:" }),
-                " ",
-                s.noDarurat || "-"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Catatan kesehatan:" }),
-                " ",
-                s.catatanKesehatan || "-"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Saldo cashless:" }),
-                " ",
-                rupiah(s.saldo || 0)
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Limit jajan harian:" }),
-                " ",
-                s.limitJajanHarian ? `${rupiah(s.limitJajanHarian)} (sisa hari ini: ${rupiah(sisaLimitHarian(s, data.transaksiCashless))})` : "Tidak dibatasi"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Status blokir cashless:" }),
-                " ",
-                isBlokirAktif(s) ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-[#96271A] font-medium", children: [
-                  "Diblokir sampai ",
-                  formatTanggalISO(s.blokirCashless.sampaiISO)
-                ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#15803D]", children: "Tidak diblokir" }),
-                " ",
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#8FB0C7]", children: "(diatur lewat BMT)" })
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sm:col-span-2", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Riwayat kelas:" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mt-1 space-y-0.5", children: [
-                  (s.riwayatKelas || []).map((r, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
-                    r.kelas,
-                    " ",
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-[#8FB0C7]", children: [
-                      "\u2014 sejak ",
-                      r.tanggal
-                    ] })
-                  ] }, i)),
-                  !(s.riwayatKelas || []).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[#8FB0C7]", children: "Belum ada riwayat." })
-                ] })
-              ] })
-            ] }),
-            meluluskanId === s.id && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mt-2 ml-1 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-3 bg-[#F0F8FE]", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-xs font-medium text-[#0C4A6E] mb-2", children: [
-                "Luluskan ",
-                s.nama,
-                " \u2014 pindahkan ke Data Alumni"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-2", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Tahun lulus", value: lulusForm.tahunLulus, onChange: (e) => setLulusForm({ ...lulusForm, tahunLulus: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1.5 text-sm" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: lulusForm.statusSaatIni, onChange: (e) => setLulusForm({ ...lulusForm, statusSaatIni: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1.5 text-sm", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Melanjutkan Pendidikan" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Bekerja" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Wirausaha" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Belum Diketahui" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Lainnya" })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-3 mb-4", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => showSantriForm ? batalFormSantri() : bukaTambahSantri(), className: "flex items-center gap-1.5 btn-gradient text-xs px-3.5 py-2 rounded-xl font-semibold hover:shadow-lg active:scale-95", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 14 }),
+                  " Tambah Santri Baru"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Instansi tujuan (kampus/tempat kerja)", value: lulusForm.instansiTujuan, onChange: (e) => setLulusForm({ ...lulusForm, instansiTujuan: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1.5 text-sm sm:col-span-2" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "No. HP alumni (opsional)", value: lulusForm.noHp, onChange: (e) => setLulusForm({ ...lulusForm, noHp: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1.5 text-sm sm:col-span-2" })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: unduhTemplateSantri,
+                    className: "flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-gray-50 text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors",
+                    title: "Unduh format template CSV/Excel untuk impor santri",
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 14 }),
+                      " Unduh Format CSV"
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => {
+                      setShowImporModal(true);
+                      setImporDryRunResult(null);
+                      setImporError("");
+                      setImporSuccess("");
+                    },
+                    className: "flex items-center gap-1.5 border border-[#0C4A6E] text-[#0C4A6E] bg-white hover:bg-[#EAF4FB] text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors shadow-sm",
+                    title: "Unggah berkas CSV/Excel untuk impor santri masal",
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UploadCloud, { size: 14 }),
+                      " Impor Excel / CSV"
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: eksporSantriAktifCSV,
+                    className: "flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-gray-50 text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors",
+                    title: "Ekspor seluruh data santri aktif saat ini ke format CSV",
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 14 }),
+                      " Ekspor Data Aktif"
+                    ]
+                  }
+                )
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: konfirmasiLuluskan, className: "text-xs btn-gradient px-3 py-1.5 rounded-xl  hover:shadow-lg active:scale-95", children: "Konfirmasi Luluskan" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setMeluluskanId(null), className: "text-xs border border-[#CFE3F0] text-[#45657A] px-3 py-1.5 rounded-xl", children: "Batal" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "text-xs text-[#5B7C93]", children: [
+                "Total: ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#0C4A6E]", children: totalSantriFiltered }),
+                " santri cocok"
               ] })
-            ] })
-          ] }, s.id)),
-          !data.santri.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada santri terdaftar." })
-        ] }),
-        showImporModal && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white rounded-2xl max-w-2xl w-full p-6 border border-[#CFE3F0] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between border-b pb-3", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.UploadCloud, { size: 20, className: "text-[#0C4A6E]" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "font-semibold text-base text-[#0C4A6E]", children: "Impor Data Santri (Excel / CSV)" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-              "button",
-              {
-                type: "button",
-                onClick: () => setShowImporModal(false),
-                className: "text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg",
-                children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 18 })
-              }
-            )
-          ] }),
-          imporError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200", children: imporError }),
-          imporSuccess && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200", children: imporSuccess }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-3 text-xs", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "font-semibold text-[#17242E] block mb-1", children: "1. Nama Batch Impor" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-                "input",
-                {
-                  value: imporBatchName,
-                  onChange: (e) => setImporBatchName(e.target.value),
-                  placeholder: "Contoh: Impor Santri Baru TP 2026/2027",
-                  className: "w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
-                }
-              )
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "font-semibold text-[#17242E] block mb-1", children: "2. Pilih Berkas CSV / Excel" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border-2 border-dashed border-[#CFE3F0] rounded-xl p-4 text-center hover:bg-gray-50/80 transition-colors", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 bg-[#F7FAFD] p-2.5 rounded-2xl border border-[#CFE3F0]/70", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Search, { size: 14, className: "absolute left-3 top-1/2 -translate-y-1/2 text-[#5B7C93]" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                   "input",
                   {
-                    type: "file",
-                    id: "input-impor-file",
-                    accept: ".csv,.txt",
-                    className: "hidden",
+                    value: santriSearch,
                     onChange: (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setImporFileName(file.name);
-                      const reader = new FileReader();
-                      reader.onload = (ev) => {
-                        const text = ev.target?.result || "";
-                        setImporFileText(text);
-                        const parsed = parseSantriCSV(text);
-                        jalankanDryRunImpor(parsed);
-                      };
-                      reader.readAsText(file, "UTF-8");
-                    }
+                      setSantriSearch(e.target.value);
+                      setSantriPage(1);
+                    },
+                    placeholder: "Cari nama, NIS, NISN, wali...",
+                    className: "w-full pl-8 pr-3 py-1.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] placeholder-[#8FB0C7] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
                   }
-                ),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { htmlFor: "input-impor-file", className: "cursor-pointer block space-y-1.5", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.UploadCloud, { size: 28, className: "mx-auto text-[#0C4A6E]" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-medium text-[#0C4A6E]", children: imporFileName ? `Berkas terpilih: ${imporFileName}` : "Klik untuk memilih berkas .CSV" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93]", children: "Gunakan berkas format CSV sesuai template (kolom: nama, nis, nisn, kelas, jenisKelamin, namaWali, hpWali, tempatLahir, tanggalLahir)" })
-                ] })
-              ] })
-            ] }),
-            imporLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-4 text-center text-[#5B7C93] flex items-center justify-center gap-2", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 16, className: "animate-spin" }),
-              " Memeriksa format dan keabsahan baris..."
-            ] }),
-            imporDryRunResult && !imporLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-3 pt-2", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid grid-cols-4 gap-2 text-center", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-2.5 rounded-xl bg-gray-50 border border-gray-200", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-base font-bold text-[#17242E]", children: imporDryRunResult.totalBaris }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-[#5B7C93]", children: "Total Baris" })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-2.5 rounded-xl bg-emerald-50 border border-emerald-200", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-base font-bold text-emerald-700", children: imporDryRunResult.jumlahBaru }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-emerald-600", children: "Santri Baru" })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-2.5 rounded-xl bg-blue-50 border border-blue-200", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-base font-bold text-blue-700", children: imporDryRunResult.jumlahUpdate }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-blue-600", children: "Update Data" })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-2.5 rounded-xl bg-red-50 border border-red-200", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-base font-bold text-red-700", children: imporDryRunResult.jumlahGagal }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-red-600", children: "Baris Gagal" })
-                ] })
+                )
               ] }),
-              imporDryRunResult.detailGagal?.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 bg-red-50/80 border border-red-200 rounded-xl max-h-36 overflow-y-auto", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold text-red-800 mb-1", children: "Rincian Baris Tidak Valid:" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", { className: "list-disc pl-4 space-y-0.5 text-[11px] text-red-700", children: imporDryRunResult.detailGagal.map((d, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
-                  "Baris ",
-                  d.baris,
-                  " (",
-                  d.nama,
-                  "): ",
-                  d.alasan
-                ] }, i)) })
-              ] }),
-              imporDryRunResult.rows?.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "font-semibold text-[#17242E] mb-1", children: [
-                  "Pratinjau Data (",
-                  imporDryRunResult.rows.length,
-                  " baris):"
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "border border-[#DCEDF7] rounded-xl overflow-x-auto max-h-48", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "w-full text-[11px] text-left", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { className: "bg-[#EAF4FB] text-[#0C4A6E]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Nama" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "No. Stambuk" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Kelas" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Wali" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "HP Wali" })
-                  ] }) }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { className: "divide-y divide-[#DCEDF7]", children: imporDryRunResult.rows.slice(0, 8).map((r, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 font-medium", children: r.nama }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.nis || "\u2014" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.kelas || "\u2014" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.namaWali || "\u2014" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.hpWali || "\u2014" })
-                  ] }, i)) })
-                ] }) })
-              ] })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                "select",
+                {
+                  value: santriKelasFilter,
+                  onChange: (e) => {
+                    setSantriKelasFilter(e.target.value);
+                    setSantriPage(1);
+                  },
+                  className: "w-full py-1.5 px-2.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30",
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Semua", children: "Semua Kelas" }),
+                    data.kelas.map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: k, children: k }, k))
+                  ]
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                "select",
+                {
+                  value: santriAsramaFilter,
+                  onChange: (e) => {
+                    setSantriAsramaFilter(e.target.value);
+                    setSantriPage(1);
+                  },
+                  className: "w-full py-1.5 px-2.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30",
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Semua", children: "Semua Asrama / Kamar" }),
+                    asramaList.map((a) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: a, children: a }, a))
+                  ]
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                "select",
+                {
+                  value: santriGenderFilter,
+                  onChange: (e) => {
+                    setSantriGenderFilter(e.target.value);
+                    setSantriPage(1);
+                  },
+                  className: "w-full py-1.5 px-2.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30",
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Semua", children: "Semua Jenis Kelamin" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Laki-laki", children: "Laki-laki" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Perempuan", children: "Perempuan" })
+                  ]
+                }
+              )
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between pt-3 border-t", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-              "button",
-              {
-                type: "button",
-                onClick: unduhTemplateSantri,
-                className: "text-xs text-[#0C4A6E] font-semibold underline flex items-center gap-1",
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Download, { size: 13 }),
-                  " Unduh Format Template"
-                ]
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "overflow-x-auto border border-[#CFE3F0] rounded-2xl bg-white shadow-sm mb-3", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "w-full text-left text-xs border-collapse", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { className: "bg-[#EBF4FA] text-[#0C4A6E] font-semibold border-b border-[#CFE3F0]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "py-2.5 px-3 w-12 text-center", children: "No" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "py-2.5 px-3", children: "Santri" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "py-2.5 px-3", children: "Kelas" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "py-2.5 px-3", children: "Kamar / Asrama" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "py-2.5 px-3", children: "Wali Santri" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "py-2.5 px-3", children: "Saldo Cashless" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "py-2.5 px-3 text-right", children: "Aksi" })
+              ] }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { className: "divide-y divide-[#DCEDF7]", children: santriPagingItems.map((s, idx) => {
+                const noUrut = (santriPageClamped - 1) * santriLimit + idx + 1;
+                const wali = (data.wali || []).find((w) => w.id === s.waliId);
+                return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { className: "hover:bg-[#F4F9FD] transition-colors", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "py-2.5 px-3 text-center text-[#5B7C93] font-medium", children: noUrut }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "py-2.5 px-3", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2.5", children: [
+                    s.foto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: s.foto, alt: s.nama, className: "w-8 h-8 rounded-full object-cover border border-[#CFE3F0] shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-8 h-8 rounded-full bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-xs font-semibold shrink-0", children: (s.nama || "?").split(" ").map((w) => w[0]).slice(0, 2).join("") }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "min-w-0", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => bukaDetailSantri(s), className: "text-left font-medium text-[#17242E] hover:text-[#0C4A6E] hover:underline block truncate max-w-[170px]", title: s.nama, children: s.nama }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-[11px] text-[#5B7C93]", children: [
+                        s.nis ? `Stb: ${s.nis}` : "No Stb: -",
+                        " ",
+                        s.nisn ? `\xB7 NISN: ${s.nisn}` : ""
+                      ] })
+                    ] })
+                  ] }) }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "py-2.5 px-3", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "inline-block px-2 py-0.5 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] font-medium text-[11px] border border-[#CFE3F0]", children: s.kelas || "-" }) }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "py-2.5 px-3 text-[#45657A] truncate max-w-[140px]", title: s.asrama || "-", children: s.asrama || "-" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("td", { className: "py-2.5 px-3", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[#17242E] font-medium truncate max-w-[140px]", children: wali?.nama || "-" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93]", children: wali?.hp || s.noDarurat || "-" })
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("td", { className: "py-2.5 px-3", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold text-[#0C4A6E]", children: rupiah(s.saldo || 0) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-[#5B7C93]", children: s.limitJajanHarian ? `Limit: ${rupiah(s.limitJajanHarian)}` : "Limit: bebas" })
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "py-2.5 px-3 text-right", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-end gap-1", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaDetailSantri(s), title: "Lihat biodata lengkap", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, { size: 14 }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditSantri(s), title: "Edit data santri", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 14 }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaLuluskan(s), title: "Luluskan santri ke alumni", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserCheck, { size: 14 }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delSantri(s.id), title: "Hapus santri", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
+                  ] }) })
+                ] }, s.id);
+              }) })
+            ] }),
+            !santriPagingItems.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "py-8 text-center text-xs text-[#5B7C93]", children: "Tidak ada data santri yang cocok dengan filter pencarian." })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 text-xs text-[#5B7C93]", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+              "Menampilkan ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#17242E]", children: totalSantriFiltered === 0 ? 0 : (santriPageClamped - 1) * santriLimit + 1 }),
+              "\u2013",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#17242E]", children: Math.min(santriPageClamped * santriLimit, totalSantriFiltered) }),
+              " dari ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#17242E]", children: totalSantriFiltered }),
+              " santri aktif"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "button",
+                  {
+                    disabled: santriPageClamped <= 1,
+                    onClick: () => setSantriPage((p) => Math.max(1, p - 1)),
+                    className: "px-2.5 py-1 rounded-xl border border-[#CFE3F0] bg-white hover:bg-gray-50 disabled:opacity-40 flex items-center gap-1 font-medium text-[#0C4A6E]",
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { size: 13 }),
+                      " Sblm"
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "px-2 font-medium text-[#0C4A6E]", children: [
+                  "Hal. ",
+                  santriPageClamped,
+                  " / ",
+                  totalPagesSantri
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "button",
+                  {
+                    disabled: santriPageClamped >= totalPagesSantri,
+                    onClick: () => setSantriPage((p) => Math.min(totalPagesSantri, p + 1)),
+                    className: "px-2.5 py-1 rounded-xl border border-[#CFE3F0] bg-white hover:bg-gray-50 disabled:opacity-40 flex items-center gap-1 font-medium text-[#0C4A6E]",
+                    children: [
+                      "Lanjut ",
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, { size: 13 })
+                    ]
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                "select",
+                {
+                  value: santriLimit,
+                  onChange: (e) => {
+                    setSantriLimit(Number(e.target.value));
+                    setSantriPage(1);
+                  },
+                  className: "border border-[#CFE3F0] rounded-xl px-2 py-1 text-xs bg-white text-[#0C4A6E] focus:outline-none",
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: 25, children: "25 / hal" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: 50, children: "50 / hal" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: 100, children: "100 / hal" })
+                  ]
+                }
+              )
+            ] })
+          ] }),
+          showSantriForm && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white rounded-2xl max-w-3xl w-full p-6 border border-[#CFE3F0] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between border-b pb-3", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h3", { className: "font-semibold text-base text-[#0C4A6E] flex items-center gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(User, { size: 18 }),
+                editingSantriId ? "Edit Data Santri" : "Tambah Santri Baru"
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalFormSantri, className: "text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 18 }) })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-4 text-xs", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [
+                santriForm.foto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: santriForm.foto, alt: "Foto santri", className: "w-16 h-16 rounded-2xl object-cover border border-[#CFE3F0]" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-16 h-16 rounded-2xl bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-lg font-semibold", children: (santriForm.nama || "?").split(" ").map((w) => w[0]).slice(0, 2).join("") }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "file", accept: "image/*", onChange: pilihFoto, className: "text-xs text-[#45657A]" }),
+                  santriForm.foto && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setSantriForm({ ...santriForm, foto: "" }), className: "block text-[10px] text-[#B5533C] mt-1 font-medium", children: "Hapus foto" })
+                ] })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold uppercase tracking-wide text-[#0C4A6E]", children: "Data Pokok" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-3 gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama lengkap *", value: santriForm.nama, onChange: (e) => setSantriForm({ ...santriForm, nama: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "No. Stambuk (NIS)", value: santriForm.nis, onChange: (e) => setSantriForm({ ...santriForm, nis: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "NISN", value: santriForm.nisn, onChange: (e) => setSantriForm({ ...santriForm, nisn: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: santriForm.jenisKelamin, onChange: (e) => setSantriForm({ ...santriForm, jenisKelamin: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Laki-laki" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Perempuan" })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: santriForm.kelas, onChange: (e) => setSantriForm({ ...santriForm, kelas: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30", children: data.kelas.map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: k, children: k }, k)) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: santriForm.waliId, onChange: (e) => setSantriForm({ ...santriForm, waliId: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30", children: data.wali.map((w) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: w.id, children: w.nama }, w.id)) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Kamar / Asrama", value: santriForm.asrama, onChange: (e) => setSantriForm({ ...santriForm, asrama: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: santriForm.halaqoh, onChange: (e) => setSantriForm({ ...santriForm, halaqoh: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "Halaqoh (opsional)" }),
+                  (data.halaqoh || []).map((h) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: h, children: h }, h))
+                ] })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2", children: "Kelahiran & Alamat" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-3 gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Tempat lahir", value: santriForm.tempatLahir, onChange: (e) => setSantriForm({ ...santriForm, tempatLahir: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "date", value: santriForm.tanggalLahir, onChange: (e) => setSantriForm({ ...santriForm, tanggalLahir: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Golongan darah", value: santriForm.golDarah, onChange: (e) => setSantriForm({ ...santriForm, golDarah: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Alamat lengkap", value: santriForm.alamat, onChange: (e) => setSantriForm({ ...santriForm, alamat: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 sm:col-span-3" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2", children: "Kontak Darurat & Kesehatan" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "No. HP kontak darurat", value: santriForm.noDarurat, onChange: (e) => setSantriForm({ ...santriForm, noDarurat: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Catatan kesehatan (alergi, dsb.)", value: santriForm.catatanKesehatan, onChange: (e) => setSantriForm({ ...santriForm, catatanKesehatan: e.target.value }), className: "border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2", children: "BMT & Cashless" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "number", placeholder: "Limit jajan harian (Rp), kosongkan jika tidak dibatasi", value: santriForm.limitJajanHarian, onChange: (e) => setSantriForm({ ...santriForm, limitJajanHarian: e.target.value }), className: "w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" }) })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-end gap-2 pt-3 border-t", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalFormSantri, className: "px-4 py-2 text-xs border border-[#CFE3F0] text-[#45657A] rounded-xl hover:bg-gray-50", children: "Batal" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanSantri, className: "btn-gradient text-xs px-4 py-2 rounded-xl font-semibold hover:shadow-lg active:scale-95 flex items-center gap-1.5", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 14 }),
+                editingSantriId ? "Simpan Perubahan" : "Simpan Santri"
+              ] })
+            ] })
+          ] }) }),
+          detailSantriData && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white rounded-2xl max-w-2xl w-full p-6 border border-[#CFE3F0] shadow-2xl max-h-[90vh] overflow-y-auto space-y-4", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between border-b pb-3", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(User, { size: 18, className: "text-[#0C4A6E]" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "font-semibold text-base text-[#0C4A6E]", children: "Biodata Lengkap Santri" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: tutupDetailSantri, className: "text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 18 }) })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-start gap-4", children: [
+              detailSantriData.foto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: detailSantriData.foto, alt: detailSantriData.nama, className: "w-20 h-20 rounded-2xl object-cover border border-[#CFE3F0] shrink-0 shadow-sm" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-20 h-20 rounded-2xl bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-xl font-bold shrink-0", children: (detailSantriData.nama || "?").split(" ").map((w) => w[0]).slice(0, 2).join("") }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h4", { className: "text-lg font-bold text-[#17242E]", children: detailSantriData.nama }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-xs text-[#5B7C93] mt-0.5", children: [
+                  "No. Stambuk: ",
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#0C4A6E]", children: detailSantriData.nis || "-" }),
+                  " \xB7 NISN: ",
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#0C4A6E]", children: detailSantriData.nisn || "-" })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-1.5 mt-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "px-2 py-0.5 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] text-[11px] font-medium border border-[#CFE3F0]", children: [
+                    "Kelas ",
+                    detailSantriData.kelas || "-"
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "px-2 py-0.5 rounded-lg bg-[#F0FDF4] text-[#166534] text-[11px] font-medium border border-[#BBF7D0]", children: detailSantriData.asrama || "Belum ada asrama" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "px-2 py-0.5 rounded-lg bg-gray-100 text-[#45657A] text-[11px] font-medium", children: detailSantriData.jenisKelamin || "-" })
+                ] })
+              ] })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-3 text-xs bg-[#F7FAFD] p-3.5 rounded-xl border border-[#CFE3F0]/70", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Tempat, Tgl Lahir:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "font-medium text-[#17242E]", children: [
+                  detailSantriData.tempatLahir || "-",
+                  detailSantriData.tanggalLahir ? `, ${detailSantriData.tanggalLahir}` : ""
+                ] })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Golongan Darah:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-medium text-[#17242E]", children: detailSantriData.golDarah || "-" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sm:col-span-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Alamat:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-medium text-[#17242E]", children: detailSantriData.alamat || "-" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Wali Santri:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-medium text-[#17242E]", children: (data.wali || []).find((w) => w.id === detailSantriData.waliId)?.nama || "-" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Kontak Darurat / HP:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-medium text-[#17242E]", children: detailSantriData.noDarurat || (data.wali || []).find((w) => w.id === detailSantriData.waliId)?.hp || "-" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Nama Ayah & Ibu:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "font-medium text-[#17242E]", children: [
+                  detailSantriData.namaAyah || "-",
+                  " / ",
+                  detailSantriData.namaIbu || "-"
+                ] })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Catatan Kesehatan:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-medium text-[#17242E]", children: detailSantriData.catatanKesehatan || "-" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Saldo BMT Cashless:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold text-[#0C4A6E]", children: rupiah(detailSantriData.saldo || 0) })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Limit Jajan Harian:" }),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-medium text-[#17242E]", children: detailSantriData.limitJajanHarian ? rupiah(detailSantriData.limitJajanHarian) : "Bebas / Tanpa batas" })
+              ] })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-1.5 pt-1", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h5", { className: "font-semibold text-xs text-[#0C4A6E] flex items-center gap-1.5", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 13 }),
+                " Rekam Jejak Perjalanan Kelas & Asrama"
+              ] }),
+              loadingRiwayatDU && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93]", children: "Memuat rekam jejak..." }),
+              !loadingRiwayatDU && riwayatDaftarUlangModal.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "border border-[#DCEDF7] rounded-xl overflow-hidden", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "w-full text-[11px] text-left", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { className: "bg-[#EAF4FB] text-[#0C4A6E]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Tahun Ajaran" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Kelas Baru" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Asrama Baru" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Tanggal" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Status" })
+                ] }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { className: "divide-y divide-[#DCEDF7]", children: riwayatDaftarUlangModal.map((r, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { className: "hover:bg-gray-50/50", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 font-medium", children: r.tahunLabel }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("td", { className: "p-2", children: [
+                    r.kelasBaru,
+                    " ",
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-[#8FB0C7] text-[10px]", children: [
+                      "(dari ",
+                      r.kelasSebelumnya || "-",
+                      ")"
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2", children: r.asramaBaru || "-" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.tanggalDaftarUlang }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-semibold", children: r.status }) })
+                ] }, i)) })
+              ] }) }),
+              !loadingRiwayatDU && riwayatDaftarUlangModal.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-[#5B7C93]", children: (detailSantriData.riwayatKelas && (Array.isArray(detailSantriData.riwayatKelas) ? detailSantriData.riwayatKelas : JSON.parse(detailSantriData.riwayatKelas || "[]"))).length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-1", children: (Array.isArray(detailSantriData.riwayatKelas) ? detailSantriData.riwayatKelas : JSON.parse(detailSantriData.riwayatKelas || "[]")).map((rw, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+                "\u2022 Kelas ",
+                rw.kelas,
+                " ",
+                rw.asrama ? `\xB7 Asrama: ${rw.asrama}` : "",
+                " ",
+                rw.tanggal ? `(${rw.tanggal})` : ""
+              ] }, i)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Belum ada riwayat mutasi kelas atau pendaftaran ulang tercatat." }) })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex items-center justify-end pt-3 border-t", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: tutupDetailSantri, className: "px-4 py-2 text-xs border border-[#CFE3F0] text-[#45657A] rounded-xl hover:bg-gray-50", children: "Tutup" }) })
+          ] }) }),
+          meluluskanId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white rounded-2xl max-w-md w-full p-6 border border-[#CFE3F0] shadow-2xl space-y-4", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between border-b pb-3", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserCheck, { size: 18, className: "text-[#0C4A6E]" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "font-semibold text-base text-[#0C4A6E]", children: "Luluskan Santri" })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setMeluluskanId(null), className: "text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 18 }) })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-xs text-[#45657A]", children: [
+              "Santri yang diluluskan akan dialihkan statusnya menjadi ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("b", { children: "Alumni" }),
+              " dan dipindahkan ke Buku Induk Alumni. Riwayat akademik dan saldo cashless tetap tersimpan aman."
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-2 text-xs", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "text-[#5B7C93] block mb-1", children: "Tahun Kelulusan" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                  "input",
+                  {
+                    placeholder: "Contoh: 2026/2027",
+                    value: lulusForm.tahunLulus,
+                    onChange: (e) => setLulusForm({ ...lulusForm, tahunLulus: e.target.value }),
+                    className: "w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "text-[#5B7C93] block mb-1", children: "Rencana / Status Saat Ini" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "select",
+                  {
+                    value: lulusForm.statusSaatIni,
+                    onChange: (e) => setLulusForm({ ...lulusForm, statusSaatIni: e.target.value }),
+                    className: "w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30",
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Melanjutkan Pendidikan" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Bekerja" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Wirausaha" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Belum Diketahui" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: "Lainnya" })
+                    ]
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "text-[#5B7C93] block mb-1", children: "Instansi Tujuan (Kampus / Sekolah / Tempat Kerja)" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                  "input",
+                  {
+                    placeholder: "Nama kampus atau instansi",
+                    value: lulusForm.instansiTujuan,
+                    onChange: (e) => setLulusForm({ ...lulusForm, instansiTujuan: e.target.value }),
+                    className: "w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "text-[#5B7C93] block mb-1", children: "No. HP Kontak Alumni" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                  "input",
+                  {
+                    placeholder: "0812...",
+                    value: lulusForm.noHp,
+                    onChange: (e) => setLulusForm({ ...lulusForm, noHp: e.target.value }),
+                    className: "w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                  }
+                )
+              ] })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-end gap-2 pt-3 border-t", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setMeluluskanId(null), className: "px-3.5 py-1.5 text-xs border border-[#CFE3F0] text-[#45657A] rounded-xl", children: "Batal" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: konfirmasiLuluskan, className: "btn-gradient text-xs px-4 py-2 rounded-xl font-semibold hover:shadow-lg active:scale-95 flex items-center gap-1.5", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 14 }),
+                " Konfirmasi Luluskan"
+              ] })
+            ] })
+          ] }) }),
+          showImporModal && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white rounded-2xl max-w-2xl w-full p-6 border border-[#CFE3F0] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between border-b pb-3", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UploadCloud, { size: 20, className: "text-[#0C4A6E]" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "font-semibold text-base text-[#0C4A6E]", children: "Impor Data Santri (Excel / CSV)" })
+              ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                 "button",
                 {
                   type: "button",
                   onClick: () => setShowImporModal(false),
-                  className: "px-3.5 py-1.5 text-xs text-[#5B7C93] hover:bg-gray-100 rounded-xl",
-                  children: "Batal"
+                  className: "text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg",
+                  children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 18 })
                 }
-              ),
+              )
+            ] }),
+            imporError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200", children: imporError }),
+            imporSuccess && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200", children: imporSuccess }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-3 text-xs", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "font-semibold text-[#17242E] block mb-1", children: "1. Nama Batch Impor" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                  "input",
+                  {
+                    value: imporBatchName,
+                    onChange: (e) => setImporBatchName(e.target.value),
+                    placeholder: "Contoh: Impor Santri Baru TP 2026/2027",
+                    className: "w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "font-semibold text-[#17242E] block mb-1", children: "2. Pilih Berkas CSV / Excel" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border-2 border-dashed border-[#CFE3F0] rounded-xl p-4 text-center hover:bg-gray-50/80 transition-colors", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                    "input",
+                    {
+                      type: "file",
+                      id: "input-impor-file",
+                      accept: ".csv,.txt",
+                      className: "hidden",
+                      onChange: (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setImporFileName(file.name);
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const text = ev.target?.result || "";
+                          setImporFileText(text);
+                          const parsed = parseSantriCSV(text);
+                          jalankanDryRunImpor(parsed);
+                        };
+                        reader.readAsText(file, "UTF-8");
+                      }
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { htmlFor: "input-impor-file", className: "cursor-pointer block space-y-1.5", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UploadCloud, { size: 28, className: "mx-auto text-[#0C4A6E]" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-medium text-[#0C4A6E]", children: imporFileName ? `Berkas terpilih: ${imporFileName}` : "Klik untuk memilih berkas .CSV" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93]", children: "Gunakan berkas format CSV sesuai template (kolom: nama, nis, nisn, kelas, jenisKelamin, namaWali, hpWali, tempatLahir, tanggalLahir)" })
+                  ] })
+                ] })
+              ] }),
+              imporLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-4 text-center text-[#5B7C93] flex items-center justify-center gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 16, className: "animate-spin" }),
+                " Memeriksa format dan keabsahan baris..."
+              ] }),
+              imporDryRunResult && !imporLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-3 pt-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid grid-cols-4 gap-2 text-center", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-2.5 rounded-xl bg-gray-50 border border-gray-200", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-base font-bold text-[#17242E]", children: imporDryRunResult.totalBaris }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-[#5B7C93]", children: "Total Baris" })
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-2.5 rounded-xl bg-emerald-50 border border-emerald-200", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-base font-bold text-emerald-700", children: imporDryRunResult.jumlahBaru }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-emerald-600", children: "Santri Baru" })
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-2.5 rounded-xl bg-blue-50 border border-blue-200", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-base font-bold text-blue-700", children: imporDryRunResult.jumlahUpdate }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-blue-600", children: "Update Data" })
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-2.5 rounded-xl bg-red-50 border border-red-200", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-base font-bold text-red-700", children: imporDryRunResult.jumlahGagal }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[10px] text-red-600", children: "Baris Gagal" })
+                  ] })
+                ] }),
+                imporDryRunResult.detailGagal?.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 bg-red-50/80 border border-red-200 rounded-xl max-h-36 overflow-y-auto", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold text-red-800 mb-1", children: "Rincian Baris Tidak Valid:" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", { className: "list-disc pl-4 space-y-0.5 text-[11px] text-red-700", children: imporDryRunResult.detailGagal.map((d, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
+                    "Baris ",
+                    d.baris,
+                    " (",
+                    d.nama,
+                    "): ",
+                    d.alasan
+                  ] }, i)) })
+                ] }),
+                imporDryRunResult.rows?.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "font-semibold text-[#17242E] mb-1", children: [
+                    "Pratinjau Data (",
+                    imporDryRunResult.rows.length,
+                    " baris):"
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "border border-[#DCEDF7] rounded-xl overflow-x-auto max-h-48", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "w-full text-[11px] text-left", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { className: "bg-[#EAF4FB] text-[#0C4A6E]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Nama" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "No. Stambuk" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Kelas" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "Wali" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-2", children: "HP Wali" })
+                    ] }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { className: "divide-y divide-[#DCEDF7]", children: imporDryRunResult.rows.slice(0, 8).map((r, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 font-medium", children: r.nama }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.nis || "\u2014" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.kelas || "\u2014" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.namaWali || "\u2014" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-2 text-[#5B7C93]", children: r.hpWali || "\u2014" })
+                    ] }, i)) })
+                  ] }) })
+                ] })
+              ] })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between pt-3 border-t", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
                 "button",
                 {
                   type: "button",
-                  onClick: eksekusiImporSantri,
-                  disabled: imporLoading || !imporDryRunResult || !imporDryRunResult.valid,
-                  className: "btn-gradient text-xs px-4 py-2 rounded-xl font-semibold flex items-center gap-1.5 disabled:opacity-50",
+                  onClick: unduhTemplateSantri,
+                  className: "text-xs text-[#0C4A6E] font-semibold underline flex items-center gap-1",
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.CheckCircle2, { size: 14 }),
-                    imporLoading ? "Mengimpor..." : "Eksekusi Impor Santri"
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 13 }),
+                    " Unduh Format Template"
                   ]
                 }
-              )
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => setShowImporModal(false),
+                    className: "px-3.5 py-1.5 text-xs text-[#5B7C93] hover:bg-gray-100 rounded-xl",
+                    children: "Batal"
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: eksekusiImporSantri,
+                    disabled: imporLoading || !imporDryRunResult || !imporDryRunResult.valid,
+                    className: "btn-gradient text-xs px-4 py-2 rounded-xl font-semibold flex items-center gap-1.5 disabled:opacity-50",
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CheckCircle2, { size: 14 }),
+                      imporLoading ? "Mengimpor..." : "Eksekusi Impor Santri"
+                    ]
+                  }
+                )
+              ] })
             ] })
-          ] })
-        ] }) })
-      ] }),
-      tab === "alumni" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Data Alumni", eyebrow: `${data.alumni.length} Alumni Tercatat`, icon: import_lucide_react.UserCheck, children: [
+          ] }) })
+        ] });
+      })(),
+      tab === "daftar-ulang" && (() => {
+        const daftarKelasSantri = Array.from(new Set(santriAktifList.map((s) => s.kelas).filter(Boolean))).sort();
+        const daftarAsramaSantri = Array.from(new Set(santriAktifList.map((s) => s.asrama).filter(Boolean))).sort();
+        const santriPromosiList = santriAktifList.filter((s) => s.kelas === promosiKelasAsal);
+        const santriLuluskanList = santriAktifList.filter((s) => s.kelas === luluskanKelasAsal);
+        return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+          ArchCard,
+          {
+            title: "Kenaikan Kelas & Pendaftaran Ulang Santri",
+            eyebrow: `Tahun Ajaran Aktif: ${tahunAjaranAktifDept?.label || "Aktif"}`,
+            icon: RefreshCw,
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "bg-[#F0F8FE] border border-[#CFE3F0] rounded-xl p-4 mb-6", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-start gap-3", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "p-2 bg-[#0C4A6E] text-white rounded-lg mt-0.5", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 18 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1 text-xs text-[#5B7C93] leading-relaxed", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold text-sm text-[#0C4A6E] mb-1", children: "Sistem Manajemen Kenaikan Tingkat & Mutasi Rombel" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Fitur ini memfasilitasi proses pendaftaran ulang tahunan dan kenaikan jenjang rombongan belajar (rombel) secara massal oleh staf sekretariat/pengasuhan. Santri dapat dipromosikan ke kelas atau asrama baru sekaligus, atau diluluskan menjadi Alumni untuk kelas tingkat akhir." }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "mt-1 text-emerald-800 font-medium", children: "\u2713 Catatan Keuangan: Pembiayaan dan tagihan pendaftaran ulang ditangani terpisah oleh modul Keuangan/Administrasi." })
+                ] })
+              ] }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-6 border-b border-[#CFE3F0] pb-3", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => setDuMode("promosi"),
+                    className: `flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${duMode === "promosi" ? "bg-[#0C4A6E] text-white shadow-sm" : "bg-white/80 text-[#5B7C93] hover:bg-[#F0F8FE] border border-[#CFE3F0]"}`,
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRightLeft, { size: 16 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Kenaikan Kelas & Mutasi Asrama Massal" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[10px] bg-sky-200/40 text-current px-2 py-0.5 rounded-full ml-1", children: "Rombel" })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => setDuMode("kelulusan"),
+                    className: `flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${duMode === "kelulusan" ? "bg-[#0C4A6E] text-white shadow-sm" : "bg-white/80 text-[#5B7C93] hover:bg-[#F0F8FE] border border-[#CFE3F0]"}`,
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GraduationCap, { size: 16 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Kelulusan Santri Tingkat Akhir (Alumni)" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[10px] bg-amber-200/40 text-current px-2 py-0.5 rounded-full ml-1", children: "Tingkat Akhir" })
+                    ]
+                  }
+                )
+              ] }),
+              duMode === "promosi" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-6", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white border border-[#CFE3F0] rounded-xl p-5 shadow-sm", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h4", { className: "text-sm font-semibold text-[#0F172A] mb-3 flex items-center gap-2", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRightLeft, { size: 16, className: "text-[#0C4A6E]" }),
+                    "Pengaturan Kenaikan / Mutasi Rombel"
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid md:grid-cols-3 gap-4", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-xs font-medium text-[#5B7C93] mb-1", children: "1. Pilih Kelas Asal (Rombel Saat Ini) *" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                        "select",
+                        {
+                          value: promosiKelasAsal,
+                          onChange: (e) => {
+                            setPromosiKelasAsal(e.target.value);
+                            setPromosiTerpilihIds(/* @__PURE__ */ new Set());
+                            setPromosiMsg("");
+                            setPromosiError("");
+                          },
+                          className: "w-full border border-[#CFE3F0] bg-[#F8FAFC] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]",
+                          children: [
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "-- Pilih Kelas Asal --" }),
+                            daftarKelasSantri.map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("option", { value: k, children: [
+                              k,
+                              " (",
+                              santriAktifList.filter((s) => s.kelas === k).length,
+                              " santri)"
+                            ] }, k))
+                          ]
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-xs font-medium text-[#5B7C93] mb-1", children: "2. Kelas Baru / Tujuan *" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                        "input",
+                        {
+                          type: "text",
+                          placeholder: "Contoh: Tahfidz 2A, 8B, 10-IPA",
+                          value: promosiKelasTujuan,
+                          onChange: (e) => setPromosiKelasTujuan(e.target.value),
+                          list: "daftar-kelas-rekomendasi",
+                          className: "w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                        }
+                      ),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("datalist", { id: "daftar-kelas-rekomendasi", children: daftarKelasSantri.map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: k }, k)) })
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-xs font-medium text-[#5B7C93] mb-1", children: "3. Kamar / Asrama Baru (Opsional)" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                        "input",
+                        {
+                          type: "text",
+                          placeholder: "Kosongkan jika tetap di asrama lama",
+                          value: promosiAsramaTujuan,
+                          onChange: (e) => setPromosiAsramaTujuan(e.target.value),
+                          list: "daftar-asrama-rekomendasi",
+                          className: "w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                        }
+                      ),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("datalist", { id: "daftar-asrama-rekomendasi", children: daftarAsramaSantri.map((a) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: a }, a)) })
+                    ] })
+                  ] })
+                ] }),
+                promosiMsg && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CheckCircle2, { size: 16, className: "shrink-0 text-emerald-600" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: promosiMsg })
+                ] }),
+                promosiError && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertCircle, { size: 16, className: "shrink-0 text-red-600" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: promosiError })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white border border-[#CFE3F0] rounded-xl overflow-hidden shadow-sm", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-4 bg-[#F8FAFC] border-b border-[#CFE3F0] flex flex-wrap items-center justify-between gap-3", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-xs font-semibold text-[#0F172A]", children: [
+                        "Santri di Kelas ",
+                        promosiKelasAsal || "(Belum dipilih)",
+                        ":"
+                      ] }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-xs bg-sky-100 text-[#0C4A6E] font-medium px-2 py-0.5 rounded-full", children: [
+                        santriPromosiList.length,
+                        " Santri"
+                      ] }),
+                      promosiTerpilihIds.size > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full", children: [
+                        promosiTerpilihIds.size,
+                        " Dipilih"
+                      ] })
+                    ] }),
+                    santriPromosiList.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex items-center gap-2", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => toggleSemuaPromosi(santriPromosiList),
+                        className: "text-xs px-3 py-1.5 rounded-lg border border-[#CFE3F0] bg-white text-[#0C4A6E] font-medium flex items-center gap-1.5 hover:bg-[#F0F8FE] transition-colors",
+                        children: promosiTerpilihIds.size === santriPromosiList.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CheckSquare, { size: 14, className: "text-[#0C4A6E]" }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Batal Pilih Semua" })
+                        ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Square, { size: 14 }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Pilih Semua Santri" })
+                        ] })
+                      }
+                    ) })
+                  ] }),
+                  !promosiKelasAsal ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-10 text-center text-[#5B7C93] text-sm", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRightLeft, { size: 36, className: "mx-auto mb-2 text-[#CFE3F0]" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Silakan pilih kelas asal terlebih dahulu untuk menampilkan daftar santri." })
+                  ] }) : santriPromosiList.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "p-10 text-center text-[#5B7C93] text-sm", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+                    "Tidak ada santri aktif di kelas ",
+                    promosiKelasAsal,
+                    "."
+                  ] }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "overflow-x-auto", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "w-full text-xs text-left", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { className: "bg-[#F8FAFC] text-[#5B7C93] font-semibold uppercase tracking-wider border-b border-[#CFE3F0]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3 w-10 text-center", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                        "input",
+                        {
+                          type: "checkbox",
+                          checked: promosiTerpilihIds.size === santriPromosiList.length && santriPromosiList.length > 0,
+                          onChange: () => toggleSemuaPromosi(santriPromosiList),
+                          className: "rounded text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                        }
+                      ) }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3 w-12 text-center", children: "No" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3", children: "NIS / Stambuk" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3", children: "Nama Santri" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3", children: "L/P" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3", children: "Kamar / Asrama Saat Ini" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3 text-center", children: "Aksi" })
+                    ] }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { className: "divide-y divide-[#E2E8F0]", children: santriPromosiList.map((s, idx) => {
+                      const isChecked = promosiTerpilihIds.has(s.id);
+                      return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                        "tr",
+                        {
+                          className: `transition-colors ${isChecked ? "bg-sky-50/70" : "hover:bg-[#F8FAFC]"}`,
+                          children: [
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-center", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                              "input",
+                              {
+                                type: "checkbox",
+                                checked: isChecked,
+                                onChange: () => togglePilihPromosi(s.id),
+                                className: "rounded text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                              }
+                            ) }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-center text-[#5B7C93]", children: idx + 1 }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 font-mono font-medium text-[#0F172A]", children: s.nis || "-" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 font-medium text-[#0F172A]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                              "button",
+                              {
+                                type: "button",
+                                onClick: () => bukaDetailSantri(s),
+                                className: "hover:text-[#0C4A6E] hover:underline text-left",
+                                children: s.nama
+                              }
+                            ) }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-[#5B7C93]", children: s.jenisKelamin ? s.jenisKelamin === "Laki-laki" ? "L" : "P" : "-" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-[#5B7C93]", children: s.asrama || "-" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-center", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                              "button",
+                              {
+                                type: "button",
+                                onClick: () => bukaDetailSantri(s),
+                                className: "p-1 text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#E0F2FE] rounded transition-colors",
+                                title: "Lihat Biodata & Riwayat",
+                                children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, { size: 14 })
+                              }
+                            ) })
+                          ]
+                        },
+                        s.id
+                      );
+                    }) })
+                  ] }) }),
+                  santriPromosiList.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-4 bg-[#F8FAFC] border-t border-[#CFE3F0] flex flex-wrap items-center justify-between gap-3", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "text-xs text-[#5B7C93]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+                      "Target: Santri terpilih akan dipindahkan ke kelas",
+                      " ",
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { className: "text-[#0F172A]", children: promosiKelasTujuan || "(Ketik kelas baru)" }),
+                      promosiAsramaTujuan ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+                        " dan asrama ",
+                        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { className: "text-[#0F172A]", children: promosiAsramaTujuan })
+                      ] }) : " (asrama tetap)",
+                      "."
+                    ] }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: jalankanPromosiMassal,
+                        disabled: promosiLoading || promosiTerpilihIds.size === 0 || !promosiKelasTujuan.trim(),
+                        className: "btn-gradient text-white px-5 py-2 rounded-xl font-semibold text-xs flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                        children: [
+                          promosiLoading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 14, className: "animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { size: 14 }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
+                            "Eksekusi Kenaikan Kelas (",
+                            promosiTerpilihIds.size,
+                            " Santri)"
+                          ] })
+                        ]
+                      }
+                    )
+                  ] })
+                ] })
+              ] }),
+              duMode === "kelulusan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-6", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white border border-[#CFE3F0] rounded-xl p-5 shadow-sm", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h4", { className: "text-sm font-semibold text-[#0F172A] mb-3 flex items-center gap-2", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GraduationCap, { size: 16, className: "text-amber-600" }),
+                    "Pengaturan Kelulusan Santri Tingkat Akhir"
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid md:grid-cols-3 gap-4", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-xs font-medium text-[#5B7C93] mb-1", children: "1. Pilih Kelas Tingkat Akhir *" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                        "select",
+                        {
+                          value: luluskanKelasAsal,
+                          onChange: (e) => {
+                            setLuluskanKelasAsal(e.target.value);
+                            setLuluskanTerpilihIds(/* @__PURE__ */ new Set());
+                            setLuluskanMsg("");
+                            setLuluskanError("");
+                          },
+                          className: "w-full border border-[#CFE3F0] bg-[#F8FAFC] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]",
+                          children: [
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "-- Pilih Kelas Akhir --" }),
+                            daftarKelasSantri.map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("option", { value: k, children: [
+                              k,
+                              " (",
+                              santriAktifList.filter((s) => s.kelas === k).length,
+                              " santri)"
+                            ] }, k))
+                          ]
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-xs font-medium text-[#5B7C93] mb-1", children: "2. Tahun Kelulusan *" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                        "input",
+                        {
+                          type: "number",
+                          placeholder: "Contoh: 2026",
+                          value: luluskanTahun,
+                          onChange: (e) => setLuluskanTahun(e.target.value),
+                          className: "w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-xs font-medium text-[#5B7C93] mb-1", children: "3. Status Alumni Awal" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                        "select",
+                        {
+                          value: luluskanStatus,
+                          onChange: (e) => setLuluskanStatus(e.target.value),
+                          className: "w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]",
+                          children: [
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Melanjutkan Pendidikan", children: "Melanjutkan Pendidikan (PT/Ma'had Aly)" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Khidmah / Pengabdian", children: "Khidmah / Pengabdian Pesantren" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Bekerja / Wirausaha", children: "Bekerja / Wirausaha" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "Lainnya", children: "Lainnya" })
+                          ]
+                        }
+                      )
+                    ] })
+                  ] })
+                ] }),
+                luluskanMsg && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CheckCircle2, { size: 16, className: "shrink-0 text-emerald-600" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: luluskanMsg })
+                ] }),
+                luluskanError && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertCircle, { size: 16, className: "shrink-0 text-red-600" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: luluskanError })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-white border border-[#CFE3F0] rounded-xl overflow-hidden shadow-sm", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-4 bg-[#F8FAFC] border-b border-[#CFE3F0] flex flex-wrap items-center justify-between gap-3", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-xs font-semibold text-[#0F172A]", children: [
+                        "Santri Calon Lulusan ",
+                        luluskanKelasAsal || "(Belum dipilih)",
+                        ":"
+                      ] }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-xs bg-amber-100 text-amber-800 font-medium px-2 py-0.5 rounded-full", children: [
+                        santriLuluskanList.length,
+                        " Santri"
+                      ] }),
+                      luluskanTerpilihIds.size > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full", children: [
+                        luluskanTerpilihIds.size,
+                        " Dipilih"
+                      ] })
+                    ] }),
+                    santriLuluskanList.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex items-center gap-2", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => toggleSemuaLuluskan(santriLuluskanList),
+                        className: "text-xs px-3 py-1.5 rounded-lg border border-[#CFE3F0] bg-white text-[#0C4A6E] font-medium flex items-center gap-1.5 hover:bg-[#F0F8FE] transition-colors",
+                        children: luluskanTerpilihIds.size === santriLuluskanList.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CheckSquare, { size: 14, className: "text-[#0C4A6E]" }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Batal Pilih Semua" })
+                        ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Square, { size: 14 }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Pilih Semua Santri" })
+                        ] })
+                      }
+                    ) })
+                  ] }),
+                  !luluskanKelasAsal ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-10 text-center text-[#5B7C93] text-sm", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GraduationCap, { size: 36, className: "mx-auto mb-2 text-[#CFE3F0]" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Silakan pilih kelas tingkat akhir yang akan diluluskan." })
+                  ] }) : santriLuluskanList.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "p-10 text-center text-[#5B7C93] text-sm", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+                    "Tidak ada santri aktif di kelas ",
+                    luluskanKelasAsal,
+                    "."
+                  ] }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "overflow-x-auto", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "w-full text-xs text-left", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { className: "bg-[#F8FAFC] text-[#5B7C93] font-semibold uppercase tracking-wider border-b border-[#CFE3F0]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3 w-10 text-center", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                        "input",
+                        {
+                          type: "checkbox",
+                          checked: luluskanTerpilihIds.size === santriLuluskanList.length && santriLuluskanList.length > 0,
+                          onChange: () => toggleSemuaLuluskan(santriLuluskanList),
+                          className: "rounded text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                        }
+                      ) }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3 w-12 text-center", children: "No" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3", children: "NIS / Stambuk" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3", children: "Nama Santri" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3", children: "L/P" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3", children: "Kamar / Asrama" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", { className: "p-3 text-center", children: "Aksi" })
+                    ] }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { className: "divide-y divide-[#E2E8F0]", children: santriLuluskanList.map((s, idx) => {
+                      const isChecked = luluskanTerpilihIds.has(s.id);
+                      return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                        "tr",
+                        {
+                          className: `transition-colors ${isChecked ? "bg-amber-50/70" : "hover:bg-[#F8FAFC]"}`,
+                          children: [
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-center", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                              "input",
+                              {
+                                type: "checkbox",
+                                checked: isChecked,
+                                onChange: () => togglePilihLuluskan(s.id),
+                                className: "rounded text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                              }
+                            ) }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-center text-[#5B7C93]", children: idx + 1 }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 font-mono font-medium text-[#0F172A]", children: s.nis || "-" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 font-medium text-[#0F172A]", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                              "button",
+                              {
+                                type: "button",
+                                onClick: () => bukaDetailSantri(s),
+                                className: "hover:text-[#0C4A6E] hover:underline text-left",
+                                children: s.nama
+                              }
+                            ) }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-[#5B7C93]", children: s.jenisKelamin ? s.jenisKelamin === "Laki-laki" ? "L" : "P" : "-" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-[#5B7C93]", children: s.asrama || "-" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", { className: "p-3 text-center", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                              "button",
+                              {
+                                type: "button",
+                                onClick: () => bukaDetailSantri(s),
+                                className: "p-1 text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#E0F2FE] rounded transition-colors",
+                                title: "Lihat Biodata & Riwayat",
+                                children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, { size: 14 })
+                              }
+                            ) })
+                          ]
+                        },
+                        s.id
+                      );
+                    }) })
+                  ] }) }),
+                  santriLuluskanList.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-4 bg-amber-50/70 border-t border-amber-200 flex flex-wrap items-center justify-between gap-3", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "text-xs text-amber-900 flex items-start gap-2 max-w-xl", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertTriangle, { size: 16, className: "text-amber-600 shrink-0 mt-0.5" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "font-semibold", children: "Transisi Status Santri ke Alumni" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-[11px] text-amber-800", children: [
+                          "Santri terpilih akan dipindahkan ke buku ",
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Data Alumni" }),
+                          ". Data tidak dihapus; saldo cashless & histori transaksi tetap utuh dan tersimpan di sistem."
+                        ] })
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: jalankanLuluskanMassal,
+                        disabled: luluskanLoading || luluskanTerpilihIds.size === 0,
+                        className: "bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-xl font-semibold text-xs flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                        children: [
+                          luluskanLoading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 14, className: "animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GraduationCap, { size: 14 }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
+                            "Luluskan ",
+                            luluskanTerpilihIds.size,
+                            " Santri ke Alumni"
+                          ] })
+                        ]
+                      }
+                    )
+                  ] })
+                ] })
+              ] })
+            ]
+          }
+        );
+      })(),
+      tab === "alumni" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Data Alumni", eyebrow: `${data.alumni.length} Alumni Tercatat`, icon: UserCheck, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => showAlumniForm ? batalFormAlumni() : bukaTambahAlumni(), className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  mb-4", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
           showAlumniForm ? "Tutup Form" : "Tambah Alumni Manual"
         ] }),
         showAlumniForm && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-4 mb-5 bg-[#F0F8FE]", children: [
@@ -8311,7 +9295,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Keterangan (opsional)", value: alumniForm.keterangan, onChange: (e) => setAlumniForm({ ...alumniForm, keterangan: e.target.value }), className: "w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-3" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanAlumni, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             editingAlumniId ? "Simpan Perubahan" : "Simpan Alumni"
           ] })
         ] }),
@@ -8336,14 +9320,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               ] })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1 shrink-0", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditAlumni(a), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 15 }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delAlumni(a.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditAlumni(a), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 15 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delAlumni(a.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
             ] })
           ] }) }, a.id)),
           !alumniTampil.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada data alumni." })
         ] })
       ] }),
-      tab === "wali" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Data Wali Santri", eyebrow: `${data.wali.length} Wali Terdaftar`, icon: import_lucide_react.Users, children: [
+      tab === "wali" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Data Wali Santri", eyebrow: `${data.wali.length} Wali Terdaftar`, icon: Users, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama wali", value: waliForm.nama, onChange: (e) => setWaliForm({ ...waliForm, nama: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "No. HP", value: waliForm.hp, onChange: (e) => setWaliForm({ ...waliForm, hp: e.target.value }), className: "w-40 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
@@ -8355,7 +9339,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         waliFormError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#B5533C] mb-2", children: waliFormError }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanWali, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             editingWaliId ? "Simpan Perubahan" : "Tambah"
           ] }),
           editingWaliId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalEditWali, className: "text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]", children: "Batal" })
@@ -8373,8 +9357,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 ] })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditWali(w), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 15 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delWali(w.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditWali(w), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 15 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delWali(w.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
               ] })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1.5", children: [
@@ -8385,7 +9369,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           !data.wali.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada wali terdaftar." })
         ] })
       ] }),
-      tab === "surat-keluar" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Buat & Kelola Surat Keluar", eyebrow: `${data.suratKeluar.length} Surat Tercatat`, icon: import_lucide_react.Send, children: [
+      tab === "surat-keluar" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Buat & Kelola Surat Keluar", eyebrow: `${data.suratKeluar.length} Surat Tercatat`, icon: Send, children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: suratForm.jenisId, onChange: (e) => setSuratForm({ ...suratForm, jenisId: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "", children: "Pilih jenis surat" }),
@@ -8457,7 +9441,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanSurat, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             editingSuratId ? "Simpan Perubahan" : "Simpan sebagai Draft"
           ] }),
           editingSuratId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalEditSurat, className: "text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]", children: "Batal" })
@@ -8477,11 +9461,11 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   ] }),
                   editNomorId === s.id ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "inline-flex items-center gap-1", children: [
                     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { value: editNomorValue, onChange: (e) => setEditNomorValue(e.target.value), className: "border border-[#CFE3F0] rounded-lg px-1.5 py-0.5 text-[11px] font-mono w-40" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => simpanEditNomor(s.id), title: "Simpan nomor", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 12 }) }),
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: batalEditNomor, title: "Batal", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 12 }) })
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => simpanEditNomor(s.id), title: "Simpan nomor", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 12 }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: batalEditNomor, title: "Batal", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 12 }) })
                   ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "inline-flex items-center gap-1", children: [
                     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-mono", children: s.nomorSurat || "belum bernomor" }),
-                    s.nomorSurat && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditNomor(s), title: "Edit nomor (tercatat di audit log)", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 11 }) })
+                    s.nomorSurat && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditNomor(s), title: "Edit nomor (tercatat di audit log)", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 11 }) })
                   ] })
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-x-2.5 gap-y-0.5 mt-1 text-[10px] text-[#5B7C93]", children: s.riwayatStatus.map((r, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
@@ -8496,8 +9480,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center gap-1.5 mt-2", children: [
               s.status === "Draft" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => ubahStatusSurat(s.id, "Diajukan"), className: "text-xs px-2.5 py-1 rounded-xl btn-gradient ", children: "Ajukan" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditSurat(s), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 14 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusSurat(s.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditSurat(s), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 14 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusSurat(s.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
               ] }),
               s.status === "Diajukan" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => ubahStatusSurat(s.id, "Disetujui"), className: "text-xs px-2.5 py-1 rounded-xl bg-[#15803D] text-white hover:opacity-90", children: "Setujui & Terbitkan Nomor" }),
@@ -8505,9 +9489,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               ] }),
               s.status === "Disetujui" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => ubahStatusSurat(s.id, "Terkirim"), className: "text-xs px-2.5 py-1 rounded-xl btn-gradient ", children: "Tandai Terkirim" }),
               s.status === "Terkirim" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => ubahStatusSurat(s.id, "Diarsipkan"), className: "text-xs px-2.5 py-1 rounded-xl border border-[#CFE3F0] text-[#45657A] hover:bg-white/60 hover:backdrop-blur-sm", children: "Arsipkan" }),
-              s.status === "Ditolak" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusSurat(s.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) }),
+              s.status === "Ditolak" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusSurat(s.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) }),
               ["Disetujui", "Terkirim", "Diarsipkan"].includes(s.status) && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => cetakSurat(s), className: "flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white/60 hover:backdrop-blur-sm", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 13 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 13 }),
                 "Cetak"
               ] })
             ] })
@@ -8515,7 +9499,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           !suratKeluarTampil.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada surat pada status ini." })
         ] })
       ] }),
-      tab === "surat-keluar" && (data.nomorSuratLog || []).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Audit Log Perubahan Nomor Surat", eyebrow: `${data.nomorSuratLog.length} Perubahan Tercatat`, icon: import_lucide_react.ClipboardList, tone: "gold", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "divide-y divide-[#DCEDF7]", children: data.nomorSuratLog.slice().reverse().map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-2 text-xs", children: [
+      tab === "surat-keluar" && (data.nomorSuratLog || []).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Audit Log Perubahan Nomor Surat", eyebrow: `${data.nomorSuratLog.length} Perubahan Tercatat`, icon: ClipboardList, tone: "gold", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "divide-y divide-[#DCEDF7]", children: data.nomorSuratLog.slice().reverse().map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-2 text-xs", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[#17242E] font-medium", children: l.perihal }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-[#5B7C93]", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-mono line-through", children: l.nomorLama }),
@@ -8527,7 +9511,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           l.tanggal
         ] })
       ] }, l.id)) }) }),
-      tab === "surat-masuk" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Surat Masuk", eyebrow: `${data.suratMasuk.length} Surat Tercatat`, icon: import_lucide_react.Inbox, tone: "gold", children: [
+      tab === "surat-masuk" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Surat Masuk", eyebrow: `${data.suratMasuk.length} Surat Tercatat`, icon: Inbox, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-2", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nomor surat asal (jika ada)", value: suratMasukForm.nomorSuratAsal, onChange: (e) => setSuratMasukForm({ ...suratMasukForm, nomorSuratAsal: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Pengirim / instansi asal", value: suratMasukForm.pengirim, onChange: (e) => setSuratMasukForm({ ...suratMasukForm, pengirim: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
@@ -8544,7 +9528,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", { placeholder: "Catatan (opsional)", value: suratMasukForm.catatan, onChange: (e) => setSuratMasukForm({ ...suratMasukForm, catatan: e.target.value }), rows: 2, className: "w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-3" }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanSuratMasuk, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             editingSuratMasukId ? "Simpan Perubahan" : "Catat Surat Masuk"
           ] }),
           editingSuratMasukId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalEditSuratMasuk, className: "text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]", children: "Batal" })
@@ -8570,17 +9554,17 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center gap-1.5 mt-1.5", children: [
               s.status !== "Selesai" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: s.status, onChange: (e) => ubahStatusSuratMasuk(s.id, e.target.value), className: "text-xs border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1", children: ["Baru", "Diproses", "Selesai"].map((st) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: st, children: st }, st)) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditSuratMasuk(s), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 14 }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusSuratMasuk(s.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditSuratMasuk(s), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 14 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusSuratMasuk(s.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
             ] })
           ] }, s.id)),
           !suratMasukTampil.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada surat masuk tercatat." })
         ] })
       ] }),
       tab === "arsip" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-5", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Arsip Digital", eyebrow: `${arsipGabungan.length} Dokumen Terarsip \xB7 Dikelompokkan Organisasi > Bagian`, icon: import_lucide_react.Archive, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Arsip Digital", eyebrow: `${arsipGabungan.length} Dokumen Terarsip \xB7 Dikelompokkan Organisasi > Bagian`, icon: Archive, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative mb-3", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Search, { size: 15, className: "absolute left-3 top-1/2 -translate-y-1/2 text-[#5B7C93]" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Search, { size: 15, className: "absolute left-3 top-1/2 -translate-y-1/2 text-[#5B7C93]" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Cari judul atau nomor referensi...", value: arsipSearch, onChange: (e) => setArsipSearch(e.target.value), className: "w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors pl-9 pr-3 py-2 text-sm" })
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-4", children: [
@@ -8599,7 +9583,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           kelompokOrganisasi.map((org) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-6 last:mb-0", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between gap-2 mb-2.5 pb-1.5 border-b-2 border-[#0C4A6E]/20", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-[13px] uppercase tracking-wide text-[#0C4A6E] font-bold flex items-center gap-1.5", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Landmark, { size: 13 }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Landmark, { size: 13 }),
                 "Organisasi: ",
                 org
               ] }),
@@ -8624,11 +9608,11 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   ] }),
                   /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1 shrink-0", children: [
                     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => exportArsipExcel(arsipPerOrganisasi[org][namaKelompok], `${org}-${namaKelompok}`), className: "text-[10px] px-2 py-1 rounded-lg border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white/60 hover:backdrop-blur-sm flex items-center gap-1", children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Download, { size: 11 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 11 }),
                       "Excel"
                     ] }),
                     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => exportArsipPDF(arsipPerOrganisasi[org][namaKelompok], `${org}-${namaKelompok}`), className: "text-[10px] px-2 py-1 rounded-lg border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white/60 hover:backdrop-blur-sm flex items-center gap-1", children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Download, { size: 11 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 11 }),
                       "PDF"
                     ] })
                   ] })
@@ -8650,7 +9634,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   ] }),
                   /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 shrink-0", children: [
                     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusPill, { status: a.status }),
-                    a.tipe === "Surat Keluar" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => cetakSurat(a._raw), title: "Cetak", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 14 }) })
+                    a.tipe === "Surat Keluar" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => cetakSurat(a._raw), title: "Cetak", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 14 }) })
                   ] })
                 ] }, a.id)) })
               ] }, namaKelompok);
@@ -8658,7 +9642,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           ] }, org)),
           !arsipTampil.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Tidak ada dokumen yang cocok." })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Dokumen Non-Surat", eyebrow: "Piagam, MOU, Sertifikat, dsb.", icon: import_lucide_react.FileText, tone: "gold", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Catat Dokumen Non-Surat", eyebrow: "Piagam, MOU, Sertifikat, dsb.", icon: FileText, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Judul dokumen", value: arsipForm.judul, onChange: (e) => setArsipForm({ ...arsipForm, judul: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("select", { value: arsipForm.kategori, onChange: (e) => setArsipForm({ ...arsipForm, kategori: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: ARSIP_KATEGORI_OPSI.map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { children: k }, k)) })
@@ -8675,7 +9659,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", { placeholder: "Keterangan (opsional)", value: arsipForm.keterangan, onChange: (e) => setArsipForm({ ...arsipForm, keterangan: e.target.value }), rows: 2, className: "w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-3" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: tambahArsipManual, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             "Catat Dokumen"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "divide-y divide-[#DCEDF7] mt-4", children: [
@@ -8687,14 +9671,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   a.kategori
                 ] })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusArsipManual(a.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusArsipManual(a.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
             ] }, a.id)),
             !data.arsipManual.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada dokumen non-surat dicatat." })
           ] })
         ] })
       ] }),
       tab === "pengaturan-surat" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-5", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Kop Surat", eyebrow: "Digunakan di Setiap Surat Resmi", icon: import_lucide_react.FileSignature, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Kop Surat", eyebrow: "Digunakan di Setiap Surat Resmi", icon: FileSignature, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama lembaga", value: kopForm.namaLembaga, onChange: (e) => setKopForm({ ...kopForm, namaLembaga: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm sm:col-span-2" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Alamat", value: kopForm.alamat, onChange: (e) => setKopForm({ ...kopForm, alamat: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm sm:col-span-2" }),
@@ -8708,16 +9692,16 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93] mb-2", children: "Nama & jabatan di atas dipakai sebagai penandatangan default Surat Keluar." }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanKop, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 15 }),
             "Simpan Kop Surat"
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Daftar Pimpinan", eyebrow: "Dipakai untuk Persetujuan Anggaran & Tanda Tangan Rapor", icon: import_lucide_react.UserCheck, tone: "gold", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Daftar Pimpinan", eyebrow: "Dipakai untuk Persetujuan Anggaran & Tanda Tangan Rapor", icon: UserCheck, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama pimpinan", value: pimpinanForm.nama, onChange: (e) => setPimpinanForm({ ...pimpinanForm, nama: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Jabatan (mis. Pimpinan Pondok)", value: pimpinanForm.jabatan, onChange: (e) => setPimpinanForm({ ...pimpinanForm, jabatan: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanPimpinan, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               editingPimpinanId ? "Simpan" : "Tambah"
             ] }),
             editingPimpinanId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalEditPimpinan, className: "text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]", children: "Batal" })
@@ -8733,14 +9717,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 ] })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditPimpinan(p), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 14 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusPimpinan(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditPimpinan(p), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 14 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusPimpinan(p.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
               ] })
             ] }, p.id)),
             !data.pimpinanList.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada pimpinan terdaftar." })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Master Bagian (Divisi Tetap)", eyebrow: "Inisial Jabatan & Organisasi pada Nomor Surat", icon: import_lucide_react.Users, tone: "gold", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Master Bagian (Divisi Tetap)", eyebrow: "Inisial Jabatan & Organisasi pada Nomor Surat", icon: Users, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Inisial jabatan (mis. A)", value: bagianForm.kode, onChange: (e) => setBagianForm({ ...bagianForm, kode: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Singkatan organisasi (mis. OPPM)", value: bagianForm.organisasi, onChange: (e) => setBagianForm({ ...bagianForm, organisasi: e.target.value.toUpperCase() }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
@@ -8749,7 +9733,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", { placeholder: "Deskripsi (opsional)", value: bagianForm.deskripsi, onChange: (e) => setBagianForm({ ...bagianForm, deskripsi: e.target.value }), rows: 2, className: "w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-2" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanBagian, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               editingBagianId ? "Simpan" : "Tambah"
             ] }),
             editingBagianId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalEditBagian, className: "text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]", children: "Batal" })
@@ -8777,9 +9761,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 b.deskripsi && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93] no-underline", children: b.deskripsi })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1 shrink-0", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditBagian(b), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 14 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => toggleAktifBagian(b.id), title: b.aktif === false ? "Aktifkan" : "Nonaktifkan", children: b.aktif === false ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 14 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 14 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusBagian(b.id), title: "Hapus (soft delete)", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditBagian(b), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 14 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => toggleAktifBagian(b.id), title: b.aktif === false ? "Aktifkan" : "Nonaktifkan", children: b.aktif === false ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 14 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 14 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusBagian(b.id), title: "Hapus (soft delete)", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
               ] })
             ] }, b.id)),
             !data.bagianList.filter((b) => !b.dihapus).length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada bagian terdaftar." })
@@ -8801,12 +9785,12 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             ] }, b.id)) })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Kepanitiaan (Panitia Sementara)", eyebrow: "Kode Menggantikan Kode Organisasi pada Nomor Surat", icon: import_lucide_react.ClipboardList, tone: "gold", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Kepanitiaan (Panitia Sementara)", eyebrow: "Kode Menggantikan Kode Organisasi pada Nomor Surat", icon: ClipboardList, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Kode (mis. PHBI)", value: kepanitiaanForm.kode, onChange: (e) => setKepanitiaanForm({ ...kepanitiaanForm, kode: e.target.value }), className: "w-28 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama kepanitiaan", value: kepanitiaanForm.nama, onChange: (e) => setKepanitiaanForm({ ...kepanitiaanForm, nama: e.target.value }), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanKepanitiaan, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               editingKepanitiaanId ? "Simpan" : "Tambah"
             ] }),
             editingKepanitiaanId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalEditKepanitiaan, className: "text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]", children: "Batal" })
@@ -8823,14 +9807,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 ] })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditKepanitiaan(k), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 14 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusKepanitiaan(k.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditKepanitiaan(k), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 14 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusKepanitiaan(k.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
               ] })
             ] }, k.id)),
             !data.kepanitiaanList.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada kepanitiaan terdaftar." })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Jenis Surat", eyebrow: `${data.jenisSurat.length} Jenis Terdaftar`, icon: import_lucide_react.Settings, tone: "gold", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Jenis Surat", eyebrow: `${data.jenisSurat.length} Jenis Terdaftar`, icon: Settings, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Kode (mis. h)", value: jenisForm.kode, onChange: (e) => setJenisForm({ ...jenisForm, kode: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama jenis surat", value: jenisForm.nama, onChange: (e) => setJenisForm({ ...jenisForm, nama: e.target.value }), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" })
@@ -8841,7 +9825,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-2", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: simpanJenis, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
               editingJenisId ? "Simpan" : "Tambah"
             ] }),
             editingJenisId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: batalEditJenis, className: "text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]", children: "Batal" })
@@ -8863,14 +9847,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 ] })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditJenis(j), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 14 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusJenis(j.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 14 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditJenis(j), title: "Edit", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 14 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => hapusJenis(j.id), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 }) })
               ] })
             ] }, j.id)),
             !data.jenisSurat.length && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada jenis surat." })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Master Kode Surat Resmi", eyebrow: "Referensi Baku 27 Jenis Surat", icon: import_lucide_react.FileSignature, tone: "gold", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Master Kode Surat Resmi", eyebrow: "Referensi Baku 27 Jenis Surat", icon: FileSignature, tone: "gold", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93] mb-3", children: "Daftar kode resmi (a\u2013z, aa) sebagai acuan. Kolom status menunjukkan apakah kode tersebut sudah tersedia sebagai Jenis Surat yang bisa dipakai pada tab Surat Keluar." }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "divide-y divide-[#DCEDF7] max-h-96 overflow-y-auto", children: MASTER_KODE_SURAT_RESMI.map((m) => {
             const sudahAda = data.jenisSurat.some((j) => j.kode === m.kode);
@@ -8892,7 +9876,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           }) })
         ] })
       ] }),
-      tab === "kelas" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Kelas / Rombel", eyebrow: `${data.kelas.length} Kelas Aktif`, icon: import_lucide_react.School, tone: "gold", children: [
+      tab === "kelas" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Kelas / Rombel", eyebrow: `${data.kelas.length} Kelas Aktif`, icon: School, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama kelas baru, mis. Tahfidz 2B", value: kelasForm, onChange: (e) => setKelasForm(e.target.value), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: waliKelasForm, onChange: (e) => setWaliKelasForm(e.target.value), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
@@ -8900,15 +9884,15 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             data.guru.filter((g) => g.departemen === "pengajaran").map((g) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: g.id, children: g.nama }, g.id))
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addKelas, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             "Tambah"
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "divide-y divide-[#DCEDF7]", children: data.kelas.map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-2.5 text-sm", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex items-center justify-between mb-1.5", children: editingKelas === k ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1.5 flex-1", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { value: editKelasNama, onChange: (e) => setEditKelasNama(e.target.value), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-sm flex-1" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: simpanEditKelas, title: "Simpan", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 15 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => setEditingKelas(null), title: "Batal", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 15 }) })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: simpanEditKelas, title: "Simpan", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 15 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => setEditingKelas(null), title: "Batal", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 15 }) })
           ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-[#17242E]", children: [
               k,
@@ -8920,8 +9904,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               ] })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditKelas(k), title: "Ubah nama", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 15 }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delKelas(k), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditKelas(k), title: "Ubah nama", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 15 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delKelas(k), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
             ] })
           ] }) }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-xs text-[#5B7C93]", children: [
@@ -8933,7 +9917,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           ] })
         ] }, k)) })
       ] }),
-      tab === "halaqoh" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Halaqoh Tahfidz", eyebrow: `${(data.halaqoh || []).length} Halaqoh Aktif`, icon: import_lucide_react.BookOpen, tone: "gold", children: [
+      tab === "halaqoh" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Halaqoh Tahfidz", eyebrow: `${(data.halaqoh || []).length} Halaqoh Aktif`, icon: BookOpen, tone: "gold", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap gap-2 mb-5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { placeholder: "Nama halaqoh baru, mis. Halaqoh Ar-Rahman", value: halaqohForm, onChange: (e) => setHalaqohForm(e.target.value), className: "flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { value: pembimbingHalaqohForm, onChange: (e) => setPembimbingHalaqohForm(e.target.value), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm", children: [
@@ -8941,7 +9925,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             data.guru.filter((g) => g.departemen === "lptq").map((g) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: g.id, children: g.nama }, g.id))
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: addHalaqoh, className: "flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Plus, { size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { size: 15 }),
             "Tambah"
           ] })
         ] }),
@@ -8949,8 +9933,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           (data.halaqoh || []).map((h) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "py-2.5 text-sm", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex items-center justify-between mb-1.5", children: editingHalaqoh === h ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1.5 flex-1", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { value: editHalaqohNama, onChange: (e) => setEditHalaqohNama(e.target.value), className: "border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-sm flex-1" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: simpanEditHalaqoh, title: "Simpan", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 15 }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => setEditingHalaqoh(null), title: "Batal", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.X, { size: 15 }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: simpanEditHalaqoh, title: "Simpan", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 15 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => setEditingHalaqoh(null), title: "Batal", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 15 }) })
             ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-[#17242E]", children: [
                 h,
@@ -8962,8 +9946,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 ] })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-1", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditHalaqoh(h), title: "Ubah nama", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Pencil, { size: 15 }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delHalaqoh(h), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Trash2, { size: 15 }) })
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { tone: "ok", onClick: () => bukaEditHalaqoh(h), title: "Ubah nama", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { size: 15 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconBtn, { onClick: () => delHalaqoh(h), title: "Hapus", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 15 }) })
               ] })
             ] }) }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-xs text-[#5B7C93]", children: [
@@ -8983,19 +9967,19 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnline }) {
   const dept = guru.departemen;
   const isSuper = dept === "admin";
-  const [adminActiveScope, setAdminActiveScope] = (0, import_react.useState)("admin");
-  const [adminActiveUnit, setAdminActiveUnit] = (0, import_react.useState)(data?.unitUsaha && data.unitUsaha[0] || "BMT");
+  const [adminActiveScope, setAdminActiveScope] = useState("admin");
+  const [adminActiveUnit, setAdminActiveUnit] = useState(data?.unitUsaha && data.unitUsaha[0] || "BMT");
   const effectiveDept = isSuper ? adminActiveScope : dept;
   const effectiveUnit = isSuper ? adminActiveUnit : guru.unit;
   const hasSidebar = effectiveDept !== "admin";
   const ADMIN_SCOPES = [
-    { key: "admin", label: "Sistem & Admin", icon: import_lucide_react.Settings, desc: "Akun, Master Bagian, Kalender, Tampilan" },
-    { key: "sekretariat", label: "Sekretariat", icon: import_lucide_react.FileSignature, desc: "Santri, Dokumen, Persuratan" },
-    { key: "pengasuhan", label: "Pengasuhan", icon: import_lucide_react.ShieldCheck, desc: "Kedisiplinan, Perizinan, Absensi" },
-    { key: "pengajaran", label: "Pengajaran", icon: import_lucide_react.GraduationCap, desc: "Nilai Ujian, Prestasi, Rapor Akademik" },
-    { key: "lptq", label: "LPTQ", icon: import_lucide_react.BookOpen, desc: "Tahfidz Al-Qur'an, Ubudiyah, Rapor Tahfidz" },
-    { key: "administrasi", label: "Keuangan", icon: import_lucide_react.Wallet, desc: "Tagihan, Pembayaran, Infaq, Cashflow" },
-    { key: "unitusaha", label: "Unit Usaha & BMT", icon: import_lucide_react.Store, desc: "BMT Cashless, QR & PIN, Kasir Belanja" }
+    { key: "admin", label: "Sistem & Admin", icon: Settings, desc: "Akun, Master Bagian, Kalender, Tampilan" },
+    { key: "sekretariat", label: "Sekretariat", icon: FileSignature, desc: "Santri, Dokumen, Persuratan" },
+    { key: "pengasuhan", label: "Pengasuhan", icon: ShieldCheck, desc: "Kedisiplinan, Perizinan, Absensi" },
+    { key: "pengajaran", label: "Pengajaran", icon: GraduationCap, desc: "Nilai Ujian, Prestasi, Rapor Akademik" },
+    { key: "lptq", label: "LPTQ", icon: BookOpen, desc: "Tahfidz Al-Qur'an, Ubudiyah, Rapor Tahfidz" },
+    { key: "administrasi", label: "Keuangan", icon: Wallet, desc: "Tagihan, Pembayaran, Infaq, Cashflow" },
+    { key: "unitusaha", label: "Unit Usaha & BMT", icon: Store, desc: "BMT Cashless, QR & PIN, Kasir Belanja" }
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: `max-w-[1400px] mx-auto px-4 sm:px-6 py-6 ${hasSidebar ? "lg:pl-64" : ""}`, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -9004,14 +9988,14 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
         eyebrow: todayStr(),
         title: `Assalamu'alaikum, ${guru.nama}`,
         sub: isSuper ? `Superadmin \u2014 Mengelola Bagian ${ADMIN_SCOPES.find((s) => s.key === adminActiveScope)?.label || "Admin"}${adminActiveScope === "unitusaha" ? ` (${effectiveUnit})` : ""}` : `Bagian ${DEPT_META[dept]?.label || "-"}${guru.unit ? ` \u2014 ${guru.unit}` : ""}`,
-        icon: isSuper ? ADMIN_SCOPES.find((s) => s.key === adminActiveScope)?.icon || import_lucide_react.Lock : DEPT_META[dept]?.icon
+        icon: isSuper ? ADMIN_SCOPES.find((s) => s.key === adminActiveScope)?.icon || Lock : DEPT_META[dept]?.icon
       }
     ),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(KpiRow, { items: [
-      { icon: import_lucide_react.Users, label: "Total Santri", value: (data?.santri || []).length },
-      { icon: import_lucide_react.User, label: "Wali Santri", value: (data?.wali || []).length },
-      { icon: import_lucide_react.GraduationCap, label: "Guru & Staff", value: (data?.guru || []).length },
-      { icon: import_lucide_react.School, label: "Jumlah Kelas", value: (data?.kelas || []).length }
+      { icon: Users, label: "Total Santri", value: (data?.santri || []).length },
+      { icon: User, label: "Wali Santri", value: (data?.wali || []).length },
+      { icon: GraduationCap, label: "Guru & Staff", value: (data?.guru || []).length },
+      { icon: School, label: "Jumlah Kelas", value: (data?.kelas || []).length }
     ] }),
     isSuper && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-6 p-3.5 sm:p-4 bg-white/95 backdrop-blur-md border border-[#CFE3F0] rounded-2xl shadow-xs space-y-3", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center justify-between gap-2 border-b border-[#EAF4FB] pb-2.5", children: [
@@ -9045,7 +10029,7 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
       }) }),
       adminActiveScope === "unitusaha" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-wrap items-center gap-2 pt-1 border-t border-[#EAF4FB]", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-xs font-semibold text-[#0C4A6E] flex items-center gap-1.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Store, { size: 13 }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Store, { size: 13 }),
           " Pilih Unit:"
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-1.5", children: (data?.unitUsaha || []).map((u) => {
@@ -9084,11 +10068,11 @@ function RingkasanTile({ label, value, sub, tone }) {
 }
 function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnline }) {
   const anak = data.santri.filter((s) => s.waliId === wali.id);
-  const [anakAktif, setAnakAktif] = (0, import_react.useState)(anak[0]?.id);
+  const [anakAktif, setAnakAktif] = useState(anak[0]?.id);
   const santri = anak.find((a) => a.id === anakAktif);
   if (!santri) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "max-w-[1400px] mx-auto px-4 sm:px-6 py-6", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada data santri terhubung ke akun ini." }) });
-  const [raporFetch, setRaporFetch] = (0, import_react.useState)({ loading: false, error: "", data: null });
-  (0, import_react.useEffect)(() => {
+  const [raporFetch, setRaporFetch] = useState({ loading: false, error: "", data: null });
+  useEffect(() => {
     if (!backendToken) {
       setRaporFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: null });
       return;
@@ -9115,8 +10099,8 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
   const totalPoin = rapor ? rapor.totalPoinPelanggaran : pelanggaran.reduce((a, b) => a + Number(b.poin), 0);
   const tagihan = rapor ? rapor.tagihan.map((t) => ({ ...t, tanggalBayar: t.tanggalBayarISO ? formatTanggalISO(t.tanggalBayarISO) : null })) : data.tagihan.filter((t) => t.santriId === santri.id);
   const rekapAbsen = rapor ? Object.entries(rapor.rekapAbsensi).map(([st, jumlah]) => ({ st, jumlah })) : ["Hadir", "Sakit", "Izin", "Alpa"].map((st) => ({ st, jumlah: absensi.filter((a) => a.status === st).length }));
-  const [cashlessFetch, setCashlessFetch] = (0, import_react.useState)({ loading: false, error: "", detail: null, riwayat: [] });
-  (0, import_react.useEffect)(() => {
+  const [cashlessFetch, setCashlessFetch] = useState({ loading: false, error: "", detail: null, riwayat: [] });
+  useEffect(() => {
     if (!backendToken) {
       setCashlessFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server cashless." : "", detail: null, riwayat: [] });
       return;
@@ -9139,10 +10123,10 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
   }, [santri.id, backendToken]);
   const santriCashless = cashlessFetch.detail ? { ...santri, saldo: cashlessFetch.detail.saldo, limitJajanHarian: cashlessFetch.detail.limitJajanHarian, durasiBlokirHari: cashlessFetch.detail.durasiBlokirHari, blokirCashless: cashlessFetch.detail.blokir?.aktif ? { aktif: true, sampaiISO: cashlessFetch.detail.blokir.sampaiISO, alasan: cashlessFetch.detail.blokir.alasan } : { aktif: false } } : santri;
   const transaksiCashlessAnak = cashlessFetch.riwayat.map((t) => ({ ...t, tanggal: t.tanggalLabel }));
-  const [permintaanForm, setPermintaanForm] = (0, import_react.useState)({ jenis: JENIS_PERMINTAAN_BMT[0], nilai: "", alasan: "", buktiTransfer: "" });
-  const [permintaanBusy, setPermintaanBusy] = (0, import_react.useState)(false);
-  const [permintaanKirimError, setPermintaanKirimError] = (0, import_react.useState)("");
-  const [permintaanAnakFetch, setPermintaanAnakFetch] = (0, import_react.useState)({ loading: false, error: "", data: [] });
+  const [permintaanForm, setPermintaanForm] = useState({ jenis: JENIS_PERMINTAAN_BMT[0], nilai: "", alasan: "", buktiTransfer: "" });
+  const [permintaanBusy, setPermintaanBusy] = useState(false);
+  const [permintaanKirimError, setPermintaanKirimError] = useState("");
+  const [permintaanAnakFetch, setPermintaanAnakFetch] = useState({ loading: false, error: "", data: [] });
   const muatPermintaanAnak = () => {
     if (!backendToken) {
       setPermintaanAnakFetch({ loading: false, error: "", data: [] });
@@ -9151,7 +10135,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
     setPermintaanAnakFetch((f) => ({ ...f, loading: true }));
     backendApi(`/permintaan/mine?santriId=${santri.id}`, { token: backendToken }).then((data2) => setPermintaanAnakFetch({ loading: false, error: "", data: data2 })).catch((e) => setPermintaanAnakFetch({ loading: false, error: e.message, data: [] }));
   };
-  (0, import_react.useEffect)(muatPermintaanAnak, [santri.id, backendToken]);
+  useEffect(muatPermintaanAnak, [santri.id, backendToken]);
   const permintaanAnak = permintaanAnakFetch.data;
   const pilihBuktiTransfer = (e) => {
     const file = e.target.files?.[0];
@@ -9266,14 +10250,14 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RingkasanTile, { label: "Keuangan", value: toneKeuangan === "good" ? "Lunas" : toneKeuangan === "neutral" ? "-" : rupiah(totalTunggakan), sub: toneKeuangan === "bad" ? "belum dibayar" : "tagihan", tone: toneKeuangan })
     ] }),
     (toneDisiplin === "bad" || toneKeuangan === "bad" || toneHadir === "bad") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-[#FEF3F2] border border-[#FECDCA] text-[#B42318] text-xs font-medium rounded-xl px-4 py-3 mb-6 flex items-center gap-2.5 shadow-xs", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.AlertTriangle, { size: 16, className: "shrink-0" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertTriangle, { size: 16, className: "shrink-0" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
         "Ada hal yang perlu perhatian: ",
         [toneKeuangan === "bad" && "tagihan belum lunas", toneDisiplin === "bad" && "poin pelanggaran cukup tinggi", toneHadir === "bad" && "kehadiran rendah"].filter(Boolean).join(", "),
         "."
       ] })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Biodata Santri", eyebrow: `No. Stambuk ${santri.nis || "-"}`, icon: import_lucide_react.User, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Biodata Santri", eyebrow: `No. Stambuk ${santri.nis || "-"}`, icon: User, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: "Jenis kelamin:" }),
         " ",
@@ -9322,25 +10306,25 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
     ] }) }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StarDivider, {}),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-5", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Rekap Absensi", eyebrow: "Bulan Berjalan", icon: import_lucide_react.CalendarCheck, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "grid grid-cols-4 gap-2 text-center", children: rekapAbsen.map((r) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Rekap Absensi", eyebrow: "Bulan Berjalan", icon: CalendarCheck, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "grid grid-cols-4 gap-2 text-center", children: rekapAbsen.map((r) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xl font-semibold text-[#0C4A6E]", style: { fontFamily: "'Fraunces', serif" }, children: r.jumlah }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] text-[#5B7C93]", children: r.st })
       ] }, r.st)) }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Nilai Terbaru", eyebrow: "Akademik", icon: import_lucide_react.GraduationCap, children: nilai.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: nilai.slice().reverse().slice(0, 4).map((n) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Nilai Terbaru", eyebrow: "Akademik", icon: GraduationCap, children: nilai.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: nilai.slice().reverse().slice(0, 4).map((n) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: n.mapel }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-semibold text-[#0C4A6E]", children: n.nilai })
       ] }, n.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada nilai." }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Hafalan Qur'an", eyebrow: "Setoran Terakhir", icon: import_lucide_react.BookOpen, children: hafalan.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: hafalan.slice().reverse().slice(0, 4).map((h) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Hafalan Qur'an", eyebrow: "Setoran Terakhir", icon: BookOpen, children: hafalan.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: hafalan.slice().reverse().slice(0, 4).map((h) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: h.juz }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: h.tanggal })
       ] }, h.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada setoran tercatat." }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Perizinan", eyebrow: "Riwayat", icon: import_lucide_react.ClipboardList, children: perizinan.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: perizinan.slice().reverse().slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between text-sm", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Perizinan", eyebrow: "Riwayat", icon: ClipboardList, children: perizinan.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: perizinan.slice().reverse().slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between text-sm", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: p.jenis }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusPill, { status: p.status })
       ] }, p.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Tidak ada pengajuan izin." }) })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StarDivider, {}),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Rapor Santri", eyebrow: "Akademik \xB7 Mental \xB7 Tahfidz \u2014 Tinjau & Cetak", icon: import_lucide_react.FileText, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Rapor Santri", eyebrow: "Akademik \xB7 Mental \xB7 Tahfidz \u2014 Tinjau & Cetak", icon: FileText, children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "grid sm:grid-cols-3 gap-4", children: [
         { jenis: "Akademik", list: raportAkademikAnak, tone: "text-[#0C4A6E]" },
         { jenis: "Mental", list: raportMentalAnak, tone: "text-[#B98A1C]" },
@@ -9357,7 +10341,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
             r.semester
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => cetakRaportWali(jenis, r), className: "flex items-center gap-1 text-[#0C4A6E] underline hover:text-[#0B3A57]", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 12 }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 12 }),
             "Lihat/Cetak"
           ] })
         ] }, r.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#8FB0C7]", children: "Belum diterbitkan." })
@@ -9365,7 +10349,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
       !!kombinasiLengkap.length && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mt-4 pt-4 border-t border-[#DCEDF7]", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm font-semibold text-[#0C4A6E] mb-2", children: "Rapor Lengkap (Akademik & Mental Sekaligus)" }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-2", children: kombinasiLengkap.map(({ tahunAjaran, semester }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { onClick: () => cetakRaporLengkap(tahunAjaran, semester), className: "flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white/60 hover:backdrop-blur-sm", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Printer, { size: 13 }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { size: 13 }),
           tahunAjaran,
           " \xB7 Semester ",
           semester
@@ -9374,22 +10358,22 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StarDivider, {}),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "grid sm:grid-cols-2 gap-5", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Kedisiplinan", eyebrow: `${totalPoin} Poin Terkumpul`, icon: import_lucide_react.AlertTriangle, tone: "gold", children: pelanggaran.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: pelanggaran.slice().reverse().map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Kedisiplinan", eyebrow: `${totalPoin} Poin Terkumpul`, icon: AlertTriangle, tone: "gold", children: pelanggaran.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: pelanggaran.slice().reverse().map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: p.jenis }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-[#B5533C]", children: [
           "+",
           p.poin
         ] })
       ] }, p.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Alhamdulillah, tidak ada pelanggaran." }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Prestasi", eyebrow: "Pencapaian Santri", icon: import_lucide_react.Award, tone: "gold", children: prestasi.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: prestasi.slice().reverse().map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Prestasi", eyebrow: "Pencapaian Santri", icon: Award, tone: "gold", children: prestasi.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: prestasi.slice().reverse().map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: p.judul }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93] text-xs", children: p.tingkat })
       ] }, p.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada prestasi tercatat." }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Kegiatan", eyebrow: "Pengasuhan", icon: import_lucide_react.ClipboardList, children: kegiatan.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: kegiatan.slice().reverse().slice(0, 4).map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Kegiatan", eyebrow: "Pengasuhan", icon: ClipboardList, children: kegiatan.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-2", children: kegiatan.slice().reverse().slice(0, 4).map((k) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-sm", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: k.nama }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-[#5B7C93]", children: k.tanggal })
       ] }, k.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada kegiatan tercatat." }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Keuangan", eyebrow: "Tagihan & Pembayaran", icon: import_lucide_react.Wallet, children: tagihan.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-3", children: tagihan.slice().reverse().map((t) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between text-sm", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchCard, { title: "Keuangan", eyebrow: "Tagihan & Pembayaran", icon: Wallet, children: tagihan.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-3", children: tagihan.slice().reverse().map((t) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between text-sm", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
             t.jenis,
@@ -9405,13 +10389,13 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusPill, { status: statusTagihan(t) })
       ] }, t.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Tidak ada tagihan." }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Saldo Cashless", eyebrow: "Dompet Digital Santri di Pondok", icon: import_lucide_react.Wallet, tone: "gold", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(ArchCard, { title: "Saldo Cashless", eyebrow: "Dompet Digital Santri di Pondok", icon: Wallet, tone: "gold", children: [
         backendOnline === null && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3.5 py-2 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Loader2, { size: 14, className: "shrink-0 animate-spin text-[#29AAE1]" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Loader2, { size: 14, className: "shrink-0 animate-spin text-[#29AAE1]" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Menghubungkan ke server cashless..." })
         ] }),
         backendOnline === false && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-xs text-[#B42318] bg-[#FEF3F2] border border-[#FECDCA] rounded-xl px-3.5 py-2 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 14, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 14, className: "shrink-0" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Tidak terhubung ke server cashless. Data di bawah mungkin belum yang terbaru." })
         ] }),
         cashlessFetch.loading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] mb-2", children: "Memuat data dari server..." }),
@@ -9438,7 +10422,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
           ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Belum ada pembatasan limit jajan harian untuk santri ini." }) })
         ] }),
         isBlokirAktif(santriCashless) && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-xs text-[#B42318] bg-[#FEF3F2] border border-[#FECDCA] rounded-xl px-3.5 py-2.5 mb-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.ShieldAlert, { size: 15, className: "shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldAlert, { size: 15, className: "shrink-0" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
             "Cashless sedang diblokir sampai ",
             formatTanggalISO(santriCashless.blokirCashless.sampaiISO),
@@ -9468,7 +10452,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
         ] }, t.id)) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { text: "Belum ada transaksi cashless." }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mt-4 pt-4 border-t border-[#E3E8EE]", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-xs font-bold text-[#0C4A6E] mb-2 flex items-center gap-1.5", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Bell, { size: 13, className: "text-[#29AAE1]" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Bell, { size: 13, className: "text-[#29AAE1]" }),
             " Permintaan ke BMT Pondok"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex flex-wrap gap-1.5 mb-2.5", children: JENIS_PERMINTAAN_BMT.map((j) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -9509,7 +10493,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
                 disabled: permintaanBusy || backendOnline !== true,
                 className: "flex items-center gap-1.5 btn-gradient text-xs px-3.5 h-9 rounded-xl active:scale-95 disabled:opacity-50 transition-all font-medium",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Send, { size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Send, { size: 13 }),
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: permintaanBusy ? "Mengirim..." : "Ajukan" })
                 ]
               }
@@ -9519,7 +10503,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#026AA2] mb-2 leading-relaxed", children: "Transfer ke rekening resmi yayasan terlebih dahulu, lalu upload bukti transfer di bawah ini. Saldo akan ditambahkan setelah petugas BMT memverifikasi bukti." }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "file", accept: "image/*", onChange: pilihBuktiTransfer, className: "text-xs w-full file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[#29AAE1] file:text-white hover:file:opacity-90 cursor-pointer" }),
             permintaanForm.buktiTransfer && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-xs text-[#027A48] mt-1.5 flex items-center gap-1 font-medium", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.Check, { size: 13 }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { size: 13 }),
               " Bukti transfer berhasil dimuat, siap dikirim."
             ] })
           ] }),
@@ -9541,7 +10525,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
     ] })
   ] });
 }
-var ErrorBoundary = class extends React.Component {
+var ErrorBoundary = class extends window.React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -9555,7 +10539,7 @@ var ErrorBoundary = class extends React.Component {
   render() {
     if (this.state.hasError) {
       return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "min-h-screen bg-[#F4F8FB] flex items-center justify-center p-4", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "max-w-md w-full bg-white rounded-2xl border border-[#CFE3F0] p-6 shadow-lg text-center space-y-4", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_lucide_react.AlertCircle, { size: 24 }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertCircle, { size: 24 }) }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { className: "text-lg font-bold text-[#0C4A6E]", children: "Terjadi Kendala Tampilan" }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-[#5B7C93] leading-relaxed", children: "Aplikasi mendeteksi kendala pada modul ini. Klik tombol di bawah untuk memuat ulang tampilan atau kembali." }),
         this.state.error?.message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-[11px] bg-red-50 text-red-700 p-2.5 rounded-xl border border-red-200 font-mono text-left break-all", children: this.state.error.message }),
@@ -9578,9 +10562,9 @@ var ErrorBoundary = class extends React.Component {
   }
 };
 function App() {
-  const [session, setSession] = (0, import_react.useState)(null);
-  const [backendToken, setBackendToken] = (0, import_react.useState)(null);
-  const [backendOnline, setBackendOnline] = (0, import_react.useState)(null);
+  const [session, setSession] = useState(null);
+  const [backendToken, setBackendToken] = useState(null);
+  const [backendOnline, setBackendOnline] = useState(null);
   const handleLogin = (role, user, password, tokenSudahAda) => {
     setSession({ role, user });
     if (tokenSudahAda) {
@@ -9607,8 +10591,8 @@ function App() {
     setBackendToken(null);
     setBackendOnline(null);
   };
-  const [printContent, setPrintContent] = (0, import_react.useState)(null);
-  const [data, setData] = (0, import_react.useState)(() => {
+  const [printContent, setPrintContent] = useState(null);
+  const [data, setData] = useState(() => {
     let santriAwal = SANTRI_SEED;
     let waliAwal = WALI_SEED;
     try {
@@ -9685,11 +10669,11 @@ function App() {
     };
   });
   const users = { guru: data.guru, wali: data.wali };
-  (0, import_react.useEffect)(() => {
+  useEffect(() => {
     backendApi("/public/tampilan").then((tampilan) => setData((d) => ({ ...d, tampilan }))).catch(() => {
     });
   }, []);
-  (0, import_react.useEffect)(() => {
+  useEffect(() => {
     if (!backendToken || backendOnline !== true) return;
     Promise.all([
       backendApi("/admin/unit-usaha", { token: backendToken }),
@@ -9703,7 +10687,7 @@ function App() {
     }).catch(() => {
     });
   }, [backendToken, backendOnline]);
-  (0, import_react.useEffect)(() => {
+  useEffect(() => {
     if (!backendToken || backendOnline !== true) return;
     backendApi("/santri", { token: backendToken }).then((santriRows) => {
       if (Array.isArray(santriRows) && santriRows.length > 0) {
