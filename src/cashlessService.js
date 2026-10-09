@@ -206,8 +206,8 @@ async function catatTransaksiTx({ santriId, unit, jenis, kategori, subKategori, 
       const saldoSekarang = Number(santri.saldo || 0);
       if (jenis === "Tarik Tunai") {
         if (!KATEGORI_TRANSAKSI_BMT.includes(kategori)) throw new CashlessError(400, "Kategori transaksi tidak valid.");
-        const qrTanpaPin = metode === "qr" && !santri.pinHash;
-        if (validasiPin && !qrTanpaPin) {
+        const bypassPin = (metode === "wajah") || (metode === "qr" && !santri.pinHash) || ["cash", "qris"].includes(metode);
+        if (validasiPin && !bypassPin) {
           const { verifikasiPin } = require("./pinService");
           const pinError = await verifikasiPin(santri, pin, { unit, petugasId });
           if (pinError) {
@@ -601,7 +601,7 @@ async function sinkronisasiOfflineKasir({ items, kasirId, unit }) {
   let gagalCount = 0;
 
   for (const item of items) {
-    const { idempotencyKey, santriId, jenis, kategori, subKategori, jumlah, keterangan, bulan, pin, metode } = item || {};
+    const { idempotencyKey, santriId, jenis, kategori, subKategori, jumlah, keterangan, bulan, pin, metode, items: itemProduk } = item || {};
     const itemUnit = unit || item.unit || "Kantin";
 
     if (!idempotencyKey || !santriId || !jumlah) {
@@ -611,11 +611,51 @@ async function sinkronisasiOfflineKasir({ items, kasirId, unit }) {
     }
 
     try {
+      if (santriId === "UMUM") {
+        const nominal = Number(jumlah);
+        if (!nominal || nominal <= 0) {
+          throw new CashlessError(400, "Jumlah belanja harus lebih dari 0.");
+        }
+        const { catatTransaksiUnitUsaha } = require("./keuanganService");
+        const txUnit = await catatTransaksiUnitUsaha({
+          jenis: "Dana Masuk",
+          unitAsal: null,
+          unitTujuan: itemUnit,
+          jumlah: nominal,
+          keterangan: keterangan || "Penjualan Kasir Umum (Offline Sync)",
+          dicatatOleh: kasirId || "Kasir",
+        });
+
+        const listItems = itemProduk || item?.cartItems;
+        if (Array.isArray(listItems) && listItems.length) {
+          for (const it of listItems) {
+            const qty = Number(it.qty || 1);
+            if (qty > 0) {
+              if (it.id) {
+                await query(`UPDATE "ProdukUnitUsaha" SET "stok" = GREATEST(0, "stok" - $1) WHERE "id" = $2`, [qty, it.id]);
+              } else if (it.nama) {
+                await query(`UPDATE "ProdukUnitUsaha" SET "stok" = GREATEST(0, "stok" - $1) WHERE "nama" = $2 AND "unit" = $3`, [qty, it.nama, itemUnit]);
+              }
+            }
+          }
+        }
+
+        suksesCount++;
+        hasilDetail.push({ idempotencyKey, status: "Sukses", respons: { transaksi: txUnit } });
+        await query(
+          `INSERT INTO "QueueOfflineKasir" ("id", "idempotencyKey", "unit", "santriId", "jenis", "jumlah", "keterangan", "kasirId", "statusSync", "syncedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Sukses', to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+           ON CONFLICT ("idempotencyKey") DO UPDATE SET "statusSync" = 'Sukses', "syncedAt" = EXCLUDED."syncedAt"`,
+          [uid(), idempotencyKey, itemUnit, santriId, "Dana Masuk", nominal, keterangan || null, kasirId || null]
+        );
+        continue;
+      }
+
       const res = await catatTransaksi({
         santriId, unit: itemUnit, jenis: jenis || "Tarik Tunai", kategori: kategori || "Jajan Harian",
         subKategori, jumlah, keterangan, bulan, idempotencyKey,
         pin, validasiPin: (jenis || "Tarik Tunai") === "Tarik Tunai", petugasId: kasirId,
-        metode: ["qr", "wajah", "manual"].includes(metode) ? metode : "manual",
+        metode: ["qr", "wajah", "manual", "kartu", "rfid", "cash", "cashless", "qris"].includes(metode) ? metode : "manual",
       });
 
       if (res.pinError) {

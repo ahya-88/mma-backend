@@ -93,20 +93,42 @@ router.post("/guru", requireAuth, requireAdmin, asyncHandler(async (req, res) =>
   }));
 }));
 
-router.put("/guru/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
-  const { nama, username, departemen, unit, jenisAkun } = req.body || {};
-  res.json(await editGuru({
+router.put(["/guru/:id", "/staf/:id", "/akun/:id"], requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { nama, username, departemen, unit, jenisAkun, password, newPassword } = req.body || {};
+  const hasil = await editGuru({
     id: req.params.id, nama, username, departemen, unit, jenisAkun, actingUserId: req.user.id,
-  }));
+  });
+  const pw = password || newPassword;
+  if (pw) {
+    await editPasswordGuru({ id: req.params.id, password: pw, actingUserId: req.user.id });
+  }
+  res.json(hasil);
 }));
 
-router.delete("/guru/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.patch(["/guru/:id", "/staf/:id", "/akun/:id"], requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { nama, username, departemen, unit, jenisAkun, password, newPassword } = req.body || {};
+  const hasil = await editGuru({
+    id: req.params.id, nama, username, departemen, unit, jenisAkun, actingUserId: req.user.id,
+  });
+  const pw = password || newPassword;
+  if (pw) {
+    await editPasswordGuru({ id: req.params.id, password: pw, actingUserId: req.user.id });
+  }
+  res.json(hasil);
+}));
+
+router.put(["/guru/:id/password", "/staf/:id/password", "/akun/:id/password"], requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const password = req.body?.password || req.body?.newPassword;
+  res.json(await editPasswordGuru({ id: req.params.id, password, actingUserId: req.user.id }));
+}));
+
+router.post(["/guru/:id/password", "/staf/:id/password", "/akun/:id/password", "/guru/:id/reset-password", "/staf/:id/reset-password", "/akun/:id/reset-password"], requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const password = req.body?.password || req.body?.newPassword;
+  res.json(await editPasswordGuru({ id: req.params.id, password, actingUserId: req.user.id }));
+}));
+
+router.delete(["/guru/:id", "/staf/:id", "/akun/:id"], requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   res.json(await hapusGuru({ id: req.params.id, actingUserId: req.user.id }));
-}));
-
-router.post("/guru/:id/reset-password", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
-  const { newPassword } = req.body || {};
-  res.json(await editPasswordGuru({ id: req.params.id, password: newPassword, actingUserId: req.user.id }));
 }));
 
 // ---- Pengelolaan Wali ----

@@ -60,7 +60,13 @@ async function editGuru({ id, nama, username, departemen, unit, jenisAkun, actin
   if (inputJenisAkun === "admin") inputJenisAkun = "superadmin";
 
   return withTransaction(async () => {
-    const row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
+    let row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row && username) {
+      row = await queryOne('SELECT * FROM "Guru" WHERE LOWER("username") = LOWER($1) FOR UPDATE', [username]);
+    }
+    if (!row) {
+      row = await queryOne('SELECT * FROM "Guru" WHERE LOWER("username") = LOWER($1) FOR UPDATE', [id]);
+    }
     if (!row) throw new CashlessError(404, "Staf tidak ditemukan.");
 
     const oldKind = jenisEfektif(row);
@@ -81,20 +87,20 @@ async function editGuru({ id, nama, username, departemen, unit, jenisAkun, actin
     const nameFinal = nama ? nama.trim() : row.nama;
     const userFinal = username ? username.trim() : row.username;
 
-    const adaUser = await queryOne('SELECT "id" FROM "Guru" WHERE "username" = $1 AND "id" != $2', [userFinal, id]);
+    const adaUser = await queryOne('SELECT "id" FROM "Guru" WHERE "username" = $1 AND "id" != $2', [userFinal, row.id]);
     if (adaUser) throw new CashlessError(400, "Username staf sudah digunakan.");
 
     await query(
       'UPDATE "Guru" SET "nama" = $1, "username" = $2, "departemen" = $3, "unit" = $4, "jenisAkun" = $5, "sessionVersion" = "sessionVersion" + 1 WHERE "id" = $6',
-      [nameFinal, userFinal, depFinal, unitFinal, kindFinal, id],
+      [nameFinal, userFinal, depFinal, unitFinal, kindFinal, row.id],
     );
 
     await catatAuditAdmin({
-      aktorId: actingUserId, aksi: "admin.staff_updated", targetTipe: "Guru", targetId: id,
+      aktorId: actingUserId, aksi: "admin.staff_updated", targetTipe: "Guru", targetId: row.id,
       detail: { nama: nameFinal, username: userFinal, jenisAkun: kindFinal, departemen: depFinal },
     });
 
-    return { id, nama: nameFinal, username: userFinal, departemen: depFinal, unit: unitFinal, jenisAkun: kindFinal };
+    return { id: row.id, nama: nameFinal, username: userFinal, departemen: depFinal, unit: unitFinal, jenisAkun: kindFinal };
   });
 }
 
@@ -103,17 +109,20 @@ async function editPasswordGuru({ id, password, actingUserId }) {
   if (!password || password.length < PASSWORD_MIN_LENGTH) throw new CashlessError(400, `Password minimal ${PASSWORD_MIN_LENGTH} karakter.`);
 
   return withTransaction(async () => {
-    const row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
+    let row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row) {
+      row = await queryOne('SELECT * FROM "Guru" WHERE LOWER("username") = LOWER($1) FOR UPDATE', [id]);
+    }
     if (!row) throw new CashlessError(404, "Staf tidak ditemukan.");
 
     const hash = await bcrypt.hash(password, 10);
     await query(
       'UPDATE "Guru" SET "password" = $1, "mustChangePassword" = TRUE, "sessionVersion" = "sessionVersion" + 1, "loginFailedAttempts" = 0, "loginLockedUntil" = NULL WHERE "id" = $2',
-      [hash, id],
+      [hash, row.id],
     );
 
-    await catatAuditAdmin({ aktorId: actingUserId, aksi: "auth.password_reset", targetId: id, targetTipe: "Guru" });
-    return { id, username: row.username, passwordDiubah: true };
+    await catatAuditAdmin({ aktorId: actingUserId, aksi: "auth.password_reset", targetId: row.id, targetTipe: "Guru" });
+    return { id: row.id, username: row.username, passwordDiubah: true };
   });
 }
 
@@ -122,23 +131,29 @@ async function editPasswordWali({ id, password, actingUserId }) {
   if (!password || password.length < PASSWORD_MIN_LENGTH) throw new CashlessError(400, `Password minimal ${PASSWORD_MIN_LENGTH} karakter.`);
 
   return withTransaction(async () => {
-    const row = await queryOne('SELECT * FROM "Wali" WHERE "id" = $1 FOR UPDATE', [id]);
+    let row = await queryOne('SELECT * FROM "Wali" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row) {
+      row = await queryOne('SELECT * FROM "Wali" WHERE LOWER("username") = LOWER($1) FOR UPDATE', [id]);
+    }
     if (!row) throw new CashlessError(404, "Wali tidak ditemukan.");
 
     const hash = await bcrypt.hash(password, 10);
     await query(
       'UPDATE "Wali" SET "password" = $1, "mustChangePassword" = TRUE, "sessionVersion" = "sessionVersion" + 1, "loginFailedAttempts" = 0, "loginLockedUntil" = NULL, "statusAkun" = \'Belum Aktivasi\' WHERE "id" = $2',
-      [hash, id],
+      [hash, row.id],
     );
 
-    await catatAuditAdmin({ aktorId: actingUserId, aksi: "auth.password_reset", targetId: id, targetTipe: "Wali" });
-    return { id, username: row.username, passwordDiubah: true };
+    await catatAuditAdmin({ aktorId: actingUserId, aksi: "auth.password_reset", targetId: row.id, targetTipe: "Wali" });
+    return { id: row.id, username: row.username, passwordDiubah: true };
   });
 }
 
 async function hapusGuru({ id, actingUserId }) {
   return withTransaction(async () => {
-    const row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
+    let row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row) {
+      row = await queryOne('SELECT * FROM "Guru" WHERE LOWER("username") = LOWER($1) FOR UPDATE', [id]);
+    }
     if (!row) throw new CashlessError(404, "Staf tidak ditemukan.");
 
     const kind = jenisEfektif(row);
@@ -147,9 +162,9 @@ async function hapusGuru({ id, actingUserId }) {
       if (jumlahSuperadmin <= 1) throw new CashlessError(400, "Tidak bisa menghapus Superadmin terakhir.");
     }
 
-    await query('DELETE FROM "Guru" WHERE "id" = $1', [id]);
-    await catatAuditAdmin({ aktorId: actingUserId, aksi: "admin.staff_deleted", targetTipe: "Guru", targetId: id, detail: { nama: row.nama, username: row.username } });
-    return { id, deleted: true };
+    await query('DELETE FROM "Guru" WHERE "id" = $1', [row.id]);
+    await catatAuditAdmin({ aktorId: actingUserId, aksi: "admin.staff_deleted", targetTipe: "Guru", targetId: row.id, detail: { nama: row.nama, username: row.username } });
+    return { id: row.id, deleted: true };
   });
 }
 

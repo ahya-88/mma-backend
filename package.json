@@ -11,7 +11,8 @@
     "bootstrap:admin": "node scripts/bootstrap-admin.js",
     "test": "node --test test/*.test.js",
     "test:integration": "node test/topup.integration.js",
-    "migrate:sqlite": "node scripts/pindah-data.js"
+    "migrate:sqlite": "node scripts/pindah-data.js",
+    "sync:android": "node scripts/sync-to-android.cjs"
   },
   "dependencies": {
     "@vladmandic/human": "^3.3.6",

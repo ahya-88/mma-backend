@@ -23,11 +23,15 @@ router.get("/status", requireAuth, asyncHandler(async (req, res) => {
   const adaFoto = Number(adaFotoRow?.total || 0);
 
   res.json({
+    total: totalSantri,
     totalSantri,
+    berfoto: adaFoto,
     adaFoto,
     tanpaFoto: Math.max(0, totalSantri - adaFoto),
+    terindeks: Number(adaTemplateRow?.total || 0),
     adaTemplate: Number(adaTemplateRow?.total || 0),
     jumlahTemplateKamera: Number(cameraTemplatesRow?.total || 0),
+    gagalList: fotoGagalRows,
     fotoGagal: fotoGagalRows,
   });
 }));
@@ -197,6 +201,44 @@ router.delete("/template/:id", requireAuth, asyncHandler(async (req, res) => {
 
   await query('DELETE FROM "FaceTemplate" WHERE "id" = $1', [id]);
   res.json({ id, deleted: true });
+}));
+
+// POST /api/wajah/:santriId/template - Tambah template dari kasir Flutter
+router.post("/:santriId/template", requireAuth, asyncHandler(async (req, res) => {
+  const santriId = req.params.santriId;
+  const { embedding, sumber } = req.body || {};
+  if (!santriId || !embedding) {
+    throw new CashlessError(400, "santriId dan embedding wajah wajib diisi.");
+  }
+  await getSantriRow(santriId);
+  const tISO = new Date().toISOString();
+  const src = ["foto", "kamera"].includes(sumber) ? sumber : "kamera";
+
+  await withTransaction(async (client) => {
+    await client.query(
+      `INSERT INTO "FaceTemplate" ("santriId", "embedding", "sumber", "modelVersion", "dibuatOleh", "dibuatPada")
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [santriId, JSON.stringify(embedding), src, FACE_MODEL, req.user?.nama || "Kasir", tISO],
+    );
+    await client.query(
+      `UPDATE "Santri" SET "faceEmbedding" = $1 WHERE "id" = $2`,
+      [JSON.stringify(embedding), santriId],
+    );
+  });
+
+  res.status(201).json({ santriId, sumber: src, modelVersion: FACE_MODEL, dibuatPada: tISO, ok: true });
+}));
+
+// DELETE /api/wajah/:santriId/template - Hapus template santri dari kasir Flutter
+router.delete("/:santriId/template", requireAuth, asyncHandler(async (req, res) => {
+  const santriId = req.params.santriId;
+  const sumber = req.query.sumber;
+  if (sumber) {
+    await query('DELETE FROM "FaceTemplate" WHERE "santriId" = $1 AND "sumber" = $2', [santriId, sumber]);
+  } else {
+    await query('DELETE FROM "FaceTemplate" WHERE "santriId" = $1', [santriId]);
+  }
+  res.json({ santriId, deleted: true });
 }));
 
 // POST /api/wajah/verifikasi
