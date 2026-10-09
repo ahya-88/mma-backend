@@ -1714,7 +1714,6 @@ const FIN_TABS = [
   { key: "infaq", label: "Infaq Bulanan", icon: Gift },
   { key: "anggaran", label: "Pengajuan Anggaran", icon: Landmark },
   { key: "cashflow", label: "Cashflow Bulanan", icon: TrendingUp },
-  { key: "keuangan-unit", label: "Keuangan Unit Usaha", icon: Store },
   { key: "laporan", label: "Laporan", icon: FileText },
   { key: "inventaris", label: "Inventaris", icon: Package },
 ];
@@ -2379,53 +2378,6 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
         </ArchCard>
       )}
 
-      {tab === "keuangan-unit" && (
-        <ArchCard title="Keuangan Unit Usaha" eyebrow="Omset & Laba Rugi — Kantin, Kopel, Dapur, & BMT" icon={Store}>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            {["Kantin", "Kopel", "Dapur", "BMT"].map((u) => {
-              const txs = data.transaksiCashless.filter((t) => t.unit === u);
-              const omset = txs.filter((t) => t.jenis === "Tarik Tunai").reduce((a, b) => a + (b.jumlah || 0), 0);
-              const topup = txs.filter((t) => t.jenis === "Top Up").reduce((a, b) => a + (b.jumlah || 0), 0);
-              return (
-                <div key={u} className="bg-white/70 backdrop-blur-xl border border-white/60 rounded-xl p-3 text-center shadow-xs">
-                  <p className="text-[11px] font-bold text-[#5B7C93] uppercase tracking-wider">{u}</p>
-                  <p className="text-base font-semibold text-[#0C4A6E] mt-1" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {rupiah(u === "BMT" ? topup : omset)}
-                  </p>
-                  <p className="text-[10px] text-[#5B7C93] mt-0.5">{u === "BMT" ? "Total Top Up" : "Total Penjualan"}</p>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl p-4 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs uppercase tracking-wide font-bold text-[#5B7C93]">Riwayat Transaksi Unit Usaha</p>
-              <span className="text-xs text-[#5B7C93]">{data.transaksiCashless.length} Transaksi Tercatat</span>
-            </div>
-            <div className="divide-y divide-[#DCEDF7] max-h-96 overflow-y-auto">
-              {data.transaksiCashless.slice().reverse().slice(0, 50).map((t) => {
-                const s = data.santri.find((x) => x.id === t.santriId);
-                return (
-                  <div key={t.id} className="flex items-center justify-between py-2 text-sm gap-2">
-                    <div className="min-w-0">
-                      <p className="text-[#17242E] font-medium truncate">
-                        {s ? s.nama : "(Santri)"} <span className="text-xs text-[#5B7C93]">· {t.unit} ({t.jenis})</span>
-                      </p>
-                      <p className="text-[10px] text-[#5B7C93]">{t.keterangan || "-"} · {t.tanggal || "-"}</p>
-                    </div>
-                    <span className={`font-semibold shrink-0 ${t.jenis === "Top Up" ? "text-[#15803D]" : "text-[#B5533C]"}`}>
-                      {t.jenis === "Top Up" ? "+" : "-"}{rupiah(t.jumlah)}
-                    </span>
-                  </div>
-                );
-              })}
-              {!data.transaksiCashless.length && <EmptyState text="Belum ada transaksi unit usaha tercatat." />}
-            </div>
-          </div>
-        </ArchCard>
-      )}
-
       {tab === "inventaris" && (
         <ArchCard title="Inventaris Pondok" eyebrow={`${data.inventaris.length} Item Tercatat`} icon={Package}>
           <button onClick={() => (showInvForm ? setShowInvForm(false) : bukaTambahInv())} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  mb-4"><Plus size={15} />{showInvForm ? "Tutup Form" : "Tambah Item"}</button>
@@ -3001,6 +2953,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
     { key: "qr", label: "QR Santri", icon: QrCode },
     { key: "riwayat", label: "Riwayat Semua Unit", icon: Search },
     { key: "permintaan", label: `Permintaan Wali${jumlahPermintaanMenunggu ? ` (${jumlahPermintaanMenunggu})` : ""}`, icon: Bell },
+    { key: "keuangan-unit", label: "Keuangan Unit Usaha", icon: Landmark },
     { key: "cashflow", label: "Cashflow Unit", icon: TrendingUp },
     { key: "laporan", label: "Laporan", icon: FileText },
   ] : [
@@ -3642,6 +3595,130 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       muatPermintaan();
     } catch (e) {
       setPermintaanActionError(e.message);
+    }
+  };
+
+  // ---- Keuangan Unit Usaha (khusus BMT): Saldo Kas, Penerimaan Kasir, Injeksi Modal, Pencairan, Transfer ----
+  const daftarSemuaUnit = data.unitUsaha || ["Kantin", "Kopel", "Dapur", "BMT"];
+  const [keuanganUnitFilter, setKeuanganUnitFilter] = useState("Semua");
+  const [keuanganUnitTabType, setKeuanganUnitTabType] = useState("Dana Masuk"); // "Dana Masuk" | "Dana Keluar" | "Transfer Antar Bagian"
+  const [keuanganUnitList, setKeuanganUnitList] = useState([]);
+  const [keuanganUnitAllList, setKeuanganUnitAllList] = useState([]);
+  const [keuanganUnitLaporan, setKeuanganUnitLaporan] = useState(null);
+  const [keuanganUnitLoading, setKeuanganUnitLoading] = useState(false);
+  const [keuanganUnitError, setKeuanganUnitError] = useState("");
+  const [keuanganUnitNotice, setKeuanganUnitNotice] = useState("");
+  const [keuanganUnitForm, setKeuanganUnitForm] = useState({
+    unitAsal: "Kantin",
+    unitTujuan: "Kopel",
+    jumlah: "",
+    keterangan: "",
+  });
+
+  const muatKeuanganUnit = async (unitParam = keuanganUnitFilter) => {
+    if (!backendToken) {
+      setKeuanganUnitError("Tidak terhubung ke server cashless.");
+      return;
+    }
+    setKeuanganUnitLoading(true);
+    setKeuanganUnitError("");
+    try {
+      const [listRes, allRes, lapRes] = await Promise.all([
+        backendApi(`/transaksi/unit-usaha${unitParam && unitParam !== "Semua" ? `?unit=${encodeURIComponent(unitParam)}` : ""}`, { token: backendToken }).catch(() => []),
+        backendApi("/transaksi/unit-usaha", { token: backendToken }).catch(() => []),
+        backendApi(`/transaksi/unit-usaha/laporan${unitParam && unitParam !== "Semua" ? `?unit=${encodeURIComponent(unitParam)}` : ""}`, { token: backendToken }).catch(() => null),
+      ]);
+      setKeuanganUnitList(Array.isArray(listRes) ? listRes : []);
+      setKeuanganUnitAllList(Array.isArray(allRes) ? allRes : []);
+      setKeuanganUnitLaporan(lapRes);
+    } catch (e) {
+      setKeuanganUnitError(e.message || "Gagal memuat data keuangan unit usaha.");
+    } finally {
+      setKeuanganUnitLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === "keuangan-unit" && isBMT) {
+      muatKeuanganUnit(keuanganUnitFilter);
+    }
+  }, [tab, keuanganUnitFilter, isBMT, backendToken]);
+
+  const ringkasanUnitMap = (() => {
+    const res = {};
+    daftarSemuaUnit.forEach((uName) => {
+      const kasirTxs = (data.transaksiCashless || []).filter((t) => t.unit === uName);
+      const penerimaanKasir = kasirTxs
+        .filter((t) => t.jenis === "Tarik Tunai" || (uName === "BMT" && t.jenis === "Top Up"))
+        .reduce((a, b) => a + (Number(b.jumlah) || 0), 0);
+
+      const danaMasuk = (keuanganUnitAllList || [])
+        .filter((t) => (t.jenis === "Dana Masuk" && t.unitTujuan === uName) || (t.jenis === "Transfer Antar Bagian" && t.unitTujuan === uName))
+        .reduce((a, b) => a + (Number(b.jumlah) || 0), 0);
+
+      const danaKeluar = (keuanganUnitAllList || [])
+        .filter((t) => (t.jenis === "Dana Keluar" && t.unitAsal === uName) || (t.jenis === "Transfer Antar Bagian" && t.unitAsal === uName))
+        .reduce((a, b) => a + (Number(b.jumlah) || 0), 0);
+
+      const netSaldo = penerimaanKasir + danaMasuk - danaKeluar;
+      res[uName] = { penerimaanKasir, danaMasuk, danaKeluar, netSaldo };
+    });
+    return res;
+  })();
+
+  const handleSimpanTransaksiUnit = async (e) => {
+    e.preventDefault();
+    setKeuanganUnitNotice("");
+    setKeuanganUnitError("");
+    if (!backendToken) {
+      setKeuanganUnitError("Tidak terhubung ke server cashless.");
+      return;
+    }
+    const jumlahNum = Number(keuanganUnitForm.jumlah || 0);
+    if (!jumlahNum || jumlahNum <= 0) {
+      setKeuanganUnitError("Nominal transaksi harus lebih dari 0.");
+      return;
+    }
+
+    const payload = {
+      jenis: keuanganUnitTabType,
+      unitAsal: keuanganUnitTabType === "Dana Masuk" ? "" : (keuanganUnitForm.unitAsal || daftarSemuaUnit[0]),
+      unitTujuan: keuanganUnitTabType === "Dana Keluar" ? "" : (keuanganUnitForm.unitTujuan || daftarSemuaUnit[0]),
+      jumlah: jumlahNum,
+      keterangan: keuanganUnitForm.keterangan || "",
+    };
+
+    try {
+      await backendApi("/transaksi/unit-usaha", {
+        method: "POST",
+        token: backendToken,
+        body: payload,
+      });
+      setKeuanganUnitNotice(`Transaksi ${keuanganUnitTabType} sebesar ${rupiah(jumlahNum)} berhasil disimpan!`);
+      setKeuanganUnitForm((prev) => ({ ...prev, jumlah: "", keterangan: "" }));
+      muatKeuanganUnit(keuanganUnitFilter);
+    } catch (e) {
+      setKeuanganUnitError(e.message || "Gagal mencatat transaksi unit usaha.");
+    }
+  };
+
+  const handleHapusTransaksiUnit = async (id) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus catatan transaksi unit usaha ini?")) return;
+    setKeuanganUnitNotice("");
+    setKeuanganUnitError("");
+    if (!backendToken) {
+      setKeuanganUnitError("Tidak terhubung ke server cashless.");
+      return;
+    }
+    try {
+      await backendApi(`/transaksi/unit-usaha/${id}`, {
+        method: "DELETE",
+        token: backendToken,
+      });
+      setKeuanganUnitNotice("Catatan transaksi unit usaha berhasil dihapus.");
+      muatKeuanganUnit(keuanganUnitFilter);
+    } catch (e) {
+      setKeuanganUnitError(e.message || "Gagal menghapus transaksi unit usaha.");
     }
   };
 
@@ -4322,6 +4399,306 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                 );
               })}
               {!daftarPermintaan.length && <EmptyState text="Tidak ada permintaan pada status ini." />}
+            </div>
+          </ArchCard>
+        </div>
+      )}
+
+      {tab === "keuangan-unit" && isBMT && (
+        <div className="space-y-6">
+          <ArchCard
+            title="Keuangan & Arus Kas Unit Usaha"
+            eyebrow="Pantau saldo unit usaha, dana masuk (injeksi modal), dana keluar (pencairan saldo/operasional), dan transfer antar bagian secara akurat."
+            icon={Landmark}
+          >
+            {keuanganUnitNotice && (
+              <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-[#E3F0E8] text-[#15803D] border border-[#CFE3D6] mb-4">
+                <CheckCircle2 size={16} className="shrink-0" />
+                <span>{keuanganUnitNotice}</span>
+              </div>
+            )}
+
+            {keuanganUnitError && (
+              <div className="flex items-center justify-between p-3 text-xs rounded-xl bg-[#FBE4E1] text-[#96271A] border border-[#F3C9C2] mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span>{keuanganUnitError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => muatKeuanganUnit(keuanganUnitFilter)}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#96271A] text-white hover:bg-[#7f1d1d]"
+                >
+                  ↻ Coba Lagi
+                </button>
+              </div>
+            )}
+
+            {/* Grid Saldo Kas & Rincian Setiap Unit Usaha */}
+            <div className="mb-6">
+              <h3 className="text-xs font-bold text-[#334155] uppercase tracking-wider mb-3">
+                📊 Saldo Kas & Rincian Setiap Unit Usaha
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {daftarSemuaUnit.map((uName) => {
+                  const uInfo = ringkasanUnitMap[uName] || { penerimaanKasir: 0, danaMasuk: 0, danaKeluar: 0, netSaldo: 0 };
+                  const isSelected = keuanganUnitFilter === uName;
+                  const net = uInfo.netSaldo || 0;
+
+                  return (
+                    <div
+                      key={uName}
+                      onClick={() => setKeuanganUnitFilter(isSelected ? "Semua" : uName)}
+                      className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                        isSelected
+                          ? "bg-[#F0F8FE] border-[#29AAE1] shadow-sm"
+                          : "bg-white/70 backdrop-blur-sm border-[#CFE3F0] hover:border-[#29AAE1]/60"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="font-bold text-sm text-[#0F172A]">{uName}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E2E8F0] text-[#475569]">
+                          Unit Usaha
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-[#5B7C93] mb-0.5">Saldo Kas Unit</div>
+                      <div
+                        className={`text-xl font-bold mb-3 ${net >= 0 ? "text-[#0C4A6E]" : "text-[#B5533C]"}`}
+                        style={{ fontFamily: "'Fraunces', serif" }}
+                      >
+                        {rupiah(net)}
+                      </div>
+                      <div className="border-t border-[#DCEDF7] pt-2 text-[11px] space-y-1">
+                        <div className="flex justify-between text-[#475569]">
+                          <span>🛒 Penerimaan Kasir:</span>
+                          <span className="font-semibold">{rupiah(uInfo.penerimaanKasir)}</span>
+                        </div>
+                        <div className="flex justify-between text-[#15803D]">
+                          <span>📥 Dana Masuk / Transfer:</span>
+                          <span className="font-semibold">{rupiah(uInfo.danaMasuk)}</span>
+                        </div>
+                        <div className="flex justify-between text-[#B5533C]">
+                          <span>📤 Dana Keluar / Pencairan:</span>
+                          <span className="font-semibold">{rupiah(uInfo.danaKeluar)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Form Transaksi Unit Usaha */}
+            <div className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl p-4.5 mb-6 shadow-xs">
+              <h3 className="text-xs font-bold text-[#1E293B] uppercase tracking-wider mb-3">
+                ⚙️ Pengaturan Transaksi Unit Usaha
+              </h3>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  { key: "Dana Masuk", label: "📥 Dana Masuk (Injeksi Modal / Penambahan Saldo)" },
+                  { key: "Dana Keluar", label: "📤 Dana Keluar (Pencairan Saldo / Operasional)" },
+                  { key: "Transfer Antar Bagian", label: "🔄 Transfer Antar Bagian (Pemindahan Dana)" },
+                ].map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setKeuanganUnitTabType(t.key)}
+                    className={`px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all ${
+                      keuanganUnitTabType === t.key
+                        ? "btn-gradient border-[#0C4A6E] text-white"
+                        : "border-[#CFE3F0] bg-white/80 text-[#45657A] hover:bg-[#F4F8FB]"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSimpanTransaksiUnit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                {keuanganUnitTabType === "Dana Masuk" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#334155] mb-1">Unit Tujuan (Penerima Modal)</label>
+                    <select
+                      value={keuanganUnitForm.unitTujuan}
+                      onChange={(e) => setKeuanganUnitForm({ ...keuanganUnitForm, unitTujuan: e.target.value })}
+                      className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                    >
+                      {daftarSemuaUnit.map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {keuanganUnitTabType === "Dana Keluar" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#334155] mb-1">Unit Asal (Pencairan Saldo / Operasional)</label>
+                    <select
+                      value={keuanganUnitForm.unitAsal}
+                      onChange={(e) => setKeuanganUnitForm({ ...keuanganUnitForm, unitAsal: e.target.value })}
+                      className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                    >
+                      {daftarSemuaUnit.map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {keuanganUnitTabType === "Transfer Antar Bagian" && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#334155] mb-1">Unit Asal (Sumber Dana)</label>
+                      <select
+                        value={keuanganUnitForm.unitAsal}
+                        onChange={(e) => setKeuanganUnitForm({ ...keuanganUnitForm, unitAsal: e.target.value })}
+                        className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      >
+                        {daftarSemuaUnit.map((u) => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#334155] mb-1">Unit Tujuan (Penerima Dana)</label>
+                      <select
+                        value={keuanganUnitForm.unitTujuan}
+                        onChange={(e) => setKeuanganUnitForm({ ...keuanganUnitForm, unitTujuan: e.target.value })}
+                        className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      >
+                        {daftarSemuaUnit.map((u) => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#334155] mb-1">Nominal (Rp)</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    min="1"
+                    required
+                    value={keuanganUnitForm.jumlah}
+                    onChange={(e) => setKeuanganUnitForm({ ...keuanganUnitForm, jumlah: e.target.value })}
+                    className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#334155] mb-1">Keterangan / Catatan</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Pencairan Saldo Kasir Kantin ke BMT"
+                    value={keuanganUnitForm.keterangan}
+                    onChange={(e) => setKeuanganUnitForm({ ...keuanganUnitForm, keterangan: e.target.value })}
+                    className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                  />
+                </div>
+
+                <div className={keuanganUnitTabType === "Transfer Antar Bagian" ? "col-span-full sm:col-span-2 lg:col-span-4 flex justify-end" : ""}>
+                  <button
+                    type="submit"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 btn-gradient text-sm px-5 py-2.5 rounded-xl hover:shadow-lg active:scale-95"
+                  >
+                    💾 Simpan Transaksi Unit
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Riwayat Transaksi & Arus Kas */}
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <h3 className="text-xs font-bold text-[#334155] uppercase tracking-wider">
+                  📋 Riwayat Transaksi & Arus Kas ({keuanganUnitFilter})
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#64748B]">Filter Unit:</span>
+                  <select
+                    value={keuanganUnitFilter}
+                    onChange={(e) => setKeuanganUnitFilter(e.target.value)}
+                    className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                  >
+                    <option value="Semua">Semua Unit Usaha</option>
+                    {daftarSemuaUnit.map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => muatKeuanganUnit(keuanganUnitFilter)}
+                    title="Muat ulang data"
+                    className="p-1.5 rounded-xl border border-[#CFE3F0] bg-white/70 text-[#45657A] hover:bg-white transition-colors"
+                  >
+                    <RefreshCw size={14} className={keuanganUnitLoading ? "animate-spin" : ""} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl overflow-hidden shadow-xs">
+                {keuanganUnitLoading && !keuanganUnitList.length ? (
+                  <div className="p-8 text-center text-xs text-[#0284c7] font-semibold flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    Memuat data riwayat transaksi unit usaha...
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-[#F8FAFC] border-b border-[#CBD5E1] text-[#475569] font-bold">
+                          <th className="px-3.5 py-2.5">Tanggal</th>
+                          <th className="px-3.5 py-2.5">Jenis Transaksi</th>
+                          <th className="px-3.5 py-2.5">Bagian / Unit</th>
+                          <th className="px-3.5 py-2.5">Nominal (Rp)</th>
+                          <th className="px-3.5 py-2.5">Keterangan</th>
+                          <th className="px-3.5 py-2.5">Dicatat Oleh</th>
+                          <th className="px-3.5 py-2.5 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#F1F5F9]">
+                        {keuanganUnitList.map((item) => {
+                          let badgeCls = "bg-[#E0F2FE] text-[#0369A1]";
+                          if (item.jenis === "Dana Masuk") badgeCls = "bg-[#DCFCE7] text-[#15803D]";
+                          else if (item.jenis === "Dana Keluar") badgeCls = "bg-[#FEE2E2] text-[#B91C1C]";
+
+                          const unitText = item.jenis === "Transfer Antar Bagian"
+                            ? `${item.unitAsal || "-"} ➔ ${item.unitTujuan || "-"}`
+                            : (item.unitTujuan || item.unitAsal || "-");
+
+                          return (
+                            <tr key={item.id} className="hover:bg-[#F8FBFE] transition-colors">
+                              <td className="px-3.5 py-2.5 text-[#64748B] font-mono">{item.tanggalISO || item.tanggal || "-"}</td>
+                              <td className="px-3.5 py-2.5">
+                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${badgeCls}`}>
+                                  {item.jenis}
+                                </span>
+                              </td>
+                              <td className="px-3.5 py-2.5 font-bold text-[#1E293B]">{unitText}</td>
+                              <td className="px-3.5 py-2.5 font-bold text-[#0F172A]">{rupiah(item.jumlah)}</td>
+                              <td className="px-3.5 py-2.5 text-[#334155]">{item.keterangan || "-"}</td>
+                              <td className="px-3.5 py-2.5 text-[#64748B]">{item.dicatatOleh || "-"}</td>
+                              <td className="px-3.5 py-2.5 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleHapusTransaksiUnit(item.id)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-[#FCA5A5] text-[#B91C1C] hover:bg-[#FEE2E2] transition-colors"
+                                >
+                                  <Trash2 size={12} /> Hapus
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {!keuanganUnitList.length && <EmptyState text="Belum ada riwayat transaksi unit usaha." />}
+                  </div>
+                )}
+              </div>
             </div>
           </ArchCard>
         </div>

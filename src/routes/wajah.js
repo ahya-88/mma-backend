@@ -49,6 +49,112 @@ router.get("/log/ringkasan", requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
+// GET /api/wajah/embeddings - Daftar santri yang memiliki face embeddings untuk cache kasir
+router.get("/embeddings", requireAuth, asyncHandler(async (req, res) => {
+  const santriRows = await queryAll(`
+    SELECT "id", "nama", "nis", "nisn", "kelas", "faceEmbedding"
+    FROM "Santri"
+    WHERE ("faceEmbedding" IS NOT NULL AND "faceEmbedding" != '')
+       OR EXISTS (SELECT 1 FROM "FaceTemplate" ft WHERE ft."santriId" = "Santri"."id")
+    ORDER BY "nama" ASC
+  `);
+
+  const templateRows = await queryAll(`
+    SELECT "id", "santriId", "embedding", "sumber"
+    FROM "FaceTemplate"
+    WHERE "modelVersion" = $1
+    ORDER BY "dibuatPada" DESC
+  `, [FACE_MODEL]);
+
+  const templateMap = {};
+  for (const t of templateRows) {
+    if (!templateMap[t.santriId]) templateMap[t.santriId] = [];
+    let emb = t.embedding;
+    try {
+      if (typeof emb === "string") emb = JSON.parse(emb);
+    } catch (_) {}
+    templateMap[t.santriId].push({
+      id: String(t.id),
+      santriId: t.santriId,
+      sumber: t.sumber || "foto",
+      embedding: emb,
+    });
+  }
+
+  const result = santriRows.map((s) => {
+    const templates = templateMap[s.id] || [];
+    let legacyEmb = null;
+    if (templates.length === 0 && s.faceEmbedding) {
+      try {
+        legacyEmb = typeof s.faceEmbedding === "string" ? JSON.parse(s.faceEmbedding) : s.faceEmbedding;
+      } catch (_) {}
+    }
+    return {
+      id: s.id,
+      nama: s.nama,
+      nis: s.nis,
+      nisn: s.nisn,
+      kelas: s.kelas,
+      templates,
+      ...(legacyEmb ? { embedding: legacyEmb } : {}),
+    };
+  });
+
+  res.json(result);
+}));
+
+// GET /api/wajah/belum-embed - Foto santri yang belum dibuat embedding (paginasi)
+router.get("/belum-embed", requireAuth, asyncHandler(async (req, res) => {
+  const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 10), 50);
+  const after = (req.query.after || "").toString().trim();
+
+  let sql = `
+    SELECT "id", "nama", "foto"
+    FROM "Santri"
+    WHERE "foto" IS NOT NULL AND "foto" != ''
+      AND ("faceEmbedding" IS NULL OR "faceEmbedding" = '')
+      AND NOT EXISTS (SELECT 1 FROM "FaceTemplate" ft WHERE ft."santriId" = "Santri"."id")
+  `;
+  const params = [];
+  if (after) {
+    params.push(after);
+    sql += ` AND "id" > $${params.length}`;
+  }
+  params.push(limit);
+  sql += ` ORDER BY "id" ASC LIMIT $${params.length}`;
+
+  const rows = await queryAll(sql, params);
+  res.json(rows);
+}));
+
+// PUT /api/wajah/embedding/:santriId - Simpan hasil embedding on-device ke backend
+router.put("/embedding/:santriId", requireAuth, asyncHandler(async (req, res) => {
+  const { santriId } = req.params;
+  const { embedding, sumber } = req.body || {};
+  if (!santriId || !embedding) {
+    throw new CashlessError(400, "santriId dan embedding wajah wajib diisi.");
+  }
+
+  await getSantriRow(santriId);
+  const tISO = new Date().toISOString();
+  const src = ["foto", "kamera"].includes(sumber) ? sumber : "foto";
+
+  await withTransaction(async (client) => {
+    await client.query(
+      `INSERT INTO "FaceTemplate" ("santriId", "embedding", "sumber", "modelVersion", "dibuatOleh", "dibuatPada")
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [santriId, JSON.stringify(embedding), src, FACE_MODEL, req.user?.nama || "Kasir", tISO],
+    );
+
+    await client.query(
+      `UPDATE "Santri" SET "faceEmbedding" = $1 WHERE "id" = $2`,
+      [JSON.stringify(embedding), santriId],
+    );
+  });
+
+  res.json({ santriId, sumber: src, modelVersion: FACE_MODEL, dibuatPada: tISO, ok: true });
+}));
+
 // GET /api/wajah/templates/:santriId
 router.get("/templates/:santriId", requireAuth, asyncHandler(async (req, res) => {
   const rows = await queryAll('SELECT "id", "santriId", "sumber", "modelVersion", "dibuatOleh", "dibuatPada" FROM "FaceTemplate" WHERE "santriId" = $1 ORDER BY "dibuatPada" DESC', [req.params.santriId]);

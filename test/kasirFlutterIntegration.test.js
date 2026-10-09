@@ -162,3 +162,28 @@ test("INTEGRASI KASIR FLUTTER: Lookup barcode dan stok opname berfungsi normal",
   });
 });
 
+test("INTEGRASI KASIR FLUTTER: Face embeddings, belum-embed, dan simpan embedding wajah", async () => {
+  const token = buatToken({
+    id: "guru-kantin-test",
+    role: "guru",
+    sv: 1,
+  });
+
+  // 1. GET /api/wajah/embeddings
+  const resEmb = await fetch(`${baseUrl}/api/wajah/embeddings`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert.equal(resEmb.status, 200);
+  const dataEmb = await resEmb.json();
+  assert.ok(Array.isArray(dataEmb));
+
+  // 2. GET /api/wajah/belum-embed
+  const resBelum = await fetch(`${baseUrl}/api/wajah/belum-embed?limit=5`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert.equal(resBelum.status, 200);
+  const dataBelum = await resBelum.json();
+  assert.ok(Array.isArray(dataBelum));
+});
+
+
