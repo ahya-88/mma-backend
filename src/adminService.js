@@ -23,8 +23,8 @@ async function semuaGuru() {
 
 async function buatGuru({ nama, username, password, departemen, unit, jenisAkun, actingUserId }) {
   let finalJenisAkun = (jenisAkun || "").toLowerCase().trim();
+  if (finalJenisAkun === "admin") throw new CashlessError(400, "Jenis akun Admin sudah dilebur ke Superadmin. Gunakan jenisAkun 'superadmin'.");
   if (!finalJenisAkun) finalJenisAkun = "staf"; // default fallback jika tidak dikirim
-  if (finalJenisAkun === "admin") finalJenisAkun = "superadmin"; // otomatis migrate
   
   if (!JENIS_AKUN_VALID.includes(finalJenisAkun)) throw new CashlessError(400, `Jenis akun tidak valid (${finalJenisAkun}). Harus 'staf' atau 'superadmin'.`);
   if (!nama || !username || !password) throw new CashlessError(400, "Nama, username, dan password wajib diisi.");

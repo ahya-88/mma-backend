@@ -42,13 +42,18 @@ try {
   const scriptStart = currentHtml.indexOf('<script>', rootDivIndex);
   const scriptEnd = currentHtml.indexOf('</script>', scriptStart);
 
-  const newHtml = currentHtml.slice(0, scriptStart + '<script>\n'.length) +
+  let finalHtml = currentHtml.slice(0, scriptStart + '<script>\n'.length) +
     bundledJs +
     '\n' +
     currentHtml.slice(scriptEnd);
 
-  fs.writeFileSync(PUBLIC_INDEX_PATH, newHtml, 'utf8');
-  fs.writeFileSync(DIST_HTML_PATH, newHtml, 'utf8');
+  const lastClosing = finalHtml.lastIndexOf('</body></html>');
+  if (!finalHtml.includes('/offline-cashier.js') && lastClosing !== -1) {
+    finalHtml = finalHtml.slice(0, lastClosing) + '<script src="/offline-cashier.js"></script>\n</body></html>';
+  }
+
+  fs.writeFileSync(PUBLIC_INDEX_PATH, finalHtml, 'utf8');
+  fs.writeFileSync(DIST_HTML_PATH, finalHtml, 'utf8');
 
   const downloadsFolder = 'C:\\Users\\Mudaiyatul Anwar\\Downloads';
   try {
