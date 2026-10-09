@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 
 // ---------- SEED DATA (data contoh, sementara di memori) ----------
 
@@ -839,6 +840,107 @@ function KwitansiContent({ tagihan, santri, wali, petugas }) {
           <p className="border-t border-[#17242E] pt-1 px-4">{petugas || "-"}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function KartuSantriPrintContent({ santriList = [], qrMap = {} }) {
+  const cardsPerPage = 8;
+  const pages = [];
+  for (let i = 0; i < santriList.length; i += cardsPerPage) {
+    pages.push(santriList.slice(i, i + cardsPerPage));
+  }
+
+  return (
+    <div className="space-y-8">
+      {pages.map((group, pageIdx) => (
+        <div
+          key={pageIdx}
+          className="pdf-page bg-white p-6 mx-auto rounded-xl border border-slate-200"
+          style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box" }}
+        >
+          <div className="border-b border-[#CFE3F0] pb-2 mb-4 flex items-center justify-between text-xs text-[#5B7C93]">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-[#0C4A6E]">MA'HAD MUDAIYATUL ANWAR</span>
+              <span>•</span>
+              <span className="font-medium text-[#0284C7]">Kartu Digital Santri (BMT Cashless)</span>
+            </div>
+            <div className="text-[11px]">Halaman {pageIdx + 1} dari {pages.length}</div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {group.map((s) => {
+              const qr = qrMap[s.id];
+              return (
+                <div
+                  key={s.id}
+                  className="rounded-xl border border-[#B8D7EB] bg-gradient-to-br from-white via-[#F4F9FD] to-[#E5F2FB] p-3.5 flex flex-col justify-between shadow-xs relative overflow-hidden"
+                  style={{ width: "88mm", height: "55mm", boxSizing: "border-box" }}
+                >
+                  <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-[#0C4A6E]/5 pointer-events-none" />
+
+                  <div className="flex items-center justify-between border-b border-[#CFE3F0] pb-1.5 mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-5 h-5 rounded-md bg-[#0C4A6E] text-white flex items-center justify-center font-bold text-[9px]">
+                        MMA
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold text-[#0C4A6E] leading-tight">BMT MUDAIYATUL ANWAR</div>
+                        <div className="text-[7.5px] text-[#5B7C93] leading-none">KARTU SANTRI DIGITAL</div>
+                      </div>
+                    </div>
+                    <span className="text-[7.5px] font-bold px-1.5 py-0.5 rounded-full bg-[#0C4A6E] text-white tracking-wider">
+                      CASHLESS
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2.5 flex-1 min-h-0">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div>
+                        <div className="text-[11.5px] font-bold text-[#17242E] leading-tight truncate">
+                          {s.nama}
+                        </div>
+                        <div className="text-[9px] text-[#0C4A6E] font-semibold mt-0.5">
+                          NIS: {s.nis || "-"}
+                        </div>
+                      </div>
+                      <div className="text-[8.5px] text-[#5B7C93] space-y-0.5">
+                        <div>Kelas: <strong className="text-slate-800">{s.kelas || "-"}</strong></div>
+                        <div className="text-[7.5px] text-slate-500">
+                          {s.kartuTerbit ? `Terbit: ${new Date(s.kartuTerbit).toLocaleDateString("id-ID")}` : "Kartu Aktif Santri"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex flex-col items-center">
+                      {qr ? (
+                        <img
+                          src={qr}
+                          alt={`QR ${s.nama}`}
+                          className="w-[66px] h-[66px] rounded-md border border-[#CFE3F0] bg-white p-0.5 shadow-2xs"
+                          style={{ imageRendering: "pixelated" }}
+                        />
+                      ) : (
+                        <div className="w-[66px] h-[66px] rounded-md border border-dashed border-[#CFE3F0] bg-white/60 flex items-center justify-center text-[8px] text-slate-400 text-center px-1">
+                          QR Belum Ada
+                        </div>
+                      )}
+                      <span className="text-[7px] text-[#0C4A6E] font-mono mt-0.5 font-bold">
+                        {s.nis || s.id.slice(0, 8)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-1.5 border-t border-[#CFE3F0] flex items-center justify-between text-[7px] text-[#5B7C93]">
+                    <span>Berlaku di seluruh Unit Usaha Ma'had</span>
+                    <span>Wajib menjaga kerahasiaan PIN</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -2896,7 +2998,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
   const jumlahPermintaanMenunggu = isBMT ? (data.permintaanBMT || []).filter((p) => p.status === "Menunggu").length : 0;
   const UNIT_TABS = isBMT ? [
     { key: "transaksi", label: "Transaksi Cashless", icon: Wallet },
-    { key: "qr", label: "QR Santri & Kartu", icon: QrCode },
+    { key: "qr", label: "QR Santri", icon: QrCode },
     { key: "riwayat", label: "Riwayat Semua Unit", icon: Search },
     { key: "permintaan", label: `Permintaan Wali${jumlahPermintaanMenunggu ? ` (${jumlahPermintaanMenunggu})` : ""}`, icon: Bell },
     { key: "cashflow", label: "Cashflow Unit", icon: TrendingUp },
@@ -3238,24 +3340,184 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
     );
   };
 
-  // ---- Iframe Sesi Kartu QR (khusus BMT) ----
-  const qrIframeRef = useRef(null);
-  const kirimSesiKeQrIframe = () => {
-    if (qrIframeRef.current && qrIframeRef.current.contentWindow && backendToken) {
-      try {
-        qrIframeRef.current.contentWindow.postMessage(
-          { type: "mma-bmt-qr-session", token: backendToken },
-          window.location.origin
-        );
-      } catch (_) {}
+  // ---- Pengelolaan Kartu & QR Santri (Native BMT) ----
+  const [kartuList, setKartuList] = useState([]);
+  const [kartuLoading, setKartuLoading] = useState(false);
+  const [kartuError, setKartuError] = useState("");
+  const [kartuCari, setKartuCari] = useState("");
+  const [kartuFilterKelas, setKartuFilterKelas] = useState("Semua");
+  const [kartuFilterStatus, setKartuFilterStatus] = useState("Semua");
+  const [kartuQrMap, setKartuQrMap] = useState({});
+  const [pinFormOpenId, setPinFormOpenId] = useState(null);
+  const [pinFormValue, setPinFormValue] = useState("");
+  const [pinFormLihat, setPinFormLihat] = useState(false);
+  const [pinFormError, setPinFormError] = useState("");
+  const [pinFormSukses, setPinFormSukses] = useState("");
+  const [kartuAksiBusyId, setKartuAksiBusyId] = useState(null);
+  const [kartuNotice, setKartuNotice] = useState({ jenis: "", pesan: "" });
+
+  const muatKartu = async () => {
+    setKartuLoading(true);
+    setKartuError("");
+    try {
+      let rows = [];
+      if (backendToken) {
+        rows = await backendApi("/kartu", { token: backendToken });
+      }
+      if (!Array.isArray(rows) || rows.length === 0) {
+        rows = (data.santri || []).map((s) => ({
+          id: s.id,
+          nama: s.nama,
+          nis: s.nis || "",
+          kelas: s.kelas || "-",
+          kartuTerbit: s.kartuTerbit || null,
+          kartuToken: s.kartuToken || null,
+          punyaPin: !!s.punyaPin,
+        }));
+      }
+      setKartuList(rows);
+
+      const qrs = {};
+      for (const r of rows) {
+        const token = r.kartuToken || (r.kartuTerbit ? (r.nis || r.id) : null);
+        if (token) {
+          try {
+            qrs[r.id] = await QRCode.toDataURL(token, { width: 256, margin: 1, errorCorrectionLevel: "M" });
+          } catch (_) {}
+        }
+      }
+      setKartuQrMap(qrs);
+    } catch (e) {
+      setKartuError(e.message || "Gagal memuat data kartu santri.");
+      const rows = (data.santri || []).map((s) => ({
+        id: s.id,
+        nama: s.nama,
+        nis: s.nis || "",
+        kelas: s.kelas || "-",
+        kartuTerbit: s.kartuTerbit || null,
+        kartuToken: s.kartuToken || null,
+        punyaPin: !!s.punyaPin,
+      }));
+      setKartuList(rows);
+    } finally {
+      setKartuLoading(false);
     }
   };
+
   useEffect(() => {
-    if (tab === "qr" && backendToken) {
-      const timer = setTimeout(kirimSesiKeQrIframe, 400);
-      return () => clearTimeout(timer);
+    if (tab === "qr" && isBMT) {
+      muatKartu();
     }
-  }, [tab, backendToken]);
+  }, [tab, isBMT, backendToken]);
+
+  const handleTerbitkanKartu = async (santri) => {
+    if (santri.kartuTerbit && !window.confirm(`Ganti QR Code untuk ${santri.nama}? Kartu dan QR lama langsung tidak berlaku lagi.`)) {
+      return;
+    }
+    setKartuAksiBusyId(santri.id);
+    setKartuNotice({ jenis: "", pesan: "" });
+    try {
+      let hasil = null;
+      if (backendToken) {
+        hasil = await backendApi("/kartu/terbitkan", {
+          method: "POST",
+          token: backendToken,
+          body: { santriId: santri.id },
+        });
+      }
+      const token = hasil?.kartuToken || crypto.randomUUID?.() || Date.now().toString();
+      const qrData = await QRCode.toDataURL(token, { width: 256, margin: 1, errorCorrectionLevel: "M" });
+      const tISO = new Date().toISOString();
+
+      setKartuList((prev) => prev.map((s) => s.id === santri.id ? { ...s, kartuTerbit: tISO, kartuToken: token } : s));
+      setKartuQrMap((prev) => ({ ...prev, [santri.id]: qrData }));
+      setData((d) => ({
+        ...d,
+        santri: d.santri.map((s) => s.id === santri.id ? { ...s, kartuTerbit: tISO, kartuToken: token } : s),
+      }));
+      setKartuNotice({ jenis: "sukses", pesan: `QR Code santri ${santri.nama} berhasil ${santri.kartuTerbit ? "diperbarui" : "diterbitkan"}.` });
+    } catch (e) {
+      setKartuNotice({ jenis: "error", pesan: e.message || "Gagal menerbitkan QR." });
+    } finally {
+      setKartuAksiBusyId(null);
+    }
+  };
+
+  const handleSimpanPin = async (e, santriId) => {
+    e.preventDefault();
+    const pinStr = pinFormValue.trim();
+    if (!/^\d{4,6}$/.test(pinStr)) {
+      setPinFormError("PIN harus berupa 4–6 digit angka.");
+      return;
+    }
+    setKartuAksiBusyId(santriId);
+    setPinFormError("");
+    setPinFormSukses("");
+    try {
+      if (backendToken) {
+        await backendApi("/kartu/set-pin", {
+          method: "POST",
+          token: backendToken,
+          body: { santriId, pin: pinStr },
+        });
+      }
+      setKartuList((prev) => prev.map((s) => s.id === santriId ? { ...s, punyaPin: true } : s));
+      setData((d) => ({
+        ...d,
+        santri: d.santri.map((s) => s.id === santriId ? { ...s, punyaPin: true } : s),
+      }));
+      setPinFormSukses("PIN berhasil disimpan!");
+      setTimeout(() => {
+        setPinFormOpenId(null);
+        setPinFormValue("");
+        setPinFormSukses("");
+      }, 1000);
+    } catch (err) {
+      setPinFormError(err.message || "Gagal menyimpan PIN.");
+    } finally {
+      setKartuAksiBusyId(null);
+    }
+  };
+
+  const handleUnduhQr = (santri) => {
+    const qrData = kartuQrMap[santri.id];
+    if (!qrData) return;
+    const a = document.createElement("a");
+    a.href = qrData;
+    a.download = `QR-${(santri.nis || santri.nama).replace(/[^a-zA-Z0-9_-]/g, "_")}.png`;
+    a.click();
+  };
+
+  const handleCetakSatuKartu = (santri) => {
+    if (onPrint) {
+      onPrint(<KartuSantriPrintContent santriList={[santri]} qrMap={kartuQrMap} />);
+    } else {
+      window.print();
+    }
+  };
+
+  const handleCetakSemuaKartu = async (targetSantri) => {
+    const belumAdaQr = targetSantri.filter((s) => !s.kartuTerbit && !kartuQrMap[s.id]);
+    if (belumAdaQr.length > 0) {
+      const setuju = window.confirm(
+        `Terdapat ${belumAdaQr.length} santri yang belum memiliki QR Code. Terbitkan QR secara otomatis untuk mereka sebelum mencetak?`
+      );
+      if (setuju) {
+        setKartuLoading(true);
+        for (const s of belumAdaQr) {
+          try {
+            await handleTerbitkanKartu(s);
+          } catch (_) {}
+        }
+        setKartuLoading(false);
+      }
+    }
+    if (onPrint) {
+      onPrint(<KartuSantriPrintContent santriList={targetSantri} qrMap={kartuQrMap} />);
+    } else {
+      window.print();
+    }
+  };
 
   // ---- Transaksi Cashless (khusus BMT: Top Up & Tarik Tunai) ----
   // Sumber kebenaran sekarang backend cashless (lihat backend-cashless-mma.zip) — bukan lagi hitungan lokal.
@@ -3880,43 +4142,359 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
         </div>
       )}
 
-      {tab === "qr" && isBMT && (
-        <div className="space-y-4">
-          <ArchCard title="Pengelolaan QR Santri & Cetak Kartu" eyebrow="Modul Cetak Kartu BMT" icon={QrCode}>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-3 bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl p-3">
-              <p className="text-xs text-[#0C4A6E]">
-                Kelola kartu aktif santri, terbitkan ulang QR jika kartu hilang, atur PIN transaksi debit santri, dan cetak kartu santri berstandar ID card.
-              </p>
-              <div className="flex gap-2 shrink-0">
+      {tab === "qr" && isBMT && (() => {
+        const daftarKelasUnik = ["Semua", ...Array.from(new Set(kartuList.map((s) => s.kelas).filter(Boolean))).sort()];
+        const filteredKartu = kartuList.filter((s) => {
+          const matchText = (kartuCari || "").toLowerCase();
+          const namaMatch = (s.nama || "").toLowerCase().includes(matchText);
+          const nisMatch = (s.nis || "").toLowerCase().includes(matchText);
+          const kelasMatch = (s.kelas || "").toLowerCase().includes(matchText);
+          const textPass = !matchText || namaMatch || nisMatch || kelasMatch;
+          const kelasPass = kartuFilterKelas === "Semua" || s.kelas === kartuFilterKelas;
+
+          let statusPass = true;
+          const punyaQr = !!(s.kartuTerbit || kartuQrMap[s.id]);
+          if (kartuFilterStatus === "Aktif") statusPass = punyaQr;
+          else if (kartuFilterStatus === "Belum") statusPass = !punyaQr;
+          else if (kartuFilterStatus === "TanpaPIN") statusPass = !s.punyaPin;
+
+          return textPass && kelasPass && statusPass;
+        });
+
+        const totalSantri = kartuList.length;
+        const totalQrAktif = kartuList.filter((s) => s.kartuTerbit || kartuQrMap[s.id]).length;
+        const totalBelumTerbit = kartuList.filter((s) => !s.kartuTerbit && !kartuQrMap[s.id]).length;
+        const totalPunyaPin = kartuList.filter((s) => s.punyaPin).length;
+
+        return (
+          <div className="space-y-5">
+            {kartuNotice.pesan && (
+              <div className={`p-3.5 rounded-xl text-xs font-medium flex items-center justify-between gap-3 ${
+                kartuNotice.jenis === "sukses" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"
+              }`}>
+                <div className="flex items-center gap-2">
+                  {kartuNotice.jenis === "sukses" ? <CheckCircle2 size={16} className="text-emerald-600" /> : <AlertCircle size={16} className="text-rose-600" />}
+                  <span>{kartuNotice.pesan}</span>
+                </div>
+                <button onClick={() => setKartuNotice({ jenis: "", pesan: "" })} className="text-xs hover:underline">
+                  Tutup
+                </button>
+              </div>
+            )}
+
+            <div className="bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-semibold text-[#0C4A6E]">Pengelolaan Langsung QR & PIN Santri (BMT Cashless)</h4>
+                <p className="text-xs text-[#45657A] mt-0.5">
+                  Terbitkan atau perbarui QR santri, kelola PIN otorisasi debit kasir (4–6 digit), unduh berkas QR, serta cetak kartu santri berstandar ID Card langsung di sini.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={kirimSesiKeQrIframe}
-                  className="border border-[#CFE3F0] bg-white text-[#0C4A6E] text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1"
+                  onClick={muatKartu}
+                  disabled={kartuLoading}
+                  className="border border-[#CFE3F0] bg-white text-[#0C4A6E] text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs hover:bg-slate-50 transition-colors disabled:opacity-50"
                 >
-                  <RefreshCw size={12} /> Segarkan Kartu
+                  <RefreshCw size={13} className={kartuLoading ? "animate-spin" : ""} />
+                  Segarkan
                 </button>
-                <a
-                  href="/bmt/qr"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-gradient text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1"
+                <button
+                  type="button"
+                  onClick={() => handleCetakSemuaKartu(filteredKartu)}
+                  disabled={filteredKartu.length === 0}
+                  className="btn-gradient text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs disabled:opacity-50"
                 >
-                  Buka Tab Baru ↗
-                </a>
+                  <Printer size={13} />
+                  Cetak Kartu ({filteredKartu.length})
+                </button>
               </div>
             </div>
-            <div className="w-full bg-white rounded-xl border border-[#DCEDF7] overflow-hidden" style={{ minHeight: "740px" }}>
-              <iframe
-                ref={qrIframeRef}
-                src="/bmt-qr.html?embedded=1"
-                title="Pengelolaan Kartu QR Santri"
-                className="w-full h-[740px] border-0"
-                onLoad={kirimSesiKeQrIframe}
-              />
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-xl border border-[#CFE3F0] bg-white shadow-2xs">
+                <p className="text-[11px] text-[#5B7C93] font-medium">Total Santri</p>
+                <p className="text-xl font-bold text-[#0C4A6E] mt-1">{totalSantri}</p>
+                <span className="text-[10px] text-[#5B7C93]">Terdaftar di sistem</span>
+              </div>
+              <div className="p-3.5 rounded-xl border border-[#CFE3F0] bg-white shadow-2xs">
+                <p className="text-[11px] text-[#5B7C93] font-medium">QR Aktif</p>
+                <p className="text-xl font-bold text-emerald-600 mt-1">{totalQrAktif}</p>
+                <span className="text-[10px] text-emerald-700">Siap transaksi</span>
+              </div>
+              <div className="p-3.5 rounded-xl border border-[#CFE3F0] bg-white shadow-2xs">
+                <p className="text-[11px] text-[#5B7C93] font-medium">Belum Terbit</p>
+                <p className="text-xl font-bold text-amber-600 mt-1">{totalBelumTerbit}</p>
+                <span className="text-[10px] text-amber-700">Perlu diterbitkan</span>
+              </div>
+              <div className="p-3.5 rounded-xl border border-[#CFE3F0] bg-white shadow-2xs">
+                <p className="text-[11px] text-[#5B7C93] font-medium">PIN Terdaftar</p>
+                <p className="text-xl font-bold text-[#0284C7] mt-1">{totalPunyaPin}</p>
+                <span className="text-[10px] text-[#0284C7]">Otorisasi debit aktif</span>
+              </div>
             </div>
-          </ArchCard>
-        </div>
-      )}
+
+            <ArchCard title="Daftar Kartu Santri" eyebrow="Katalog QR & Kartu" icon={QrCode}>
+              <div className="flex flex-col md:flex-row gap-3 mb-4 items-stretch md:items-center justify-between">
+                <div className="relative flex-1 min-w-[200px] max-w-md">
+                  <Search size={15} className="absolute left-3 top-3 text-[#5B7C93]" />
+                  <input
+                    type="text"
+                    placeholder="Cari nama, NIS, atau kelas santri..."
+                    value={kartuCari}
+                    onChange={(e) => setKartuCari(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#CFE3F0] bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/20"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={kartuFilterKelas}
+                    onChange={(e) => setKartuFilterKelas(e.target.value)}
+                    className="text-xs px-2.5 py-2 rounded-xl border border-[#CFE3F0] bg-white text-[#0C4A6E] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/20"
+                  >
+                    {daftarKelasUnik.map((k) => (
+                      <option key={k} value={k}>
+                        {k === "Semua" ? "Semua Kelas" : `Kelas ${k}`}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={kartuFilterStatus}
+                    onChange={(e) => setKartuFilterStatus(e.target.value)}
+                    className="text-xs px-2.5 py-2 rounded-xl border border-[#CFE3F0] bg-white text-[#0C4A6E] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/20"
+                  >
+                    <option value="Semua">Semua Status</option>
+                    <option value="Aktif">QR Aktif Saja</option>
+                    <option value="Belum">Belum Terbit Saja</option>
+                    <option value="TanpaPIN">PIN Belum Diatur Saja</option>
+                  </select>
+
+                  <span className="text-xs text-[#5B7C93] ml-auto self-center">
+                    Menampilkan <strong>{filteredKartu.length}</strong> santri
+                  </span>
+                </div>
+              </div>
+
+              {kartuLoading ? (
+                <div className="py-16 text-center text-sm text-[#5B7C93] flex flex-col items-center justify-center gap-2">
+                  <Loader2 size={24} className="animate-spin text-[#0C4A6E]" />
+                  <span>Memuat data kartu & QR santri...</span>
+                </div>
+              ) : filteredKartu.length === 0 ? (
+                <div className="py-16 text-center text-sm text-[#5B7C93] border border-dashed border-[#CFE3F0] rounded-xl bg-slate-50/50">
+                  Santri tidak ditemukan dengan kriteria pencarian ini.
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredKartu.map((s) => {
+                    const qrData = kartuQrMap[s.id];
+                    const punyaQr = !!(s.kartuTerbit || qrData);
+                    const isBusy = kartuAksiBusyId === s.id;
+                    const isPinOpen = pinFormOpenId === s.id;
+
+                    return (
+                      <div
+                        key={s.id}
+                        className="rounded-xl border border-[#CFE3F0] bg-white p-4 shadow-2xs hover:shadow-sm transition-shadow flex flex-col justify-between gap-3 relative"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] flex items-center justify-center font-bold text-xs shrink-0">
+                                {s.nama?.charAt(0) || "S"}
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-semibold text-[#17242E] truncate" title={s.nama}>
+                                  {s.nama}
+                                </h4>
+                                <p className="text-[11px] text-[#5B7C93]">
+                                  NIS: <span className="font-mono font-medium text-slate-700">{s.nis || "-"}</span> · Kelas {s.kelas || "-"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-1.5 pt-1.5">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                punyaQr ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${punyaQr ? "bg-emerald-500" : "bg-amber-500"}`} />
+                                {punyaQr ? "QR Aktif" : "Belum Terbit"}
+                              </span>
+
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                s.punyaPin ? "bg-blue-50 text-[#0284C7] border border-blue-200" : "bg-slate-100 text-slate-600 border border-slate-200"
+                              }`}>
+                                <Lock size={9} />
+                                {s.punyaPin ? "PIN Aktif" : "PIN Kosong"}
+                              </span>
+                            </div>
+
+                            {s.kartuTerbit && (
+                              <p className="text-[10px] text-[#5B7C93] pt-0.5">
+                                Terbit: {new Date(s.kartuTerbit).toLocaleDateString("id-ID")}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="shrink-0 flex flex-col items-center">
+                            {qrData ? (
+                              <div className="p-1 rounded-lg border border-[#CFE3F0] bg-white shadow-2xs">
+                                <img
+                                  src={qrData}
+                                  alt={`QR ${s.nama}`}
+                                  className="w-20 h-20 rounded"
+                                  style={{ imageRendering: "pixelated" }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-20 h-20 rounded-lg border border-dashed border-[#CFE3F0] bg-slate-50 flex flex-col items-center justify-center p-1 text-center">
+                                <QrCode size={20} className="text-slate-400 mb-1" />
+                                <span className="text-[8px] text-slate-500 font-medium">Belum Ada QR</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {isPinOpen && (
+                          <form
+                            onSubmit={(e) => handleSimpanPin(e, s.id)}
+                            className="bg-[#F8FAFC] border border-[#CFE3F0] rounded-xl p-3 space-y-2 mt-1 animate-in fade-in"
+                          >
+                            <div className="flex items-center justify-between">
+                              <label className="text-[11px] font-semibold text-[#0C4A6E] flex items-center gap-1">
+                                <Lock size={12} />
+                                {s.punyaPin ? "Ubah PIN Debit (4–6 Angka)" : "Atur PIN Debit (4–6 Angka)"}
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPinFormOpenId(null);
+                                  setPinFormError("");
+                                  setPinFormSukses("");
+                                }}
+                                className="text-[10px] text-slate-500 hover:text-slate-700"
+                              >
+                                Tutup ✕
+                              </button>
+                            </div>
+
+                            <div className="relative">
+                              <input
+                                type={pinFormLihat ? "text" : "password"}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={6}
+                                placeholder="Masukkan 4-6 angka PIN"
+                                value={pinFormValue}
+                                onChange={(e) => setPinFormValue(e.target.value.replace(/\D/g, ""))}
+                                className="w-full text-xs pl-3 pr-8 py-1.5 rounded-lg border border-[#CFE3F0] bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/20 font-mono tracking-widest"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setPinFormLihat(!pinFormLihat)}
+                                className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
+                              >
+                                {pinFormLihat ? <EyeOff size={13} /> : <Eye size={13} />}
+                              </button>
+                            </div>
+
+                            {pinFormError && (
+                              <p className="text-[10px] text-rose-600 font-medium">{pinFormError}</p>
+                            )}
+                            {pinFormSukses && (
+                              <p className="text-[10px] text-emerald-600 font-medium">{pinFormSukses}</p>
+                            )}
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="submit"
+                                disabled={isBusy}
+                                className="btn-gradient text-[11px] font-semibold px-3 py-1 rounded-lg shadow-2xs disabled:opacity-50"
+                              >
+                                {isBusy ? "Menyimpan..." : "Simpan PIN"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPinFormOpenId(null);
+                                  setPinFormValue("");
+                                }}
+                                className="text-[11px] px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600"
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          </form>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => handleTerbitkanKartu(s)}
+                            disabled={isBusy}
+                            className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-colors ${
+                              punyaQr
+                                ? "border-amber-200 bg-amber-50/50 hover:bg-amber-100/70 text-amber-800"
+                                : "border-[#CFE3F0] bg-white hover:bg-slate-50 text-[#0C4A6E]"
+                            } disabled:opacity-50`}
+                            title={punyaQr ? "Terbitkan ulang QR baru (QR lama tidak berlaku)" : "Terbitkan QR santri"}
+                          >
+                            <RefreshCw size={11} className={isBusy ? "animate-spin" : ""} />
+                            {punyaQr ? "Ganti QR" : "Terbitkan QR"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (pinFormOpenId === s.id) {
+                                setPinFormOpenId(null);
+                              } else {
+                                setPinFormOpenId(s.id);
+                                setPinFormValue("");
+                                setPinFormError("");
+                                setPinFormSukses("");
+                              }
+                            }}
+                            className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#CFE3F0] bg-white hover:bg-slate-50 text-[#0C4A6E] flex items-center gap-1"
+                          >
+                            <Lock size={11} />
+                            {s.punyaPin ? "Ubah PIN" : "Atur PIN"}
+                          </button>
+
+                          {qrData && (
+                            <button
+                              type="button"
+                              onClick={() => handleUnduhQr(s)}
+                              className="text-[11px] font-semibold px-2 py-1.5 rounded-lg border border-[#CFE3F0] bg-white hover:bg-slate-50 text-[#5B7C93] flex items-center gap-1"
+                              title="Unduh file PNG QR Code santri"
+                            >
+                              <Download size={11} />
+                              Unduh
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleCetakSatuKartu(s)}
+                            className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#CFE3F0] bg-white hover:bg-slate-50 text-[#0C4A6E] flex items-center gap-1 ml-auto"
+                            title="Cetak ID Card santri ini"
+                          >
+                            <Printer size={11} />
+                            Cetak
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </ArchCard>
+          </div>
+        );
+      })()}
 
       {tab === "riwayat" && isBMT && (
         <div className="space-y-5">

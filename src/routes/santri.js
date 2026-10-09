@@ -1,5 +1,6 @@
 const express = require("express");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 const { query, queryOne, queryAll, withTransaction } = require("../db");
 const { requireAuth, isSuperAdmin } = require("../auth");
 const { CashlessError, getSantriRow, toPublicSantri, toSaldoPublik, riwayatSantri, SANTRI_BIODATA_FIELDS } = require("../cashlessService");
@@ -333,6 +334,44 @@ router.delete("/:id", requireAuth, asyncHandler(async (req, res) => {
   });
 
   res.json({ id: santriId, deleted: true });
+}));
+
+// POST /api/santri/:id/kartu/terbitkan
+router.post("/:id/kartu/terbitkan", requireAuth, asyncHandler(async (req, res) => {
+  const santriId = req.params.id;
+  const { kartuToken } = req.body || {};
+  const tokenStr = kartuToken || crypto.randomBytes(16).toString("hex");
+  const tISO = new Date().toISOString();
+
+  await withTransaction(async (client) => {
+    const existing = await client.query('SELECT "id" FROM "Santri" WHERE "kartuToken" = $1 AND "id" <> $2', [tokenStr, santriId]);
+    if (existing.rowCount) throw new CashlessError(400, "Token/UID Kartu ini sudah terdaftar untuk santri lain.");
+
+    await client.query(
+      `UPDATE "Santri" SET "kartuToken" = $1, "kartuTerbit" = $2 WHERE "id" = $3`,
+      [tokenStr, tISO, santriId],
+    );
+  });
+
+  const updated = await getSantriRow(santriId);
+  res.json(await toPublicSantri(updated));
+}));
+
+// POST /api/santri/:id/pin
+router.post("/:id/pin", requireAuth, asyncHandler(async (req, res) => {
+  const santriId = req.params.id;
+  const { pin } = req.body || {};
+  if (!santriId || typeof pin !== "string" || !/^\d{4,6}$/.test(pin.trim())) {
+    throw new CashlessError(400, "PIN harus berupa 4–6 digit angka.");
+  }
+
+  const hash = await bcrypt.hash(pin.trim(), 10);
+  await query(
+    `UPDATE "Santri" SET "pinHash" = $1, "pinGagal" = 0, "pinKunciSampai" = NULL WHERE "id" = $2`,
+    [hash, santriId],
+  );
+
+  res.json({ santriId, pinSet: true, pesan: "PIN santri berhasil disimpan." });
 }));
 
 module.exports = router;
