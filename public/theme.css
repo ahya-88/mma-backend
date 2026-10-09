@@ -1,20 +1,59 @@
+/* ==========================================================================
+   MMA DESIGN SYSTEM — ALL-BLUE NEO-ACADEMIC ENTERPRISE THEME
+   Palet: Royal Sapphire, Deep Marine Navy, Sky Cerulean & Ice Blue Canvas
+   ========================================================================== */
+
+:root {
+  --blue-marine: #082f49;
+  --blue-navy: #0c4a6e;
+  --blue-sapphire: #1d4ed8;
+  --blue-royal: #2563eb;
+  --blue-sky: #0284c7;
+  --blue-cyan: #38bdf8;
+  --blue-canvas: #f0f7fc;
+  --blue-ice: #e0f2fe;
+  --blue-ice-soft: #f4f9fd;
+  --blue-border: #cfe3f0;
+  --blue-border-light: #e2e8f0;
+  --blue-text-main: #0f172a;
+  --blue-text-muted: #5b7c93;
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  color: var(--blue-text-main);
+  background-color: var(--blue-canvas) !important;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(2, 132, 199, 0.08) 0px, transparent 45%),
+    radial-gradient(at 100% 100%, rgba(12, 74, 110, 0.06) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(224, 242, 254, 0.4) 0px, transparent 65%) !important;
+  background-attachment: fixed;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   DARK MODE — MIDNIGHT BLUE OBSIDIAN
+   ========================================================================== */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --theme-page: #101820;
-  --theme-surface: #19232d;
-  --theme-surface-raised: #202d38;
-  --theme-text: #e4edf3;
-  --theme-muted: #a8bac7;
-  --theme-border: #344552;
-  --theme-accent: #78c5e8;
+  --theme-page: #0a111c;
+  --theme-surface: #0f1e2e;
+  --theme-surface-raised: #16283b;
+  --theme-text: #f0f7fc;
+  --theme-muted: #94a9b8;
+  --theme-border: #1e3a5f;
+  --theme-accent: #38bdf8;
 }
 
 html[data-theme="dark"] body {
   color: var(--theme-text);
-  background-color: var(--theme-page);
+  background-color: var(--theme-page) !important;
   background-image:
-    radial-gradient(ellipse at 4% 0%, rgb(31 91 113 / 22%), transparent 34rem),
-    radial-gradient(ellipse at 96% 18%, rgb(81 63 117 / 14%), transparent 28rem);
+    radial-gradient(ellipse at 4% 0%, rgba(2, 132, 199, 0.14), transparent 34rem),
+    radial-gradient(ellipse at 96% 18%, rgba(12, 74, 110, 0.18), transparent 28rem) !important;
 }
 
 html[data-theme="dark"] #root {
@@ -37,42 +76,13 @@ html[data-theme="dark"] #root [class~="bg-[#EAF4FB]"] {
 
 html[data-theme="dark"] #root .glass-card {
   border-color: var(--theme-border) !important;
-  background: rgb(25 35 45 / 92%) !important;
-  box-shadow: 0 14px 36px rgb(0 0 0 / 22%), 0 2px 6px rgb(0 0 0 / 16%) !important;
+  background: rgba(15, 30, 46, 0.92) !important;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3) !important;
 }
 
 html[data-theme="dark"] #root .glass-card:hover {
-  border-color: #4f7182 !important;
-  box-shadow: 0 18px 42px rgb(0 0 0 / 30%), 0 3px 8px rgb(0 0 0 / 18%) !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#E3F0E8]"],
-html[data-theme="dark"] #root [class~="bg-[#D3E6DA]"],
-html[data-theme="dark"] #root [class~="bg-[#d3ecdd]"] {
-  background-color: #17382c !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#FBE4E1]"],
-html[data-theme="dark"] #root [class~="bg-[#F6D3CE]"],
-html[data-theme="dark"] #root [class~="bg-[#f6d5cf]"],
-html[data-theme="dark"] #root [class~="bg-[#FCEFE8]"] {
-  background-color: #40272a !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#FFF6DE]"],
-html[data-theme="dark"] #root [class~="bg-[#F0E1AE]"] {
-  background-color: #3c3420 !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#DCEEFB]"],
-html[data-theme="dark"] #root [class~="bg-[#EAF4FA]"],
-html[data-theme="dark"] #root [class~="bg-[#D6EAF6]"],
-html[data-theme="dark"] #root [class~="bg-[#EAF4FB]"] {
-  background-color: #1d3442 !important;
-}
-
-html[data-theme="dark"] #root [class~="bg-[#EDE7F6]"] {
-  background-color: #30283f !important;
+  border-color: #2b517d !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.55), 0 3px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
 html[data-theme="dark"] #root [class~="text-[#17242E]"],
@@ -89,30 +99,9 @@ html[data-theme="dark"] #root [class~="text-[#94A9B6]"] {
   color: var(--theme-muted) !important;
 }
 
-html[data-theme="dark"] #root [class~="text-[#15803D]"] {
-  color: #8ce0ad !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#96271A]"],
-html[data-theme="dark"] #root [class~="text-[#B5533C]"] {
-  color: #ffaaa0 !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#8A6A0D]"],
-html[data-theme="dark"] #root [class~="text-[#B98A1C]"] {
-  color: #f1d17d !important;
-}
-
-html[data-theme="dark"] #root [class~="text-[#5B3E8A]"] {
-  color: #cfb4ff !important;
-}
-
 html[data-theme="dark"] #root [class~="border-[#CFE3F0]"],
 html[data-theme="dark"] #root [class~="border-[#DCEDF7]"],
-html[data-theme="dark"] #root [class~="border-[#E7ECF2]"],
-html[data-theme="dark"] #root [class~="border-[#CFE3D6]"],
-html[data-theme="dark"] #root [class~="border-[#F0E2B0]"],
-html[data-theme="dark"] #root [class~="border-[#F3C9C2]"] {
+html[data-theme="dark"] #root [class~="border-[#E7ECF2]"] {
   border-color: var(--theme-border) !important;
 }
 
@@ -126,21 +115,39 @@ html[data-theme="dark"] #root textarea {
 
 html[data-theme="dark"] #root input::placeholder,
 html[data-theme="dark"] #root textarea::placeholder {
-  color: #9aabb7;
+  color: #728a9c;
 }
 
-html[data-theme="dark"] #root table thead th {
-  color: var(--theme-muted);
-  background: #202e39;
+/* ==========================================================================
+   BUTTON & GRADIENT STYLING — ALL-BLUE
+   ========================================================================== */
+#root .btn-gradient,
+.btn-gradient {
+  background: linear-gradient(135deg, #0284c7 0%, #0c4a6e 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px -1px rgba(2, 132, 199, 0.38) !important;
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-html[data-theme="dark"] #root table tbody tr:hover {
-  background-color: rgb(120 197 232 / 8%);
+#root .btn-gradient:hover:not(:disabled),
+.btn-gradient:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1 0%, #082f49 100%) !important;
+  box-shadow: 0 8px 22px -1px rgba(2, 132, 199, 0.48) !important;
+  transform: translateY(-1px) !important;
 }
 
-html[data-theme="dark"] #root ::selection {
-  color: #101820;
-  background: #78c5e8;
+#root .gradient-primary,
+.gradient-primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0c4a6e 100%) !important;
+}
+
+#root .gradient-primary-text,
+.gradient-primary-text {
+  background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 #theme-toggle {
@@ -151,50 +158,38 @@ html[data-theme="dark"] #root ::selection {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
-  padding: 9px 14px;
-  border: 1px solid #cfe3f0;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1.5px solid #cfe3f0;
   border-radius: 999px;
   color: #0c4a6e;
-  background: rgb(255 255 255 / 94%);
-  box-shadow: 0 8px 24px rgb(12 74 110 / 18%);
-  font: 600 13px Inter, sans-serif;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 24px rgba(12, 74, 110, 0.16);
+  font: 600 12.5px Inter, sans-serif;
+  backdrop-filter: blur(12px);
   cursor: pointer;
-  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+  transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 #theme-toggle:hover {
   transform: translateY(-2px);
-}
-
-#theme-toggle:focus-visible {
-  outline: 3px solid #29aae1;
-  outline-offset: 3px;
+  box-shadow: 0 12px 28px rgba(12, 74, 110, 0.24);
 }
 
 html[data-theme="dark"] #theme-toggle {
-  border-color: #435866;
-  color: #e4edf3;
-  background: #202d38;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 32%);
-}
-
-@media (max-width: 480px) {
-  #theme-toggle {
-    right: 12px;
-    bottom: 12px;
-    min-height: 40px;
-    padding: 8px 12px;
-  }
+  border-color: #2b517d;
+  color: #e0f2fe;
+  background: rgba(15, 30, 46, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 /* ==========================================================================
-   ENHANCED MODERN & DYNAMIC TABLE STYLING (Hidup, Elegan & Berkelas)
+   MODERN ALL-BLUE DATA GRID & TABLE STYLING
    ========================================================================== */
 
-/* Table Wrapper & Container Styling */
-.table-wrap,
+table,
 #root table,
+.table-wrap table,
 .panel-card table,
 section table {
   border-collapse: separate !important;
@@ -202,25 +197,30 @@ section table {
   width: 100%;
 }
 
-#root table,
-.table-wrap {
-  border-radius: 14px;
+.table-wrap,
+#root table {
+  border-radius: 14px !important;
   overflow: hidden;
-  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.05), 0 2px 6px -1px rgba(12, 74, 110, 0.03);
+  box-shadow: 0 4px 20px -2px rgba(12, 74, 110, 0.06), 0 2px 6px -1px rgba(12, 74, 110, 0.03) !important;
+  border: 1.5px solid #cfe3f0 !important;
+  background-color: #ffffff;
 }
 
-/* Modern Gradient Table Header */
+/* Deep Marine Navy Table Header */
+table thead th,
+table th,
 #root table thead th,
+#root table th,
 .table-wrap th,
-table thead th {
-  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%) !important;
-  color: #334155 !important;
+th {
+  background: linear-gradient(180deg, #0c4a6e 0%, #082f49 100%) !important;
+  color: #ffffff !important;
   font-size: 11px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.07em !important;
+  letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
   padding: 13px 16px !important;
-  border-bottom: 2px solid #cbd5e1 !important;
+  border-bottom: 2.5px solid #0284c7 !important;
   border-top: none !important;
   white-space: nowrap;
 }
@@ -228,90 +228,84 @@ table thead th {
 html[data-theme="dark"] #root table thead th,
 html[data-theme="dark"] .table-wrap th,
 html[data-theme="dark"] table thead th {
-  background: linear-gradient(180deg, #1e293b 0%, #152230 100%) !important;
-  color: #94a3b8 !important;
-  border-bottom: 2px solid #334155 !important;
+  background: linear-gradient(180deg, #11273d 0%, #0a1827 100%) !important;
+  color: #94a9b8 !important;
+  border-bottom: 2.5px solid #0284c7 !important;
 }
 
-/* Alternating Rows (Zebra Striping) */
+/* Zebra Striping: White & Soft Ice Blue */
+table tbody tr:nth-child(even),
+table tr:nth-child(even),
 #root table tbody tr:nth-child(even),
-.table-wrap tbody tr:nth-child(even),
-table tbody tr:nth-child(even) {
-  background-color: rgba(248, 250, 252, 0.75);
+#root table tr:nth-child(even),
+.table-wrap tbody tr:nth-child(even) {
+  background-color: #f6fafd !important;
 }
 
+table tbody tr:nth-child(odd),
+table tr:nth-child(odd),
 #root table tbody tr:nth-child(odd),
-.table-wrap tbody tr:nth-child(odd),
-table tbody tr:nth-child(odd) {
-  background-color: #ffffff;
+#root table tr:nth-child(odd),
+.table-wrap tbody tr:nth-child(odd) {
+  background-color: #ffffff !important;
 }
 
 html[data-theme="dark"] #root table tbody tr:nth-child(even),
-html[data-theme="dark"] .table-wrap tbody tr:nth-child(even),
-html[data-theme="dark"] table tbody tr:nth-child(even) {
-  background-color: rgba(30, 41, 59, 0.45);
+html[data-theme="dark"] .table-wrap tbody tr:nth-child(even) {
+  background-color: rgba(22, 40, 59, 0.45) !important;
 }
 
 html[data-theme="dark"] #root table tbody tr:nth-child(odd),
-html[data-theme="dark"] .table-wrap tbody tr:nth-child(odd),
-html[data-theme="dark"] table tbody tr:nth-child(odd) {
-  background-color: var(--theme-surface, #19232d);
+html[data-theme="dark"] .table-wrap tbody tr:nth-child(odd) {
+  background-color: var(--theme-surface, #0f1e2e) !important;
 }
 
-/* Interactive Hover Row with Vibrant Indicator Bar */
+/* Table Cells */
+table tbody tr td,
+table td,
+#root table td,
+#root table tbody td,
+.table-wrap tbody td {
+  padding: 13px 16px !important;
+  border-bottom: 1px solid #eef5fa !important;
+  font-size: 12.5px;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 140ms ease;
+}
+
+html[data-theme="dark"] #root table tbody td,
+html[data-theme="dark"] .table-wrap td {
+  border-bottom: 1px solid #1a334d !important;
+}
+
+/* Interactive Hover Row */
+table tbody tr,
 #root table tbody tr,
-.table-wrap tbody tr,
-table tbody tr {
-  transition: background-color 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+.table-wrap tbody tr {
+  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+table tbody tr:hover,
 #root table tbody tr:hover,
-.table-wrap tbody tr:hover,
-table tbody tr:hover {
-  background-color: #f0f9ff !important;
+.table-wrap tbody tr:hover {
+  background-color: #e0f2fe !important;
   box-shadow: inset 4px 0 0 #0284c7 !important;
 }
 
 html[data-theme="dark"] #root table tbody tr:hover,
-html[data-theme="dark"] .table-wrap tbody tr:hover,
-html[data-theme="dark"] table tbody tr:hover {
-  background-color: rgba(56, 189, 248, 0.12) !important;
+html[data-theme="dark"] .table-wrap tbody tr:hover {
+  background-color: rgba(2, 132, 199, 0.16) !important;
   box-shadow: inset 4px 0 0 #38bdf8 !important;
 }
 
-/* Cell Spacing, Borders & Tabular Formatting */
-#root table tbody td,
-.table-wrap td,
-table tbody td {
-  padding: 13px 16px !important;
-  border-bottom: 1px solid #f1f5f9 !important;
-  font-size: 12.5px;
-  vertical-align: middle;
-  font-variant-numeric: tabular-nums;
-}
-
-html[data-theme="dark"] #root table tbody td,
-html[data-theme="dark"] .table-wrap td,
-html[data-theme="dark"] table tbody td {
-  border-bottom: 1px solid #283946 !important;
-}
-
-/* Button & Action Cell in Table */
-table tbody td button {
-  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease !important;
-}
-
-table tbody td button:hover:not(:disabled) {
-  transform: translateY(-1px) !important;
-}
-
-/* Vibrant Status Badges with Pulse Dots */
+/* Status Badges & Pills */
 .badge,
 .table-badge,
 table td .badge {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 5px !important;
+  gap: 5.5px !important;
   padding: 3.5px 10px !important;
   border-radius: 9999px !important;
   font-size: 11px !important;
@@ -330,45 +324,60 @@ table td .badge {
   flex-shrink: 0;
 }
 
-/* Green: Lunas, Hadir, Disetujui, Aktif */
+/* Sky/Ocean Blue: Lunas, Hadir, Disetujui, Aktif */
 .badge.approved,
 .badge.disetujui,
 .badge.hadir,
 .badge.lunas,
 .badge.aktif {
-  background-color: #ecfdf5 !important;
-  color: #065f46 !important;
-  border: 1px solid #a7f3d0 !important;
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
 }
 .badge.approved::before,
 .badge.disetujui::before,
 .badge.hadir::before,
 .badge.lunas::before,
 .badge.aktif::before {
-  background-color: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  background-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25);
 }
 
-/* Amber: Menunggu, Pending, Diajukan, Izin, Cicil */
+/* Cobalt Blue: Pending, Menunggu, Diajukan, Izin, Cicil */
 .badge.pending,
 .badge.menunggu,
 .badge.diajukan,
 .badge.izin,
 .badge.cicil {
-  background-color: #fffbeb !important;
-  color: #92400e !important;
-  border: 1px solid #fde68a !important;
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+  border: 1px solid #bfdbfe !important;
 }
 .badge.pending::before,
 .badge.menunggu::before,
 .badge.diajukan::before,
 .badge.izin::before,
 .badge.cicil::before {
-  background-color: #f59e0b;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  background-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
-/* Red: Ditolak, Alpa, Tunggakan, Belum Lunas */
+/* Royal Sapphire: Sakit, Pulang, Verifikasi */
+.badge.sakit,
+.badge.pulang,
+.badge.verifikasi {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #dbeafe !important;
+}
+.badge.sakit::before,
+.badge.pulang::before,
+.badge.verifikasi::before {
+  background-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+/* Rose Red: Ditolak, Alpa, Tunggakan, Belum Lunas (Safety Financial & Discipline Alert) */
 .badge.rejected,
 .badge.ditolak,
 .badge.alpa,
@@ -384,22 +393,7 @@ table td .badge {
 .badge.tunggakan::before,
 .badge.belum-lunas::before {
   background-color: #f43f5e;
-  box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2);
-}
-
-/* Sky/Blue: Sakit, Pulang, Verifikasi */
-.badge.sakit,
-.badge.pulang,
-.badge.verifikasi {
-  background-color: #f0f9ff !important;
-  color: #0369a1 !important;
-  border: 1px solid #bae6fd !important;
-}
-.badge.sakit::before,
-.badge.pulang::before,
-.badge.verifikasi::before {
-  background-color: #0ea5e9;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+  box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.25);
 }
 
 /* Dark Mode Adjustments for Badges */
@@ -408,9 +402,9 @@ html[data-theme="dark"] .badge.disetujui,
 html[data-theme="dark"] .badge.hadir,
 html[data-theme="dark"] .badge.lunas,
 html[data-theme="dark"] .badge.aktif {
-  background-color: rgba(6, 95, 70, 0.3) !important;
-  color: #6ee7b7 !important;
-  border-color: #065f46 !important;
+  background-color: rgba(2, 132, 199, 0.25) !important;
+  color: #7dd3fc !important;
+  border-color: #0284c7 !important;
 }
 
 html[data-theme="dark"] .badge.pending,
@@ -418,9 +412,17 @@ html[data-theme="dark"] .badge.menunggu,
 html[data-theme="dark"] .badge.diajukan,
 html[data-theme="dark"] .badge.izin,
 html[data-theme="dark"] .badge.cicil {
-  background-color: rgba(146, 64, 14, 0.3) !important;
-  color: #fde68a !important;
-  border-color: #92400e !important;
+  background-color: rgba(59, 130, 246, 0.25) !important;
+  color: #bfdbfe !important;
+  border-color: #3b82f6 !important;
+}
+
+html[data-theme="dark"] .badge.sakit,
+html[data-theme="dark"] .badge.pulang,
+html[data-theme="dark"] .badge.verifikasi {
+  background-color: rgba(37, 99, 235, 0.25) !important;
+  color: #93c5fd !important;
+  border-color: #2563eb !important;
 }
 
 html[data-theme="dark"] .badge.rejected,
@@ -432,12 +434,3 @@ html[data-theme="dark"] .badge.belum-lunas {
   color: #fca5a5 !important;
   border-color: #9f1239 !important;
 }
-
-html[data-theme="dark"] .badge.sakit,
-html[data-theme="dark"] .badge.pulang,
-html[data-theme="dark"] .badge.verifikasi {
-  background-color: rgba(3, 105, 161, 0.3) !important;
-  color: #7dd3fc !important;
-  border-color: #0369a1 !important;
-}
-
