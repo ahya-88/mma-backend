@@ -104,12 +104,15 @@ async function editGuru({ id, nama, username, departemen, unit, jenisAkun, actin
   });
 }
 
-async function editPasswordGuru({ id, password, actingUserId }) {
+async function editPasswordGuru({ id, username, password, actingUserId }) {
   const { PASSWORD_MIN_LENGTH } = require("./passwordPolicy");
   if (!password || password.length < PASSWORD_MIN_LENGTH) throw new CashlessError(400, `Password minimal ${PASSWORD_MIN_LENGTH} karakter.`);
 
   return withTransaction(async () => {
     let row = await queryOne('SELECT * FROM "Guru" WHERE "id" = $1 FOR UPDATE', [id]);
+    if (!row && username) {
+      row = await queryOne('SELECT * FROM "Guru" WHERE LOWER("username") = LOWER($1) FOR UPDATE', [username]);
+    }
     if (!row) {
       row = await queryOne('SELECT * FROM "Guru" WHERE LOWER("username") = LOWER($1) FOR UPDATE', [id]);
     }

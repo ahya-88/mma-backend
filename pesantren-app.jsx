@@ -2452,44 +2452,116 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
 
   const [guruBusyId, setGuruBusyId] = useState(null);
   const [guruActionError, setGuruActionError] = useState("");
+  const [guruActionMsg, setGuruActionMsg] = useState("");
   const [editingGuruId, setEditingGuruId] = useState(null);
   const [guruDraft, setGuruDraft] = useState({});
   const [guruPwDraft, setGuruPwDraft] = useState({});
 
-  const bukaEditGuru = (g) => { setEditingGuruId(g.id); setGuruDraft((d) => ({ ...d, [g.id]: { nama: g.nama, username: g.username } })); setGuruActionError(""); };
+  const bukaEditGuru = (g) => {
+    setEditingGuruId(g.id);
+    setGuruDraft((d) => ({ ...d, [g.id]: { nama: g.nama, username: g.username } }));
+    setGuruActionError("");
+    setGuruActionMsg("");
+  };
   const updateGuruField = (guruId, field, value) => setGuruDraft((d) => ({ ...d, [guruId]: { ...d[guruId], [field]: value } }));
   const selesaiEditGuru = async (g) => {
     const draft = guruDraft[g.id];
-    setEditingGuruId(null);
-    if (!draft || (draft.nama === g.nama && draft.username === g.username)) return;
-    if (!backendToken) { setGuruActionError("Tidak terhubung ke server. Perubahan nama/username tidak tersimpan — coba logout lalu login ulang."); return; }
+    const pw = (guruPwDraft[g.id] || "").trim();
+    const namaBaru = (draft?.nama ?? g.nama).trim();
+    const usernameBaru = (draft?.username ?? g.username).trim();
+    const namaBerubah = namaBaru !== g.nama;
+    const userBerubah = usernameBaru !== g.username;
+    const pwBerubah = Boolean(pw);
+
+    if (!namaBerubah && !userBerubah && !pwBerubah) {
+      setEditingGuruId(null);
+      return;
+    }
+
+    if (pwBerubah && pw.length < 6) {
+      setGuruActionError("Kata sandi baru minimal 6 karakter.");
+      return;
+    }
+
+    if (!namaBaru || !usernameBaru) {
+      setGuruActionError("Nama dan username tidak boleh kosong.");
+      return;
+    }
+
+    if (!backendToken) {
+      setGuruActionError("Tidak terhubung ke server. Perubahan tidak tersimpan — coba logout lalu login ulang.");
+      return;
+    }
+
     setGuruBusyId(g.id);
     try {
-      await backendApi(`/admin/guru/${g.id}`, { method: "PUT", token: backendToken, body: { nama: draft.nama, username: draft.username } });
+      const body = {
+        nama: namaBaru,
+        username: usernameBaru,
+        ...(pwBerubah ? { password: pw, newPassword: pw } : {}),
+      };
+      await backendApi(`/admin/guru/${g.id}`, { method: "PUT", token: backendToken, body });
+      setEditingGuruId(null);
+      setGuruPwDraft((d) => ({ ...d, [g.id]: "" }));
+      setGuruActionError("");
+      setGuruActionMsg("Perubahan akun berhasil disimpan.");
       muatGuru();
-    } catch (e) { setGuruActionError(e.message || "Gagal menyimpan perubahan akun."); }
-    finally { setGuruBusyId(null); }
+    } catch (e) {
+      setGuruActionError(e.message || "Gagal menyimpan perubahan akun.");
+    } finally {
+      setGuruBusyId(null);
+    }
   };
 
   const simpanPasswordGuru = async (guruId) => {
-    const pw = guruPwDraft[guruId];
-    if (!pw) return;
-    if (!backendToken) { setGuruActionError("Tidak terhubung ke server. Kata sandi tidak tersimpan — coba logout lalu login ulang."); return; }
+    const pw = (guruPwDraft[guruId] || "").trim();
+    if (!pw) {
+      setGuruActionError("Masukkan kata sandi baru.");
+      return;
+    }
+    if (pw.length < 6) {
+      setGuruActionError("Kata sandi baru minimal 6 karakter.");
+      return;
+    }
+    if (!backendToken) {
+      setGuruActionError("Tidak terhubung ke server. Kata sandi tidak tersimpan — coba logout lalu login ulang.");
+      return;
+    }
+    const target = guruList.find((x) => x.id === guruId);
     setGuruBusyId(guruId);
     try {
-      await backendApi(`/admin/guru/${guruId}/password`, { method: "PUT", token: backendToken, body: { password: pw } });
+      await backendApi(`/admin/guru/${guruId}/password`, {
+        method: "PUT",
+        token: backendToken,
+        body: { password: pw, newPassword: pw, username: target?.username },
+      });
       setGuruPwDraft((d) => ({ ...d, [guruId]: "" }));
       setGuruActionError("");
-    } catch (e) { setGuruActionError(e.message || "Gagal mengubah kata sandi."); }
-    finally { setGuruBusyId(null); }
+      setGuruActionMsg("Kata sandi berhasil diperbarui.");
+      muatGuru();
+    } catch (e) {
+      setGuruActionError(e.message || "Gagal mengubah kata sandi.");
+    } finally {
+      setGuruBusyId(null);
+    }
   };
 
   const delGuru = async (id) => {
-    if (!backendToken) { setGuruActionError("Tidak terhubung ke server. Akun tidak bisa dihapus — coba logout lalu login ulang."); return; }
+    if (!backendToken) {
+      setGuruActionError("Tidak terhubung ke server. Akun tidak bisa dihapus — coba logout lalu login ulang.");
+      return;
+    }
     setGuruBusyId(id);
-    try { await backendApi(`/admin/guru/${id}`, { method: "DELETE", token: backendToken }); muatGuru(); }
-    catch (e) { setGuruActionError(e.message || "Gagal menghapus akun."); }
-    finally { setGuruBusyId(null); }
+    try {
+      await backendApi(`/admin/guru/${id}`, { method: "DELETE", token: backendToken });
+      setGuruActionError("");
+      setGuruActionMsg("Akun berhasil dihapus.");
+      muatGuru();
+    } catch (e) {
+      setGuruActionError(e.message || "Gagal menghapus akun.");
+    } finally {
+      setGuruBusyId(null);
+    }
   };
 
   const [form, setForm] = useState({ nama: "", username: "", departemen: deptKeys[0], unit: data.unitUsaha[0] || "", password: "" });
@@ -2729,6 +2801,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                 {guruFetch.loading && <p className="flex items-center gap-1.5 text-xs text-[#5B7C93] mb-3"><Loader2 size={13} className="shrink-0 animate-spin" />Memuat daftar akun...</p>}
                 {guruFetch.error && <p className="text-xs text-[#B5533C] mb-3">{guruFetch.error}</p>}
                 {guruActionError && <p className="text-xs text-[#B5533C] mb-3">{guruActionError}</p>}
+                {guruActionMsg && <p className="text-xs text-[#15803D] mb-3 font-medium">{guruActionMsg}</p>}
                 <div className="space-y-4">
                   {deptKeys.map((dep) => {
                     const list = guruList.filter((g) => g.departemen === dep);
