@@ -216,6 +216,8 @@ if (require.main === module) {
   // ke container lewat 0.0.0.0, jadi kalau server hanya listen di "localhost", trafik dari
   // luar tidak akan pernah sampai walau proses node-nya tetap terlihat "jalan" di log.
   initializeDatabase().then(() => {
+    const setupCronBackups = require('./cronBackup');
+    setupCronBackups();
     app.listen(PORT, "0.0.0.0", () => console.log(`Cashless backend jalan di port ${PORT} (menerima koneksi publik, bukan cuma localhost)`));
   }).catch((error) => {
     console.error("Gagal menginisialisasi PostgreSQL:", error);
