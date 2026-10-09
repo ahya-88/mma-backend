@@ -97,6 +97,7 @@ const PENGATURAN_TOPUP_DEFAULT = {
 async function initializeDatabase() {
   const schema = fs.readFileSync(path.join(__dirname, "schema.pg.sql"), "utf8");
   await pool.query(schema);
+  await pool.query('ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "is_deleted" BOOLEAN DEFAULT FALSE;');
 
   await withTransaction(async (client) => {
     await client.query(

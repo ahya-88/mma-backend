@@ -21,10 +21,10 @@ function isAuthorizedSantriManager(req) {
 router.get("/statistik", requireAuth, asyncHandler(async (req, res) => {
   const [totalRow, aktifRow, alumniRow, rombelRows, asramaRows] = await Promise.all([
     queryOne('SELECT COUNT(*) AS "total" FROM "Santri"'),
-    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE COALESCE("statusSantri", \'Aktif\') = \'Aktif\''),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "is_deleted" = FALSE AND COALESCE("statusSantri", \'Aktif\') = \'Aktif\''),
     queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "statusSantri" = \'Alumni\''),
-    queryAll('SELECT COALESCE("kelas", \'Belum ada\') AS "kelas", COUNT(*) AS "jumlah" FROM "Santri" WHERE COALESCE("statusSantri", \'Aktif\') = \'Aktif\' GROUP BY "kelas" ORDER BY "kelas"'),
-    queryAll('SELECT COALESCE("asrama", \'Belum ada\') AS "asrama", COUNT(*) AS "jumlah" FROM "Santri" WHERE COALESCE("statusSantri", \'Aktif\') = \'Aktif\' GROUP BY "asrama" ORDER BY "asrama"'),
+    queryAll('SELECT COALESCE("kelas", \'Belum ada\') AS "kelas", COUNT(*) AS "jumlah" FROM "Santri" WHERE "is_deleted" = FALSE AND COALESCE("statusSantri", \'Aktif\') = \'Aktif\' GROUP BY "kelas" ORDER BY "kelas"'),
+    queryAll('SELECT COALESCE("asrama", \'Belum ada\') AS "asrama", COUNT(*) AS "jumlah" FROM "Santri" WHERE "is_deleted" = FALSE AND COALESCE("statusSantri", \'Aktif\') = \'Aktif\' GROUP BY "asrama" ORDER BY "asrama"'),
   ]);
 
   res.json({
@@ -46,7 +46,7 @@ router.get("/", requireAuth, asyncHandler(async (req, res) => {
   const status = (req.query.status || "").trim();
   const jenisKelamin = (req.query.jenisKelamin || req.query.gender || "").trim();
 
-  const whereConditions = [];
+  const whereConditions = ['s."is_deleted" = FALSE'];
   const params = [];
 
   if (kelas && kelas !== "Semua") {
@@ -92,8 +92,8 @@ router.get("/", requireAuth, asyncHandler(async (req, res) => {
     const countSql = `
       SELECT COUNT(*) AS "total"
       FROM "Santri" s
-      LEFT JOIN "Wali" w ON s."waliId" = w."id"
-      ${whereSql}
+    LEFT JOIN "Wali" w ON s."waliId" = w."id"
+    ${whereSql}
     `;
 
     const [rows, countRes] = await Promise.all([
@@ -124,7 +124,7 @@ router.get("/me-anak", requireAuth, asyncHandler(async (req, res) => {
   if (req.user.role !== "wali") {
     return res.status(403).json({ error: "Hanya akun wali yang dapat mengakses daftar anak." });
   }
-  const rows = await queryAll('SELECT * FROM "Santri" WHERE "waliId" = $1 ORDER BY "nama"', [req.user.id]);
+  const rows = await queryAll('SELECT * FROM "Santri" WHERE "waliId" = $1 AND "is_deleted" = FALSE ORDER BY "nama"', [req.user.id]);
   const items = await Promise.all(rows.map((row) => toPublicSantri(row)));
   res.json(items);
 }));
@@ -353,21 +353,7 @@ router.delete("/:id", requireAuth, asyncHandler(async (req, res) => {
       return;
     }
 
-    await client.query('DELETE FROM "QueueOfflineKasir" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "LogPin" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "FaceTemplate" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "PenilaianUbudiyah" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Hafalan" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Prestasi" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Nilai" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Pelanggaran" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Perizinan" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Absensi" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Tagihan" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "PermintaanBMT" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "TransaksiCashless" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Ledger" WHERE "santriId" = $1', [santriId]);
-    await client.query('DELETE FROM "Santri" WHERE "id" = $1', [santriId]);
+    await client.query('UPDATE "Santri" SET "is_deleted" = TRUE WHERE "id" = $1', [santriId]);
   });
 
   res.json({ id: santriId, deleted: true });
@@ -463,3 +449,4 @@ router.post("/:id/aktifkan-kembali", requireAuth, asyncHandler(async (req, res) 
 }));
 
 module.exports = router;
+

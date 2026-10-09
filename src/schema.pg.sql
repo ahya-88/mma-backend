@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS "Santri" (
   "kartuToken" TEXT,
   "kartuTerbit" TEXT,
   "faceEmbedding" TEXT,
+  "is_deleted" BOOLEAN DEFAULT FALSE,
   "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
 

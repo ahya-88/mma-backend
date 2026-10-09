@@ -1,17 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  BookOpen, CalendarCheck, GraduationCap, ClipboardList,
-  AlertTriangle, Wallet, Users, LogOut, ChevronRight,
-  Plus, Trash2, User, Moon, ShieldCheck, School, Award, Check, X, Lock,
-  Pencil, Printer, Package, FileText, TrendingUp, TrendingDown, Eye, EyeOff, Gift, UserCheck,
-  Mail, Inbox, Archive, Settings, FileSignature, Landmark, Send, Search, Download, Loader2, Bell, Home,
-  Image as ImageIcon, ShieldAlert, Clock,
-  QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle,
-  Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square
-} from "lucide-react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import QRCode from "qrcode";
+const { useState, useRef, useEffect, ErrorBoundary: ReactErrorBoundary } = window.React || { useState: ()=>[], useRef: ()=>null, useEffect: ()=>null };
+const { BookOpen, CalendarCheck, GraduationCap, ClipboardList, AlertTriangle, Wallet, Users, LogOut, ChevronRight, Plus, Trash2, User, Moon, ShieldCheck, School, Award, Check, X, Lock, Pencil, Printer, Package, FileText, TrendingUp, TrendingDown, Eye, EyeOff, Gift, UserCheck, Mail, Inbox, Archive, Settings, FileSignature, Landmark, Send, Search, Download, Loader2, Bell, Home, Image: ImageIcon, ShieldAlert, Clock, QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle, Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square } = window.lucide || {};
+const html2canvas = window.html2canvas;
+const jsPDF = window.jspdf?.jsPDF || window.jsPDF;
+const QRCode = window.QRCode;
 
 // ---------- SEED DATA (data contoh, sementara di memori) ----------
 
@@ -9888,7 +9879,7 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
 
 // ---------- ERROR BOUNDARY ----------
 
-class ErrorBoundary extends React.Component {
+class ErrorBoundary extends window.React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
