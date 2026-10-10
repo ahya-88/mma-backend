@@ -22,6 +22,9 @@ if (rootEl) {
 `;
 fs.writeFileSync(ENTRY_SCRATCH_PATH, entryCode, 'utf8');
 
+const ANDROID_NODE_MODULES = 'C:\\Users\\Mudaiyatul Anwar\\Videos\\SuperApp-Mahad-Android\\node_modules';
+const nodePaths = fs.existsSync(ANDROID_NODE_MODULES) ? [ANDROID_NODE_MODULES] : [];
+
 try {
   const result = esbuild.buildSync({
     entryPoints: [ENTRY_SCRATCH_PATH],
@@ -31,6 +34,7 @@ try {
     target: ['es2020'],
     jsx: 'automatic',
     external: ['core-js/*', 'canvg'],
+    nodePaths: nodePaths,
     write: false,
   });
 
