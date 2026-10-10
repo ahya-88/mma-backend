@@ -6320,7 +6320,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 
   const unduhTemplateSantri = async () => {
     try {
-      const res = await fetch("/api/admin/impor/template", {
+      const res = await fetch(`${BACKEND_API_BASE}/admin/impor/template`, {
         headers: { ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {}) },
       });
       if (!res.ok) throw new Error("Gagal mengunduh berkas template dari server.");
