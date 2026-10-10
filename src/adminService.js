@@ -23,8 +23,15 @@ async function semuaGuru() {
 
 async function buatGuru({ nama, username, password, departemen, unit, jenisAkun, actingUserId }) {
   let finalJenisAkun = (jenisAkun || "").toLowerCase().trim();
-  if (finalJenisAkun === "admin") throw new CashlessError(400, "Jenis akun Admin sudah dilebur ke Superadmin. Gunakan jenisAkun 'superadmin'.");
-  if (!finalJenisAkun) finalJenisAkun = "staf"; // default fallback jika tidak dikirim
+  if (finalJenisAkun === "admin") finalJenisAkun = "superadmin";
+
+  // Jika departemen admin dipilih atau jenisAkun superadmin dipilih, sinkronkan otomatis
+  if (departemen === "admin" || finalJenisAkun === "superadmin") {
+    finalJenisAkun = "superadmin";
+    departemen = "admin";
+  } else if (!finalJenisAkun) {
+    finalJenisAkun = "staf";
+  }
   
   if (!JENIS_AKUN_VALID.includes(finalJenisAkun)) throw new CashlessError(400, `Jenis akun tidak valid (${finalJenisAkun}). Harus 'staf' atau 'superadmin'.`);
   if (!nama || !username || !password) throw new CashlessError(400, "Nama, username, dan password wajib diisi.");
@@ -33,7 +40,7 @@ async function buatGuru({ nama, username, password, departemen, unit, jenisAkun,
   if (password.length < PASSWORD_MIN_LENGTH) throw new CashlessError(400, `Password minimal ${PASSWORD_MIN_LENGTH} karakter.`);
 
   if (finalJenisAkun !== "staf") departemen = "admin";
-  if (finalJenisAkun === "staf" && departemen === "admin") throw new CashlessError(400, "Departemen admin hanya untuk jenisAkun superadmin.");
+  if (finalJenisAkun === "staf" && departemen === "admin") finalJenisAkun = "superadmin";
   if (departemen !== "admin" && !DEPARTEMEN_VALID.includes(departemen)) throw new CashlessError(400, "Departemen tidak valid.");
   if (departemen === "unitusaha" && !unit) throw new CashlessError(400, "Unit usaha wajib dipilih untuk staf unit usaha.");
 
@@ -70,11 +77,15 @@ async function editGuru({ id, nama, username, departemen, unit, jenisAkun, actin
     if (!row) throw new CashlessError(404, "Staf tidak ditemukan.");
 
     const oldKind = jenisEfektif(row);
-    const kindFinal = inputJenisAkun || oldKind;
-    if (!JENIS_AKUN_VALID.includes(kindFinal)) throw new CashlessError(400, `Jenis akun tidak valid (${kindFinal}).`);
+    let kindFinal = inputJenisAkun || oldKind;
+    let depFinal = departemen || row.departemen;
 
-    const depFinal = kindFinal !== "staf" ? "admin" : (departemen || row.departemen);
-    if (kindFinal === "staf" && depFinal === "admin") throw new CashlessError(400, "Departemen admin hanya untuk jenisAkun superadmin.");
+    if (depFinal === "admin" || kindFinal === "superadmin") {
+      kindFinal = "superadmin";
+      depFinal = "admin";
+    }
+
+    if (!JENIS_AKUN_VALID.includes(kindFinal)) throw new CashlessError(400, `Jenis akun tidak valid (${kindFinal}).`);
     if (depFinal !== "admin" && !DEPARTEMEN_VALID.includes(depFinal)) throw new CashlessError(400, "Departemen tidak valid.");
     const unitFinal = depFinal === "unitusaha" ? (unit || row.unit) : null;
     if (depFinal === "unitusaha" && !unitFinal) throw new CashlessError(400, "Unit usaha wajib dipilih untuk staf unit usaha.");

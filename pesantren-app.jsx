@@ -2695,10 +2695,15 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     if (!backendToken) { setFormError("Tidak terhubung ke server. Akun tidak bisa dibuat — coba logout lalu login ulang."); return; }
     setFormBusy(true);
     try {
-      await backendApi("/admin/guru", { method: "POST", token: backendToken, body: form });
+      const payload = {
+        ...form,
+        jenisAkun: form.departemen === "admin" ? "superadmin" : "staf",
+      };
+      await backendApi("/admin/guru", { method: "POST", token: backendToken, body: payload });
       setForm({ nama: "", username: "", departemen: deptKeys[0], unit: data.unitUsaha[0] || "", password: "" });
       setFormError("");
       muatGuru();
+      if (typeof ambilDbStatus === "function") ambilDbStatus();
     } catch (e) { setFormError(e.message || "Gagal membuat akun."); }
     finally { setFormBusy(false); }
   };
@@ -2842,10 +2847,8 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   };
 
   useEffect(() => {
-    if (adminTab === "database") {
-      ambilDbStatus();
-    }
-  }, [adminTab]);
+    ambilDbStatus();
+  }, [backendToken, adminTab]);
 
   const unduhBackupJson = async () => {
     try {
@@ -2984,21 +2987,21 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
                 <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                   <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {(data?.santri || []).length}
+                    {dbStatus?.totalSantri ?? (data?.santri || []).length}
                   </p>
                   <p className="text-xs font-semibold text-[#17242E] mt-1">Total Santri</p>
                   <p className="text-[10px] text-[#5B7C93]">Terdaftar aktif</p>
                 </div>
                 <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                   <p className="text-base sm:text-lg font-bold text-[#15803D]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {rupiah((data?.santri || []).reduce((acc, s) => acc + (Number(s.saldo) || 0), 0))}
+                    {rupiah(dbStatus?.totalSaldoSemuaSantri ?? (data?.santri || []).reduce((acc, s) => acc + (Number(s.saldo) || 0), 0))}
                   </p>
                   <p className="text-xs font-semibold text-[#17242E] mt-1">Saldo BMT Santri</p>
                   <p className="text-[10px] text-[#5B7C93]">Akumulasi cashless</p>
                 </div>
                 <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                   <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {(guruList || []).length}
+                    {dbStatus?.totalGuru ?? (guruList || []).length}
                   </p>
                   <p className="text-xs font-semibold text-[#17242E] mt-1">Akun Petugas</p>
                   <p className="text-[10px] text-[#5B7C93]">Seluruh bagian</p>
@@ -10266,6 +10269,7 @@ export default function App() {
   const [data, setData] = useState(() => {
     let santriAwal = [];
     let waliAwal = [];
+    let guruAwal = [];
     try {
       const cachedS = localStorage.getItem("mma_cached_santri");
       if (cachedS) {
@@ -10287,6 +10291,16 @@ export default function App() {
           waliAwal = parsed;
         }
       }
+      const cachedG = localStorage.getItem("mma_cached_guru");
+      if (cachedG) {
+        const parsed = JSON.parse(cachedG);
+        const hasDummyG = Array.isArray(parsed) && parsed.some((g) => g.id && (/^g[1-7]/.test(g.id) || g.nama === "Ustadz Fahmi"));
+        if (hasDummyG) {
+          localStorage.removeItem("mma_cached_guru");
+        } else if (Array.isArray(parsed)) {
+          guruAwal = parsed;
+        }
+      }
     } catch {}
 
     return {
@@ -10303,7 +10317,7 @@ export default function App() {
       raportAkademik: [],
       raportMental: [],
       raportTahfidz: [],
-      santri: santriAwal, guru: GURU_SEED, wali: waliAwal, kelas: KELAS_SEED,
+      santri: santriAwal, guru: guruAwal, wali: waliAwal, kelas: KELAS_SEED,
       alumni: [],
       kelasInfo: {},
       halaqoh: HALAQOH_SEED,
@@ -10372,14 +10386,15 @@ export default function App() {
       .catch(() => {}); // gagal diam-diam — panel yang membutuhkan tetap menampilkan data lama/lokal
   }, [backendToken, backendOnline]);
 
-  // ---- Sinkronisasi Global Master Data Santri & Wali dari Server Cloud Database ----
+  // ---- Sinkronisasi Global Master Data Santri, Wali & Guru/Staf dari Server Cloud Database ----
   useEffect(() => {
     if (!backendToken || backendOnline !== true) return;
     Promise.all([
       backendApi("/santri", { token: backendToken }).catch(() => null),
       backendApi("/admin/wali", { token: backendToken }).catch(() => null),
+      backendApi("/admin/guru", { token: backendToken }).catch(() => null),
     ])
-      .then(([santriRows, waliRes]) => {
+      .then(([santriRows, waliRes, guruRows]) => {
         if (Array.isArray(santriRows)) {
           setData((d) => {
             try {
@@ -10398,6 +10413,14 @@ export default function App() {
               return { ...d, wali: listWali };
             });
           }
+        }
+        if (Array.isArray(guruRows)) {
+          setData((d) => {
+            try {
+              localStorage.setItem("mma_cached_guru", JSON.stringify(guruRows));
+            } catch {}
+            return { ...d, guru: guruRows };
+          });
         }
       })
       .catch(() => {});
