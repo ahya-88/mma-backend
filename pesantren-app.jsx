@@ -1740,9 +1740,76 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
 
 // ---------- SHARED LAYOUT ----------
 
-function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder, backendOnline }) {
+function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder, backendOnline, backendToken, setBackendToken }) {
   const roleLabel = role === "guru" && user.departemen ? (DEPT_META[user.departemen]?.label || ROLE_META[role].label) : ROLE_META[role].label;
   const initials = (user.nama || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+
+  const resetModalForm = () => {
+    setCurrentPw("");
+    setNewPw("");
+    setConfirmPw("");
+    setShowCurrentPw(false);
+    setShowNewPw(false);
+    setPwError("");
+    setPwSuccess("");
+    setPwBusy(false);
+    setShowPasswordModal(false);
+  };
+
+  const handleUbahPassword = async (e) => {
+    e.preventDefault();
+    setPwError("");
+    setPwSuccess("");
+    if (!currentPw) {
+      setPwError("Masukkan kata sandi saat ini.");
+      return;
+    }
+    if (!newPw || newPw.length < 6) {
+      setPwError("Kata sandi baru minimal 6 karakter.");
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setPwError("Konfirmasi kata sandi baru tidak cocok.");
+      return;
+    }
+    if (newPw === currentPw) {
+      setPwError("Kata sandi baru harus berbeda dari kata sandi saat ini.");
+      return;
+    }
+    if (!backendToken) {
+      setPwError("Tidak terhubung ke server backend. Pastikan server online.");
+      return;
+    }
+    setPwBusy(true);
+    try {
+      const res = await backendApi("/auth/change-password", {
+        method: "POST",
+        token: backendToken,
+        body: { currentPassword: currentPw, newPassword: newPw },
+      });
+      if (res?.token && setBackendToken) {
+        setBackendToken(res.token);
+      }
+      setPwSuccess("Alhamdulillah, kata sandi berhasil diperbarui!");
+      setTimeout(() => {
+        resetModalForm();
+      }, 1500);
+    } catch (err) {
+      setPwError(err.message || "Gagal mengubah kata sandi.");
+    } finally {
+      setPwBusy(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 h-16 bg-white/90 backdrop-blur-md border-b border-[#E3E8EE] px-4 sm:px-6 flex items-center justify-between gap-4 transition-all">
@@ -1782,7 +1849,7 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
         </div>
       </div>
 
-      {/* Right Controls: Backend Status, Role Pill, Avatar, Logout */}
+      {/* Right Controls: Backend Status, Ubah Sandi, Avatar, Logout */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Backend status indicator */}
         <div
@@ -1814,6 +1881,16 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
           <Bell size={17} strokeWidth={1.8} />
         </button>
 
+        {/* Tombol Ubah Password Mandiri */}
+        <button
+          onClick={() => { resetModalForm(); setShowPasswordModal(true); }}
+          className="h-9 px-2.5 sm:px-3 rounded-xl flex items-center gap-1.5 text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#F4F8FB] border border-[#E3E8EE] transition-all text-xs font-medium cursor-pointer"
+          title="Ubah kata sandi akun saya"
+        >
+          <Lock size={14} className="text-[#29AAE1]" />
+          <span className="hidden md:inline">Ubah Sandi</span>
+        </button>
+
         {/* User Card */}
         <div className="flex items-center gap-2 pl-2 sm:pl-3 sm:border-l border-[#E3E8EE]">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#EAF4FB] to-[#D0E6F5] text-[#0C4A6E] flex items-center justify-center text-xs font-bold shrink-0 border border-[#B9E6FE]">
@@ -1834,6 +1911,126 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
           <LogOut size={16} strokeWidth={1.8} />
         </button>
       </div>
+
+      {/* Modal Ubah Kata Sandi */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl border border-[#E3E8EE] shadow-2xl max-w-md w-full p-6 animate-riseIn">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#F2F4F7]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#EAF4FB] text-[#0C4A6E] flex items-center justify-center">
+                  <Lock size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                    Ubah Kata Sandi
+                  </h3>
+                  <p className="text-xs text-[#5B7C93]">
+                    Akun: <strong className="text-[#17242E]">{user.nama}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={resetModalForm}
+                className="text-[#98A2B3] hover:text-[#344054] p-1.5 rounded-lg hover:bg-[#F2F4F7]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {pwError && (
+              <div className="mb-4 p-2.5 rounded-xl bg-[#FEF3F2] border border-[#FECDCA] text-xs font-medium text-[#B42318] flex items-center gap-2">
+                <AlertTriangle size={15} className="shrink-0" />
+                <span>{pwError}</span>
+              </div>
+            )}
+
+            {pwSuccess && (
+              <div className="mb-4 p-2.5 rounded-xl bg-[#ECFDF3] border border-[#A6F4C5] text-xs font-medium text-[#027A48] flex items-center gap-2">
+                <Check size={15} className="shrink-0" />
+                <span>{pwSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUbahPassword} className="space-y-3.5">
+              <div>
+                <label className="text-xs font-semibold text-[#0A2540] mb-1 block">Kata Sandi Saat Ini</label>
+                <div className="relative">
+                  <input
+                    type={showCurrentPw ? "text" : "password"}
+                    value={currentPw}
+                    onChange={(e) => setCurrentPw(e.target.value)}
+                    required
+                    className="w-full h-10 border border-[#E3E8EE] bg-white rounded-xl px-3.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#29AAE1]/30 focus:border-[#29AAE1]"
+                    placeholder="Masukkan kata sandi lama"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPw((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8FA3B3] hover:text-[#0C4A6E]"
+                  >
+                    {showCurrentPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#0A2540] mb-1 block">Kata Sandi Baru</label>
+                <div className="relative">
+                  <input
+                    type={showNewPw ? "text" : "password"}
+                    value={newPw}
+                    onChange={(e) => setNewPw(e.target.value)}
+                    required
+                    minLength={6}
+                    className="w-full h-10 border border-[#E3E8EE] bg-white rounded-xl px-3.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#29AAE1]/30 focus:border-[#29AAE1]"
+                    placeholder="Minimal 6 karakter"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPw((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8FA3B3] hover:text-[#0C4A6E]"
+                  >
+                    {showNewPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#0A2540] mb-1 block">Konfirmasi Kata Sandi Baru</label>
+                <input
+                  type="password"
+                  value={confirmPw}
+                  onChange={(e) => setConfirmPw(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full h-10 border border-[#E3E8EE] bg-white rounded-xl px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#29AAE1]/30 focus:border-[#29AAE1]"
+                  placeholder="Ulangi kata sandi baru"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={resetModalForm}
+                  className="flex-1 h-10 rounded-xl border border-[#CFE3F0] text-xs font-semibold text-[#5B7C93] hover:bg-[#F4F8FB]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={pwBusy}
+                  className="flex-1 h-10 rounded-xl btn-gradient text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
+                >
+                  {pwBusy ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
+                  <span>{pwBusy ? "Menyimpan..." : "Simpan Kata Sandi"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
@@ -10511,7 +10708,7 @@ export default function App() {
         <Login users={users} onLogin={handleLogin} onResetPassword={resetPassword} namaAplikasi={namaAplikasi} fontIsi={fontIsi} />
       ) : (
         <div className="page-enter">
-          <TopBar role={session.role} user={session.user} onLogout={handleLogout} namaAplikasi={namaAplikasi} warnaPrimer={warnaPrimer} warnaSekunder={warnaSekunder} backendOnline={backendOnline} />
+          <TopBar role={session.role} user={session.user} onLogout={handleLogout} namaAplikasi={namaAplikasi} warnaPrimer={warnaPrimer} warnaSekunder={warnaSekunder} backendOnline={backendOnline} backendToken={backendToken} setBackendToken={setBackendToken} />
           <ErrorBoundary onReset={handleLogout}>
             {session.role === "guru" && <GuruDashboard guru={data.guru.find((g) => g.id === session.user.id) || session.user} data={data} setData={setData} onPrint={setPrintContent} backendToken={backendToken} backendOnline={backendOnline} />}
             {session.role === "wali" && <WaliDashboard wali={session.user} data={data} setData={setData} onPrint={setPrintContent} backendToken={backendToken} backendOnline={backendOnline} />}
