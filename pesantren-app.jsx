@@ -28,20 +28,8 @@ const GURU_SEED = [
   { id: "g7", nama: "Ibu Fatimah", username: "fatimah.bmt", departemen: "unitusaha", unit: "BMT", password: "guru123" },
 ];
 
-const WALI_SEED = [
-  { id: "w1", nama: "Bpk. Ahmad Ridwan", hp: "0812-3456-7890", username: "ahmad.ridwan", password: "wali123" },
-  { id: "w2", nama: "Ibu Siti Aminah", hp: "0813-2233-4455", username: "siti.aminah", password: "wali123" },
-  { id: "w3", nama: "Bpk. Yusuf Hakim", hp: "0857-9988-1122", username: "yusuf.hakim", password: "wali123" },
-];
-
-const SANTRI_SEED = [
-  { id: "s1", nama: "Abdul Malik", kelas: "Tahfidz 1A", waliId: "w1", nis: "2024001", nisn: "0051234561", jenisKelamin: "Laki-laki", tempatLahir: "Bandung", tanggalLahir: "2013-04-11", alamat: "Jl. Melati No. 3, Bandung", asrama: "Asrama Al-Fatih Kamar 2", golDarah: "O", noDarurat: "0812-3456-7890", catatanKesehatan: "-" },
-  { id: "s2", nama: "Bilal Ramadhan", kelas: "Tahfidz 1A", waliId: "w2", nis: "2024002", nisn: "0051234562", jenisKelamin: "Laki-laki", tempatLahir: "Bogor", tanggalLahir: "2013-08-02", alamat: "Jl. Kenanga No. 8, Bogor", asrama: "Asrama Al-Fatih Kamar 2", golDarah: "A", noDarurat: "0813-2233-4455", catatanKesehatan: "Alergi udang" },
-  { id: "s3", nama: "Umar Faruq", kelas: "Tahfidz 1B", waliId: "w1", nis: "2024003", nisn: "0051234563", jenisKelamin: "Laki-laki", tempatLahir: "Bandung", tanggalLahir: "2013-01-20", alamat: "Jl. Melati No. 3, Bandung", asrama: "Asrama Al-Fatih Kamar 3", golDarah: "B", noDarurat: "0812-3456-7890", catatanKesehatan: "-" },
-  { id: "s4", nama: "Zaid Alfarizi", kelas: "Tahfidz 1B", waliId: "w3", nis: "2024004", nisn: "0051234564", jenisKelamin: "Laki-laki", tempatLahir: "Cianjur", tanggalLahir: "2013-11-05", alamat: "Jl. Aster No. 1, Cianjur", asrama: "Asrama Al-Fatih Kamar 3", golDarah: "AB", noDarurat: "0857-9988-1122", catatanKesehatan: "-" },
-  { id: "s5", nama: "Hamzah Fadhil", kelas: "Tahfidz 2A", waliId: "w2", nis: "2024005", nisn: "0051234565", jenisKelamin: "Laki-laki", tempatLahir: "Bogor", tanggalLahir: "2012-06-15", alamat: "Jl. Kenanga No. 8, Bogor", asrama: "Asrama An-Nur Kamar 1", golDarah: "O", noDarurat: "0813-2233-4455", catatanKesehatan: "-" },
-  { id: "s6", nama: "Salman Aziz", kelas: "Tahfidz 2A", waliId: "w3", nis: "2024006", nisn: "0051234566", jenisKelamin: "Laki-laki", tempatLahir: "Cianjur", tanggalLahir: "2012-09-09", alamat: "Jl. Aster No. 1, Cianjur", asrama: "Asrama An-Nur Kamar 1", golDarah: "B", noDarurat: "0857-9988-1122", catatanKesehatan: "-" },
-];
+const WALI_SEED = [];
+const SANTRI_SEED = [];
 
 const HALAQOH_SEED = ["Halaqoh Al-Fatih", "Halaqoh An-Nur"];
 const UNIT_USAHA_SEED = ["Kantin", "Kopel", "Dapur", "BMT"];
@@ -1422,6 +1410,16 @@ const ROLE_META = {
   wali: { label: "Wali Santri", icon: Users },
 };
 
+const DEPT_META = {
+  admin: { label: "Admin", icon: Lock },
+  pengasuhan: { label: "Pengasuhan", icon: ShieldCheck },
+  pengajaran: { label: "Pengajaran", icon: GraduationCap },
+  lptq: { label: "LPTQ", icon: BookOpen },
+  administrasi: { label: "Administrasi", icon: Wallet },
+  unitusaha: { label: "Unit Usaha", icon: Package },
+  sekretariat: { label: "Sekretariat Pondok", icon: FileSignature },
+};
+
 function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
   const [step, setStep] = useState("login");
   const [username, setUsername] = useState("");
@@ -2552,16 +2550,6 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
 }
 
 // ---------- KEWENANGAN PANEL (hanya Super Admin) ----------
-
-const DEPT_META = {
-  admin: { label: "Admin", icon: Lock },
-  pengasuhan: { label: "Pengasuhan", icon: ShieldCheck },
-  pengajaran: { label: "Pengajaran", icon: GraduationCap },
-  lptq: { label: "LPTQ", icon: BookOpen },
-  administrasi: { label: "Administrasi", icon: Wallet },
-  unitusaha: { label: "Unit Usaha", icon: Package },
-  sekretariat: { label: "Sekretariat Pondok", icon: FileSignature },
-};
 
 // Bagian Admin (Kewenangan) — sepenuhnya full-stack: akun Guru/Staf, Unit Usaha, Tahun Ajaran, dan
 // Tampilan Aplikasi kini disimpan & dibaca dari backend (bukan lagi hanya state React lokal yang
@@ -5776,14 +5764,27 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     if (!isSekretariat) return;
     if (!backendToken) { setSantriFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "" }); return; }
     setSantriFetch({ loading: true, error: "" });
-    backendApi("/santri", { token: backendToken })
-      .then((rows) => {
+    Promise.all([
+      backendApi("/santri", { token: backendToken }),
+      backendApi("/admin/wali", { token: backendToken }).catch(() => null),
+    ])
+      .then(([rows, waliRes]) => {
         setSantriFetch({ loading: false, error: "" });
-        setData((d) => {
-          const byId = new Map(d.santri.map((s) => [s.id, s]));
-          for (const r of rows) byId.set(r.id, { ...(byId.get(r.id) || {}), ...r });
-          return { ...d, santri: Array.from(byId.values()) };
-        });
+        if (Array.isArray(rows)) {
+          setData((d) => {
+            try { localStorage.setItem("mma_cached_santri", JSON.stringify(rows)); } catch {}
+            return { ...d, santri: rows };
+          });
+        }
+        if (waliRes) {
+          const listWali = Array.isArray(waliRes) ? waliRes : (Array.isArray(waliRes.items) ? waliRes.items : null);
+          if (listWali) {
+            setData((d) => {
+              try { localStorage.setItem("mma_cached_wali", JSON.stringify(listWali)); } catch {}
+              return { ...d, wali: listWali };
+            });
+          }
+        }
       })
       .catch((e) => setSantriFetch({ loading: false, error: e.message }));
   };
@@ -10263,18 +10264,28 @@ export default function App() {
   const handleLogout = () => { setSession(null); setBackendToken(null); setBackendOnline(null); };
   const [printContent, setPrintContent] = useState(null);
   const [data, setData] = useState(() => {
-    let santriAwal = SANTRI_SEED;
-    let waliAwal = WALI_SEED;
+    let santriAwal = [];
+    let waliAwal = [];
     try {
       const cachedS = localStorage.getItem("mma_cached_santri");
       if (cachedS) {
         const parsed = JSON.parse(cachedS);
-        if (Array.isArray(parsed) && parsed.length > 0) santriAwal = parsed;
+        const hasDummy = Array.isArray(parsed) && parsed.some((s) => s.id && (/^s[1-6]$/.test(s.id) || s.nama === "Abdul Malik"));
+        if (hasDummy) {
+          localStorage.removeItem("mma_cached_santri");
+        } else if (Array.isArray(parsed)) {
+          santriAwal = parsed;
+        }
       }
       const cachedW = localStorage.getItem("mma_cached_wali");
       if (cachedW) {
         const parsed = JSON.parse(cachedW);
-        if (Array.isArray(parsed) && parsed.length > 0) waliAwal = parsed;
+        const hasDummyW = Array.isArray(parsed) && parsed.some((w) => w.id && (/^w[1-3]$/.test(w.id) || w.nama === "Bpk. Ahmad Ridwan"));
+        if (hasDummyW) {
+          localStorage.removeItem("mma_cached_wali");
+        } else if (Array.isArray(parsed)) {
+          waliAwal = parsed;
+        }
       }
     } catch {}
 
@@ -10293,48 +10304,39 @@ export default function App() {
       raportMental: [],
       raportTahfidz: [],
       santri: santriAwal, guru: GURU_SEED, wali: waliAwal, kelas: KELAS_SEED,
-    alumni: [],
-    kelasInfo: {},
-    halaqoh: HALAQOH_SEED,
-    halaqohInfo: {},
-    absensi: [],
-    nilai: [
-      { id: "n1", santriId: "s1", mapel: "Tahfidz & Tajwid", nilai: 88, tanggal: todayStr() },
-      { id: "n2", santriId: "s2", mapel: "Tahfidz & Tajwid", nilai: 92, tanggal: todayStr() },
-    ],
-    hafalan: [{ id: "h1", santriId: "s1", juz: "Juz 29 - An Naba'", tanggal: todayStr() }],
-    perizinan: [{ id: "p1", santriId: "s2", jenis: "Pulang", keterangan: "Acara keluarga", status: "Disetujui", tanggal: todayStr() }],
-    pelanggaran: [],
-    prestasi: [{ id: "pr1", santriId: "s3", judul: "Juara 1 MTQ Cabang Tilawah", tingkat: "Kecamatan", tanggal: todayStr() }],
-    kegiatan: [],
-    tagihan: [
-      { id: "t1", santriId: "s1", jenis: "Syahriyah", bulan: "Juli 2026", jumlah: 750000, jumlahDibayar: 750000, tanggalBayar: todayStr() },
-      { id: "t2", santriId: "s2", jenis: "Syahriyah", bulan: "Juli 2026", jumlah: 750000, jumlahDibayar: 0, tanggalBayar: null },
-    ],
-    cashflow: [
-      { id: "c1", bulan: "Juli 2026", tanggal: todayStr(), jenis: "Masuk", kategori: "Pembayaran Santri", jumlah: 750000, keterangan: "Syahriyah a.n. Abdul Malik" },
-      { id: "c2", bulan: "Juli 2026", tanggal: todayStr(), jenis: "Keluar", kategori: "Konsumsi", jumlah: 2500000, keterangan: "Belanja dapur mingguan" },
-    ],
-    inventaris: [
-      { id: "i1", nama: "Kipas Angin Berdiri", kategori: "Elektronik", jumlah: 4, kondisi: "Baik", lokasi: "Aula Utama", tanggal: "2026-01-10", keterangan: "Merk Maspion, dibeli dari donasi wali santri" },
-    ],
-    // ---- Sekretariat Pondok: surat-menyurat & arsip digital ----
-    kopSurat: { ...KOP_SURAT_DEFAULT },
-    pimpinanList: [{ id: "pp1", nama: "Nama Pimpinan Pondok", jabatan: "Pimpinan Pondok" }],
-    jenisSurat: JSON.parse(JSON.stringify(JENIS_SURAT_SEED)),
-    bagianList: JSON.parse(JSON.stringify(BAGIAN_SEED)),
-    kepanitiaanList: JSON.parse(JSON.stringify(KEPANITIAAN_SEED)),
-    suratKeluar: [],
-    suratMasuk: [],
-    nomorSuratCounter: {},
-    nomorSuratLog: [],
-    arsipManual: [],
-    // ---- Keuangan: pengajuan anggaran ----
-    pengajuanAnggaran: [],
-    // ---- Admin: pengaturan tampilan aplikasi (logo, foto, warna tema) ----
-    tampilan: { ...TAMPILAN_DEFAULT },
-  };
-});
+      alumni: [],
+      kelasInfo: {},
+      halaqoh: HALAQOH_SEED,
+      halaqohInfo: {},
+      absensi: [],
+      nilai: [],
+      hafalan: [],
+      perizinan: [],
+      pelanggaran: [],
+      prestasi: [],
+      kegiatan: [],
+      tagihan: [],
+      cashflow: [],
+      inventaris: [
+        { id: "i1", nama: "Kipas Angin Berdiri", kategori: "Elektronik", jumlah: 4, kondisi: "Baik", lokasi: "Aula Utama", tanggal: "2026-01-10", keterangan: "Merk Maspion, dibeli dari donasi wali santri" },
+      ],
+      // ---- Sekretariat Pondok: surat-menyurat & arsip digital ----
+      kopSurat: { ...KOP_SURAT_DEFAULT },
+      pimpinanList: [{ id: "pp1", nama: "Nama Pimpinan Pondok", jabatan: "Pimpinan Pondok" }],
+      jenisSurat: JSON.parse(JSON.stringify(JENIS_SURAT_SEED)),
+      bagianList: JSON.parse(JSON.stringify(BAGIAN_SEED)),
+      kepanitiaanList: JSON.parse(JSON.stringify(KEPANITIAAN_SEED)),
+      suratKeluar: [],
+      suratMasuk: [],
+      nomorSuratCounter: {},
+      nomorSuratLog: [],
+      arsipManual: [],
+      // ---- Keuangan: pengajuan anggaran ----
+      pengajuanAnggaran: [],
+      // ---- Admin: pengaturan tampilan aplikasi (logo, foto, warna tema) ----
+      tampilan: { ...TAMPILAN_DEFAULT },
+    };
+  });
 
   const users = { guru: data.guru, wali: data.wali };
 
@@ -10370,23 +10372,32 @@ export default function App() {
       .catch(() => {}); // gagal diam-diam — panel yang membutuhkan tetap menampilkan data lama/lokal
   }, [backendToken, backendOnline]);
 
-  // ---- Sinkronisasi Global Master Data Santri dari Server Cloud Database ----
+  // ---- Sinkronisasi Global Master Data Santri & Wali dari Server Cloud Database ----
   useEffect(() => {
     if (!backendToken || backendOnline !== true) return;
-    backendApi("/santri", { token: backendToken })
-      .then((santriRows) => {
-        if (Array.isArray(santriRows) && santriRows.length > 0) {
+    Promise.all([
+      backendApi("/santri", { token: backendToken }).catch(() => null),
+      backendApi("/admin/wali", { token: backendToken }).catch(() => null),
+    ])
+      .then(([santriRows, waliRes]) => {
+        if (Array.isArray(santriRows)) {
           setData((d) => {
-            const byId = new Map(d.santri.map((s) => [s.id, s]));
-            for (const r of santriRows) {
-              byId.set(r.id, { ...(byId.get(r.id) || {}), ...r });
-            }
-            const updatedSantri = Array.from(byId.values());
             try {
-              localStorage.setItem("mma_cached_santri", JSON.stringify(updatedSantri));
+              localStorage.setItem("mma_cached_santri", JSON.stringify(santriRows));
             } catch {}
-            return { ...d, santri: updatedSantri };
+            return { ...d, santri: santriRows };
           });
+        }
+        if (waliRes) {
+          const listWali = Array.isArray(waliRes) ? waliRes : (Array.isArray(waliRes.items) ? waliRes.items : null);
+          if (listWali) {
+            setData((d) => {
+              try {
+                localStorage.setItem("mma_cached_wali", JSON.stringify(listWali));
+              } catch {}
+              return { ...d, wali: listWali };
+            });
+          }
         }
       })
       .catch(() => {});
