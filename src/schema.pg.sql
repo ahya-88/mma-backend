@@ -743,5 +743,13 @@ CREATE TABLE IF NOT EXISTS "RaportTahfidz" (
 CREATE INDEX IF NOT EXISTS idx_raport_tahfidz_santri ON "RaportTahfidz" ("santriId");
 CREATE INDEX IF NOT EXISTS idx_raport_tahfidz_status ON "RaportTahfidz" ("status");
 
+-- ==================== EKSTENSI PENGASUHAN (ABSENSI UNIK & PERIZINAN LENGKAP) ====================
+ALTER TABLE "Perizinan" ADD COLUMN IF NOT EXISTS "tanggalKembaliAktual" TEXT;
+ALTER TABLE "Perizinan" ADD COLUMN IF NOT EXISTS "catatanKembali" TEXT;
+ALTER TABLE "Perizinan" ADD COLUMN IF NOT EXISTS "penerimaKembali" TEXT;
+CREATE INDEX IF NOT EXISTS idx_perizinan_status ON "Perizinan" ("status");
+CREATE UNIQUE INDEX IF NOT EXISTS idx_absensi_santri_tanggal_uq ON "Absensi" ("santriId", "tanggalISO");
+
+
 
 

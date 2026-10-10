@@ -179,6 +179,7 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
   const [
     hafalan, ubudiyah, nilai, prestasi, pelanggaran,
     raportAkademik, raportMental, raportTahfidz, penilaianKegiatan,
+    absensi, perizinan, tagihan,
   ] = await Promise.all([
     queryAll('SELECT * FROM "Hafalan" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
     queryAll('SELECT * FROM "PenilaianUbudiyah" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
@@ -189,7 +190,16 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
     queryAll('SELECT * FROM "RaportMental" WHERE "santriId" = $1 AND "status" = \'PUBLISHED\' ORDER BY "createdAt" DESC', [santriId]),
     queryAll('SELECT * FROM "RaportTahfidz" WHERE "santriId" = $1 AND "status" = \'PUBLISHED\' ORDER BY "createdAt" DESC', [santriId]),
     queryAll('SELECT * FROM "PenilaianKegiatan" WHERE "santriId" = $1 ORDER BY "createdAt" DESC LIMIT 20', [santriId]),
+    queryAll('SELECT * FROM "Absensi" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 30', [santriId]),
+    queryAll('SELECT * FROM "Perizinan" WHERE "santriId" = $1 ORDER BY "createdAt" DESC LIMIT 15', [santriId]),
+    queryAll('SELECT * FROM "Tagihan" WHERE "santriId" = $1 ORDER BY "createdAt" DESC LIMIT 10', [santriId]).catch(() => []),
   ]);
+
+  const rekapAbsensi = { Hadir: 0, Sakit: 0, Izin: 0, Alpa: 0 };
+  for (const a of (absensi || [])) {
+    if (rekapAbsensi[a.status] !== undefined) rekapAbsensi[a.status]++;
+  }
+  const totalPoinPelanggaran = (pelanggaran || []).reduce((sum, p) => sum + Number(p.poin || 0), 0);
 
   res.json({
     santri: await toPublicSantri(santri),
@@ -202,6 +212,11 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
     raportMental,
     raportTahfidz,
     penilaianKegiatan,
+    absensi,
+    perizinan,
+    tagihan: tagihan || [],
+    rekapAbsensi,
+    totalPoinPelanggaran,
   });
 }));
 

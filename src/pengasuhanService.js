@@ -31,21 +31,47 @@ async function catatAbsensi({ santriId, tanggalISO, status, keterangan, dicatatO
   const id = uid();
   await query(
     `INSERT INTO "Absensi" ("id", "santriId", "tanggalISO", "status", "keterangan", "dicatatOleh")
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT ("santriId", "tanggalISO")
+     DO UPDATE SET "status" = EXCLUDED."status", "keterangan" = EXCLUDED."keterangan", "dicatatOleh" = EXCLUDED."dicatatOleh"`,
     [id, santriId, tISO, status, keterangan || null, dicatatOleh || null],
   );
-  return queryOne('SELECT * FROM "Absensi" WHERE "id" = $1', [id]);
+  return queryOne('SELECT * FROM "Absensi" WHERE "santriId" = $1 AND "tanggalISO" = $2', [santriId, tISO]);
 }
 
-async function absensiPadaTanggal(tanggalISO) {
+async function catatAbsensiMassal({ santriIds, tanggalISO, status, keterangan, dicatatOleh }) {
+  if (!Array.isArray(santriIds) || !santriIds.length) {
+    throw new CashlessError(400, "santriIds harus berupa array yang tidak kosong.");
+  }
+  if (!status) throw new CashlessError(400, "status absensi wajib diisi.");
   const tISO = tanggalISO || todayISO();
+  const results = [];
+  for (const santriId of santriIds) {
+    const res = await catatAbsensi({ santriId, tanggalISO: tISO, status, keterangan, dicatatOleh });
+    results.push(res);
+  }
+  return { sukses: true, total: results.length, count: results.length, tanggalISO: tISO, status };
+}
+
+async function absensiPadaTanggal(tanggalISO, { kelas, asrama } = {}) {
+  const tISO = tanggalISO || todayISO();
+  const conditions = ['a."tanggalISO" = $1'];
+  const params = [tISO];
+  if (kelas && kelas !== "Semua") {
+    params.push(kelas);
+    conditions.push(`s."kelas" = $${params.length}`);
+  }
+  if (asrama && asrama !== "Semua") {
+    params.push(asrama);
+    conditions.push(`s."asrama" = $${params.length}`);
+  }
   return queryAll(`
-    SELECT a.*, s."nama" AS "namaSantri", s."kelas"
+    SELECT a.*, s."nama" AS "namaSantri", s."kelas", s."asrama"
     FROM "Absensi" a
     LEFT JOIN "Santri" s ON a."santriId" = s."id"
-    WHERE a."tanggalISO" = $1
+    WHERE ${conditions.join(" AND ")}
     ORDER BY s."nama"
-  `, [tISO]);
+  `, params);
 }
 
 async function riwayatAbsensi(santriId) {
@@ -73,7 +99,7 @@ async function daftarPerizinan({ santriId, status } = {}) {
   const where = kondisi.length ? `WHERE ${kondisi.join(" AND ")}` : "";
 
   return queryAll(`
-    SELECT p.*, s."nama" AS "namaSantri", s."kelas"
+    SELECT p.*, s."nama" AS "namaSantri", s."kelas", s."asrama", s."nis"
     FROM "Perizinan" p
     LEFT JOIN "Santri" s ON p."santriId" = s."id"
     ${where}
@@ -81,24 +107,39 @@ async function daftarPerizinan({ santriId, status } = {}) {
   `, params);
 }
 
-async function prosesPerizinan({ id, statusBaru, disetujuiOleh }) {
-  if (!["Disetujui", "Ditolak"].includes(statusBaru)) {
-    throw new CashlessError(400, "Status baru harus 'Disetujui' atau 'Ditolak'.");
+const STATUS_PERIZINAN_VALID = ["Disetujui", "Ditolak", "Kembali", "Terlambat"];
+
+async function prosesPerizinan({ id, statusBaru, disetujuiOleh, catatanKembali, tanggalKembaliAktual }) {
+  if (!STATUS_PERIZINAN_VALID.includes(statusBaru)) {
+    throw new CashlessError(400, `Status baru harus salah satu dari: ${STATUS_PERIZINAN_VALID.join(", ")}.`);
   }
   return withTransaction(async (client) => {
     const row = await client.query('SELECT * FROM "Perizinan" WHERE "id" = $1 FOR UPDATE', [id]);
     if (!row.rowCount) throw new CashlessError(404, "Data perizinan tidak ditemukan.");
-    if (row.rows[0].status !== "Menunggu") throw new CashlessError(400, "Perizinan ini sudah diproses.");
+    const existing = row.rows[0];
 
-    await client.query(
-      'UPDATE "Perizinan" SET "status" = $1, "disetujuiOleh" = $2, "tanggalProses" = $3 WHERE "id" = $4',
-      [statusBaru, disetujuiOleh || null, todayISO(), id],
-    );
+    if (statusBaru === "Disetujui" || statusBaru === "Ditolak") {
+      if (existing.status !== "Menunggu") throw new CashlessError(400, `Perizinan ini sudah diproses (status: ${existing.status}).`);
+      await client.query(
+        'UPDATE "Perizinan" SET "status" = $1, "disetujuiOleh" = $2, "tanggalProses" = $3 WHERE "id" = $4',
+        [statusBaru, disetujuiOleh || null, todayISO(), id],
+      );
+    } else if (statusBaru === "Kembali" || statusBaru === "Terlambat") {
+      if (existing.status !== "Disetujui") {
+        throw new CashlessError(400, "Hanya perizinan dengan status 'Disetujui' yang bisa ditandai kembali.");
+      }
+      const tKembali = tanggalKembaliAktual || todayISO();
+      await client.query(
+        `UPDATE "Perizinan" SET "status" = $1, "tanggalKembaliAktual" = $2, "catatanKembali" = $3, "penerimaKembali" = $4 WHERE "id" = $5`,
+        [statusBaru, tKembali, catatanKembali || null, disetujuiOleh || null, id],
+      );
+    }
 
     const updated = await client.query('SELECT * FROM "Perizinan" WHERE "id" = $1', [id]);
     return updated.rows[0];
   });
 }
+
 
 // Pelanggaran
 async function catatPelanggaran({ santriId, jenis, poin, tanggalISO, keterangan, dicatatOleh }) {
@@ -255,10 +296,11 @@ async function hapusRaportMental(id) {
 
 module.exports = {
   profilPengasuhan,
-  catatAbsensi, absensiPadaTanggal, riwayatAbsensi,
+  catatAbsensi, catatAbsensiMassal, absensiPadaTanggal, riwayatAbsensi,
   ajukanPerizinan, daftarPerizinan, prosesPerizinan,
   catatPelanggaran, semuaPelanggaran, riwayatPelanggaran, hapusPelanggaran,
   catatPenilaianKegiatan, semuaPenilaianKegiatan, hapusPenilaianKegiatan,
   simpanRaportMental, semuaRaportMental, hapusRaportMental,
 };
+
 

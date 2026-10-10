@@ -48,6 +48,24 @@ const KEGIATAN_PENGASUHAN_INDIKATOR_SEED = {
   "Pidato 3 Bahasa": ["Bahasa Indonesia", "Bahasa Arab", "Bahasa Inggris", "Kepercayaan Diri & Intonasi"],
   "Disiplin dan Etika": ["Ketaatan pada Peraturan", "Akhlak kepada Guru", "Akhlak kepada Sesama Santri", "Kebersihan & Kerapian"],
 };
+const PRESET_PELANGGARAN = [
+  { jenis: "Terlambat Shalat Berjamaah / Kegiatan", poin: 5, kategori: "Ringan" },
+  { jenis: "Tidak Mengikuti Piket Asrama", poin: 5, kategori: "Ringan" },
+  { jenis: "Pakaian / Rambut Tidak Sesuai Tata Tertib", poin: 10, kategori: "Ringan" },
+  { jenis: "Keluar Area Pondok Tanpa Izin", poin: 25, kategori: "Sedang" },
+  { jenis: "Membawa / Menyimpan HP atau Elektronik Terlarang", poin: 30, kategori: "Sedang" },
+  { jenis: "Merokok / Menggunakan Vape di Area Pondok", poin: 50, kategori: "Berat" },
+  { jenis: "Berkelahi / Tindak Kekerasan", poin: 75, kategori: "Berat (SP2)" },
+  { jenis: "Pencurian / Merusak Fasilitas Umum", poin: 100, kategori: "Berat (SP3)" },
+];
+const hitungStatusSP = (totalPoin) => {
+  const p = Number(totalPoin || 0);
+  if (p >= 100) return { label: "SP 3 (Sidang)", badge: "bg-[#FBE4E1] text-[#96271A] border-[#F3C9C2]" };
+  if (p >= 75) return { label: "SP 2", badge: "bg-[#FFF2DE] text-[#B5533C] border-[#FBD9A5]" };
+  if (p >= 50) return { label: "SP 1", badge: "bg-[#FEF9C3] text-[#854D0E] border-[#FEF08A]" };
+  if (p >= 25) return { label: "Teguran Lisan", badge: "bg-[#EAF4FB] text-[#0C4A6E] border-[#CFE3F0]" };
+  return { label: "Disiplin Baik", badge: "bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]" };
+};
 const UBUDIYAH_MATERI_SEED = ["Sholat 5 Waktu Berjamaah", "Kekhusyukan & Adab Sholat", "Puasa Sunnah", "Dzikir Pagi/Petang", "Adab Wudhu & Thaharah"];
 const DOA_MATERI_SEED = ["Doa Sebelum & Sesudah Makan", "Doa Masuk & Keluar Masjid", "Doa Sebelum & Bangun Tidur", "Doa Kedua Orang Tua", "Doa Menuntut Ilmu"];
 const PREDIKAT_LIST = ["Sangat Baik", "Baik", "Cukup", "Perlu Bimbingan"];
@@ -1402,6 +1420,91 @@ function RaportContent({ jenis, santri, wali, tahunAjaran, semester, ringkasanRo
   );
 }
 
+function SuratIzinContent({ izin, santri, wali, pembina, kop }) {
+  const kopSurat = kop || KOP_SURAT_DEFAULT;
+  return (
+    <div className="text-[#17242E] max-w-2xl mx-auto p-6 bg-white border border-[#CFE3F0] rounded-xl shadow-xs print:border-none print:shadow-none print:p-0">
+      <RaporKopFormal kop={kopSurat} />
+      <div className="text-center my-4 border-b-2 border-[#0C4A6E] pb-2">
+        <h2 className="text-base sm:text-lg font-bold tracking-wide uppercase text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+          SURAT IZIN KELUAR PESANTREN (SURAT JALAN)
+        </h2>
+        <p className="text-xs text-[#5B7C93] mt-0.5">
+          Kode Izin: {izin?.id ? izin.id.slice(0, 8).toUpperCase() : "-"} · Tanggal: {formatTanggalISO(izin?.tanggalKeluar || todayISO())}
+        </p>
+      </div>
+
+      <div className="space-y-3.5 text-xs leading-relaxed">
+        <p>Berdasarkan permohonan yang diajukan dan tata tertib Ma'had, Bagian Pengasuhan Santri menerbitkan izin keluar kepada santri di bawah ini:</p>
+
+        <table className="w-full border border-[#CFE3F0]" style={{ borderCollapse: "collapse" }}>
+          <tbody>
+            <tr className="border-b border-[#CFE3F0]">
+              <td className="w-36 py-2 px-3 font-semibold bg-[#F0F8FE]">Nama Santri</td>
+              <td className="py-2 px-3 font-bold text-[#0C4A6E] text-sm">{santri?.nama || "-"}</td>
+            </tr>
+            <tr className="border-b border-[#CFE3F0]">
+              <td className="py-2 px-3 font-semibold bg-[#F0F8FE]">No. Stambuk / NISN</td>
+              <td className="py-2 px-3">{santri?.nis || "-"} / {santri?.nisn || "-"}</td>
+            </tr>
+            <tr className="border-b border-[#CFE3F0]">
+              <td className="py-2 px-3 font-semibold bg-[#F0F8FE]">Kelas / Asrama</td>
+              <td className="py-2 px-3">{santri?.kelas || "-"} · {santri?.asrama || "-"}</td>
+            </tr>
+            <tr className="border-b border-[#CFE3F0]">
+              <td className="py-2 px-3 font-semibold bg-[#F0F8FE]">Wali Santri</td>
+              <td className="py-2 px-3">{wali?.nama || "-"} ({wali?.hp || "-"})</td>
+            </tr>
+            <tr className="border-b border-[#CFE3F0]">
+              <td className="py-2 px-3 font-semibold bg-[#F0F8FE]">Keperluan / Jenis Izin</td>
+              <td className="py-2 px-3 font-semibold text-[#0C4A6E]">{izin?.jenis || "-"}</td>
+            </tr>
+            <tr className="border-b border-[#CFE3F0]">
+              <td className="py-2 px-3 font-semibold bg-[#F0F8FE]">Keterangan / Alasan</td>
+              <td className="py-2 px-3">{izin?.alasan || izin?.keterangan || "-"}</td>
+            </tr>
+            <tr className="border-b border-[#CFE3F0]">
+              <td className="py-2 px-3 font-semibold bg-[#F0F8FE]">Waktu Keberangkatan</td>
+              <td className="py-2 px-3 font-medium">{formatTanggalISO(izin?.tanggalKeluar)}</td>
+            </tr>
+            <tr>
+              <td className="py-2 px-3 font-semibold bg-[#F0F8FE]">Batas Waktu Kembali</td>
+              <td className="py-2 px-3 font-bold text-[#B5533C]">
+                {izin?.tanggalKembali ? formatTanggalISO(izin.tanggalKembali) : "Sesuai arahan pembina"}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-lg p-3 text-[11px] text-[#92400E]">
+          <p className="font-semibold mb-1">Kewajiban & Catatan Penting Santri:</p>
+          <ul className="list-disc pl-4 space-y-0.5">
+            <li>Menjaga adab, akhlakul karimah, dan nama baik pesantren selama di luar pondok.</li>
+            <li>Wajib melapor dan menyerahkan surat izin ini ke Pos Satpam / Keamanan saat keluar dan kembali.</li>
+            <li>Keterlambatan kembali tanpa konfirmasi darurat wali akan dikenakan sanksi kedisiplinan.</li>
+          </ul>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6 pt-4 text-center">
+          <div>
+            <p className="text-[11px] text-[#5B7C93]">Pengasuhan / Pembina Santri,</p>
+            <div className="h-14" />
+            <p className="font-bold underline text-[#0C4A6E]">{pembina || izin?.disetujuiOleh || "Bagian Pengasuhan"}</p>
+            <p className="text-[10px] text-[#5B7C93]">Staf Pengasuhan</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-[#5B7C93]">Verifikasi Pos Keamanan (Satpam),</p>
+            <div className="h-14 flex items-center justify-center text-[10px] text-[#8FB0C7] italic">
+              [ Cap / Paraf Keluar & Kembali ]
+            </div>
+            <p className="font-bold underline text-[#0C4A6E]">( Petugas Jaga Gerbang )</p>
+            <p className="text-[10px] text-[#5B7C93]">Keamanan Pondok Pesantren</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ---------- LOGIN (dengan keamanan password) ----------
 
@@ -6128,20 +6231,22 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
 
   // ---- Absensi (backend-backed, khusus scope Pengasuhan) — ambil absen harian, klik langsung tersimpan ----
+  const [tanggalAbsensi, setTanggalAbsensi] = useState(todayISO());
+  const [asramaFilter, setAsramaFilter] = useState("Semua");
   const [absensiFetch, setAbsensiFetch] = useState({ loading: false, error: "", data: [] });
   const [absensiBusyId, setAbsensiBusyId] = useState("");
   const muatAbsensi = () => {
     if (!isPengasuhan) return;
     if (!backendToken) { setAbsensiFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] }); return; }
     setAbsensiFetch((f) => ({ ...f, loading: true, error: "" }));
-    backendApi(`/pengasuhan/absensi?tanggalISO=${todayISO()}`, { token: backendToken })
+    backendApi(`/pengasuhan/absensi?tanggalISO=${tanggalAbsensi}`, { token: backendToken })
       .then((rows) => {
         setAbsensiFetch({ loading: false, error: "", data: rows });
         setData((d) => ({ ...d, absensi: rows.map((r) => ({ id: r.id, santriId: r.santriId, status: r.status, keterangan: r.keterangan, tanggal: formatTanggalISO(r.tanggalISO) })) }));
       })
       .catch((e) => setAbsensiFetch({ loading: false, error: e.message, data: [] }));
   };
-  useEffect(muatAbsensi, [isPengasuhan, backendToken]);
+  useEffect(muatAbsensi, [isPengasuhan, backendToken, tanggalAbsensi]);
   const statusAbsensi = (santriId) => absensiFetch.data.find((a) => a.santriId === santriId)?.status || null;
   const setStatusAbsensi = async (santriId, status) => {
     setPengasuhanError("");
@@ -6150,7 +6255,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     try {
       const santri = data.santri.find((s) => s.id === santriId);
       if (santri) await syncSantriKeBackend(santri, backendToken);
-      await backendApi("/pengasuhan/absensi", { method: "POST", token: backendToken, body: { santriId, status } });
+      await backendApi("/pengasuhan/absensi", { method: "POST", token: backendToken, body: { santriId, status, tanggalISO: tanggalAbsensi } });
       muatAbsensi();
     } catch (e) {
       setPengasuhanError(e.message);
@@ -6159,8 +6264,30 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     }
   };
 
+  const santriTampilPengasuhan = santriTampil.filter((s) => asramaFilter === "Semua" || s.asrama === asramaFilter);
+  const listAsrama = ["Semua", ...Array.from(new Set((data.santri || []).map((s) => s.asrama).filter(Boolean)))];
 
-  const [izinForm, setIzinForm] = useState({ santriId: "", jenis: "Pulang", keterangan: "" });
+  const tandaiSemuaHadir = async () => {
+    setPengasuhanError("");
+    if (!backendToken) { setPengasuhanError("Tidak terhubung ke server."); return; }
+    const targets = santriTampilPengasuhan.map((s) => s.id);
+    if (!targets.length) return;
+    setAbsensiBusyId("massal");
+    try {
+      await backendApi("/pengasuhan/absensi/massal", {
+        method: "POST",
+        token: backendToken,
+        body: { santriIds: targets, tanggalISO: tanggalAbsensi, status: "Hadir", keterangan: "Presensi massal" },
+      });
+      muatAbsensi();
+    } catch (e) {
+      setPengasuhanError(e.message);
+    } finally {
+      setAbsensiBusyId("");
+    }
+  };
+
+  const [izinForm, setIzinForm] = useState({ santriId: "", jenis: "Pulang", keterangan: "", tanggalKembali: "" });
   const [izinFetch, setIzinFetch] = useState({ loading: false, error: "", data: [] });
   const [izinBusy, setIzinBusy] = useState(false);
   const muatPerizinan = () => {
@@ -6170,9 +6297,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     backendApi("/pengasuhan/perizinan", { token: backendToken })
       .then((rows) => {
         setIzinFetch({ loading: false, error: "", data: rows });
-        // Cermin ke data.perizinan lokal (shape lama) supaya WaliDashboard & Master Data Santri tetap konsisten
-        // tanpa perlu dikonversi fetch-nya sendiri di sesi ini.
-        setData((d) => ({ ...d, perizinan: rows.map((r) => ({ id: r.id, santriId: r.santriId, jenis: r.jenis, keterangan: r.alasan, tanggal: formatTanggalISO(r.tanggalKeluar), status: r.status })) }));
+        setData((d) => ({ ...d, perizinan: rows.map((r) => ({ id: r.id, santriId: r.santriId, jenis: r.jenis, keterangan: r.alasan, tanggal: formatTanggalISO(r.tanggalKeluar), status: r.status, tanggalKembali: r.tanggalKembali, tanggalKembaliAktual: r.tanggalKembaliAktual })) }));
       })
       .catch((e) => setIzinFetch({ loading: false, error: e.message, data: [] }));
   };
@@ -6185,8 +6310,18 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     try {
       const santri = data.santri.find((s) => s.id === izinForm.santriId);
       if (santri) await syncSantriKeBackend(santri, backendToken);
-      await backendApi("/pengasuhan/perizinan", { method: "POST", token: backendToken, body: { santriId: izinForm.santriId, jenis: izinForm.jenis, tanggalKeluar: todayISO(), alasan: izinForm.keterangan } });
-      setIzinForm({ ...izinForm, keterangan: "" });
+      await backendApi("/pengasuhan/perizinan", {
+        method: "POST",
+        token: backendToken,
+        body: {
+          santriId: izinForm.santriId,
+          jenis: izinForm.jenis,
+          tanggalKeluar: todayISO(),
+          tanggalKembali: izinForm.tanggalKembali || null,
+          alasan: izinForm.keterangan,
+        },
+      });
+      setIzinForm({ ...izinForm, keterangan: "", tanggalKembali: "" });
       muatPerizinan();
     } catch (e) {
       setPengasuhanError(e.message);
@@ -6194,19 +6329,33 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setIzinBusy(false);
     }
   };
-  const setIzinStatus = async (id, status) => {
+  const setIzinStatus = async (id, status, extra = {}) => {
     setPengasuhanError("");
     if (!backendToken) { setPengasuhanError("Tidak terhubung ke server."); return; }
     try {
-      await backendApi(`/pengasuhan/perizinan/${id}/proses`, { method: "POST", token: backendToken, body: { status } });
+      await backendApi(`/pengasuhan/perizinan/${id}/proses`, { method: "POST", token: backendToken, body: { status, ...extra } });
       muatPerizinan();
     } catch (e) {
       setPengasuhanError(e.message);
     }
   };
 
+  const cetakSuratIzin = (p) => {
+    const santriObj = (data.santri || []).find((s) => s.id === p.santriId);
+    const waliObj = (data.wali || []).find((w) => w.id === santriObj?.waliId);
+    onPrint(
+      <SuratIzinContent
+        izin={p}
+        santri={santriObj}
+        wali={waliObj}
+        pembina={petugas || "Bagian Pengasuhan"}
+        kop={data.kopSurat}
+      />
+    );
+  };
+
   // ---- Pelanggaran (backend-backed, khusus scope Pengasuhan) ----
-  const [pelForm, setPelForm] = useState({ santriId: "", jenis: "", poin: 5 });
+  const [pelForm, setPelForm] = useState({ santriId: "", jenis: "", poin: 5, presetIndex: "" });
   const [pelFetch, setPelFetch] = useState({ loading: false, error: "", data: [] });
   const [pelBusy, setPelBusy] = useState(false);
   const muatPelanggaran = () => {
@@ -6230,7 +6379,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       const santri = data.santri.find((s) => s.id === pelForm.santriId);
       if (santri) await syncSantriKeBackend(santri, backendToken);
       await backendApi("/pengasuhan/pelanggaran", { method: "POST", token: backendToken, body: { santriId: pelForm.santriId, jenis: pelForm.jenis, poin: pelForm.poin } });
-      setPelForm({ ...pelForm, jenis: "" });
+      setPelForm({ ...pelForm, jenis: "", presetIndex: "" });
       muatPelanggaran();
     } catch (e) {
       setPengasuhanError(e.message);
@@ -8009,27 +8158,53 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       )}
 
       {tab === "absensi" && (
-        <ArchCard title="Absensi Harian" eyebrow={`Pengasuhan — ${todayStr()}`} icon={ClipboardList}>
+        <ArchCard title="Absensi Harian" eyebrow={`Pengasuhan — ${formatTanggalISO(tanggalAbsensi)}`} icon={ClipboardList}>
           {backendOnline === null && <p className="flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3"><Loader2 size={13} className="shrink-0 animate-spin" />Menghubungkan ke server...</p>}
           {backendOnline === false && <p className="flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3"><ShieldAlert size={13} className="shrink-0" />Tidak terhubung ke server. Absensi tidak bisa dicatat — coba logout lalu login ulang.</p>}
           {absensiFetch.error && <p className="text-xs text-[#B5533C] mb-3">{absensiFetch.error}</p>}
           {pengasuhanError && <p className="text-xs text-[#B5533C] mb-3">{pengasuhanError}</p>}
+          
+          <div className="flex flex-wrap items-center justify-between gap-2.5 mb-4 p-3 bg-[#F8FBFE] border border-[#CFE3F0] rounded-xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <div>
+                <label className="text-[10px] text-[#5B7C93] uppercase font-semibold block mb-0.5">Tanggal</label>
+                <input type="date" value={tanggalAbsensi} onChange={(e) => setTanggalAbsensi(e.target.value)} className="text-xs border border-[#CFE3F0] bg-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#0C4A6E]" />
+              </div>
+              <div>
+                <label className="text-[10px] text-[#5B7C93] uppercase font-semibold block mb-0.5">Asrama</label>
+                <select value={asramaFilter} onChange={(e) => setAsramaFilter(e.target.value)} className="text-xs border border-[#CFE3F0] bg-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#0C4A6E]">
+                  {listAsrama.map((a) => <option key={a} value={a}>{a === "Semua" ? "Semua Asrama" : a}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-end">
+              <button onClick={tandaiSemuaHadir} disabled={absensiBusyId !== "" || backendOnline !== true || !santriTampilPengasuhan.length}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-[#0C4A6E] text-white hover:bg-[#08334c] active:scale-95 disabled:opacity-50 transition-all shadow-xs">
+                <CheckCircle2 size={14} />
+                {absensiBusyId === "massal" ? "Memproses..." : "Tandai Semua Hadir"}
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
             {["Hadir", "Sakit", "Izin", "Alpa"].map((st) => (
-              <div key={st} className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>{santriTampil.filter((s) => statusAbsensi(s.id) === st).length}</p><p className="text-[11px] text-[#5B7C93]">{st}</p></div>
+              <div key={st} className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>{santriTampilPengasuhan.filter((s) => statusAbsensi(s.id) === st).length}</p><p className="text-[11px] text-[#5B7C93]">{st}</p></div>
             ))}
           </div>
-          <p className="text-xs text-[#5B7C93] mb-3">Ketuk status untuk mencatat — tersimpan langsung, bisa diganti kapan saja hari ini.</p>
+          <p className="text-xs text-[#5B7C93] mb-3">Ketuk status untuk mencatat kehadiran — otomatis tersimpan dan terhubung ke Rapor Santri.</p>
           <div className="divide-y divide-[#DCEDF7]">
-            {santriTampil.map((s) => {
+            {santriTampilPengasuhan.map((s) => {
               const current = statusAbsensi(s.id);
               return (
                 <div key={s.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
-                  <span className="text-[#17242E] font-medium truncate">{s.nama}</span>
+                  <div className="min-w-0">
+                    <span className="text-[#17242E] font-medium truncate block">{s.nama}</span>
+                    <span className="text-[11px] text-[#5B7C93]">{s.kelas || "-"} · {s.asrama || "Non-asrama"}</span>
+                  </div>
                   <div className="flex gap-1.5 shrink-0">
                     {["Hadir", "Sakit", "Izin", "Alpa"].map((st) => (
                       <button key={st} onClick={() => setStatusAbsensi(s.id, st)} disabled={absensiBusyId === s.id || backendOnline !== true}
-                        className={`text-[11px] px-2.5 py-1.5 rounded-xl border disabled:opacity-50 ${current === st ? "btn-gradient border-[#0C4A6E]" : "border-[#CFE3F0] text-[#45657A]"}`}>
+                        className={`text-[11px] px-2.5 py-1.5 rounded-xl border disabled:opacity-50 transition-colors ${current === st ? "btn-gradient border-[#0C4A6E] font-semibold" : "border-[#CFE3F0] text-[#45657A] bg-white hover:bg-[#F0F8FE]"}`}>
                         {st}
                       </button>
                     ))}
@@ -8037,7 +8212,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 </div>
               );
             })}
-            {!santriTampil.length && <EmptyState text="Tidak ada santri pada kelas ini." />}
+            {!santriTampilPengasuhan.length && <EmptyState text="Tidak ada santri pada filter kelas & asrama ini." />}
           </div>
         </ArchCard>
       )}
@@ -8051,23 +8226,59 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
             <div className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>{perizinanTampil.length}</p><p className="text-[11px] text-[#5B7C93]">Total Pengajuan</p></div>
             <div className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#8A6A0D]" style={{ fontFamily: "'Fraunces', serif" }}>{perizinanTampil.filter((p) => p.status === "Menunggu").length}</p><p className="text-[11px] text-[#5B7C93]">Menunggu</p></div>
-            <div className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#15803D]" style={{ fontFamily: "'Fraunces', serif" }}>{perizinanTampil.filter((p) => p.status === "Disetujui").length}</p><p className="text-[11px] text-[#5B7C93]">Disetujui</p></div>
-            <div className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#96271A]" style={{ fontFamily: "'Fraunces', serif" }}>{perizinanTampil.filter((p) => p.status === "Ditolak").length}</p><p className="text-[11px] text-[#5B7C93]">Ditolak</p></div>
+            <div className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#15803D]" style={{ fontFamily: "'Fraunces', serif" }}>{perizinanTampil.filter((p) => p.status === "Disetujui").length}</p><p className="text-[11px] text-[#5B7C93]">Aktif (Di Luar)</p></div>
+            <div className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>{perizinanTampil.filter((p) => p.status === "Kembali").length}</p><p className="text-[11px] text-[#5B7C93]">Sudah Kembali</p></div>
           </div>
           <div className="flex flex-wrap gap-2 mb-5">
             <select value={izinForm.santriId} onChange={(e) => setIzinForm({ ...izinForm, santriId: e.target.value })} className="flex-1 min-w-[130px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
               <option value="">Pilih santri</option>{santriTampil.map((s) => <option key={s.id} value={s.id}>{s.nama}</option>)}
             </select>
-            <select value={izinForm.jenis} onChange={(e) => setIzinForm({ ...izinForm, jenis: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm"><option>Pulang</option><option>Sakit ke Klinik</option><option>Keperluan Keluarga</option></select>
-            <input placeholder="Keterangan" value={izinForm.keterangan} onChange={(e) => setIzinForm({ ...izinForm, keterangan: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-            <button onClick={addIzin} disabled={izinBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{izinBusy ? "Mengirim..." : "Ajukan"}</button>
+            <select value={izinForm.jenis} onChange={(e) => setIzinForm({ ...izinForm, jenis: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+              <option>Pulang</option><option>Sakit ke Klinik</option><option>Keperluan Keluarga</option><option>Lomba / Ekstrakurikuler</option>
+            </select>
+            <input type="date" value={izinForm.tanggalKembali} onChange={(e) => setIzinForm({ ...izinForm, tanggalKembali: e.target.value })} title="Rencana Tanggal Kembali" className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-xs text-[#17242E]" />
+            <input placeholder="Keterangan / Alasan Izin" value={izinForm.keterangan} onChange={(e) => setIzinForm({ ...izinForm, keterangan: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            <button onClick={addIzin} disabled={izinBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{izinBusy ? "Mengirim..." : "Ajukan"}</button>
           </div>
           <div className="divide-y divide-[#DCEDF7]">
             {perizinanTampil.filter((p) => santriTampil.some((s) => s.id === p.santriId)).map((p) => (
               <div key={p.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
-                <div className="min-w-0"><p className="text-[#17242E] font-medium truncate">{namaSantri(p.santriId)} — {p.jenis}</p><p className="text-xs text-[#5B7C93] truncate">{p.alasan || "-"} · {formatTanggalISO(p.tanggalKeluar)}</p></div>
+                <div className="min-w-0">
+                  <p className="text-[#17242E] font-medium truncate">{namaSantri(p.santriId)} — <span className="text-[#0C4A6E]">{p.jenis}</span></p>
+                  <p className="text-xs text-[#5B7C93] truncate">
+                    {p.alasan || p.keterangan || "-"} · Keluar: {formatTanggalISO(p.tanggalKeluar)} {p.tanggalKembali ? `· Batas: ${formatTanggalISO(p.tanggalKembali)}` : ""}
+                  </p>
+                </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {p.status === "Menunggu" ? (<><IconBtn tone="ok" onClick={() => setIzinStatus(p.id, "Disetujui")} title="Setujui"><Check size={15} /></IconBtn><IconBtn onClick={() => setIzinStatus(p.id, "Ditolak")} title="Tolak"><X size={15} /></IconBtn></>) : <StatusPill status={p.status} />}
+                  {p.status === "Menunggu" && (
+                    <>
+                      <IconBtn tone="ok" onClick={() => setIzinStatus(p.id, "Disetujui")} title="Setujui"><Check size={15} /></IconBtn>
+                      <IconBtn onClick={() => setIzinStatus(p.id, "Ditolak")} title="Tolak"><X size={15} /></IconBtn>
+                    </>
+                  )}
+                  {p.status === "Disetujui" && (
+                    <>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">Di Luar</span>
+                      <button onClick={() => setIzinStatus(p.id, "Kembali", { tanggalKembaliAktual: new Date().toISOString() })}
+                        className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] hover:bg-[#CFE3F0] transition-colors" title="Catat santri sudah kembali ke pondok">
+                        Tandai Kembali
+                      </button>
+                      <button onClick={() => cetakSuratIzin(p)}
+                        className="flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white transition-colors" title="Cetak Surat Izin Keluar (Surat Jalan)">
+                        <Printer size={13} /> Cetak
+                      </button>
+                    </>
+                  )}
+                  {p.status === "Kembali" && (
+                    <>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD]">Kembali</span>
+                      <button onClick={() => cetakSuratIzin(p)}
+                        className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-[#CFE3F0] text-[#5B7C93] hover:bg-white" title="Cetak Arsip Surat Izin">
+                        <Printer size={12} />
+                      </button>
+                    </>
+                  )}
+                  {p.status === "Ditolak" && <StatusPill status={p.status} />}
                 </div>
               </div>
             ))}
@@ -8077,7 +8288,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       )}
 
       {tab === "pelanggaran" && (
-        <ArchCard title="Catat Pelanggaran" eyebrow="Poin Kedisiplinan" icon={AlertTriangle} tone="gold">
+        <ArchCard title="Catat Pelanggaran & Tata Tertib" eyebrow="Poin Kedisiplinan & SP" icon={AlertTriangle} tone="gold">
           {backendOnline === null && <p className="flex items-center gap-1.5 text-xs text-[#5B7C93] bg-[#EAF4FB] border border-[#CFE3F0] rounded-xl px-3 py-1.5 mb-3"><Loader2 size={13} className="shrink-0 animate-spin" />Menghubungkan ke server...</p>}
           {backendOnline === false && <p className="flex items-center gap-1.5 text-xs text-[#96271A] bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl px-3 py-1.5 mb-3"><ShieldAlert size={13} className="shrink-0" />Tidak terhubung ke server. Data pelanggaran tidak bisa dimuat/diproses — coba logout lalu login ulang.</p>}
           {pelFetch.error && <p className="text-xs text-[#B5533C] mb-3">{pelFetch.error}</p>}
@@ -8087,21 +8298,54 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             <div className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#B5533C]" style={{ fontFamily: "'Fraunces', serif" }}>{pelanggaranTampil.reduce((a, p) => a + Number(p.poin || 0), 0)}</p><p className="text-[11px] text-[#5B7C93]">Total Poin Terkumpul</p></div>
             <div className="border border-[#DCEDF7] rounded-xl p-3 text-center"><p className="text-lg font-semibold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>{new Set(pelanggaranTampil.map((p) => p.santriId)).size}</p><p className="text-[11px] text-[#5B7C93]">Santri Terlibat</p></div>
           </div>
-          <div className="flex flex-wrap gap-2 mb-5">
-            <select value={pelForm.santriId} onChange={(e) => setPelForm({ ...pelForm, santriId: e.target.value })} className="flex-1 min-w-[130px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
-              <option value="">Pilih santri</option>{santriTampil.map((s) => <option key={s.id} value={s.id}>{s.nama}</option>)}
-            </select>
-            <input placeholder="Jenis pelanggaran" value={pelForm.jenis} onChange={(e) => setPelForm({ ...pelForm, jenis: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-            <input type="number" value={pelForm.poin} onChange={(e) => setPelForm({ ...pelForm, poin: e.target.value })} className="w-20 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-            <button onClick={addPel} disabled={pelBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{pelBusy ? "Menyimpan..." : "Catat"}</button>
+          <div className="space-y-2 mb-5">
+            <div className="w-full">
+              <select value={pelForm.presetIndex || ""} onChange={(e) => {
+                const idx = e.target.value;
+                if (!idx) {
+                  setPelForm({ ...pelForm, presetIndex: "" });
+                } else {
+                  const pr = PRESET_PELANGGARAN[Number(idx)];
+                  if (pr) setPelForm({ ...pelForm, presetIndex: idx, jenis: pr.jenis, poin: pr.poin });
+                }
+              }} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-xs font-medium text-[#0C4A6E]">
+                <option value="">-- Pilih Pola / Jenis Pelanggaran Baku Pesantren (Otomatis Poin) --</option>
+                {PRESET_PELANGGARAN.map((pr, i) => (
+                  <option key={i} value={i}>{pr.jenis} (+{pr.poin} poin · {pr.kategori})</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <select value={pelForm.santriId} onChange={(e) => setPelForm({ ...pelForm, santriId: e.target.value })} className="flex-1 min-w-[130px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+                <option value="">Pilih santri</option>{santriTampil.map((s) => <option key={s.id} value={s.id}>{s.nama}</option>)}
+              </select>
+              <input placeholder="Jenis pelanggaran" value={pelForm.jenis} onChange={(e) => setPelForm({ ...pelForm, jenis: e.target.value, presetIndex: "" })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+              <input type="number" placeholder="Poin" value={pelForm.poin} onChange={(e) => setPelForm({ ...pelForm, poin: e.target.value })} className="w-20 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+              <button onClick={addPel} disabled={pelBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{pelBusy ? "Menyimpan..." : "Catat"}</button>
+            </div>
           </div>
           <div className="divide-y divide-[#DCEDF7]">
-            {pelanggaranTampil.filter((p) => santriTampil.some((s) => s.id === p.santriId)).map((p) => (
-              <div key={p.id} className="flex items-center justify-between py-2.5 text-sm">
-                <span>{namaSantri(p.santriId)} — {p.jenis}</span>
-                <div className="flex items-center gap-2"><span className="text-[#B5533C] font-medium">+{p.poin} poin</span><IconBtn onClick={() => delPel(p.id)} title="Hapus"><Trash2 size={15} /></IconBtn></div>
-              </div>
-            ))}
+            {pelanggaranTampil.filter((p) => santriTampil.some((s) => s.id === p.santriId)).map((p) => {
+              const totalPoinSantri = pelanggaranTampil.filter((x) => x.santriId === p.santriId).reduce((sum, item) => sum + Number(item.poin || 0), 0);
+              const spStatus = hitungStatusSP(totalPoinSantri);
+              return (
+                <div key={p.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-[#17242E] truncate">{namaSantri(p.santriId)}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${spStatus.badge}`}>
+                        {spStatus.label} ({totalPoinSantri} poin)
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#5B7C93] truncate">{p.jenis} · {formatTanggalISO(p.tanggalISO || p.tanggal)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[#B5533C] font-semibold text-xs">+{p.poin} poin</span>
+                    <IconBtn onClick={() => delPel(p.id)} title="Hapus"><Trash2 size={15} /></IconBtn>
+                  </div>
+                </div>
+              );
+            })}
             {!pelanggaranTampil.filter((p) => santriTampil.some((s) => s.id === p.santriId)).length && <EmptyState text="Belum ada pelanggaran tercatat." />}
           </div>
         </ArchCard>
@@ -10767,16 +11011,16 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
   }, [santri.id, backendToken]);
   const rapor = raporFetch.data;
 
-  const absensi = rapor ? rapor.absensi.map((a) => ({ ...a, tanggal: formatTanggalISO(a.tanggalISO) })) : data.absensi.filter((a) => a.santriId === santri.id);
-  const nilai = rapor ? rapor.nilai : data.nilai.filter((n) => n.santriId === santri.id);
-  const hafalan = rapor ? rapor.hafalan.map((h) => ({ ...h, tanggal: formatTanggalISO(h.tanggalISO) })) : data.hafalan.filter((h) => h.santriId === santri.id);
-  const perizinan = rapor ? rapor.perizinan.map((p) => ({ ...p, keterangan: p.alasan, tanggal: formatTanggalISO(p.tanggalKeluar) })) : data.perizinan.filter((p) => p.santriId === santri.id);
-  const pelanggaran = rapor ? rapor.pelanggaran.map((p) => ({ ...p, tanggal: formatTanggalISO(p.tanggalISO) })) : data.pelanggaran.filter((p) => p.santriId === santri.id);
-  const prestasi = rapor ? rapor.prestasi.map((p) => ({ ...p, tanggal: formatTanggalISO(p.tanggalISO) })) : data.prestasi.filter((p) => p.santriId === santri.id);
-  const kegiatan = data.kegiatan.filter((k) => k.santriId === santri.id);
-  const totalPoin = rapor ? rapor.totalPoinPelanggaran : pelanggaran.reduce((a, b) => a + Number(b.poin), 0);
-  const tagihan = rapor ? rapor.tagihan.map((t) => ({ ...t, tanggalBayar: t.tanggalBayarISO ? formatTanggalISO(t.tanggalBayarISO) : null })) : data.tagihan.filter((t) => t.santriId === santri.id);
-  const rekapAbsen = rapor ? Object.entries(rapor.rekapAbsensi).map(([st, jumlah]) => ({ st, jumlah })) : ["Hadir", "Sakit", "Izin", "Alpa"].map((st) => ({ st, jumlah: absensi.filter((a) => a.status === st).length }));
+  const absensi = (rapor && Array.isArray(rapor.absensi)) ? rapor.absensi.map((a) => ({ ...a, tanggal: formatTanggalISO(a.tanggalISO) })) : (data.absensi || []).filter((a) => a.santriId === santri.id);
+  const nilai = rapor ? (rapor.nilai || []) : (data.nilai || []).filter((n) => n.santriId === santri.id);
+  const hafalan = (rapor && Array.isArray(rapor.hafalan)) ? rapor.hafalan.map((h) => ({ ...h, tanggal: formatTanggalISO(h.tanggalISO) })) : (data.hafalan || []).filter((h) => h.santriId === santri.id);
+  const perizinan = (rapor && Array.isArray(rapor.perizinan)) ? rapor.perizinan.map((p) => ({ ...p, keterangan: p.alasan, tanggal: formatTanggalISO(p.tanggalKeluar) })) : (data.perizinan || []).filter((p) => p.santriId === santri.id);
+  const pelanggaran = (rapor && Array.isArray(rapor.pelanggaran)) ? rapor.pelanggaran.map((p) => ({ ...p, tanggal: formatTanggalISO(p.tanggalISO) })) : (data.pelanggaran || []).filter((p) => p.santriId === santri.id);
+  const prestasi = (rapor && Array.isArray(rapor.prestasi)) ? rapor.prestasi.map((p) => ({ ...p, tanggal: formatTanggalISO(p.tanggalISO) })) : (data.prestasi || []).filter((p) => p.santriId === santri.id);
+  const kegiatan = (data.kegiatan || []).filter((k) => k.santriId === santri.id);
+  const totalPoin = (rapor && rapor.totalPoinPelanggaran !== undefined) ? rapor.totalPoinPelanggaran : pelanggaran.reduce((a, b) => a + Number(b.poin || 0), 0);
+  const tagihan = (rapor && Array.isArray(rapor.tagihan)) ? rapor.tagihan.map((t) => ({ ...t, tanggalBayar: t.tanggalBayarISO ? formatTanggalISO(t.tanggalBayarISO) : null })) : (data.tagihan || []).filter((t) => t.santriId === santri.id);
+  const rekapAbsen = (rapor && rapor.rekapAbsensi) ? Object.entries(rapor.rekapAbsensi).map(([st, jumlah]) => ({ st, jumlah })) : ["Hadir", "Sakit", "Izin", "Alpa"].map((st) => ({ st, jumlah: absensi.filter((a) => a.status === st).length }));
 
   // ---- Cashless: saldo/limit/blokir & riwayat diambil langsung dari backend (sumber kebenaran) ----
   const [cashlessFetch, setCashlessFetch] = useState({ loading: false, error: "", detail: null, riwayat: [] });

@@ -2,7 +2,7 @@ const express = require("express");
 const { requireAuth, requirePengasuhan, recordSensitiveAudit } = require("../auth");
 const { validateBody } = require("../validator");
 const {
-  catatAbsensi, riwayatAbsensi, absensiPadaTanggal,
+  catatAbsensi, catatAbsensiMassal, riwayatAbsensi, absensiPadaTanggal,
   ajukanPerizinan, prosesPerizinan, daftarPerizinan,
   catatPelanggaran, riwayatPelanggaran, semuaPelanggaran, hapusPelanggaran,
   catatPenilaianKegiatan, semuaPenilaianKegiatan, hapusPenilaianKegiatan,
@@ -30,7 +30,25 @@ router.post("/absensi", validateBody({
   res.status(201).json(hasil);
 }));
 
-router.get("/absensi", asyncHandler(async (req, res) => res.json(await absensiPadaTanggal(req.query.tanggalISO))));
+router.post("/absensi/massal", validateBody({
+  santriIds: { required: true, type: "array", label: "santriIds" },
+  status: { required: true, type: "string", label: "status" },
+}), asyncHandler(async (req, res) => {
+  const { santriIds, tanggalISO, status, keterangan } = req.body || {};
+  const hasil = await catatAbsensiMassal({ santriIds, tanggalISO, status, keterangan, dicatatOleh: req.user.nama });
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengasuhan.absensi_massal_recorded",
+    targetType: "Santri", targetId: null, ip: req.ip, sesudah: { count: hasil.count, status, tanggalISO },
+  });
+  res.status(201).json(hasil);
+}));
+
+router.get("/absensi", asyncHandler(async (req, res) => {
+  res.json(await absensiPadaTanggal(req.query.tanggalISO, {
+    kelas: req.query.kelas,
+    asrama: req.query.asrama,
+  }));
+}));
 router.get("/absensi/:santriId", asyncHandler(async (req, res) => res.json(await riwayatAbsensi(req.params.santriId))));
 
 // Perizinan
@@ -52,14 +70,21 @@ router.get("/perizinan", asyncHandler(async (req, res) => res.json(await daftarP
 router.post("/perizinan/:id/proses", validateBody({
   status: { required: true, type: "string", label: "status" },
 }), asyncHandler(async (req, res) => {
-  const { status } = req.body || {};
-  const hasil = await prosesPerizinan({ id: req.params.id, statusBaru: status, disetujuiOleh: req.user.nama });
+  const { status, catatanKembali, tanggalKembaliAktual } = req.body || {};
+  const hasil = await prosesPerizinan({
+    id: req.params.id,
+    statusBaru: status,
+    disetujuiOleh: req.user.nama,
+    catatanKembali,
+    tanggalKembaliAktual,
+  });
   await recordSensitiveAudit({
     actorId: req.user.id, actorRole: req.user.role, action: "pengasuhan.perizinan_processed",
-    targetType: "Perizinan", targetId: req.params.id, ip: req.ip, sesudah: { status },
+    targetType: "Perizinan", targetId: req.params.id, ip: req.ip, sesudah: { status, tanggalKembaliAktual },
   });
   res.json(hasil);
 }));
+
 
 // Pelanggaran
 router.post("/pelanggaran", validateBody({
