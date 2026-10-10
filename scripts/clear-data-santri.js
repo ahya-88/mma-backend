@@ -7,6 +7,11 @@ async function clearDataSantriDanWali() {
     const tablesToDelete = [
       "TransaksiCashless",
       "TransaksiCashlessIdempotency",
+      "TransaksiUnitUsaha",
+      "RiwayatStokOpname",
+      "Cashflow",
+      "RincianAnggaran",
+      "PengajuanAnggaran",
       "Ledger",
       "QueueOfflineKasir",
       "PendaftaranUlang",
