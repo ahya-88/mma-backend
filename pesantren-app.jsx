@@ -291,7 +291,76 @@ const buildThemeOverrideCSS = (v) => {
     --shadow-lg:0 24px 48px -16px rgba(10,37,64,.18);
     --font-heading: '${v.fontJudul}', serif; --font-body: '${v.fontIsi}', sans-serif;
   }`;
-  return `${root}\n${rules}\n${divideRule}\n${ringRules}\n${fontRule}`;
+  const TABLE_GUARD = ":not(#print-area, #print-area *, #print-wrapper, #print-wrapper *, .pdf-page, .pdf-page *, .no-theme-table, .no-theme-table *)";
+  const tableRules = `
+    #root table\${TABLE_GUARD} {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      width: 100%;
+    }
+    #root table thead th\${TABLE_GUARD},
+    #root table th\${TABLE_GUARD} {
+      background: linear-gradient(180deg, var(--c-primary) 0%, color-mix(in srgb, var(--c-primary) 82%, black) 100%) !important;
+      color: #ffffff !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.04em !important;
+      text-transform: uppercase !important;
+      padding: 10px 14px !important;
+      border-bottom: 2.5px solid color-mix(in srgb, var(--c-accent) 75%, transparent) !important;
+      border-top: none !important;
+      white-space: nowrap;
+    }
+    #root table thead th:first-child\${TABLE_GUARD} {
+      border-top-left-radius: 12px;
+    }
+    #root table thead th:last-child\${TABLE_GUARD} {
+      border-top-right-radius: 12px;
+    }
+    #root table tbody tr:nth-child(even)\${TABLE_GUARD} {
+      background-color: color-mix(in srgb, var(--c-primary) 3.5%, white) !important;
+    }
+    #root table tbody tr:nth-child(odd)\${TABLE_GUARD} {
+      background-color: #ffffff !important;
+    }
+    #root table tbody tr\${TABLE_GUARD} {
+      transition: background-color 140ms ease, box-shadow 140ms ease !important;
+    }
+    #root table tbody tr:hover\${TABLE_GUARD} {
+      background-color: color-mix(in srgb, var(--c-primary) 8.5%, white) !important;
+      box-shadow: inset 4px 0 0 var(--c-accent) !important;
+    }
+    #root table tbody tr td\${TABLE_GUARD} {
+      padding: 11px 14px !important;
+      border-bottom: 1px solid var(--c-border-soft) !important;
+      vertical-align: middle;
+      font-variant-numeric: tabular-nums;
+    }
+    #root table thead th\${TABLE_GUARD} input[type="checkbox"],
+    #root table tbody td\${TABLE_GUARD} input[type="checkbox"] {
+      accent-color: var(--c-accent);
+    }
+    html[data-theme="dark"] #root table thead th\${TABLE_GUARD} {
+      background: linear-gradient(180deg, #16283b 0%, #0f1e2e 100%) !important;
+      color: #94a9b8 !important;
+      border-bottom: 2px solid var(--c-accent, #38bdf8) !important;
+    }
+    html[data-theme="dark"] #root table tbody tr:nth-child(even)\${TABLE_GUARD} {
+      background-color: rgba(22, 40, 59, 0.45) !important;
+    }
+    html[data-theme="dark"] #root table tbody tr:nth-child(odd)\${TABLE_GUARD} {
+      background-color: var(--theme-surface, #0f1e2e) !important;
+    }
+    html[data-theme="dark"] #root table tbody tr:hover\${TABLE_GUARD} {
+      background-color: rgba(var(--c-primary-rgb), 0.22) !important;
+      box-shadow: inset 4px 0 0 var(--c-accent, #38bdf8) !important;
+    }
+    html[data-theme="dark"] #root table tbody tr td\${TABLE_GUARD} {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      color: var(--theme-text, #f0f7fc);
+    }
+  `;
+  return `${root}\n${rules}\n${divideRule}\n${ringRules}\n${fontRule}\n${tableRules}`;
 };
 const uid = () => Math.random().toString(36).slice(2, 9);
 const rupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");

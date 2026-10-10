@@ -206,21 +206,21 @@ section table {
   background-color: #ffffff;
 }
 
-/* Deep Marine Navy Table Header */
+/* Dynamic Thematic Table Header */
 table thead th,
 table th,
 #root table thead th,
 #root table th,
 .table-wrap th,
 th {
-  background: linear-gradient(180deg, #0c4a6e 0%, #082f49 100%) !important;
+  background: linear-gradient(180deg, var(--c-primary, #0c4a6e) 0%, color-mix(in srgb, var(--c-primary, #0c4a6e) 82%, black) 100%) !important;
   color: #ffffff !important;
   font-size: 11px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.08em !important;
+  letter-spacing: 0.04em !important;
   text-transform: uppercase !important;
-  padding: 13px 16px !important;
-  border-bottom: 2.5px solid #0284c7 !important;
+  padding: 11px 14px !important;
+  border-bottom: 2.5px solid var(--c-accent, #0284c7) !important;
   border-top: none !important;
   white-space: nowrap;
 }
@@ -230,16 +230,16 @@ html[data-theme="dark"] .table-wrap th,
 html[data-theme="dark"] table thead th {
   background: linear-gradient(180deg, #11273d 0%, #0a1827 100%) !important;
   color: #94a9b8 !important;
-  border-bottom: 2.5px solid #0284c7 !important;
+  border-bottom: 2.5px solid var(--c-accent, #0284c7) !important;
 }
 
-/* Zebra Striping: White & Soft Ice Blue */
+/* Zebra Striping: White & Soft Tint */
 table tbody tr:nth-child(even),
 table tr:nth-child(even),
 #root table tbody tr:nth-child(even),
 #root table tr:nth-child(even),
 .table-wrap tbody tr:nth-child(even) {
-  background-color: #f6fafd !important;
+  background-color: color-mix(in srgb, var(--c-primary, #0c4a6e) 3.5%, white) !important;
 }
 
 table tbody tr:nth-child(odd),
@@ -266,8 +266,8 @@ table td,
 #root table td,
 #root table tbody td,
 .table-wrap tbody td {
-  padding: 13px 16px !important;
-  border-bottom: 1px solid #eef5fa !important;
+  padding: 11px 14px !important;
+  border-bottom: 1px solid var(--c-border-soft, #eef5fa) !important;
   font-size: 12.5px;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
@@ -289,14 +289,14 @@ table tbody tr,
 table tbody tr:hover,
 #root table tbody tr:hover,
 .table-wrap tbody tr:hover {
-  background-color: #e0f2fe !important;
-  box-shadow: inset 4px 0 0 #0284c7 !important;
+  background-color: color-mix(in srgb, var(--c-primary, #0c4a6e) 8.5%, white) !important;
+  box-shadow: inset 4px 0 0 var(--c-accent, #0284c7) !important;
 }
 
 html[data-theme="dark"] #root table tbody tr:hover,
 html[data-theme="dark"] .table-wrap tbody tr:hover {
   background-color: rgba(2, 132, 199, 0.16) !important;
-  box-shadow: inset 4px 0 0 #38bdf8 !important;
+  box-shadow: inset 4px 0 0 var(--c-accent, #38bdf8) !important;
 }
 
 /* Status Badges & Pills */
