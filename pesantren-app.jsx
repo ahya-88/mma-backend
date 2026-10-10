@@ -1538,6 +1538,96 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
   const [loginBusy, setLoginBusy] = useState(false);
   const [activeTabRole, setActiveTabRole] = useState("guru");
 
+  // State untuk Carousel & Informasi Pondok (Opsi 2)
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlay, setIsAutoPlay] = useState(true);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [infoModalTab, setInfoModalTab] = useState("profil");
+
+  const SLIDES = [
+    {
+      id: "tahfidz",
+      kategori: "Program Unggulan",
+      badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",
+      gradient: "from-[#064E3B] via-[#047857] to-[#022C22]",
+      tag: "Tahfidz & LPTQ",
+      judul: "Pendidikan Al-Qur'an & Mutaba'ah",
+      subjudul: "Mencetak Generasi Qur'ani yang Mutqin dan Berkarakter",
+      deskripsi: "Program tahfidz terpadu dengan bimbingan asatidz mukim bersanad, halaqoh intensif harian, serta pemantauan mutaba'ah digital real-time.",
+      poin: ["Target Hafalan 30 Juz Mutqin", "Bimbingan Tahsin & Tajwid Bersanad", "Ujian & Wisuda Hifzhil Qur'an"],
+      stats: [
+        { label: "Target", val: "30 Juz" },
+        { label: "Halaqoh", val: "12 Kelompok" },
+        { label: "Santri", val: "1.450+" },
+      ],
+    },
+    {
+      id: "turats",
+      kategori: "Akademik Pesantren",
+      badgeColor: "bg-sky-500/20 text-sky-300 border-sky-400/30",
+      gradient: "from-[#0C4A6E] via-[#0369A1] to-[#082F49]",
+      tag: "Kajian Kitab Kuning",
+      judul: "Kajian Kitab Turats & Fiqih",
+      subjudul: "Menjaga Sanad Keilmuan Ulama Salafus Shalih",
+      deskripsi: "Pendalaman literatur klasik Islam meliputi Fiqih, Ushul Fiqih, Nahwu-Shorof, Tafsir, dan Hadits dengan metode sorogan serta bandongan.",
+      poin: ["Sorogan & Wetonan Harian", "Madrasah Diniyah Terakreditasi", "Kajian Bahtsul Masail Santri"],
+      stats: [
+        { label: "Kitab", val: "28+ Kitab" },
+        { label: "Asatidz", val: "75 Ustadz" },
+        { label: "Sanad", val: "Bersambung" },
+      ],
+    },
+    {
+      id: "teknologi",
+      kategori: "Inovasi Modern",
+      badgeColor: "bg-teal-500/20 text-teal-300 border-teal-400/30",
+      gradient: "from-[#134E4A] via-[#0F766E] to-[#042F2E]",
+      tag: "Sains & Teknologi",
+      judul: "Integrasi Iptek & Smart Pesantren",
+      subjudul: "Cakap Berbahasa Asing, Unggul dalam Teknologi",
+      deskripsi: "Penguasaan dwibahasa aktif (Arab & Inggris), lab komputer terpadu, serta sistem administrasi cashless santri berbasis kartu pintar BMT.",
+      poin: ["Bilingual Active Environment", "Laboratorium Komputer & Digital", "Smart Card & Cashless BMT"],
+      stats: [
+        { label: "Bahasa", val: "Arab & Inggris" },
+        { label: "Transaksi", val: "Cashless BMT" },
+        { label: "Sistem", val: "SuperApp 24/7" },
+      ],
+    },
+    {
+      id: "asrama",
+      kategori: "Kampus Asri",
+      badgeColor: "bg-amber-500/20 text-amber-300 border-amber-400/30",
+      gradient: "from-[#1E293B] via-[#334155] to-[#0F172A]",
+      tag: "Pengasuhan & Asrama",
+      judul: "Lingkungan Asri, Aman & Penuh Berkah",
+      subjudul: "Kemandirian Santri dalam Suasana yang Mendukung",
+      deskripsi: "Kompleks pesantren yang tertata rapi, asrama representatif, masjid jami' berkapasitas besar, klinik kesehatan, dan kantin mandiri santri.",
+      poin: ["Masjid Jami' Megah & Luas", "Asrama Bersih Putra & Putri", "Klinik Santri Siaga 24 Jam"],
+      stats: [
+        { label: "Akreditasi", val: "Unggul (A)" },
+        { label: "Kamar", val: "Representatif" },
+        { label: "Klinik", val: "Siaga 24 Jam" },
+      ],
+    },
+  ];
+
+  // Auto-play timer untuk carousel foto / informasi
+  useEffect(() => {
+    if (!isAutoPlay) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [isAutoPlay, SLIDES.length]);
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1));
+  };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+  };
+
   const cariAkun = (u) => {
     const guru = (users.guru || []).find((g) => g.username === u);
     if (guru) return { role: "guru", akun: guru };
@@ -1548,300 +1638,643 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
 
   const submitLogin = async () => {
     setError("");
-    const found = cariAkun(username);
-    if (found && found.akun.password === password) { onLogin(found.role, found.akun, password); return; }
+    const cleanUser = username.trim();
+    if (!cleanUser || !password) {
+      setError("Username dan kata sandi wajib diisi.");
+      return;
+    }
+
+    const found = cariAkun(cleanUser);
+    if (found && found.akun.password === password) {
+      onLogin(found.role, found.akun, password);
+      return;
+    }
+
     setLoginBusy(true);
     try {
-      const hasil = await backendApi("/auth/login", { method: "POST", body: { username, password } });
-      onLogin(hasil.user.role, hasil.user, password, hasil.token);
+      const hasil = await backendApi("/auth/login", {
+        method: "POST",
+        body: { username: cleanUser, password },
+      });
+      if (hasil && hasil.user && hasil.token) {
+        onLogin(hasil.user.role, { ...hasil.user, username: cleanUser }, password, hasil.token);
+      } else {
+        setError("Respon server tidak valid.");
+      }
     } catch {
-      setError("Username atau kata sandi salah.");
+      setError("Username atau kata sandi tidak cocok.");
     } finally {
       setLoginBusy(false);
     }
   };
 
   const bukaLupaPassword = () => {
-    const found = cariAkun(username);
-    if (!found) { setError("Username tidak ditemukan."); return; }
-    setSelectedUser(found.akun); setSelectedRole(found.role);
-    setNewPw1(""); setNewPw2(""); setResetError(""); setResetDone(false); setStep("reset");
+    const cleanUser = username.trim();
+    if (!cleanUser) {
+      setError("Silakan masukkan username terlebih dahulu.");
+      return;
+    }
+    const found = cariAkun(cleanUser);
+    if (!found) {
+      setError("Username tidak ditemukan dalam data akun.");
+      return;
+    }
+    setSelectedUser(found.akun);
+    setSelectedRole(found.role);
+    setNewPw1("");
+    setNewPw2("");
+    setResetError("");
+    setResetDone(false);
+    setStep("reset");
   };
 
   const simpanPasswordBaru = () => {
-    if (!newPw1 || newPw1.length < 4) { setResetError("Kata sandi minimal 4 karakter."); return; }
-    if (newPw1 !== newPw2) { setResetError("Konfirmasi kata sandi tidak cocok."); return; }
+    if (!newPw1 || newPw1.length < 4) {
+      setResetError("Kata sandi baru minimal 4 karakter.");
+      return;
+    }
+    if (newPw1 !== newPw2) {
+      setResetError("Konfirmasi kata sandi tidak cocok.");
+      return;
+    }
     onResetPassword(selectedRole, selectedUser.id, newPw1);
     setResetDone(true);
     setResetError("");
   };
 
+  const slideAktif = SLIDES[currentSlide];
+
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden bg-[#F8FAFC] safe-area-app" style={{ fontFamily: `'${fontIsi || "Inter"}', sans-serif` }}>
-      {/* Panel hero — Aurora Pesantren V3 */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-5/12 flex-col justify-between p-12 xl:p-16 relative overflow-hidden bg-gradient-to-br from-[#0C4A6E] via-[#0E5B84] to-[#083550] text-white">
-        <div className="absolute -top-24 -left-16 w-96 h-96 rounded-full bg-[#29AAE1] opacity-35 blur-[110px]" style={{ animation: "auroraDrift 14s ease-in-out infinite" }} />
-        <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] rounded-full bg-[#7C3AED] opacity-30 blur-[120px]" style={{ animation: "auroraDrift 18s ease-in-out infinite reverse" }} />
-        <img src={BUILDING_PHOTO} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15 mix-blend-overlay pointer-events-none" />
-        <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "radial-gradient(circle, white 1.5px, transparent 1.5px)", backgroundSize: "28px 28px" }} />
+    <div
+      className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-[#F0FDF4] via-[#F8FAFC] to-[#EFF6FF] text-[#1E293B] relative overflow-x-hidden safe-area-app"
+      style={{ fontFamily: `'${fontIsi || "Inter"}', sans-serif` }}
+    >
+      {/* Background Decor - Ambient Minimalist Glow */}
+      <div className="absolute top-0 left-1/4 w-[36rem] h-[36rem] rounded-full bg-emerald-200/35 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[32rem] h-[32rem] rounded-full bg-sky-200/35 blur-[130px] pointer-events-none" />
 
-        {/* Top Header in Hero */}
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 text-[11px] tracking-[0.16em] uppercase font-semibold text-white/90 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-3.5 py-1 shadow-sm">
-            <ShieldCheck size={13} className="text-[#38BDF8]" /> Sistem Informasi Terpadu
-          </div>
-          <span className="text-[11px] text-white/75 font-medium tracking-wider">v3.0 Aurora</span>
-        </div>
-
-        {/* Center Content in Hero */}
-        <div className="relative z-10 my-auto py-8">
-          <div className="w-16 h-16 rounded-2xl bg-white p-2.5 flex items-center justify-center mb-6 shadow-2xl border border-white/40 ring-4 ring-white/10">
+      {/* Top Navigation Bar - Minimalis & Informatif */}
+      <header className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white p-1.5 shadow-sm border border-emerald-100 flex items-center justify-center">
             <img src={LOGO_MARK} alt="Logo" className="w-full h-full object-contain" />
           </div>
-          <div className="inline-block bg-[#0284C7]/30 border border-[#38BDF8]/40 px-3 py-1 rounded-full mb-3 backdrop-blur-sm">
-            <p className="text-xs tracking-[0.2em] uppercase font-bold text-[#E0F2FE]">MA'HAD MUDAIYATUL ANWAR</p>
-          </div>
-          <h1 className="text-3xl xl:text-4xl font-extrabold mb-4 leading-tight text-white tracking-tight drop-shadow-md" style={{ fontFamily: "'Fraunces', serif" }}>
-            {namaAplikasi}
-          </h1>
-          <p className="text-sm text-white/90 mb-8 leading-relaxed max-w-md font-normal">
-            Portal terintegrasi untuk Guru, Wali Santri, Akademik, Tahfidz, Keuangan, dan Unit Usaha. Seluruh layanan pesantren dalam satu genggaman.
-          </p>
-
-          {/* Feature Ribbons */}
-          <div className="grid grid-cols-2 gap-3 max-w-md">
-            {[
-              [Users, "Wali Santri", "Pantau nilai & tabungan"],
-              [GraduationCap, "Guru & Ustadz", "Presensi & penilaian"],
-              [BookOpen, "LPTQ & Tahfidz", "Mutaba'ah & hafalan"],
-              [Wallet, "Keuangan & BMT", "Tagihan & cashless"],
-            ].map(([Icon, title, desc]) => (
-              <div key={title} className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Icon size={14} className="text-white" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">{title}</p>
-                  <p className="text-[10px] text-white/70 truncate">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Hero Footer */}
-        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/70">
-          <span style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic" }}>Berilmu · Berakhlak · Berdaya</span>
-          <span>MMA Pesantren</span>
-        </div>
-      </div>
-
-      {/* Right Panel: Form Area */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 relative pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))]">
-        <div className="absolute inset-0 -z-10 overflow-hidden lg:hidden bg-gradient-to-br from-[#0C4A6E] via-[#0E5B84] to-[#083550]">
-          <div className="absolute -top-24 -left-16 w-80 h-80 rounded-full opacity-40 blur-[90px] bg-[#29AAE1]" />
-          <div className="absolute bottom-0 -right-16 w-80 h-80 rounded-full opacity-35 blur-[90px] bg-[#7C3AED]" />
-        </div>
-
-        <div className="w-full max-w-md animate-riseIn">
-          {/* Mobile Top Brand (hidden on lg) */}
-          <div className="lg:hidden text-center mb-6">
-            <div className="w-16 h-16 mx-auto mb-3.5 rounded-2xl bg-white p-2.5 shadow-2xl flex items-center justify-center ring-4 ring-white/20">
-              <img src={LOGO_MARK} alt="Logo" className="w-full h-full object-contain" />
-            </div>
-            <div className="inline-block bg-[#0284C7]/40 border border-[#38BDF8]/50 px-3.5 py-1 rounded-full mb-2 backdrop-blur-md shadow-sm">
-              <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-[#E0F2FE]">MA'HAD MUDAIYATUL ANWAR</p>
-            </div>
-            <h1 className="text-2xl font-extrabold text-white leading-tight drop-shadow-md" style={{ fontFamily: "'Fraunces', serif" }}>
-              {namaAplikasi}
+          <div>
+            <h1 className="text-sm sm:text-base font-bold text-[#0C4A6E] tracking-tight leading-none" style={{ fontFamily: "'Fraunces', serif" }}>
+              {namaAplikasi || "Ma'had Mudaiyatul Anwar"}
             </h1>
-            <p className="text-xs text-white/90 mt-1 font-medium">Sistem Informasi Terpadu MMA</p>
+            <p className="text-[11px] text-[#059669] font-medium mt-0.5">Islamic Boarding School · Portal Terpadu</p>
           </div>
+        </div>
 
-          {/* Login Card */}
-          <div className="bg-white border border-[#E3E8EE] rounded-[24px] p-6 sm:p-8 shadow-xl">
-            <div className="mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#0C4A6E] tracking-tight" style={{ fontFamily: "'Fraunces', serif" }}>
-                {step === "login" ? "Masuk ke Akun" : "Atur Ulang Kata Sandi"}
-              </h2>
-              <p className="text-xs sm:text-sm text-[#5B7C93] mt-1">
-                {step === "login" ? "Gunakan akun yang telah didaftarkan oleh admin." : "Masukkan username dan atur kata sandi baru Anda."}
-              </p>
+        {/* Quick Nav Items (Desktop/Tablet) */}
+        <div className="hidden md:flex items-center gap-5 text-xs font-semibold text-[#475569]">
+          <button
+            type="button"
+            onClick={() => { setInfoModalTab("profil"); setShowInfoModal(true); }}
+            className="hover:text-[#0C4A6E] transition-colors flex items-center gap-1.5"
+          >
+            <School size={14} className="text-[#059669]" /> Profil Pondok
+          </button>
+          <button
+            type="button"
+            onClick={() => { setInfoModalTab("program"); setShowInfoModal(true); }}
+            className="hover:text-[#0C4A6E] transition-colors flex items-center gap-1.5"
+          >
+            <Award size={14} className="text-[#0284C7]" /> Program Unggulan
+          </button>
+          <button
+            type="button"
+            onClick={() => { setInfoModalTab("kontak"); setShowInfoModal(true); }}
+            className="hover:text-[#0C4A6E] transition-colors flex items-center gap-1.5"
+          >
+            <ShieldCheck size={14} className="text-[#10B981]" /> Kontak Sekretariat
+          </button>
+          <div className="h-4 w-px bg-slate-200" />
+          <div className="inline-flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Sistem Aktif 24/7
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area - Split Clean Card (Opsi 2) */}
+      <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-4 sm:py-8">
+        <div className="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-3xl border border-[#E2E8F0] shadow-[0_20px_60px_-15px_rgba(15,23,42,0.10)] overflow-hidden flex flex-col lg:flex-row">
+
+          {/* SISI KIRI: CAROUSEL FOTOGRAFI & INFORMASI PONDOK */}
+          <div
+            className="lg:w-7/12 relative flex flex-col justify-between p-5 sm:p-8 lg:p-10 text-white overflow-hidden min-h-[250px] sm:min-h-[320px] lg:min-h-[580px]"
+            onMouseEnter={() => setIsAutoPlay(false)}
+            onMouseLeave={() => setIsAutoPlay(true)}
+          >
+            {/* Background Gradient & Photo Overlays */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${slideAktif.gradient} transition-all duration-700`} />
+            <img
+              src={BUILDING_PHOTO}
+              alt="Pesantren"
+              className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay pointer-events-none scale-105 transition-transform duration-1000"
+            />
+            {/* Subtle Texture Dot Pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.06] pointer-events-none"
+              style={{ backgroundImage: "radial-gradient(circle, white 1.5px, transparent 1.5px)", backgroundSize: "24px 24px" }}
+            />
+
+            {/* Slide Header: Badge Kategori & Quick Info */}
+            <div className="relative z-10 flex items-center justify-between gap-2">
+              <span className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] tracking-wider uppercase font-bold px-2.5 sm:px-3 py-1 rounded-full border backdrop-blur-md ${slideAktif.badgeColor}`}>
+                <Award size={12} /> {slideAktif.kategori}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setInfoModalTab("profil"); setShowInfoModal(true); }}
+                className="text-[10px] sm:text-[11px] font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-2.5 sm:px-3 py-1 rounded-full transition-all"
+              >
+                Tentang Ma'had →
+              </button>
             </div>
 
-            {/* Role Helper Switcher (Pill switch) */}
-            {step === "login" && (
-              <div className="bg-[#F4F8FB] p-1 rounded-xl flex gap-1 mb-5 border border-[#E3E8EE]">
-                <button
-                  type="button"
-                  onClick={() => setActiveTabRole("guru")}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-                    activeTabRole === "guru" ? "bg-white text-[#0C4A6E] shadow-xs" : "text-[#5B7C93] hover:text-[#0C4A6E]"
-                  }`}
-                >
-                  <GraduationCap size={14} /> Guru / Ustadz
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTabRole("wali")}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-                    activeTabRole === "wali" ? "bg-white text-[#0C4A6E] shadow-xs" : "text-[#5B7C93] hover:text-[#0C4A6E]"
-                  }`}
-                >
-                  <Users size={14} /> Wali Santri
-                </button>
+            {/* Slide Center Content: Headline & Deskripsi */}
+            <div className="relative z-10 my-auto py-3 sm:py-6">
+              <div className="inline-block px-2.5 py-0.5 rounded-md bg-white/15 backdrop-blur-sm text-[10px] sm:text-[11px] font-semibold text-emerald-200 uppercase tracking-widest mb-1.5 sm:mb-2.5">
+                {slideAktif.tag}
               </div>
-            )}
+              <h2
+                className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white leading-tight mb-1.5 sm:mb-3 drop-shadow-sm tracking-tight"
+                style={{ fontFamily: "'Fraunces', serif" }}
+              >
+                {slideAktif.judul}
+              </h2>
+              <p className="text-xs sm:text-sm lg:text-base text-white/90 font-medium mb-2 sm:mb-4 leading-snug line-clamp-1 sm:line-clamp-none">
+                {slideAktif.subjudul}
+              </p>
+              <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-lg mb-3 sm:mb-6 line-clamp-2 sm:line-clamp-none">
+                {slideAktif.deskripsi}
+              </p>
 
-            {step === "login" && (
-              <form onSubmit={(e) => { e.preventDefault(); submitLogin(); }}>
-                <div className="mb-4">
-                  <label className="text-xs font-semibold text-[#0A2540] mb-1.5 block">Username</label>
-                  <div className="relative">
-                    <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FA3B3] pointer-events-none" />
-                    <input
-                      value={username}
-                      onChange={(e) => { setUsername(e.target.value); setError(""); }}
-                      className="w-full h-10 border border-[#E3E8EE] bg-white rounded-xl pl-10 pr-3.5 text-sm text-[#0A2540] placeholder:text-[#8FA3B3] focus:outline-none focus:ring-2 focus:ring-[#29AAE1]/30 focus:border-[#29AAE1] transition-colors"
-                      placeholder={activeTabRole === "guru" ? "Contoh: fahmi / nadia / admin" : "Contoh: ahmad.ridwan"}
-                      autoFocus
-                    />
+              {/* Poin-Poin Keunggulan (Ditampilkan pada layar sm ke atas) */}
+              <div className="hidden sm:grid sm:grid-cols-3 gap-2.5 pt-2 border-t border-white/15">
+                {slideAktif.poin.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs text-white/90">
+                    <CheckCircle2 size={14} className="text-emerald-300 shrink-0" />
+                    <span className="truncate">{item}</span>
                   </div>
-                </div>
-
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-[#0A2540]">Kata Sandi</label>
-                    <button
-                      type="button"
-                      onClick={bukaLupaPassword}
-                      className="text-[11px] text-[#29AAE1] hover:text-[#0C4A6E] font-medium transition-colors"
-                    >
-                      Lupa kata sandi?
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FA3B3] pointer-events-none" />
-                    <input
-                      type={showPw ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-10 border border-[#E3E8EE] bg-white rounded-xl pl-10 pr-10 text-sm text-[#0A2540] placeholder:text-[#8FA3B3] focus:outline-none focus:ring-2 focus:ring-[#29AAE1]/30 focus:border-[#29AAE1] transition-colors"
-                      placeholder="Masukkan kata sandi"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8FA3B3] hover:text-[#0C4A6E] transition-colors"
-                    >
-                      {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="mb-4 p-2.5 rounded-xl bg-[#FEF3F2] border border-[#FECDCA] text-xs font-medium text-[#B42318] flex items-center gap-2">
-                    <AlertTriangle size={14} className="shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loginBusy}
-                  className="w-full h-11 btn-gradient text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-60"
-                >
-                  {loginBusy ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Memeriksa Akun...</span>
-                    </>
-                  ) : (
-                    <span>Masuk ke Dashboard</span>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {step === "reset" && (
-              <div>
-                <button
-                  onClick={() => setStep("login")}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#5B7C93] mb-4 hover:text-[#0C4A6E] font-medium"
-                >
-                  ← Kembali ke Halaman Masuk
-                </button>
-
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F0F9FF] border border-[#B9E6FE] mb-4">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#29AAE1] to-[#0C4A6E] text-white flex items-center justify-center text-sm font-semibold shrink-0">
-                    {selectedUser.nama.split(" ").map(w => w[0]).slice(0, 2).join("")}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#0A2540] truncate">{selectedUser.nama}</p>
-                    <p className="text-xs text-[#5B7C93]">Atur ulang kata sandi akun</p>
-                  </div>
-                </div>
-
-                {resetDone ? (
-                  <div className="text-center py-4">
-                    <div className="w-12 h-12 rounded-full bg-[#ECFDF3] border border-[#A6F4C5] text-[#027A48] flex items-center justify-center mx-auto mb-3">
-                      <Check size={24} />
-                    </div>
-                    <p className="text-sm font-semibold text-[#027A48] mb-1">Kata sandi berhasil diperbarui!</p>
-                    <p className="text-xs text-[#5B7C93] mb-4">Silakan gunakan kata sandi baru untuk masuk.</p>
-                    <button
-                      onClick={() => { setStep("login"); setPassword(""); setError(""); }}
-                      className="w-full h-10 btn-gradient text-sm font-semibold rounded-xl active:scale-95"
-                    >
-                      Masuk Sekarang
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mb-3">
-                      <label className="text-xs font-semibold text-[#0A2540] mb-1.5 block">Kata Sandi Baru</label>
-                      <input
-                        type="password"
-                        value={newPw1}
-                        onChange={(e) => setNewPw1(e.target.value)}
-                        className="w-full h-10 border border-[#E3E8EE] bg-white rounded-xl px-3.5 text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-[#29AAE1]/30 focus:border-[#29AAE1]"
-                        placeholder="Minimal 4 karakter"
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="text-xs font-semibold text-[#0A2540] mb-1.5 block">Konfirmasi Kata Sandi Baru</label>
-                      <input
-                        type="password"
-                        value={newPw2}
-                        onChange={(e) => setNewPw2(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && simpanPasswordBaru()}
-                        className="w-full h-10 border border-[#E3E8EE] bg-white rounded-xl px-3.5 text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-[#29AAE1]/30 focus:border-[#29AAE1]"
-                        placeholder="Ulangi kata sandi baru"
-                      />
-                    </div>
-                    {resetError && (
-                      <p className="text-xs text-[#B42318] mb-3">{resetError}</p>
-                    )}
-                    <button
-                      onClick={simpanPasswordBaru}
-                      className="w-full h-10 btn-gradient text-sm font-semibold rounded-xl mt-1"
-                    >
-                      Simpan Kata Sandi Baru
-                    </button>
-                    <p className="text-[11px] text-[#8FA3B3] mt-3 text-center leading-normal">
-                      Prototipe: kata sandi diganti langsung tanpa OTP. Pada versi produksi, langkah ini akan diverifikasi lebih dulu.
-                    </p>
-                  </>
-                )}
+                ))}
               </div>
-            )}
+            </div>
+
+            {/* Slide Bottom Controls: Stats & Dots */}
+            <div className="relative z-10 pt-2 sm:pt-4 flex items-center justify-between gap-3 border-t border-white/10">
+              {/* Stat Badges (Tampil di sm ke atas) */}
+              <div className="hidden sm:flex items-center gap-4">
+                {slideAktif.stats.map((s, idx) => (
+                  <div key={idx} className="border-r border-white/15 pr-4 last:border-none last:pr-0">
+                    <p className="text-xs font-bold text-white leading-none">{s.val}</p>
+                    <p className="text-[10px] text-white/70 mt-0.5 uppercase tracking-wider">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Slider Pagination & Arrow Buttons */}
+              <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
+                <div className="flex items-center gap-1.5">
+                  {SLIDES.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCurrentSlide(idx)}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        currentSlide === idx ? "w-5 sm:w-6 bg-white shadow-sm" : "w-1.5 bg-white/40 hover:bg-white/70"
+                      }`}
+                      aria-label={`Pindah ke slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={prevSlide}
+                    className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all border border-white/20"
+                    aria-label="Slide sebelumnya"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={nextSlide}
+                    className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all border border-white/20"
+                    aria-label="Slide berikutnya"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <p className="text-center text-[11px] text-[#8FA3B3] mt-6">
-            Sistem Informasi Terpadu · Ma'had Mudaiyatul Anwar (MMA)
-          </p>
+          {/* SISI KANAN: FORM LOGIN BERSIH & MINIMALIS */}
+          <div className="lg:w-5/12 p-6 sm:p-10 flex flex-col justify-between bg-white relative">
+            <div>
+              {/* Brand Header */}
+              <div className="mb-6">
+                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-full mb-3">
+                  <ShieldCheck size={13} className="text-emerald-600" /> Portal Akses Resmi
+                </div>
+                <h3
+                  className="text-2xl sm:text-3xl font-extrabold text-[#0C4A6E] tracking-tight"
+                  style={{ fontFamily: "'Fraunces', serif" }}
+                >
+                  {step === "login" ? "Selamat Datang!" : "Atur Sandi Baru"}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#64748B] mt-1.5">
+                  {step === "login"
+                    ? "Silakan masuk dengan akun terdaftar untuk mengakses sistem."
+                    : "Masukkan data akun Anda untuk memperbarui kata sandi."}
+                </p>
+              </div>
+
+              {/* STEP 1: FORM LOGIN */}
+              {step === "login" && (
+                <div>
+                  {/* Role Switcher Tabs */}
+                  <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-5 border border-[#E2E8F0]">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTabRole("guru")}
+                      className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                        activeTabRole === "guru"
+                          ? "bg-white text-[#0C4A6E] shadow-sm font-bold border border-slate-200/60"
+                          : "text-[#64748B] hover:text-[#0C4A6E]"
+                      }`}
+                    >
+                      <GraduationCap size={15} /> Guru / Asatidz
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTabRole("wali")}
+                      className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                        activeTabRole === "wali"
+                          ? "bg-white text-[#0C4A6E] shadow-sm font-bold border border-slate-200/60"
+                          : "text-[#64748B] hover:text-[#0C4A6E]"
+                      }`}
+                    >
+                      <Users size={15} /> Wali Santri
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      submitLogin();
+                    }}
+                  >
+                    {/* Username Input */}
+                    <div className="mb-4">
+                      <label className="text-xs font-semibold text-[#1E293B] mb-1.5 block">
+                        Username / Akun
+                      </label>
+                      <div className="relative">
+                        <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" />
+                        <input
+                          value={username}
+                          onChange={(e) => {
+                            setUsername(e.target.value);
+                            setError("");
+                          }}
+                          className="w-full h-11 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl pl-10 pr-3.5 text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7] transition-all"
+                          placeholder={
+                            activeTabRole === "guru"
+                              ? "Contoh: fahmi / nadia / admin"
+                              : "Contoh: ahmad.ridwan"
+                          }
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    {/* Password Input */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-[#1E293B]">Kata Sandi</label>
+                        <button
+                          type="button"
+                          onClick={bukaLupaPassword}
+                          className="text-[11px] text-[#0284C7] hover:text-[#0369A1] font-semibold transition-colors"
+                        >
+                          Lupa kata sandi?
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" />
+                        <input
+                          type={showPw ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full h-11 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl pl-10 pr-10 text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7] transition-all"
+                          placeholder="Masukkan kata sandi"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPw((v) => !v)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A] transition-colors"
+                          aria-label={showPw ? "Sembunyikan sandi" : "Tampilkan sandi"}
+                        >
+                          {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Error Notice */}
+                    {error && (
+                      <div className="mb-4 p-3 rounded-xl bg-[#FEF2F2] border border-[#FCA5A5] text-xs font-medium text-[#991B1B] flex items-center gap-2 animate-slide-up">
+                        <AlertTriangle size={15} className="shrink-0 text-[#DC2626]" />
+                        <span>{error}</span>
+                      </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={loginBusy}
+                      className="w-full h-11 bg-gradient-to-r from-[#0C4A6E] via-[#0284C7] to-[#0D9488] hover:from-[#082F49] hover:to-[#0F766E] text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
+                    >
+                      {loginBusy ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>Memeriksa Akun...</span>
+                        </>
+                      ) : (
+                        <span>Masuk ke Dashboard</span>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* STEP 2: RESET PASSWORD */}
+              {step === "reset" && (
+                <div className="animate-slide-up">
+                  <button
+                    type="button"
+                    onClick={() => setStep("login")}
+                    className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#0C4A6E] font-semibold mb-4 transition-colors"
+                  >
+                    ← Kembali ke Halaman Masuk
+                  </button>
+
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F0F9FF] border border-[#BAE6FD] mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0284C7] to-[#0C4A6E] text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-sm">
+                      {selectedUser?.nama ? selectedUser.nama.split(" ").map((w) => w[0]).slice(0, 2).join("") : "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-[#0F172A] truncate">{selectedUser?.nama}</p>
+                      <p className="text-xs text-[#0284C7] font-medium">Perbarui kata sandi</p>
+                    </div>
+                  </div>
+
+                  {resetDone ? (
+                    <div className="text-center py-4">
+                      <div className="w-12 h-12 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] flex items-center justify-center mx-auto mb-3">
+                        <Check size={24} />
+                      </div>
+                      <p className="text-sm font-bold text-[#065F46] mb-1">Kata sandi berhasil diperbarui!</p>
+                      <p className="text-xs text-[#64748B] mb-4">Silakan masuk menggunakan kata sandi baru Anda.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStep("login");
+                          setPassword("");
+                          setError("");
+                        }}
+                        className="w-full h-10 bg-[#0C4A6E] hover:bg-[#082F49] text-white text-sm font-bold rounded-xl active:scale-95 transition-all shadow-sm"
+                      >
+                        Masuk Sekarang
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="mb-3">
+                        <label className="text-xs font-semibold text-[#1E293B] mb-1 block">Kata Sandi Baru</label>
+                        <input
+                          type="password"
+                          value={newPw1}
+                          onChange={(e) => setNewPw1(e.target.value)}
+                          className="w-full h-10 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7]"
+                          placeholder="Minimal 4 karakter"
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label className="text-xs font-semibold text-[#1E293B] mb-1 block">Konfirmasi Kata Sandi Baru</label>
+                        <input
+                          type="password"
+                          value={newPw2}
+                          onChange={(e) => setNewPw2(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && simpanPasswordBaru()}
+                          className="w-full h-10 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7]"
+                          placeholder="Ulangi kata sandi baru"
+                        />
+                      </div>
+                      {resetError && <p className="text-xs text-[#DC2626] font-medium mb-3">{resetError}</p>}
+                      <button
+                        type="button"
+                        onClick={simpanPasswordBaru}
+                        className="w-full h-10 bg-[#0C4A6E] hover:bg-[#082F49] text-white text-sm font-bold rounded-xl transition-all shadow-sm active:scale-95"
+                      >
+                        Simpan Kata Sandi Baru
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Support Link */}
+            <div className="mt-6 pt-4 border-t border-[#F1F5F9] text-center">
+              <p className="text-xs text-[#64748B]">
+                Butuh bantuan akun atau informasi pendaftaran?
+              </p>
+              <button
+                type="button"
+                onClick={() => { setInfoModalTab("kontak"); setShowInfoModal(true); }}
+                className="text-xs text-[#0284C7] hover:text-[#0369A1] font-bold mt-1 inline-flex items-center gap-1"
+              >
+                Hubungi Sekretariat Pondok →
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* Footer Minimalis */}
+      <footer className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-[#64748B] gap-2">
+        <p>© 2026 {namaAplikasi || "Ma'had Mudaiyatul Anwar"}. Seluruh hak cipta dilindungi.</p>
+        <p className="italic font-medium text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+          "Berilmu · Berakhlak · Berdaya"
+        </p>
+      </footer>
+
+      {/* MODAL INFORMASI LENGKAP PONDOK & KONTAK SEKRETARIAT */}
+      {showInfoModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-slide-up">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-100">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#0C4A6E] via-[#0284C7] to-[#0D9488] p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                  <School size={18} className="text-white" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-base leading-tight">Informasi Lengkap Pondok Pesantren</h4>
+                  <p className="text-xs text-white/80">{namaAplikasi || "Ma'had Mudaiyatul Anwar"}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowInfoModal(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="flex border-b border-slate-200 bg-slate-50 px-5 pt-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setInfoModalTab("profil")}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all ${
+                  infoModalTab === "profil"
+                    ? "border-[#0284C7] text-[#0C4A6E]"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Profil & Visi Misi
+              </button>
+              <button
+                type="button"
+                onClick={() => setInfoModalTab("program")}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all ${
+                  infoModalTab === "program"
+                    ? "border-[#0284C7] text-[#0C4A6E]"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Jenjang & Program
+              </button>
+              <button
+                type="button"
+                onClick={() => setInfoModalTab("kontak")}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all ${
+                  infoModalTab === "kontak"
+                    ? "border-[#0284C7] text-[#0C4A6E]"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Layanan & Sekretariat
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700 leading-relaxed">
+              {infoModalTab === "profil" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100">
+                    <h5 className="font-bold text-emerald-900 text-sm mb-1">Visi Pondok Pesantren</h5>
+                    <p className="text-emerald-800">
+                      "Menjadi lembaga pendidikan Islam unggul yang melahirkan generasi muttaqin, hafidz Al-Qur'an, berwawasan luas, dan berkontribusi nyata bagi umat dan bangsa."
+                    </p>
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-slate-900 text-sm mb-2">Misi Utama</h5>
+                    <ul className="space-y-1.5 list-disc pl-4 text-slate-600">
+                      <li>Menyelenggarakan pendidikan tahfidz Al-Qur'an bersanad dan berstandar mutqin.</li>
+                      <li>Mengembangkan kajian kitab kuning (turats) dengan metodologi salafus shalih.</li>
+                      <li>Mengintegrasikan sains, teknologi, dan kemahiran berbahasa asing (Arab & Inggris).</li>
+                      <li>Membina kepribadian santri yang mandiri, disiplin, berakhlak mulia, dan berjiwa wirausaha.</li>
+                    </ul>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                      <p className="text-lg font-extrabold text-[#0C4A6E]">1.450+</p>
+                      <p className="text-[10px] text-slate-500 font-semibold uppercase">Santri Aktif</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                      <p className="text-lg font-extrabold text-[#0C4A6E]">75</p>
+                      <p className="text-[10px] text-slate-500 font-semibold uppercase">Asatidz & Pembina</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                      <p className="text-lg font-extrabold text-[#0C4A6E]">Grade A</p>
+                      <p className="text-[10px] text-slate-500 font-semibold uppercase">Akreditasi</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                      <p className="text-lg font-extrabold text-[#0C4A6E]">100%</p>
+                      <p className="text-[10px] text-slate-500 font-semibold uppercase">Mukim Asrama</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {infoModalTab === "program" && (
+                <div className="space-y-3">
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                    <p className="font-bold text-[#0C4A6E] text-sm">1. Program Tahfidz Intensif (LPTQ)</p>
+                    <p className="text-slate-600 mt-1">
+                      Fokus pada setoran harian, ziyadah hafalan, muraja'ah berkala, dan tahsin tilawah bersanad. Santri dibimbing langsung oleh huffazh mukim.
+                    </p>
+                  </div>
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                    <p className="font-bold text-[#0C4A6E] text-sm">2. Madrasah Diniyah & Kajian Turats</p>
+                    <p className="text-slate-600 mt-1">
+                      Kajian kitab kuning berjenjang: Jurumiyah, Imrithi, Alfiyah Ibnu Malik, Fathul Qorib, Fathul Mu'in, Bulughul Maram, dan Tafsir Jalalain.
+                    </p>
+                  </div>
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                    <p className="font-bold text-[#0C4A6E] text-sm">3. Ekstrakurikuler & Pembinaan Bakat</p>
+                    <p className="text-slate-600 mt-1">
+                      Pramuka santri, pidato 3 bahasa (Indonesia, Arab, Inggris), kaligrafi Islam, hadroh/rebana, olahraga memanah, beladiri, dan literasi digital.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {infoModalTab === "kontak" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-sky-50 border border-sky-100 space-y-2">
+                    <p className="font-bold text-[#0C4A6E] text-sm">Sekretariat & Layanan Wali Santri</p>
+                    <p className="text-slate-600">
+                      Untuk kendala reset password, mutasi data, pendaftaran santri baru, atau informasi tabungan BMT:
+                    </p>
+                    <div className="pt-2 space-y-1.5 font-medium text-slate-800">
+                      <p>📍 Alamat: Kampus Utama Ma'had Mudaiyatul Anwar</p>
+                      <p>📞 Layanan WA/Telp: +62 812-3456-7890 (Tata Usaha)</p>
+                      <p>✉️ Email Resmi: sekretariat@mma-pesantren.sch.id</p>
+                      <p>⏰ Jam Pelayanan: Senin - Ahad, Pukul 07.30 - 16.30 WIB</p>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
+                    <p className="font-bold">Catatan untuk Wali Santri Baru:</p>
+                    <p className="text-[11px] mt-0.5">
+                      Username dan kata sandi awal diberikan oleh bagian Tata Usaha / Kesantrian saat pendaftaran ulang santri. Silakan segera ubah kata sandi setelah berhasil login pertama kali.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowInfoModal(false)}
+                className="px-5 py-2 rounded-xl bg-[#0C4A6E] hover:bg-[#082F49] text-white font-bold text-xs transition-all shadow-sm"
+              >
+                Tutup Informasi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
