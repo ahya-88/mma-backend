@@ -228,11 +228,110 @@ async function hapusTahunAjaran(id, actingUserId) {
   });
 }
 
+const LOGIN_CONFIG_DEFAULT = {
+  autoPlay: true,
+  intervalMs: 5500,
+  slides: [
+    {
+      id: "tahfidz",
+      kategori: "Program Unggulan",
+      badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",
+      gradient: "from-[#064E3B] via-[#047857] to-[#022C22]",
+      tag: "Tahfidz & LPTQ",
+      judul: "Pendidikan Al-Qur'an & Mutaba'ah",
+      subjudul: "Mencetak Generasi Qur'ani yang Mutqin dan Berkarakter",
+      deskripsi: "Program tahfidz terpadu dengan bimbingan asatidz mukim bersanad, halaqoh intensif harian, serta pemantauan mutaba'ah digital real-time.",
+      poin: ["Target Hafalan 30 Juz Mutqin", "Bimbingan Tahsin & Tajwid Bersanad", "Ujian & Wisuda Hifzhil Qur'an"],
+      stats: [
+        { label: "Target", val: "30 Juz" },
+        { label: "Halaqoh", val: "12 Kelompok" },
+        { label: "Santri", val: "1.450+" },
+      ],
+    },
+    {
+      id: "turats",
+      kategori: "Akademik Pesantren",
+      badgeColor: "bg-sky-500/20 text-sky-300 border-sky-400/30",
+      gradient: "from-[#0C4A6E] via-[#0369A1] to-[#082F49]",
+      tag: "Kajian Kitab Kuning",
+      judul: "Kajian Kitab Turats & Fiqih",
+      subjudul: "Menjaga Sanad Keilmuan Ulama Salafus Shalih",
+      deskripsi: "Pendalaman literatur klasik Islam meliputi Fiqih, Ushul Fiqih, Nahwu-Shorof, Tafsir, dan Hadits dengan metode sorogan serta bandongan.",
+      poin: ["Sorogan & Wetonan Harian", "Madrasah Diniyah Terakreditasi", "Kajian Bahtsul Masail Santri"],
+      stats: [
+        { label: "Kitab", val: "28+ Kitab" },
+        { label: "Asatidz", val: "75 Ustadz" },
+        { label: "Sanad", val: "Bersambung" },
+      ],
+    },
+    {
+      id: "teknologi",
+      kategori: "Inovasi Modern",
+      badgeColor: "bg-teal-500/20 text-teal-300 border-teal-400/30",
+      gradient: "from-[#134E4A] via-[#0F766E] to-[#042F2E]",
+      tag: "Sains & Teknologi",
+      judul: "Integrasi Iptek & Smart Pesantren",
+      subjudul: "Cakap Berbahasa Asing, Unggul dalam Teknologi",
+      deskripsi: "Penguasaan dwibahasa aktif (Arab & Inggris), lab komputer terpadu, serta sistem administrasi cashless santri berbasis kartu pintar BMT.",
+      poin: ["Bilingual Active Environment", "Laboratorium Komputer & Digital", "Smart Card & Cashless BMT"],
+      stats: [
+        { label: "Bahasa", val: "Arab & Inggris" },
+        { label: "Transaksi", val: "Cashless BMT" },
+        { label: "Sistem", val: "SuperApp 24/7" },
+      ],
+    },
+    {
+      id: "asrama",
+      kategori: "Kampus Asri",
+      badgeColor: "bg-amber-500/20 text-amber-300 border-amber-400/30",
+      gradient: "from-[#1E293B] via-[#334155] to-[#0F172A]",
+      tag: "Pengasuhan & Asrama",
+      judul: "Lingkungan Asri, Aman & Penuh Berkah",
+      subjudul: "Kemandirian Santri dalam Suasana yang Mendukung",
+      deskripsi: "Kompleks pesantren yang tertata rapi, asrama representatif, masjid jami' berkapasitas besar, klinik kesehatan, dan kantin mandiri santri.",
+      poin: ["Masjid Jami' Megah & Luas", "Asrama Bersih Putra & Putri", "Klinik Santri Siaga 24 Jam"],
+      stats: [
+        { label: "Akreditasi", val: "Unggul (A)" },
+        { label: "Kamar", val: "Representatif" },
+        { label: "Klinik", val: "Siaga 24 Jam" },
+      ],
+    },
+  ],
+  profil: {
+    visi: "Menjadi lembaga pendidikan Islam unggul yang melahirkan generasi muttaqin, hafidz Al-Qur'an, berwawasan luas, dan berkontribusi nyata bagi umat dan bangsa.",
+    misi: [
+      "Menyelenggarakan pendidikan tahfidz Al-Qur'an bersanad dan berstandar mutqin.",
+      "Mengembangkan kajian kitab kuning (turats) dengan metodologi salafus shalih.",
+      "Mengintegrasikan sains, teknologi, dan kemahiran berbahasa asing (Arab & Inggris).",
+      "Membina kepribadian santri yang mandiri, disiplin, berakhlak mulia, dan berjiwa wirausaha.",
+    ],
+    stats: {
+      santri: "1.450+",
+      asatidz: "75",
+      akreditasi: "Grade A",
+      mukim: "100%",
+    },
+  },
+  kontak: {
+    alamat: "Kampus Utama Ma'had Mudaiyatul Anwar",
+    wa: "+62 812-3456-7890",
+    email: "sekretariat@mma-pesantren.sch.id",
+    jamLayanan: "Senin - Ahad, Pukul 07.30 - 16.30 WIB",
+    catatanWali: "Username dan kata sandi awal diberikan oleh bagian Tata Usaha / Kesantrian saat pendaftaran ulang santri. Silakan segera ubah kata sandi setelah berhasil login pertama kali.",
+  },
+  pengumuman: {
+    aktif: false,
+    tipe: "info",
+    pesan: "Penerimaan Santri Baru (PSB) Tahun Ajaran Baru Telah Dibuka. Hubungi Sekretariat untuk Informasi Pendaftaran.",
+  },
+};
+
 const TAMPILAN_DEFAULT = {
   logoUrl: "", buildingPhotoUrl: "", namaAplikasi: "Ma'had Mudaiyatul Anwar",
   warnaPrimer: "#29AAE1", warnaSekunder: "#0C4A6E", warnaAksenBg: "#7C3AED",
   warnaTeks: "#17242E", warnaTeksMuted: "#5B7C93", warnaBorder: "#CFE3F0",
   warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora",
+  loginConfig: LOGIN_CONFIG_DEFAULT,
 };
 
 let cachedTampilan = null;

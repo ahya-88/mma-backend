@@ -7,7 +7,8 @@ import {
   Mail, Inbox, Archive, Settings, FileSignature, Landmark, Send, Search, Download, Loader2, Bell, Home,
   Image as ImageIcon, ShieldAlert, Clock,
   QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle,
-  Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square, Calculator
+  Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square, Calculator,
+  Phone, MapPin, Sparkles, Sliders, ExternalLink
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -379,9 +380,108 @@ const buatTahunAjaran = (tahunMulai, aktif = false) => {
   return { id: `ta-${tahunMulai}`, label: `${tahunMulai}/${tahunMulai + 1}`, tahunMulai, semesterGanjil, semesterGenap, bulan: [...semesterGanjil, ...semesterGenap], aktif };
 };
 const TAHUN_AJARAN_SEED = [buatTahunAjaran(2026, true)];
+// Konfigurasi bawaan untuk Dashboard & Carousel Portal Login (Opsi 2)
+const LOGIN_CONFIG_DEFAULT = {
+  autoPlay: true,
+  intervalMs: 5500,
+  slides: [
+    {
+      id: "tahfidz",
+      kategori: "Program Unggulan",
+      badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",
+      gradient: "from-[#064E3B] via-[#047857] to-[#022C22]",
+      tag: "Tahfidz & LPTQ",
+      judul: "Pendidikan Al-Qur'an & Mutaba'ah",
+      subjudul: "Mencetak Generasi Qur'ani yang Mutqin dan Berkarakter",
+      deskripsi: "Program tahfidz terpadu dengan bimbingan asatidz mukim bersanad, halaqoh intensif harian, serta pemantauan mutaba'ah digital real-time.",
+      poin: ["Target Hafalan 30 Juz Mutqin", "Bimbingan Tahsin & Tajwid Bersanad", "Ujian & Wisuda Hifzhil Qur'an"],
+      stats: [
+        { label: "Target", val: "30 Juz" },
+        { label: "Halaqoh", val: "12 Kelompok" },
+        { label: "Santri", val: "1.450+" },
+      ],
+    },
+    {
+      id: "turats",
+      kategori: "Akademik Pesantren",
+      badgeColor: "bg-sky-500/20 text-sky-300 border-sky-400/30",
+      gradient: "from-[#0C4A6E] via-[#0369A1] to-[#082F49]",
+      tag: "Kajian Kitab Kuning",
+      judul: "Kajian Kitab Turats & Fiqih",
+      subjudul: "Menjaga Sanad Keilmuan Ulama Salafus Shalih",
+      deskripsi: "Pendalaman literatur klasik Islam meliputi Fiqih, Ushul Fiqih, Nahwu-Shorof, Tafsir, dan Hadits dengan metode sorogan serta bandongan.",
+      poin: ["Sorogan & Wetonan Harian", "Madrasah Diniyah Terakreditasi", "Kajian Bahtsul Masail Santri"],
+      stats: [
+        { label: "Kitab", val: "28+ Kitab" },
+        { label: "Asatidz", val: "75 Ustadz" },
+        { label: "Sanad", val: "Bersambung" },
+      ],
+    },
+    {
+      id: "teknologi",
+      kategori: "Inovasi Modern",
+      badgeColor: "bg-teal-500/20 text-teal-300 border-teal-400/30",
+      gradient: "from-[#134E4A] via-[#0F766E] to-[#042F2E]",
+      tag: "Sains & Teknologi",
+      judul: "Integrasi Iptek & Smart Pesantren",
+      subjudul: "Cakap Berbahasa Asing, Unggul dalam Teknologi",
+      deskripsi: "Penguasaan dwibahasa aktif (Arab & Inggris), lab komputer terpadu, serta sistem administrasi cashless santri berbasis kartu pintar BMT.",
+      poin: ["Bilingual Active Environment", "Laboratorium Komputer & Digital", "Smart Card & Cashless BMT"],
+      stats: [
+        { label: "Bahasa", val: "Arab & Inggris" },
+        { label: "Transaksi", val: "Cashless BMT" },
+        { label: "Sistem", val: "SuperApp 24/7" },
+      ],
+    },
+    {
+      id: "asrama",
+      kategori: "Kampus Asri",
+      badgeColor: "bg-amber-500/20 text-amber-300 border-amber-400/30",
+      gradient: "from-[#1E293B] via-[#334155] to-[#0F172A]",
+      tag: "Pengasuhan & Asrama",
+      judul: "Lingkungan Asri, Aman & Penuh Berkah",
+      subjudul: "Kemandirian Santri dalam Suasana yang Mendukung",
+      deskripsi: "Kompleks pesantren yang tertata rapi, asrama representatif, masjid jami' berkapasitas besar, klinik kesehatan, dan kantin mandiri santri.",
+      poin: ["Masjid Jami' Megah & Luas", "Asrama Bersih Putra & Putri", "Klinik Santri Siaga 24 Jam"],
+      stats: [
+        { label: "Akreditasi", val: "Unggul (A)" },
+        { label: "Kamar", val: "Representatif" },
+        { label: "Klinik", val: "Siaga 24 Jam" },
+      ],
+    },
+  ],
+  profil: {
+    visi: "Menjadi lembaga pendidikan Islam unggul yang melahirkan generasi muttaqin, hafidz Al-Qur'an, berwawasan luas, dan berkontribusi nyata bagi umat dan bangsa.",
+    misi: [
+      "Menyelenggarakan pendidikan tahfidz Al-Qur'an bersanad dan berstandar mutqin.",
+      "Mengembangkan kajian kitab kuning (turats) dengan metodologi salafus shalih.",
+      "Mengintegrasikan sains, teknologi, dan kemahiran berbahasa asing (Arab & Inggris).",
+      "Membina kepribadian santri yang mandiri, disiplin, berakhlak mulia, dan berjiwa wirausaha.",
+    ],
+    stats: {
+      santri: "1.450+",
+      asatidz: "75",
+      akreditasi: "Grade A",
+      mukim: "100%",
+    },
+  },
+  kontak: {
+    alamat: "Kampus Utama Ma'had Mudaiyatul Anwar",
+    wa: "+62 812-3456-7890",
+    email: "sekretariat@mma-pesantren.sch.id",
+    jamLayanan: "Senin - Ahad, Pukul 07.30 - 16.30 WIB",
+    catatanWali: "Username dan kata sandi awal diberikan oleh bagian Tata Usaha / Kesantrian saat pendaftaran ulang santri. Silakan segera ubah kata sandi setelah berhasil login pertama kali.",
+  },
+  pengumuman: {
+    aktif: false,
+    tipe: "info",
+    pesan: "Penerimaan Santri Baru (PSB) Tahun Ajaran Baru Telah Dibuka. Hubungi Sekretariat untuk Informasi Pendaftaran.",
+  },
+};
+
 // Dipakai sebagai nilai awal form Tampilan Aplikasi (Admin) & sebagai fallback bila backend belum
 // bisa dihubungi. Harus sinkron dengan TAMPILAN_DEFAULT di adminService.js (backend).
-const TAMPILAN_DEFAULT = { logoUrl: "", buildingPhotoUrl: "", namaAplikasi: "Ma'had Mudaiyatul Anwar", temaAktif: "ocean", warnaPrimer: "#29AAE1", warnaSekunder: "#0C4A6E", warnaAksenBg: "#7C3AED", warnaTeks: "#17242E", warnaTeksMuted: "#5B7C93", warnaBorder: "#CFE3F0", warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora" };
+const TAMPILAN_DEFAULT = { logoUrl: "", buildingPhotoUrl: "", namaAplikasi: "Ma'had Mudaiyatul Anwar", temaAktif: "ocean", warnaPrimer: "#29AAE1", warnaSekunder: "#0C4A6E", warnaAksenBg: "#7C3AED", warnaTeks: "#17242E", warnaTeksMuted: "#5B7C93", warnaBorder: "#CFE3F0", warnaLatarHalaman: "#F4F8FB", fontJudul: "Fraunces", fontIsi: "Inter", gayaBackground: "aurora", loginConfig: LOGIN_CONFIG_DEFAULT };
 const JENIS_TAGIHAN = ["Syahriyah", "Uang Pangkal", "Seragam", "Kegiatan/Kitab", "Kesehatan", "Lainnya"];
 const TINGKAT_PRESTASI = ["Tingkat Pondok", "Kecamatan", "Kabupaten/Kota", "Provinsi", "Nasional"];
 const KATEGORI_CASHFLOW = ["Pembayaran Santri", "Infaq/Donasi", "Bantuan Pemerintah", "Operasional", "Gaji/Honor", "Konsumsi", "Perbaikan/Maintenance", "Lainnya"];
@@ -1523,7 +1623,7 @@ const DEPT_META = {
   sekretariat: { label: "Sekretariat Pondok", icon: FileSignature },
 };
 
-function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
+function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginConfig }) {
   const [step, setStep] = useState("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -1544,81 +1644,27 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [infoModalTab, setInfoModalTab] = useState("profil");
 
-  const SLIDES = [
-    {
-      id: "tahfidz",
-      kategori: "Program Unggulan",
-      badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",
-      gradient: "from-[#064E3B] via-[#047857] to-[#022C22]",
-      tag: "Tahfidz & LPTQ",
-      judul: "Pendidikan Al-Qur'an & Mutaba'ah",
-      subjudul: "Mencetak Generasi Qur'ani yang Mutqin dan Berkarakter",
-      deskripsi: "Program tahfidz terpadu dengan bimbingan asatidz mukim bersanad, halaqoh intensif harian, serta pemantauan mutaba'ah digital real-time.",
-      poin: ["Target Hafalan 30 Juz Mutqin", "Bimbingan Tahsin & Tajwid Bersanad", "Ujian & Wisuda Hifzhil Qur'an"],
-      stats: [
-        { label: "Target", val: "30 Juz" },
-        { label: "Halaqoh", val: "12 Kelompok" },
-        { label: "Santri", val: "1.450+" },
-      ],
-    },
-    {
-      id: "turats",
-      kategori: "Akademik Pesantren",
-      badgeColor: "bg-sky-500/20 text-sky-300 border-sky-400/30",
-      gradient: "from-[#0C4A6E] via-[#0369A1] to-[#082F49]",
-      tag: "Kajian Kitab Kuning",
-      judul: "Kajian Kitab Turats & Fiqih",
-      subjudul: "Menjaga Sanad Keilmuan Ulama Salafus Shalih",
-      deskripsi: "Pendalaman literatur klasik Islam meliputi Fiqih, Ushul Fiqih, Nahwu-Shorof, Tafsir, dan Hadits dengan metode sorogan serta bandongan.",
-      poin: ["Sorogan & Wetonan Harian", "Madrasah Diniyah Terakreditasi", "Kajian Bahtsul Masail Santri"],
-      stats: [
-        { label: "Kitab", val: "28+ Kitab" },
-        { label: "Asatidz", val: "75 Ustadz" },
-        { label: "Sanad", val: "Bersambung" },
-      ],
-    },
-    {
-      id: "teknologi",
-      kategori: "Inovasi Modern",
-      badgeColor: "bg-teal-500/20 text-teal-300 border-teal-400/30",
-      gradient: "from-[#134E4A] via-[#0F766E] to-[#042F2E]",
-      tag: "Sains & Teknologi",
-      judul: "Integrasi Iptek & Smart Pesantren",
-      subjudul: "Cakap Berbahasa Asing, Unggul dalam Teknologi",
-      deskripsi: "Penguasaan dwibahasa aktif (Arab & Inggris), lab komputer terpadu, serta sistem administrasi cashless santri berbasis kartu pintar BMT.",
-      poin: ["Bilingual Active Environment", "Laboratorium Komputer & Digital", "Smart Card & Cashless BMT"],
-      stats: [
-        { label: "Bahasa", val: "Arab & Inggris" },
-        { label: "Transaksi", val: "Cashless BMT" },
-        { label: "Sistem", val: "SuperApp 24/7" },
-      ],
-    },
-    {
-      id: "asrama",
-      kategori: "Kampus Asri",
-      badgeColor: "bg-amber-500/20 text-amber-300 border-amber-400/30",
-      gradient: "from-[#1E293B] via-[#334155] to-[#0F172A]",
-      tag: "Pengasuhan & Asrama",
-      judul: "Lingkungan Asri, Aman & Penuh Berkah",
-      subjudul: "Kemandirian Santri dalam Suasana yang Mendukung",
-      deskripsi: "Kompleks pesantren yang tertata rapi, asrama representatif, masjid jami' berkapasitas besar, klinik kesehatan, dan kantin mandiri santri.",
-      poin: ["Masjid Jami' Megah & Luas", "Asrama Bersih Putra & Putri", "Klinik Santri Siaga 24 Jam"],
-      stats: [
-        { label: "Akreditasi", val: "Unggul (A)" },
-        { label: "Kamar", val: "Representatif" },
-        { label: "Klinik", val: "Siaga 24 Jam" },
-      ],
-    },
-  ];
+  const cfg = {
+    ...LOGIN_CONFIG_DEFAULT,
+    ...(loginConfig || {}),
+    slides: (loginConfig?.slides && loginConfig.slides.length > 0) ? loginConfig.slides : LOGIN_CONFIG_DEFAULT.slides,
+    profil: { ...LOGIN_CONFIG_DEFAULT.profil, ...(loginConfig?.profil || {}) },
+    kontak: { ...LOGIN_CONFIG_DEFAULT.kontak, ...(loginConfig?.kontak || {}) },
+    pengumuman: { ...LOGIN_CONFIG_DEFAULT.pengumuman, ...(loginConfig?.pengumuman || {}) },
+  };
+
+  const SLIDES = cfg.slides;
+  const isAutoPlayEnabled = cfg.autoPlay ?? true;
+  const slideInterval = cfg.intervalMs || 5500;
 
   // Auto-play timer untuk carousel foto / informasi
   useEffect(() => {
-    if (!isAutoPlay) return;
+    if (!isAutoPlay || !isAutoPlayEnabled || SLIDES.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
-    }, 5500);
+    }, slideInterval);
     return () => clearInterval(timer);
-  }, [isAutoPlay, SLIDES.length]);
+  }, [isAutoPlay, isAutoPlayEnabled, slideInterval, SLIDES.length]);
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1));
@@ -1702,7 +1748,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
     setResetError("");
   };
 
-  const slideAktif = SLIDES[currentSlide];
+  const slideAktif = SLIDES[currentSlide] || SLIDES[0] || {};
 
   return (
     <div
@@ -1757,6 +1803,40 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
           </div>
         </div>
       </header>
+
+      {/* Pengumuman Banner (Jika diaktifkan oleh Admin) */}
+      {cfg.pengumuman?.aktif && cfg.pengumuman?.pesan && (
+        <div className="relative z-30 w-full max-w-5xl mx-auto px-4 sm:px-6 mb-1">
+          <div className={`p-3 rounded-2xl flex items-center gap-3 border shadow-xs transition-all ${
+            cfg.pengumuman.tipe === "peringatan"
+              ? "bg-amber-500/10 text-amber-900 border-amber-300/80"
+              : cfg.pengumuman.tipe === "sukses"
+              ? "bg-emerald-500/10 text-emerald-900 border-emerald-300/80"
+              : "bg-sky-500/10 text-[#0C4A6E] border-sky-300/80"
+          }`}>
+            <span className="flex h-2.5 w-2.5 relative shrink-0">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                cfg.pengumuman.tipe === "peringatan" ? "bg-amber-400" : cfg.pengumuman.tipe === "sukses" ? "bg-emerald-400" : "bg-sky-400"
+              }`} />
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                cfg.pengumuman.tipe === "peringatan" ? "bg-amber-500" : cfg.pengumuman.tipe === "sukses" ? "bg-emerald-500" : "bg-sky-500"
+              }`} />
+            </span>
+            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs">
+              <span className={`font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-full inline-block w-fit ${
+                cfg.pengumuman.tipe === "peringatan"
+                  ? "bg-amber-200/90 text-amber-900"
+                  : cfg.pengumuman.tipe === "sukses"
+                  ? "bg-emerald-200/90 text-emerald-900"
+                  : "bg-sky-200/90 text-sky-900"
+              }`}>
+                {cfg.pengumuman.tipe === "peringatan" ? "Penting" : cfg.pengumuman.tipe === "sukses" ? "Kabar Terkini" : "Pengumuman"}
+              </span>
+              <span className="font-medium text-slate-800">{cfg.pengumuman.pesan}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area - Split Clean Card (Opsi 2) */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-4 sm:py-8">
@@ -2182,33 +2262,37 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
                   <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100">
                     <h5 className="font-bold text-emerald-900 text-sm mb-1">Visi Pondok Pesantren</h5>
                     <p className="text-emerald-800">
-                      "Menjadi lembaga pendidikan Islam unggul yang melahirkan generasi muttaqin, hafidz Al-Qur'an, berwawasan luas, dan berkontribusi nyata bagi umat dan bangsa."
+                      "{cfg.profil?.visi || "Menjadi lembaga pendidikan Islam unggul yang melahirkan generasi muttaqin, hafidz Al-Qur'an, berwawasan luas, dan berkontribusi nyata bagi umat dan bangsa."}"
                     </p>
                   </div>
                   <div>
                     <h5 className="font-bold text-slate-900 text-sm mb-2">Misi Utama</h5>
                     <ul className="space-y-1.5 list-disc pl-4 text-slate-600">
-                      <li>Menyelenggarakan pendidikan tahfidz Al-Qur'an bersanad dan berstandar mutqin.</li>
-                      <li>Mengembangkan kajian kitab kuning (turats) dengan metodologi salafus shalih.</li>
-                      <li>Mengintegrasikan sains, teknologi, dan kemahiran berbahasa asing (Arab & Inggris).</li>
-                      <li>Membina kepribadian santri yang mandiri, disiplin, berakhlak mulia, dan berjiwa wirausaha.</li>
+                      {(cfg.profil?.misi && cfg.profil.misi.length > 0 ? cfg.profil.misi : [
+                        "Menyelenggarakan pendidikan tahfidz Al-Qur'an bersanad dan berstandar mutqin.",
+                        "Mengembangkan kajian kitab kuning (turats) dengan metodologi salafus shalih.",
+                        "Mengintegrasikan sains, teknologi, dan kemahiran berbahasa asing (Arab & Inggris).",
+                        "Membina kepribadian santri yang mandiri, disiplin, berakhlak mulia, dan berjiwa wirausaha.",
+                      ]).map((m, idx) => (
+                        <li key={idx}>{m}</li>
+                      ))}
                     </ul>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                      <p className="text-lg font-extrabold text-[#0C4A6E]">1.450+</p>
+                      <p className="text-lg font-extrabold text-[#0C4A6E]">{cfg.profil?.stats?.santri || "1.450+"}</p>
                       <p className="text-[10px] text-slate-500 font-semibold uppercase">Santri Aktif</p>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                      <p className="text-lg font-extrabold text-[#0C4A6E]">75</p>
+                      <p className="text-lg font-extrabold text-[#0C4A6E]">{cfg.profil?.stats?.asatidz || "75"}</p>
                       <p className="text-[10px] text-slate-500 font-semibold uppercase">Asatidz & Pembina</p>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                      <p className="text-lg font-extrabold text-[#0C4A6E]">Grade A</p>
+                      <p className="text-lg font-extrabold text-[#0C4A6E]">{cfg.profil?.stats?.akreditasi || "Grade A"}</p>
                       <p className="text-[10px] text-slate-500 font-semibold uppercase">Akreditasi</p>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                      <p className="text-lg font-extrabold text-[#0C4A6E]">100%</p>
+                      <p className="text-lg font-extrabold text-[#0C4A6E]">{cfg.profil?.stats?.mukim || "100%"}</p>
                       <p className="text-[10px] text-slate-500 font-semibold uppercase">Mukim Asrama</p>
                     </div>
                   </div>
@@ -2246,16 +2330,27 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
                       Untuk kendala reset password, mutasi data, pendaftaran santri baru, atau informasi tabungan BMT:
                     </p>
                     <div className="pt-2 space-y-1.5 font-medium text-slate-800">
-                      <p>📍 Alamat: Kampus Utama Ma'had Mudaiyatul Anwar</p>
-                      <p>📞 Layanan WA/Telp: +62 812-3456-7890 (Tata Usaha)</p>
-                      <p>✉️ Email Resmi: sekretariat@mma-pesantren.sch.id</p>
-                      <p>⏰ Jam Pelayanan: Senin - Ahad, Pukul 07.30 - 16.30 WIB</p>
+                      <p>📍 Alamat: {cfg.kontak?.alamat || "Kampus Utama Ma'had Mudaiyatul Anwar"}</p>
+                      <p className="flex items-center gap-1.5">
+                        <span>📞 Layanan WA/Telp:</span>
+                        <a
+                          href={`https://wa.me/${(cfg.kontak?.wa || "6281234567890").replace(/[^0-9]/g, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#0284C7] hover:underline font-bold inline-flex items-center gap-1"
+                        >
+                          {cfg.kontak?.wa || "+62 812-3456-7890"}
+                          <ExternalLink size={11} />
+                        </a>
+                      </p>
+                      <p>✉️ Email Resmi: {cfg.kontak?.email || "sekretariat@mma-pesantren.sch.id"}</p>
+                      <p>⏰ Jam Pelayanan: {cfg.kontak?.jamLayanan || "Senin - Ahad, Pukul 07.30 - 16.30 WIB"}</p>
                     </div>
                   </div>
                   <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
                     <p className="font-bold">Catatan untuk Wali Santri Baru:</p>
                     <p className="text-[11px] mt-0.5">
-                      Username dan kata sandi awal diberikan oleh bagian Tata Usaha / Kesantrian saat pendaftaran ulang santri. Silakan segera ubah kata sandi setelah berhasil login pertama kali.
+                      {cfg.kontak?.catatanWali || "Username dan kata sandi awal diberikan oleh bagian Tata Usaha / Kesantrian saat pendaftaran ulang santri. Silakan segera ubah kata sandi setelah berhasil login pertama kali."}
                     </p>
                   </div>
                 </div>
@@ -3345,6 +3440,46 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
 // hilang setiap refresh). `backendToken`/`backendOnline` mengikuti pola yang sama seperti panel
 // Keuangan/Unit Usaha/DepartmentContent lain: tombol nonaktif & pesan koneksi saat backend belum
 // tersambung, supaya tidak ada aksi yang terasa berhasil padahal sebenarnya tidak tersimpan.
+// Preset Warna Gradasi & Badge untuk Carousel Slide
+const GRADIENT_PRESETS = [
+  {
+    label: "Hijau Emerald",
+    gradient: "from-[#064E3B] via-[#047857] to-[#022C22]",
+    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",
+    previewClass: "bg-gradient-to-r from-[#064E3B] to-[#047857]",
+  },
+  {
+    label: "Biru Samudra",
+    gradient: "from-[#0C4A6E] via-[#0369A1] to-[#082F49]",
+    badgeColor: "bg-sky-500/20 text-sky-300 border-sky-400/30",
+    previewClass: "bg-gradient-to-r from-[#0C4A6E] to-[#0369A1]",
+  },
+  {
+    label: "Toska Modern",
+    gradient: "from-[#134E4A] via-[#0F766E] to-[#042F2E]",
+    badgeColor: "bg-teal-500/20 text-teal-300 border-teal-400/30",
+    previewClass: "bg-gradient-to-r from-[#134E4A] to-[#0F766E]",
+  },
+  {
+    label: "Abu Gelap Asri",
+    gradient: "from-[#1E293B] via-[#334155] to-[#0F172A]",
+    badgeColor: "bg-amber-500/20 text-amber-300 border-amber-400/30",
+    previewClass: "bg-gradient-to-r from-[#1E293B] to-[#334155]",
+  },
+  {
+    label: "Ungu Khidmat",
+    gradient: "from-[#3B0764] via-[#581C87] to-[#1E1B4B]",
+    badgeColor: "bg-purple-500/20 text-purple-300 border-purple-400/30",
+    previewClass: "bg-gradient-to-r from-[#3B0764] to-[#581C87]",
+  },
+  {
+    label: "Merah Marun",
+    gradient: "from-[#7F1D1D] via-[#991B1B] to-[#450A0A]",
+    badgeColor: "bg-rose-500/20 text-rose-300 border-rose-400/30",
+    previewClass: "bg-gradient-to-r from-[#7F1D1D] to-[#991B1B]",
+  },
+];
+
 function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const deptKeys = Object.keys(DEPT_META);
   const [adminTab, setAdminTab] = useState("ringkasan");
@@ -3615,6 +3750,122 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const simpanTampilan = () => simpanTampilanKeBackend(tampilanForm, "Pengaturan tampilan tersimpan dan langsung diterapkan ke seluruh aplikasi.");
   const resetTampilan = () => simpanTampilanKeBackend(TAMPILAN_DEFAULT, "Tampilan dikembalikan ke pengaturan bawaan.");
 
+  // -- Editor Dashboard Login (Carousel, Profil, Kontak, Pengumuman) --
+  const [loginConfigForm, setLoginConfigForm] = useState(() => ({
+    ...LOGIN_CONFIG_DEFAULT,
+    ...(data?.tampilan?.loginConfig || {}),
+  }));
+  const [loginEditorTab, setLoginEditorTab] = useState("slides");
+  const [activeSlideIdx, setActiveSlideIdx] = useState(0);
+
+  useEffect(() => {
+    if (data?.tampilan?.loginConfig) {
+      setLoginConfigForm({
+        ...LOGIN_CONFIG_DEFAULT,
+        ...data.tampilan.loginConfig,
+        slides: (data.tampilan.loginConfig.slides && data.tampilan.loginConfig.slides.length > 0)
+          ? data.tampilan.loginConfig.slides
+          : LOGIN_CONFIG_DEFAULT.slides,
+        profil: { ...LOGIN_CONFIG_DEFAULT.profil, ...(data.tampilan.loginConfig.profil || {}) },
+        kontak: { ...LOGIN_CONFIG_DEFAULT.kontak, ...(data.tampilan.loginConfig.kontak || {}) },
+        pengumuman: { ...LOGIN_CONFIG_DEFAULT.pengumuman, ...(data.tampilan.loginConfig.pengumuman || {}) },
+      });
+    }
+  }, [data.tampilan]);
+
+  const simpanLoginConfig = () => {
+    const nilai = {
+      ...tampilanForm,
+      loginConfig: loginConfigForm,
+    };
+    simpanTampilanKeBackend(nilai, "Pengaturan Dashboard Login berhasil disimpan dan diperbarui di portal!");
+  };
+
+  const resetLoginConfig = () => {
+    setLoginConfigForm(LOGIN_CONFIG_DEFAULT);
+    const nilai = {
+      ...tampilanForm,
+      loginConfig: LOGIN_CONFIG_DEFAULT,
+    };
+    simpanTampilanKeBackend(nilai, "Dashboard Login dikembalikan ke konten bawaan.");
+  };
+
+  const updateSlideField = (index, field, value) => {
+    setLoginConfigForm((prev) => {
+      const slides = [...prev.slides];
+      slides[index] = { ...slides[index], [field]: value };
+      return { ...prev, slides };
+    });
+  };
+
+  const updateSlidePoin = (slideIndex, poinIndex, value) => {
+    setLoginConfigForm((prev) => {
+      const slides = [...prev.slides];
+      const poin = [...(slides[slideIndex].poin || ["", "", ""])];
+      poin[poinIndex] = value;
+      slides[slideIndex] = { ...slides[slideIndex], poin };
+      return { ...prev, slides };
+    });
+  };
+
+  const updateSlideStat = (slideIndex, statIndex, field, value) => {
+    setLoginConfigForm((prev) => {
+      const slides = [...prev.slides];
+      const stats = [...(slides[slideIndex].stats || [{ label: "", val: "" }, { label: "", val: "" }, { label: "", val: "" }])];
+      stats[statIndex] = { ...stats[statIndex], [field]: value };
+      slides[slideIndex] = { ...slides[slideIndex], stats };
+      return { ...prev, slides };
+    });
+  };
+
+  const tambahSlideBaru = () => {
+    const baru = {
+      id: `slide-${Date.now()}`,
+      kategori: "Program Baru",
+      badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",
+      gradient: "from-[#064E3B] via-[#047857] to-[#022C22]",
+      tag: "Kegiatan Pesantren",
+      judul: "Judul Program Baru",
+      subjudul: "Penjelasan ringkas visi program",
+      deskripsi: "Tuliskan deskripsi lengkap program di sini agar calon wali santri dan asatidz dapat memahaminya.",
+      poin: ["Fasilitas Lengkap", "Bimbingan Intensif", "Sertifikasi Resmi"],
+      stats: [
+        { label: "Target", val: "100%" },
+        { label: "Santri", val: "Aktif" },
+        { label: "Status", val: "Unggul" },
+      ],
+    };
+    setLoginConfigForm((prev) => ({
+      ...prev,
+      slides: [...prev.slides, baru],
+    }));
+    setActiveSlideIdx(loginConfigForm.slides.length);
+  };
+
+  const hapusSlide = (index) => {
+    if (loginConfigForm.slides.length <= 1) return;
+    setLoginConfigForm((prev) => {
+      const slides = prev.slides.filter((_, i) => i !== index);
+      return { ...prev, slides };
+    });
+    if (activeSlideIdx >= index && activeSlideIdx > 0) {
+      setActiveSlideIdx(activeSlideIdx - 1);
+    }
+  };
+
+  const pindahSlide = (index, arah) => {
+    const targetIdx = index + arah;
+    if (targetIdx < 0 || targetIdx >= loginConfigForm.slides.length) return;
+    setLoginConfigForm((prev) => {
+      const slides = [...prev.slides];
+      const temp = slides[index];
+      slides[index] = slides[targetIdx];
+      slides[targetIdx] = temp;
+      return { ...prev, slides };
+    });
+    setActiveSlideIdx(targetIdx);
+  };
+
   // -- Database Persistence & Automated Backup --
   const [dbStatus, setDbStatus] = useState(null);
   const [dbLoading, setDbLoading] = useState(false);
@@ -3728,6 +3979,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${(data?.unitUsaha || []).length}` },
     { id: "tahun", label: "Kalender Akademik", icon: CalendarCheck },
     { id: "tampilan", label: "Pengaturan Tampilan", icon: ImageIcon },
+    { id: "loginEditor", label: "Editor Dashboard Login", icon: School, badge: "Portal" },
     { id: "database", label: "Penyimpanan & Cadangan", icon: Database, badge: "Cloud" },
   ];
 
@@ -3740,7 +3992,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
         <aside className="w-full lg:w-64 shrink-0 bg-white/90 backdrop-blur-md rounded-2xl border border-[#CFE3F0] p-3.5 shadow-sm lg:sticky lg:top-20 z-10 space-y-1.5">
           <div className="px-3 py-2 border-b border-[#EAF4FB] mb-1 flex items-center justify-between">
             <p className="text-[11px] font-bold text-[#5B7C93] uppercase tracking-wider">Menu Navigasi Admin</p>
-            <span className="text-[10px] bg-[#0C4A6E]/10 text-[#0C4A6E] font-bold px-2 py-0.5 rounded-full">6 Tab</span>
+            <span className="text-[10px] bg-[#0C4A6E]/10 text-[#0C4A6E] font-bold px-2 py-0.5 rounded-full">{adminMenus.length} Tab</span>
           </div>
           {adminMenus.map((m) => (
             <button
@@ -4196,6 +4448,698 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                   Kembalikan ke Bawaan
                 </button>
               </div>
+            </ArchCard>
+          )}
+
+          {adminTab === "loginEditor" && (
+            <ArchCard title="Editor Dashboard Login" eyebrow="Kustomisasi Carousel, Informasi Pondok & Kontak Portal" icon={School} tone="gold">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 border-b border-[#EAF4FB] pb-4">
+                <div>
+                  <p className="text-xs text-[#5B7C93]">
+                    Kelola foto/slide program, profil lembaga, statistik santri, kontak sekretariat, dan banner pengumuman pada portal masuk.
+                  </p>
+                  <p className="text-[11px] text-emerald-700 font-medium mt-0.5 flex items-center gap-1">
+                    <CheckCircle2 size={12} /> Tersimpan aman di database PostgreSQL & berlaku seketika di Web Portal serta Android SuperApp.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={simpanLoginConfig}
+                    disabled={tampilanBusy || backendOnline !== true}
+                    className="flex items-center gap-1.5 btn-gradient text-xs px-4 py-2.5 rounded-xl font-semibold hover:shadow-md active:scale-95 disabled:opacity-50"
+                  >
+                    {tampilanBusy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                    {tampilanBusy ? "Menyimpan..." : "Simpan Perubahan Portal"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetLoginConfig}
+                    disabled={tampilanBusy || backendOnline !== true}
+                    className="border border-[#CFE3F0] text-[#45657A] bg-white hover:bg-slate-50 text-xs px-3 py-2.5 rounded-xl font-medium disabled:opacity-50"
+                  >
+                    Reset Bawaan
+                  </button>
+                </div>
+              </div>
+
+              {tampilanMsg && (
+                <div className={`p-3 rounded-xl mb-4 text-xs font-semibold flex items-center gap-2 ${tampilanIsErr ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-800 border border-emerald-200"}`}>
+                  {tampilanIsErr ? <AlertTriangle size={15} className="shrink-0" /> : <CheckCircle2 size={15} className="shrink-0" />}
+                  <span>{tampilanMsg}</span>
+                </div>
+              )}
+
+              {/* Sub Navigation Bar for Editor */}
+              <div className="flex flex-wrap gap-2 mb-6 border-b border-[#EAF4FB] pb-2">
+                {[
+                  { id: "slides", label: "Slide & Foto Program", icon: ImageIcon, badge: `${loginConfigForm.slides.length}` },
+                  { id: "profil", label: "Profil & Visi Misi", icon: BookOpen },
+                  { id: "kontak", label: "Kontak & Sekretariat", icon: Phone },
+                  { id: "pengumuman", label: "Banner Pengumuman", icon: Bell, badge: loginConfigForm.pengumuman?.aktif ? "Aktif" : "Mati" },
+                  { id: "preview", label: "Pratinjau Live", icon: Eye, badge: "Live" },
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setLoginEditorTab(st.id)}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                      loginEditorTab === st.id
+                        ? "bg-[#0C4A6E] text-white shadow-sm"
+                        : "bg-[#F4F8FB] text-[#45657A] hover:bg-[#EAF4FB] hover:text-[#0C4A6E]"
+                    }`}
+                  >
+                    <st.icon size={14} />
+                    <span>{st.label}</span>
+                    {st.badge && (
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        loginEditorTab === st.id ? "bg-white/20 text-white" : "bg-white text-[#0C4A6E] border border-[#CFE3F0]"
+                      }`}>
+                        {st.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* SUB TAB 1: SLIDES */}
+              {loginEditorTab === "slides" && (
+                <div className="space-y-6">
+                  {/* Global Carousel Controls */}
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={loginConfigForm.autoPlay ?? true}
+                          onChange={(e) => setLoginConfigForm((f) => ({ ...f, autoPlay: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0284C7]" />
+                      </label>
+                      <div>
+                        <p className="text-xs font-bold text-[#0F172A]">Putar Otomatis (Auto-Play Carousel)</p>
+                        <p className="text-[11px] text-[#64748B]">Slide berganti otomatis setiap beberapa detik di halaman depan.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[#64748B] font-medium">Interval:</span>
+                      <select
+                        value={loginConfigForm.intervalMs || 5500}
+                        onChange={(e) => setLoginConfigForm((f) => ({ ...f, intervalMs: Number(e.target.value) }))}
+                        className="h-8 border border-[#CBD5E1] bg-white rounded-lg px-2 text-xs font-semibold text-[#0F172A]"
+                      >
+                        <option value={3500}>3.5 Detik (Cepat)</option>
+                        <option value={5500}>5.5 Detik (Standar)</option>
+                        <option value={8000}>8.0 Detik (Santai)</option>
+                        <option value={12000}>12.0 Detik (Lama)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Slide Selection Pills / Cards */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-xs font-bold text-[#0C4A6E] uppercase tracking-wider flex items-center gap-2">
+                        <Layers size={14} /> Daftar Slide Carousel ({loginConfigForm.slides.length} Slide)
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={tambahSlideBaru}
+                        className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
+                      >
+                        <Plus size={14} /> Tambah Slide Baru
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {loginConfigForm.slides.map((s, idx) => {
+                        const isAktif = activeSlideIdx === idx;
+                        return (
+                          <div
+                            key={s.id || idx}
+                            onClick={() => setActiveSlideIdx(idx)}
+                            className={`p-3 rounded-2xl border text-left cursor-pointer transition-all relative overflow-hidden flex flex-col justify-between ${
+                              isAktif
+                                ? "border-[#0284C7] ring-2 ring-[#0284C7]/20 bg-sky-50/60 shadow-sm"
+                                : "border-[#E2E8F0] bg-white hover:border-[#94A3B8]"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                Slide #{idx + 1}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                {idx > 0 && (
+                                  <button
+                                    type="button"
+                                    title="Geser ke kiri"
+                                    onClick={(e) => { e.stopPropagation(); pindahSlide(idx, -1); }}
+                                    className="p-1 text-slate-400 hover:text-[#0C4A6E]"
+                                  >
+                                    <ChevronLeft size={13} />
+                                  </button>
+                                )}
+                                {idx < loginConfigForm.slides.length - 1 && (
+                                  <button
+                                    type="button"
+                                    title="Geser ke kanan"
+                                    onClick={(e) => { e.stopPropagation(); pindahSlide(idx, 1); }}
+                                    className="p-1 text-slate-400 hover:text-[#0C4A6E]"
+                                  >
+                                    <ChevronRight size={13} />
+                                  </button>
+                                )}
+                                {loginConfigForm.slides.length > 1 && (
+                                  <button
+                                    type="button"
+                                    title="Hapus slide ini"
+                                    onClick={(e) => { e.stopPropagation(); hapusSlide(idx); }}
+                                    className="p-1 text-slate-400 hover:text-red-600"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-xs font-bold text-[#0F172A] truncate mb-0.5">{s.judul || "Tanpa Judul"}</p>
+                            <p className="text-[11px] text-[#64748B] truncate">{s.tag || s.kategori || "Program"}</p>
+                            <div className={`mt-2.5 h-1.5 w-full rounded-full bg-gradient-to-r ${s.gradient}`} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Form Edit Slide yang Dipilih */}
+                  {loginConfigForm.slides[activeSlideIdx] && (
+                    <div className="bg-white border border-[#CBD5E1] rounded-2xl p-5 shadow-xs space-y-5 animate-slide-up">
+                      <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-[#0C4A6E] text-white text-xs font-bold flex items-center justify-center">
+                            {activeSlideIdx + 1}
+                          </span>
+                          <h4 className="text-sm font-bold text-[#0F172A]">
+                            Mengedit Slide: {loginConfigForm.slides[activeSlideIdx].judul || `Slide #${activeSlideIdx + 1}`}
+                          </h4>
+                        </div>
+                        <span className="text-xs text-[#64748B]">Perubahan langsung terlihat di tab Pratinjau Live</span>
+                      </div>
+
+                      {/* Header & Identitas Slide */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-bold text-[#334155] mb-1 block">Kategori / Badge Utama</label>
+                          <input
+                            type="text"
+                            value={loginConfigForm.slides[activeSlideIdx].kategori || ""}
+                            onChange={(e) => updateSlideField(activeSlideIdx, "kategori", e.target.value)}
+                            placeholder="Contoh: Program Unggulan"
+                            className="w-full h-10 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-[#334155] mb-1 block">Label Tag Sub-Kategori</label>
+                          <input
+                            type="text"
+                            value={loginConfigForm.slides[activeSlideIdx].tag || ""}
+                            onChange={(e) => updateSlideField(activeSlideIdx, "tag", e.target.value)}
+                            placeholder="Contoh: Tahfidz & LPTQ"
+                            className="w-full h-10 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-bold text-[#334155] mb-1 block">Judul Utama Slide</label>
+                          <input
+                            type="text"
+                            value={loginConfigForm.slides[activeSlideIdx].judul || ""}
+                            onChange={(e) => updateSlideField(activeSlideIdx, "judul", e.target.value)}
+                            placeholder="Contoh: Pendidikan Al-Qur'an & Mutaba'ah"
+                            className="w-full h-10 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 font-semibold"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-[#334155] mb-1 block">Subjudul (Tagline Singkat)</label>
+                          <input
+                            type="text"
+                            value={loginConfigForm.slides[activeSlideIdx].subjudul || ""}
+                            onChange={(e) => updateSlideField(activeSlideIdx, "subjudul", e.target.value)}
+                            placeholder="Contoh: Mencetak Generasi Qur'ani yang Mutqin"
+                            className="w-full h-10 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] mb-1 block">Deskripsi Lengkap Slide</label>
+                        <textarea
+                          rows={3}
+                          value={loginConfigForm.slides[activeSlideIdx].deskripsi || ""}
+                          onChange={(e) => updateSlideField(activeSlideIdx, "deskripsi", e.target.value)}
+                          placeholder="Jelaskan mengenai program atau keunggulan ini secara ringkas dan menarik..."
+                          className="w-full border border-[#CBD5E1] rounded-xl p-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 leading-relaxed"
+                        />
+                      </div>
+
+                      {/* Pilihan Gradasi & Warna */}
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] mb-2 block">Pilihan Tema Warna Latar Slide</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                          {GRADIENT_PRESETS.map((gp, gIdx) => {
+                            const isMatch = loginConfigForm.slides[activeSlideIdx].gradient === gp.gradient;
+                            return (
+                              <button
+                                key={gIdx}
+                                type="button"
+                                onClick={() => {
+                                  updateSlideField(activeSlideIdx, "gradient", gp.gradient);
+                                  updateSlideField(activeSlideIdx, "badgeColor", gp.badgeColor);
+                                }}
+                                className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${
+                                  isMatch ? "border-[#0284C7] ring-2 ring-[#0284C7]/30 bg-sky-50 shadow-xs" : "border-slate-200 bg-white hover:bg-slate-50"
+                                }`}
+                              >
+                                <div className={`w-full h-6 rounded-lg ${gp.previewClass} shadow-xs`} />
+                                <span className="text-[10px] font-bold text-slate-700 text-center truncate w-full">{gp.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 3 Poin Keunggulan */}
+                      <div className="pt-2 border-t border-[#F1F5F9]">
+                        <label className="text-xs font-bold text-[#334155] mb-2 block">3 Poin Keunggulan Utama (List Butir)</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {[0, 1, 2].map((pIdx) => (
+                            <div key={pIdx}>
+                              <span className="text-[11px] text-[#64748B] mb-1 block">Poin #{pIdx + 1}</span>
+                              <input
+                                type="text"
+                                value={loginConfigForm.slides[activeSlideIdx].poin?.[pIdx] || ""}
+                                onChange={(e) => updateSlidePoin(activeSlideIdx, pIdx, e.target.value)}
+                                placeholder={`Poin keunggulan ${pIdx + 1}`}
+                                className="w-full h-9 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 3 Metrik / Statistik Kecil */}
+                      <div className="pt-2 border-t border-[#F1F5F9]">
+                        <label className="text-xs font-bold text-[#334155] mb-2 block">3 Angka Statistik / Metrik Slide</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {[0, 1, 2].map((sIdx) => (
+                            <div key={sIdx} className="p-3 rounded-xl border border-slate-200 bg-[#F8FAFC] space-y-2">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase">Metrik #{sIdx + 1}</span>
+                              <div>
+                                <label className="text-[10px] text-slate-600 block">Angka / Nilai:</label>
+                                <input
+                                  type="text"
+                                  value={loginConfigForm.slides[activeSlideIdx].stats?.[sIdx]?.val || ""}
+                                  onChange={(e) => updateSlideStat(activeSlideIdx, sIdx, "val", e.target.value)}
+                                  placeholder="Cth: 30 Juz"
+                                  className="w-full h-8 border border-[#CBD5E1] rounded-lg px-2 text-xs font-bold bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-slate-600 block">Label Keterangan:</label>
+                                <input
+                                  type="text"
+                                  value={loginConfigForm.slides[activeSlideIdx].stats?.[sIdx]?.label || ""}
+                                  onChange={(e) => updateSlideStat(activeSlideIdx, sIdx, "label", e.target.value)}
+                                  placeholder="Cth: Target"
+                                  className="w-full h-8 border border-[#CBD5E1] rounded-lg px-2 text-xs bg-white"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SUB TAB 2: PROFIL & VISI MISI */}
+              {loginEditorTab === "profil" && (
+                <div className="bg-white border border-[#CBD5E1] rounded-2xl p-5 shadow-xs space-y-5">
+                  <div>
+                    <h4 className="text-xs font-bold text-[#0C4A6E] uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <BookOpen size={14} /> Visi Lembaga Pesantren
+                    </h4>
+                    <textarea
+                      rows={3}
+                      value={loginConfigForm.profil?.visi || ""}
+                      onChange={(e) => setLoginConfigForm((f) => ({ ...f, profil: { ...(f.profil || {}), visi: e.target.value } }))}
+                      placeholder="Tuliskan rumusan visi pondok pesantren..."
+                      className="w-full border border-[#CBD5E1] rounded-xl p-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 leading-relaxed font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-xs font-bold text-[#0C4A6E] uppercase tracking-wider flex items-center gap-2">
+                        <CheckCircle2 size={14} /> Butir-Butir Misi Utama
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const misi = [...(loginConfigForm.profil?.misi || []), "Butir misi baru..."];
+                          setLoginConfigForm((f) => ({ ...f, profil: { ...(f.profil || {}), misi } }));
+                        }}
+                        className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-xl transition-all flex items-center gap-1 shadow-xs"
+                      >
+                        <Plus size={13} /> Tambah Butir Misi
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {(loginConfigForm.profil?.misi || []).map((m, mIdx) => (
+                        <div key={mIdx} className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                            {mIdx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={m}
+                            onChange={(e) => {
+                              const misi = [...(loginConfigForm.profil?.misi || [])];
+                              misi[mIdx] = e.target.value;
+                              setLoginConfigForm((f) => ({ ...f, profil: { ...(f.profil || {}), misi } }));
+                            }}
+                            className="flex-1 h-9 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white"
+                          />
+                          {(loginConfigForm.profil?.misi || []).length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const misi = (loginConfigForm.profil?.misi || []).filter((_, i) => i !== mIdx);
+                                setLoginConfigForm((f) => ({ ...f, profil: { ...(f.profil || {}), misi } }));
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-[#F1F5F9]">
+                    <h4 className="text-xs font-bold text-[#0C4A6E] uppercase tracking-wider mb-2">
+                      Statistik Utama Pondok (Ditampilkan di Modal Profil)
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div>
+                        <label className="text-[11px] text-slate-600 font-bold block mb-1">Santri Aktif:</label>
+                        <input
+                          type="text"
+                          value={loginConfigForm.profil?.stats?.santri || ""}
+                          onChange={(e) => setLoginConfigForm((f) => ({ ...f, profil: { ...(f.profil || {}), stats: { ...(f.profil?.stats || {}), santri: e.target.value } } }))}
+                          placeholder="Cth: 1.450+"
+                          className="w-full h-9 border border-[#CBD5E1] rounded-xl px-3 text-xs font-bold bg-[#F8FAFC]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-600 font-bold block mb-1">Asatidz & Pembina:</label>
+                        <input
+                          type="text"
+                          value={loginConfigForm.profil?.stats?.asatidz || ""}
+                          onChange={(e) => setLoginConfigForm((f) => ({ ...f, profil: { ...(f.profil || {}), stats: { ...(f.profil?.stats || {}), asatidz: e.target.value } } }))}
+                          placeholder="Cth: 75"
+                          className="w-full h-9 border border-[#CBD5E1] rounded-xl px-3 text-xs font-bold bg-[#F8FAFC]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-600 font-bold block mb-1">Status Akreditasi:</label>
+                        <input
+                          type="text"
+                          value={loginConfigForm.profil?.stats?.akreditasi || ""}
+                          onChange={(e) => setLoginConfigForm((f) => ({ ...f, profil: { ...(f.profil || {}), stats: { ...(f.profil?.stats || {}), akreditasi: e.target.value } } }))}
+                          placeholder="Cth: Grade A"
+                          className="w-full h-9 border border-[#CBD5E1] rounded-xl px-3 text-xs font-bold bg-[#F8FAFC]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-600 font-bold block mb-1">Mukim Asrama:</label>
+                        <input
+                          type="text"
+                          value={loginConfigForm.profil?.stats?.mukim || ""}
+                          onChange={(e) => setLoginConfigForm((f) => ({ ...f, profil: { ...(f.profil || {}), stats: { ...(f.profil?.stats || {}), mukim: e.target.value } } }))}
+                          placeholder="Cth: 100%"
+                          className="w-full h-9 border border-[#CBD5E1] rounded-xl px-3 text-xs font-bold bg-[#F8FAFC]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB TAB 3: KONTAK & SEKRETARIAT */}
+              {loginEditorTab === "kontak" && (
+                <div className="bg-white border border-[#CBD5E1] rounded-2xl p-5 shadow-xs space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-[#334155] mb-1 block">Nomor WhatsApp Resmi Tata Usaha</label>
+                      <input
+                        type="text"
+                        value={loginConfigForm.kontak?.wa || ""}
+                        onChange={(e) => setLoginConfigForm((f) => ({ ...f, kontak: { ...(f.kontak || {}), wa: e.target.value } }))}
+                        placeholder="Contoh: +62 812-3456-7890"
+                        className="w-full h-10 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white font-semibold"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">Akan otomatis menjadi tautan klik langsung ke chat WhatsApp.</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#334155] mb-1 block">Email Resmi Sekretariat</label>
+                      <input
+                        type="email"
+                        value={loginConfigForm.kontak?.email || ""}
+                        onChange={(e) => setLoginConfigForm((f) => ({ ...f, kontak: { ...(f.kontak || {}), email: e.target.value } }))}
+                        placeholder="Contoh: sekretariat@mma-pesantren.sch.id"
+                        className="w-full h-10 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-[#334155] mb-1 block">Alamat Kampus Pesantren</label>
+                      <input
+                        type="text"
+                        value={loginConfigForm.kontak?.alamat || ""}
+                        onChange={(e) => setLoginConfigForm((f) => ({ ...f, kontak: { ...(f.kontak || {}), alamat: e.target.value } }))}
+                        placeholder="Contoh: Kampus Utama Ma'had Mudaiyatul Anwar"
+                        className="w-full h-10 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#334155] mb-1 block">Jam Operasional Pelayanan</label>
+                      <input
+                        type="text"
+                        value={loginConfigForm.kontak?.jamLayanan || ""}
+                        onChange={(e) => setLoginConfigForm((f) => ({ ...f, kontak: { ...(f.kontak || {}), jamLayanan: e.target.value } }))}
+                        placeholder="Contoh: Senin - Ahad, Pukul 07.30 - 16.30 WIB"
+                        className="w-full h-10 border border-[#CBD5E1] rounded-xl px-3 text-xs bg-[#F8FAFC] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] mb-1 block">Catatan Panduan untuk Wali Santri Baru</label>
+                    <textarea
+                      rows={3}
+                      value={loginConfigForm.kontak?.catatanWali || ""}
+                      onChange={(e) => setLoginConfigForm((f) => ({ ...f, kontak: { ...(f.kontak || {}), catatanWali: e.target.value } }))}
+                      placeholder="Informasi mengenai cara mendapatkan username dan kata sandi awal..."
+                      className="w-full border border-[#CBD5E1] rounded-xl p-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 leading-relaxed"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* SUB TAB 4: BANNER PENGUMUMAN */}
+              {loginEditorTab === "pengumuman" && (
+                <div className="bg-white border border-[#CBD5E1] rounded-2xl p-5 shadow-xs space-y-5">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <div>
+                      <p className="text-xs font-bold text-[#0F172A]">Tampilkan Banner Pengumuman di Atas Portal Login</p>
+                      <p className="text-[11px] text-[#64748B]">Jika diaktifkan, banner berjalan akan muncul di halaman login untuk semua pengunjung.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={loginConfigForm.pengumuman?.aktif || false}
+                        onChange={(e) => setLoginConfigForm((f) => ({ ...f, pengumuman: { ...(f.pengumuman || {}), aktif: e.target.checked } }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0284C7]" />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] mb-2 block">Tipe / Warna Banner</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { id: "info", label: "Informasi (Biru)", bg: "bg-sky-50 text-sky-800 border-sky-300" },
+                        { id: "peringatan", label: "Penting (Kuning/Oranye)", bg: "bg-amber-50 text-amber-800 border-amber-300" },
+                        { id: "sukses", label: "Kabar Baik (Hijau)", bg: "bg-emerald-50 text-emerald-800 border-emerald-300" },
+                      ].map((tb) => {
+                        const isMatch = (loginConfigForm.pengumuman?.tipe || "info") === tb.id;
+                        return (
+                          <button
+                            key={tb.id}
+                            type="button"
+                            onClick={() => setLoginConfigForm((f) => ({ ...f, pengumuman: { ...(f.pengumuman || {}), tipe: tb.id } }))}
+                            className={`p-3 rounded-xl border text-xs font-bold transition-all text-center ${tb.bg} ${
+                              isMatch ? "ring-2 ring-[#0284C7] shadow-sm font-extrabold" : "opacity-70 hover:opacity-100"
+                            }`}
+                          >
+                            {tb.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] mb-1 block">Teks Pesan Pengumuman</label>
+                    <textarea
+                      rows={2}
+                      value={loginConfigForm.pengumuman?.pesan || ""}
+                      onChange={(e) => setLoginConfigForm((f) => ({ ...f, pengumuman: { ...(f.pengumuman || {}), pesan: e.target.value } }))}
+                      placeholder="Contoh: Penerimaan Santri Baru (PSB) Tahun Ajaran Baru Telah Dibuka. Hubungi Sekretariat untuk Informasi Lengkap."
+                      className="w-full border border-[#CBD5E1] rounded-xl p-3 text-xs bg-[#F8FAFC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 leading-relaxed font-semibold"
+                    />
+                  </div>
+
+                  {loginConfigForm.pengumuman?.aktif && loginConfigForm.pengumuman?.pesan && (
+                    <div className="pt-2">
+                      <p className="text-[11px] font-bold text-slate-500 uppercase mb-1.5">Tampilan Banner di Halaman Depan:</p>
+                      <div className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-semibold ${
+                        loginConfigForm.pengumuman.tipe === "peringatan"
+                          ? "bg-amber-50 text-amber-900 border-amber-300"
+                          : loginConfigForm.pengumuman.tipe === "sukses"
+                          ? "bg-emerald-50 text-emerald-900 border-emerald-300"
+                          : "bg-sky-50 text-[#0C4A6E] border-sky-300"
+                      }`}>
+                        <Bell size={14} className="shrink-0" />
+                        <span className="font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-full bg-white/80 border">
+                          {loginConfigForm.pengumuman.tipe === "peringatan" ? "Penting" : loginConfigForm.pengumuman.tipe === "sukses" ? "Kabar Terkini" : "Pengumuman"}
+                        </span>
+                        <span className="truncate">{loginConfigForm.pengumuman.pesan}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SUB TAB 5: PRATINJAU LANGSUNG (LIVE PREVIEW) */}
+              {loginEditorTab === "preview" && (
+                <div className="space-y-4">
+                  <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs text-[#0C4A6E] flex items-center justify-between">
+                    <span className="flex items-center gap-2 font-medium">
+                      <Eye size={15} /> Pratinjau langsung tampilan portal dengan konfigurasi di atas tanpa harus logout.
+                    </span>
+                    <span className="text-[11px] font-bold bg-white px-2 py-0.5 rounded-full border border-sky-200">
+                      Slide #{activeSlideIdx + 1} dari {loginConfigForm.slides.length}
+                    </span>
+                  </div>
+
+                  {/* Mockup Card Miniatur */}
+                  {loginConfigForm.slides[activeSlideIdx] && (
+                    <div className="w-full bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col lg:flex-row">
+                      <div className={`lg:w-7/12 relative flex flex-col justify-between p-6 sm:p-8 text-white min-h-[380px] bg-gradient-to-br ${loginConfigForm.slides[activeSlideIdx].gradient}`}>
+                        <div className="relative z-10 flex items-center justify-between">
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] uppercase font-bold px-3 py-1 rounded-full border backdrop-blur-md ${loginConfigForm.slides[activeSlideIdx].badgeColor}`}>
+                            <Award size={12} /> {loginConfigForm.slides[activeSlideIdx].kategori}
+                          </span>
+                          <span className="text-[11px] font-medium text-white/90 bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                            Tentang Ma'had →
+                          </span>
+                        </div>
+                        <div className="relative z-10 my-4">
+                          <div className="inline-block px-2 py-0.5 rounded bg-white/15 text-[10px] font-semibold text-emerald-200 uppercase tracking-widest mb-2">
+                            {loginConfigForm.slides[activeSlideIdx].tag}
+                          </div>
+                          <h3 className="text-2xl font-black text-white leading-tight mb-2" style={{ fontFamily: "'Fraunces', serif" }}>
+                            {loginConfigForm.slides[activeSlideIdx].judul}
+                          </h3>
+                          <p className="text-xs text-white/90 font-medium mb-3">
+                            {loginConfigForm.slides[activeSlideIdx].subjudul}
+                          </p>
+                          <p className="text-xs text-white/80 leading-relaxed mb-4 max-w-md">
+                            {loginConfigForm.slides[activeSlideIdx].deskripsi}
+                          </p>
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/15">
+                            {(loginConfigForm.slides[activeSlideIdx].poin || []).map((p, pIdx) => (
+                              <div key={pIdx} className="flex items-center gap-1.5 text-[11px] text-white/90">
+                                <CheckCircle2 size={12} className="text-emerald-300 shrink-0" />
+                                <span className="truncate">{p}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="relative z-10 pt-3 border-t border-white/15 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            {(loginConfigForm.slides[activeSlideIdx].stats || []).map((st, sIdx) => (
+                              <div key={sIdx} className="border-r border-white/15 pr-3 last:border-none">
+                                <p className="text-xs font-bold text-white">{st.val}</p>
+                                <p className="text-[9px] text-white/70 uppercase">{st.label}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {loginConfigForm.slides.map((_, dotIdx) => (
+                              <button
+                                key={dotIdx}
+                                type="button"
+                                onClick={() => setActiveSlideIdx(dotIdx)}
+                                className={`h-1.5 rounded-full transition-all ${dotIdx === activeSlideIdx ? "w-5 bg-white" : "w-1.5 bg-white/40"}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Mockup Side */}
+                      <div className="lg:w-5/12 p-6 sm:p-8 flex flex-col justify-between bg-white">
+                        <div>
+                          <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full mb-3">
+                            <ShieldCheck size={12} className="text-emerald-600" /> Portal Akses Resmi
+                          </div>
+                          <h4 className="text-xl font-extrabold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                            Selamat Datang!
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1 mb-4">
+                            Masuk dengan akun Guru / Wali Santri untuk mengakses sistem.
+                          </p>
+                          <div className="space-y-2.5 opacity-60 pointer-events-none">
+                            <div className="h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center px-3 text-xs text-slate-400">
+                              Username / Akun
+                            </div>
+                            <div className="h-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center px-3 text-xs text-slate-400">
+                              Kata Sandi
+                            </div>
+                            <div className="h-9 rounded-xl bg-gradient-to-r from-[#0C4A6E] to-[#0284C7] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                              Masuk ke Dashboard
+                            </div>
+                          </div>
+                        </div>
+                        <div className="pt-4 border-t border-slate-100 text-center text-[11px] text-slate-500">
+                          WhatsApp: <span className="font-bold text-[#0284C7]">{loginConfigForm.kontak?.wa}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </ArchCard>
           )}
 
@@ -12367,7 +13311,7 @@ export default function App() {
         }
       `}</style>
       {!session ? (
-        <Login users={users} onLogin={handleLogin} onResetPassword={resetPassword} namaAplikasi={namaAplikasi} fontIsi={fontIsi} />
+        <Login users={users} onLogin={handleLogin} onResetPassword={resetPassword} namaAplikasi={namaAplikasi} fontIsi={fontIsi} loginConfig={data.tampilan?.loginConfig} />
       ) : (
         <div className="page-enter pb-[max(2.5rem,calc(env(safe-area-inset-bottom,0px)+1rem))]">
           <TopBar role={session.role} user={session.user} onLogout={handleLogout} namaAplikasi={namaAplikasi} warnaPrimer={warnaPrimer} warnaSekunder={warnaSekunder} backendOnline={backendOnline} backendToken={backendToken} setBackendToken={setBackendToken} />
