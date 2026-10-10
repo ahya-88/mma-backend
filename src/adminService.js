@@ -24,16 +24,12 @@ async function semuaGuru() {
 async function buatGuru({ nama, username, password, departemen, unit, jenisAkun, actingUserId }) {
   let finalJenisAkun = (jenisAkun || "").toLowerCase().trim();
   if (finalJenisAkun === "admin") finalJenisAkun = "superadmin";
-
-  // Jika departemen admin dipilih atau jenisAkun superadmin dipilih, sinkronkan otomatis
-  if (departemen === "admin" || finalJenisAkun === "superadmin") {
-    finalJenisAkun = "superadmin";
-    departemen = "admin";
-  } else if (!finalJenisAkun) {
-    finalJenisAkun = "staf";
+  if (!finalJenisAkun) {
+    finalJenisAkun = departemen === "admin" ? "superadmin" : "staf";
   }
   
   if (!JENIS_AKUN_VALID.includes(finalJenisAkun)) throw new CashlessError(400, `Jenis akun tidak valid (${finalJenisAkun}). Harus 'staf' atau 'superadmin'.`);
+
   if (!nama || !username || !password) throw new CashlessError(400, "Nama, username, dan password wajib diisi.");
 
   const { PASSWORD_MIN_LENGTH } = require("./passwordPolicy");

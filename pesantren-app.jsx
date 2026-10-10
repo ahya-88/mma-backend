@@ -7,7 +7,7 @@ import {
   Mail, Inbox, Archive, Settings, FileSignature, Landmark, Send, Search, Download, Loader2, Bell, Home,
   Image as ImageIcon, ShieldAlert, Clock,
   QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle,
-  Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square
+  Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square, Calculator
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -6368,13 +6368,54 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [itemBaruPk, setItemBaruPk] = useState("");
   const setSkorIndikator = (indikator, val) => setPkForm((f) => ({ ...f, skor: { ...f.skor, [indikator]: val } }));
   const gantiKegiatanPk = (keg) => setPkForm({ santriId: pkForm.santriId, kegiatan: keg, skor: {}, catatan: "" });
-  const rataSkor = (entry) => { const vals = Object.values(entry.skor).map(Number).filter((n) => !isNaN(n)); return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0; };
-  const addPenilaianKegiatan = () => {
-    if (!pkForm.santriId || !Object.keys(pkForm.skor).length) return;
-    setData((d) => ({ ...d, penilaianKegiatan: [...d.penilaianKegiatan, { id: uid(), santriId: pkForm.santriId, kegiatan: pkForm.kegiatan, skor: pkForm.skor, catatan: pkForm.catatan, tanggal: todayStr() }] }));
-    setPkForm({ santriId: pkForm.santriId, kegiatan: pkForm.kegiatan, skor: {}, catatan: "" });
+  const rataSkor = (entry) => { const vals = Object.values(entry.skor || {}).map(Number).filter((n) => !isNaN(n)); return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0; };
+
+  const [pkFetch, setPkFetch] = useState({ loading: false, error: "", data: [] });
+  const muatPenilaianKegiatan = () => {
+    if (!isPengasuhan) return;
+    if (!backendToken) return;
+    setPkFetch((f) => ({ ...f, loading: true, error: "" }));
+    backendApi("/pengasuhan/penilaian-kegiatan", { token: backendToken })
+      .then((rows) => {
+        setPkFetch({ loading: false, error: "", data: rows });
+        setData((d) => ({
+          ...d,
+          penilaianKegiatan: rows.map((r) => ({
+            id: r.id, santriId: r.santriId, kegiatan: r.kegiatan,
+            skor: typeof r.skor === "string" ? JSON.parse(r.skor) : (r.skor || {}),
+            catatan: r.catatan, tanggal: r.tanggal,
+          })),
+        }));
+      })
+      .catch((e) => setPkFetch({ loading: false, error: e.message, data: [] }));
   };
-  const delPenilaianKegiatan = (id) => setData((d) => ({ ...d, penilaianKegiatan: d.penilaianKegiatan.filter((p) => p.id !== id) }));
+  useEffect(muatPenilaianKegiatan, [isPengasuhan, backendToken]);
+
+  const addPenilaianKegiatan = async () => {
+    if (!pkForm.santriId || !Object.keys(pkForm.skor).length) return;
+    const entry = { id: uid(), santriId: pkForm.santriId, kegiatan: pkForm.kegiatan, skor: pkForm.skor, catatan: pkForm.catatan, tanggal: todayStr() };
+    setData((d) => ({ ...d, penilaianKegiatan: [...d.penilaianKegiatan, entry] }));
+    setPkForm({ santriId: pkForm.santriId, kegiatan: pkForm.kegiatan, skor: {}, catatan: "" });
+    if (backendToken) {
+      try {
+        await backendApi("/pengasuhan/penilaian-kegiatan", { method: "POST", token: backendToken, body: entry });
+        muatPenilaianKegiatan();
+      } catch (err) {
+        console.warn("Gagal simpan penilaian kegiatan ke server:", err.message);
+      }
+    }
+  };
+  const delPenilaianKegiatan = async (id) => {
+    setData((d) => ({ ...d, penilaianKegiatan: d.penilaianKegiatan.filter((p) => p.id !== id) }));
+    if (backendToken) {
+      try {
+        await backendApi(`/pengasuhan/penilaian-kegiatan/${id}`, { method: "DELETE", token: backendToken });
+        muatPenilaianKegiatan();
+      } catch (err) {
+        console.warn("Gagal hapus penilaian kegiatan di server:", err.message);
+      }
+    }
+  };
 
   // ---- Kelola Item Penilaian Kegiatan (dinamis: Pramuka / Pidato 3 Bahasa / Disiplin dan Etika) ----
   const addIndikatorItem = (kegiatan, itemBaru) => {
@@ -6392,7 +6433,27 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
 
   // ---- Rapor Mental (Pengasuhan) ----
-  const [rmForm, setRmForm] = useState({ santriId: "", semester: "Ganjil", catatan: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [rmForm, setRmForm] = useState({ santriId: "", semester: "Ganjil", status: "PUBLISHED", catatan: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [rmBusy, setRmBusy] = useState(false);
+  const muatRaportMental = () => {
+    if (!isPengasuhan) return;
+    if (!backendToken) return;
+    backendApi("/pengasuhan/raport", { token: backendToken })
+      .then((rows) => {
+        setData((d) => ({
+          ...d,
+          raportMental: rows.map((r) => ({
+            id: r.id, santriId: r.santriId, tahunAjaran: r.tahunAjaran, semester: r.semester,
+            catatan: r.catatan, ringkasanRows: typeof r.ringkasanRows === "string" ? JSON.parse(r.ringkasanRows) : (r.ringkasanRows || []),
+            status: r.status, namaPembina: r.namaPembina, tanggalCetak: r.tanggalCetak,
+            pimpinanId: r.pimpinanId, pimpinanNama: r.pimpinanNama, pimpinanJabatan: r.pimpinanJabatan,
+          })),
+        }));
+      })
+      .catch((e) => console.warn("Gagal memuat raport mental:", e.message));
+  };
+  useEffect(muatRaportMental, [isPengasuhan, backendToken]);
+
   const rmRingkasan = (santriId) => {
     const entries = data.penilaianKegiatan.filter((p) => p.santriId === santriId);
     const rows = [];
@@ -6406,15 +6467,35 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     return rows;
   };
   const rmPoinPelanggaran = (santriId) => data.pelanggaran.filter((p) => p.santriId === santriId).reduce((a, p) => a + Number(p.poin), 0);
-  const simpanRaportMental = () => {
-    if (!rmForm.santriId) return;
+  const simpanRaportMental = async () => {
+    if (!rmForm.santriId) { alert("Pilih santri terlebih dahulu."); return; }
     const tahunLabel = tahunAjaranAktifDept?.label || "-";
     const ringkasanRows = [...rmRingkasan(rmForm.santriId), { label: "Poin Pelanggaran Terkumpul", value: rmPoinPelanggaran(rmForm.santriId) }];
-    const entry = { id: uid(), santriId: rmForm.santriId, tahunAjaran: tahunLabel, semester: rmForm.semester, catatan: rmForm.catatan, ringkasanRows, tanggal: todayStr(), namaPembina: rmForm.namaPembina, tanggalCetak: rmForm.tanggalCetak, pimpinanId: rmForm.pimpinanId };
+    const pimpinan = data.pimpinanList.find((p) => p.id === rmForm.pimpinanId);
+    const entry = {
+      id: uid(), santriId: rmForm.santriId, tahunAjaran: tahunLabel, semester: rmForm.semester,
+      catatan: rmForm.catatan, ringkasanRows, status: rmForm.status || "PUBLISHED",
+      namaPembina: rmForm.namaPembina, tanggalCetak: rmForm.tanggalCetak,
+      pimpinanId: rmForm.pimpinanId, pimpinanNama: pimpinan?.nama, pimpinanJabatan: pimpinan?.jabatan,
+    };
     setData((d) => {
       const sudahAda = d.raportMental.find((r) => r.santriId === rmForm.santriId && r.tahunAjaran === tahunLabel && r.semester === rmForm.semester);
       return { ...d, raportMental: sudahAda ? d.raportMental.map((r) => r.id === sudahAda.id ? { ...entry, id: sudahAda.id } : r) : [...d.raportMental, entry] };
     });
+    if (backendToken) {
+      setRmBusy(true);
+      try {
+        await backendApi("/pengasuhan/raport", { method: "POST", token: backendToken, body: entry });
+        muatRaportMental();
+        alert("Rapor Mental berhasil disimpan ke database!");
+      } catch (err) {
+        alert("Gagal menyimpan rapor mental ke server: " + err.message);
+      } finally {
+        setRmBusy(false);
+      }
+    } else {
+      alert("Rapor Mental disimpan di memori lokal.");
+    }
   };
   const cetakRaportMental = () => {
     const tahunLabel = tahunAjaranAktifDept?.label || "-";
@@ -6425,22 +6506,105 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
 
   // ---- Rapor Akademik (Pengajaran) ----
-  const [raForm, setRaForm] = useState({ santriId: "", semester: "Ganjil", catatan: "", peringkat: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [raForm, setRaForm] = useState({ santriId: "", semester: "Ganjil", status: "PUBLISHED", catatan: "", peringkat: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [raBusy, setRaBusy] = useState(false);
+  const [rankingBusy, setRankingBusy] = useState(false);
+
+  const muatRaportAkademik = () => {
+    if (!isPengajaran) return;
+    if (!backendToken) return;
+    backendApi("/pengajaran/raport", { token: backendToken })
+      .then((rows) => {
+        setData((d) => ({
+          ...d,
+          raportAkademik: rows.map((r) => ({
+            id: r.id, santriId: r.santriId, tahunAjaran: r.tahunAjaran, semester: r.semester,
+            peringkat: r.peringkat, totalSantri: r.totalSantri, rataRata: r.rataRata,
+            catatan: r.catatan, ringkasanRows: typeof r.ringkasanRows === "string" ? JSON.parse(r.ringkasanRows) : (r.ringkasanRows || []),
+            status: r.status, namaPembina: r.namaPembina, tanggalCetak: r.tanggalCetak,
+            pimpinanId: r.pimpinanId, pimpinanNama: r.pimpinanNama, pimpinanJabatan: r.pimpinanJabatan,
+          })),
+        }));
+      })
+      .catch((e) => console.warn("Gagal memuat raport akademik:", e.message));
+  };
+  useEffect(muatRaportAkademik, [isPengajaran, backendToken]);
+
   const raRingkasan = (santriId) => {
     const map = {};
     data.nilai.filter((n) => n.santriId === santriId).forEach((n) => { if (!map[n.mapel]) map[n.mapel] = []; map[n.mapel].push(Number(n.nilai)); });
     return Object.keys(map).map((mapel) => ({ label: mapel, value: Math.round(map[mapel].reduce((a, b) => a + b, 0) / map[mapel].length) }));
   };
-  const simpanRaportAkademik = () => {
-    if (!raForm.santriId) return;
+
+  const hitungRankingOtomatis = async () => {
+    if (!raForm.santriId) { alert("Pilih santri terlebih dahulu."); return; }
+    const santri = data.santri.find((s) => s.id === raForm.santriId);
+    if (!santri?.kelas) { alert("Data kelas santri belum diset."); return; }
+    const tahunLabel = tahunAjaranAktifDept?.label || "-";
+    if (!backendToken) {
+      const temanSekelas = data.santri.filter((s) => s.kelas === santri.kelas);
+      const rekap = temanSekelas.map((s) => {
+        const rows = raRingkasan(s.id);
+        const avg = rows.length ? Math.round(rows.reduce((a, b) => a + b.value, 0) / rows.length) : 0;
+        return { id: s.id, avg };
+      }).sort((a, b) => b.avg - a.avg);
+      const myRank = rekap.findIndex((r) => r.id === santri.id) + 1;
+      setRaForm((f) => ({ ...f, peringkat: `${myRank} dari ${temanSekelas.length}` }));
+      alert(`Peringkat otomatis terhitung: Ke-${myRank} dari ${temanSekelas.length} santri (Kelas ${santri.kelas})`);
+      return;
+    }
+    setRankingBusy(true);
+    try {
+      const hasil = await backendApi("/pengajaran/raport/hitung-ranking", {
+        method: "POST", token: backendToken,
+        body: { kelas: santri.kelas, tahunAjaran: tahunLabel, semester: raForm.semester },
+      });
+      const myRank = hasil.find((h) => h.santriId === santri.id);
+      if (myRank) {
+        setRaForm((f) => ({ ...f, peringkat: `${myRank.peringkat} dari ${myRank.totalSantri}` }));
+        alert(`Peringkat otomatis terhitung: Ke-${myRank.peringkat} dari ${myRank.totalSantri} santri (Rata-rata: ${myRank.rataRata})`);
+      } else {
+        alert("Data peringkat santri tidak ditemukan di hasil kalkulasi.");
+      }
+    } catch (err) {
+      alert("Gagal menghitung ranking otomatis: " + err.message);
+    } finally {
+      setRankingBusy(false);
+    }
+  };
+
+  const simpanRaportAkademik = async () => {
+    if (!raForm.santriId) { alert("Pilih santri terlebih dahulu."); return; }
     const tahunLabel = tahunAjaranAktifDept?.label || "-";
     const ringkasanDasar = raRingkasan(raForm.santriId);
     const rataRata = ringkasanDasar.length ? Math.round(ringkasanDasar.reduce((a, r) => a + r.value, 0) / ringkasanDasar.length) : 0;
-    const entry = { id: uid(), santriId: raForm.santriId, tahunAjaran: tahunLabel, semester: raForm.semester, catatan: raForm.catatan, peringkat: raForm.peringkat, ringkasanRows: [...ringkasanDasar, { label: "Rata-rata Keseluruhan", value: rataRata }], tanggal: todayStr(), namaPembina: raForm.namaPembina, tanggalCetak: raForm.tanggalCetak, pimpinanId: raForm.pimpinanId };
+    const pimpinan = data.pimpinanList.find((p) => p.id === raForm.pimpinanId);
+    const entry = {
+      id: uid(), santriId: raForm.santriId, tahunAjaran: tahunLabel, semester: raForm.semester,
+      catatan: raForm.catatan, peringkat: raForm.peringkat, rataRata,
+      ringkasanRows: [...ringkasanDasar, { label: "Rata-rata Keseluruhan", value: rataRata }],
+      status: raForm.status || "PUBLISHED",
+      namaPembina: raForm.namaPembina, tanggalCetak: raForm.tanggalCetak,
+      pimpinanId: raForm.pimpinanId, pimpinanNama: pimpinan?.nama, pimpinanJabatan: pimpinan?.jabatan,
+    };
     setData((d) => {
       const sudahAda = d.raportAkademik.find((r) => r.santriId === raForm.santriId && r.tahunAjaran === tahunLabel && r.semester === raForm.semester);
       return { ...d, raportAkademik: sudahAda ? d.raportAkademik.map((r) => r.id === sudahAda.id ? { ...entry, id: sudahAda.id } : r) : [...d.raportAkademik, entry] };
     });
+    if (backendToken) {
+      setRaBusy(true);
+      try {
+        await backendApi("/pengajaran/raport", { method: "POST", token: backendToken, body: entry });
+        muatRaportAkademik();
+        alert("Rapor Akademik berhasil disimpan ke database!");
+      } catch (err) {
+        alert("Gagal menyimpan rapor akademik ke server: " + err.message);
+      } finally {
+        setRaBusy(false);
+      }
+    } else {
+      alert("Rapor Akademik disimpan di memori lokal.");
+    }
   };
   const cetakRaportAkademik = () => {
     const tahunLabel = tahunAjaranAktifDept?.label || "-";
@@ -6507,20 +6671,61 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
 
   // ---- Rapor Tahfidz (LPTQ) ----
-  const [rtForm, setRtForm] = useState({ santriId: "", semester: "Ganjil", catatan: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [rtForm, setRtForm] = useState({ santriId: "", semester: "Ganjil", status: "PUBLISHED", catatan: "", namaPembina: "", tanggalCetak: todayStr(), pimpinanId: data.pimpinanList[0]?.id || "" });
+  const [rtBusy, setRtBusy] = useState(false);
+  const muatRaportTahfidz = () => {
+    if (!isLPTQ) return;
+    if (!backendToken) return;
+    backendApi("/lptq/raport", { token: backendToken })
+      .then((rows) => {
+        setData((d) => ({
+          ...d,
+          raportTahfidz: rows.map((r) => ({
+            id: r.id, santriId: r.santriId, tahunAjaran: r.tahunAjaran, semester: r.semester,
+            catatan: r.catatan, ringkasanRows: typeof r.ringkasanRows === "string" ? JSON.parse(r.ringkasanRows) : (r.ringkasanRows || []),
+            status: r.status, namaPembina: r.namaPembina, tanggalCetak: r.tanggalCetak,
+            pimpinanId: r.pimpinanId, pimpinanNama: r.pimpinanNama, pimpinanJabatan: r.pimpinanJabatan,
+          })),
+        }));
+      })
+      .catch((e) => console.warn("Gagal memuat raport tahfidz:", e.message));
+  };
+  useEffect(muatRaportTahfidz, [isLPTQ, backendToken]);
+
   const rtRingkasan = (santriId) => {
     const hafalanList = data.hafalan.filter((h) => h.santriId === santriId).slice().reverse().slice(0, 6).map((h) => ({ label: `Setoran — ${h.tanggal}`, value: h.juz }));
     const ubList = data.penilaianUbudiyah.filter((u) => u.santriId === santriId).map((u) => ({ label: `${u.jenis}: ${u.materi}`, value: u.predikat }));
     return [...hafalanList, ...ubList];
   };
-  const simpanRaportTahfidz = () => {
-    if (!rtForm.santriId) return;
+  const simpanRaportTahfidz = async () => {
+    if (!rtForm.santriId) { alert("Pilih santri terlebih dahulu."); return; }
     const tahunLabel = tahunAjaranAktifDept?.label || "-";
-    const entry = { id: uid(), santriId: rtForm.santriId, tahunAjaran: tahunLabel, semester: rtForm.semester, catatan: rtForm.catatan, ringkasanRows: rtRingkasan(rtForm.santriId), tanggal: todayStr(), namaPembina: rtForm.namaPembina, tanggalCetak: rtForm.tanggalCetak, pimpinanId: rtForm.pimpinanId };
+    const pimpinan = data.pimpinanList.find((p) => p.id === rtForm.pimpinanId);
+    const entry = {
+      id: uid(), santriId: rtForm.santriId, tahunAjaran: tahunLabel, semester: rtForm.semester,
+      catatan: rtForm.catatan, ringkasanRows: rtRingkasan(rtForm.santriId),
+      status: rtForm.status || "PUBLISHED",
+      namaPembina: rtForm.namaPembina, tanggalCetak: rtForm.tanggalCetak,
+      pimpinanId: rtForm.pimpinanId, pimpinanNama: pimpinan?.nama, pimpinanJabatan: pimpinan?.jabatan,
+    };
     setData((d) => {
       const sudahAda = d.raportTahfidz.find((r) => r.santriId === rtForm.santriId && r.tahunAjaran === tahunLabel && r.semester === rtForm.semester);
       return { ...d, raportTahfidz: sudahAda ? d.raportTahfidz.map((r) => r.id === sudahAda.id ? { ...entry, id: sudahAda.id } : r) : [...d.raportTahfidz, entry] };
     });
+    if (backendToken) {
+      setRtBusy(true);
+      try {
+        await backendApi("/lptq/raport", { method: "POST", token: backendToken, body: entry });
+        muatRaportTahfidz();
+        alert("Rapor Tahfidz berhasil disimpan ke database!");
+      } catch (err) {
+        alert("Gagal menyimpan rapor tahfidz ke server: " + err.message);
+      } finally {
+        setRtBusy(false);
+      }
+    } else {
+      alert("Rapor Tahfidz disimpan di memori lokal.");
+    }
   };
   const cetakRaportTahfidz = () => {
     const tahunLabel = tahunAjaranAktifDept?.label || "-";
@@ -8151,6 +8356,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             <select value={rmForm.semester} onChange={(e) => setRmForm({ ...rmForm, semester: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
               {SEMESTER_LIST.map((s) => <option key={s}>{s}</option>)}
             </select>
+            <select value={rmForm.status} onChange={(e) => setRmForm({ ...rmForm, status: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+              <option value="PUBLISHED">Status: Diterbitkan (Resmi)</option>
+              <option value="DRAFT">Status: Draf (Belum Terbit)</option>
+            </select>
             <span className="text-xs text-[#5B7C93] flex items-center px-2">Tahun Ajaran {tahunAjaranAktifDept?.label || "-"}</span>
           </div>
           {rmForm.santriId && (
@@ -8173,7 +8382,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={simpanRaportMental} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />Simpan Rapor</button>
+            <button onClick={simpanRaportMental} disabled={rmBusy} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50">
+              {rmBusy ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+              {rmBusy ? "Menyimpan ke Server..." : "Simpan Rapor ke Server"}
+            </button>
             <button onClick={cetakRaportMental} className="flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] text-sm px-4 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm"><Printer size={15} />Cetak Rapor</button>
           </div>
         </ArchCard>
@@ -8248,7 +8460,17 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             <select value={raForm.semester} onChange={(e) => setRaForm({ ...raForm, semester: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
               {SEMESTER_LIST.map((s) => <option key={s}>{s}</option>)}
             </select>
-            <input placeholder="Peringkat di kelas (opsional)" value={raForm.peringkat} onChange={(e) => setRaForm({ ...raForm, peringkat: e.target.value })} className="w-40 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            <div className="flex items-center gap-1">
+              <input placeholder="Peringkat (mis. 1 dari 30)" value={raForm.peringkat} onChange={(e) => setRaForm({ ...raForm, peringkat: e.target.value })} className="w-36 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+              <button type="button" onClick={hitungRankingOtomatis} disabled={rankingBusy || !raForm.santriId} className="flex items-center gap-1 bg-[#EAF4FB] text-[#0C4A6E] hover:bg-[#D6EAF6] text-xs px-2.5 py-2 rounded-xl border border-[#CFE3F0] font-medium transition-colors disabled:opacity-50" title="Hitung peringkat otomatis sekelas">
+                {rankingBusy ? <Loader2 size={13} className="animate-spin" /> : <Calculator size={13} />}
+                Ranking Otomatis
+              </button>
+            </div>
+            <select value={raForm.status} onChange={(e) => setRaForm({ ...raForm, status: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+              <option value="PUBLISHED">Status: Diterbitkan (Resmi)</option>
+              <option value="DRAFT">Status: Draf (Belum Terbit)</option>
+            </select>
           </div>
           <p className="text-xs text-[#5B7C93] mb-3">Tahun Ajaran {tahunAjaranAktifDept?.label || "-"}</p>
           {raForm.santriId && (
@@ -8270,7 +8492,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={simpanRaportAkademik} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />Simpan Rapor</button>
+            <button onClick={simpanRaportAkademik} disabled={raBusy} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50">
+              {raBusy ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+              {raBusy ? "Menyimpan ke Server..." : "Simpan Rapor ke Server"}
+            </button>
             <button onClick={cetakRaportAkademik} className="flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] text-sm px-4 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm"><Printer size={15} />Cetak Rapor</button>
           </div>
         </ArchCard>
@@ -8422,6 +8647,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             <select value={rtForm.semester} onChange={(e) => setRtForm({ ...rtForm, semester: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
               {SEMESTER_LIST.map((s) => <option key={s}>{s}</option>)}
             </select>
+            <select value={rtForm.status} onChange={(e) => setRtForm({ ...rtForm, status: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
+              <option value="PUBLISHED">Status: Diterbitkan (Resmi)</option>
+              <option value="DRAFT">Status: Draf (Belum Terbit)</option>
+            </select>
             <span className="text-xs text-[#5B7C93] flex items-center px-2">Tahun Ajaran {tahunAjaranAktifDept?.label || "-"}</span>
           </div>
           {rtForm.santriId && (
@@ -8443,7 +8672,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={simpanRaportTahfidz} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />Simpan Rapor</button>
+            <button onClick={simpanRaportTahfidz} disabled={rtBusy} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50">
+              {rtBusy ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+              {rtBusy ? "Menyimpan ke Server..." : "Simpan Rapor ke Server"}
+            </button>
             <button onClick={cetakRaportTahfidz} className="flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] text-sm px-4 py-2 rounded-xl hover:bg-white/60 hover:backdrop-blur-sm"><Printer size={15} />Cetak Rapor</button>
           </div>
         </ArchCard>
@@ -10516,9 +10748,20 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
   useEffect(() => {
     if (!backendToken) { setRaporFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: null }); return; }
     let batal = false;
-    setRaporFetch((f) => ({ ...f, loading: true, error: "" }));
     backendApi(`/santri/${santri.id}/rapor-ringkas`, { token: backendToken })
-      .then((d) => { if (!batal) setRaporFetch({ loading: false, error: "", data: d }); })
+      .then((d) => {
+        if (!batal) {
+          setRaporFetch({ loading: false, error: "", data: d });
+          if (d && (d.raportAkademik || d.raportMental || d.raportTahfidz)) {
+            setData((prev) => ({
+              ...prev,
+              raportAkademik: d.raportAkademik ? d.raportAkademik.map((r) => ({ ...r, ringkasanRows: typeof r.ringkasanRows === "string" ? JSON.parse(r.ringkasanRows) : (r.ringkasanRows || []) })) : prev.raportAkademik,
+              raportMental: d.raportMental ? d.raportMental.map((r) => ({ ...r, ringkasanRows: typeof r.ringkasanRows === "string" ? JSON.parse(r.ringkasanRows) : (r.ringkasanRows || []) })) : prev.raportMental,
+              raportTahfidz: d.raportTahfidz ? d.raportTahfidz.map((r) => ({ ...r, ringkasanRows: typeof r.ringkasanRows === "string" ? JSON.parse(r.ringkasanRows) : (r.ringkasanRows || []) })) : prev.raportTahfidz,
+            }));
+          }
+        }
+      })
       .catch((e) => { if (!batal) setRaporFetch({ loading: false, error: e.message, data: null }); });
     return () => { batal = true; };
   }, [santri.id, backendToken]);
@@ -10605,9 +10848,16 @@ function WaliDashboard({ wali, data, setData, onPrint, backendToken, backendOnli
   };
 
 
-  const raportAkademikAnak = (data.raportAkademik || []).filter((r) => r.santriId === santri.id);
-  const raportMentalAnak = (data.raportMental || []).filter((r) => r.santriId === santri.id);
-  const raportTahfidzAnak = (data.raportTahfidz || []).filter((r) => r.santriId === santri.id);
+  const parseRingkasan = (rows) => (typeof rows === "string" ? JSON.parse(rows) : (rows || []));
+  const raportAkademikAnak = (rapor?.raportAkademik && rapor.raportAkademik.length ? rapor.raportAkademik : (data.raportAkademik || []))
+    .filter((r) => r.santriId === santri.id)
+    .map((r) => ({ ...r, ringkasanRows: parseRingkasan(r.ringkasanRows) }));
+  const raportMentalAnak = (rapor?.raportMental && rapor.raportMental.length ? rapor.raportMental : (data.raportMental || []))
+    .filter((r) => r.santriId === santri.id)
+    .map((r) => ({ ...r, ringkasanRows: parseRingkasan(r.ringkasanRows) }));
+  const raportTahfidzAnak = (rapor?.raportTahfidz && rapor.raportTahfidz.length ? rapor.raportTahfidz : (data.raportTahfidz || []))
+    .filter((r) => r.santriId === santri.id)
+    .map((r) => ({ ...r, ringkasanRows: parseRingkasan(r.ringkasanRows) }));
   const cetakRaportWali = (jenis, r) => {
     const w = data.wali.find((x) => x.id === santri.waliId);
     onPrint(<RaportContent jenis={jenis} santri={santri} wali={w} tahunAjaran={r.tahunAjaran} semester={r.semester} ringkasanRows={r.ringkasanRows} catatan={r.catatan} predikatAkhir={jenis === "Akademik" && r.peringkat ? `Peringkat ke-${r.peringkat} di kelas` : undefined} penandaTangan={r.namaPembina} tanggalCetak={r.tanggalCetak} pimpinan={data.pimpinanList.find((p) => p.id === r.pimpinanId)} kop={data.kopSurat} />);

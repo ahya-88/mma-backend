@@ -176,12 +176,19 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
     return res.status(403).json({ error: "Akses ditolak." });
   }
 
-  const [hafalan, ubudiyah, nilai, prestasi, pelanggaran] = await Promise.all([
+  const [
+    hafalan, ubudiyah, nilai, prestasi, pelanggaran,
+    raportAkademik, raportMental, raportTahfidz, penilaianKegiatan,
+  ] = await Promise.all([
     queryAll('SELECT * FROM "Hafalan" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
     queryAll('SELECT * FROM "PenilaianUbudiyah" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
-    queryAll('SELECT * FROM "Nilai" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
+    queryAll('SELECT * FROM "Nilai" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 20', [santriId]),
     queryAll('SELECT * FROM "Prestasi" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
     queryAll('SELECT * FROM "Pelanggaran" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
+    queryAll('SELECT * FROM "RaportAkademik" WHERE "santriId" = $1 AND "status" = \'PUBLISHED\' ORDER BY "createdAt" DESC', [santriId]),
+    queryAll('SELECT * FROM "RaportMental" WHERE "santriId" = $1 AND "status" = \'PUBLISHED\' ORDER BY "createdAt" DESC', [santriId]),
+    queryAll('SELECT * FROM "RaportTahfidz" WHERE "santriId" = $1 AND "status" = \'PUBLISHED\' ORDER BY "createdAt" DESC', [santriId]),
+    queryAll('SELECT * FROM "PenilaianKegiatan" WHERE "santriId" = $1 ORDER BY "createdAt" DESC LIMIT 20', [santriId]),
   ]);
 
   res.json({
@@ -191,7 +198,30 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
     nilai,
     prestasi,
     pelanggaran,
+    raportAkademik,
+    raportMental,
+    raportTahfidz,
+    penilaianKegiatan,
   });
+}));
+
+// GET /api/santri/:id/raport
+router.get("/:id/raport", requireAuth, asyncHandler(async (req, res) => {
+  const santriId = req.params.id;
+  const santri = await getSantriRow(santriId);
+  if (req.user.role === "wali" && santri.waliId !== req.user.id) {
+    return res.status(403).json({ error: "Akses ditolak." });
+  }
+  const isWaliUser = req.user.role === "wali";
+  const statusFilter = isWaliUser ? 'AND "status" = \'PUBLISHED\'' : "";
+
+  const [raportAkademik, raportMental, raportTahfidz] = await Promise.all([
+    queryAll(`SELECT * FROM "RaportAkademik" WHERE "santriId" = $1 ${statusFilter} ORDER BY "createdAt" DESC`, [santriId]),
+    queryAll(`SELECT * FROM "RaportMental" WHERE "santriId" = $1 ${statusFilter} ORDER BY "createdAt" DESC`, [santriId]),
+    queryAll(`SELECT * FROM "RaportTahfidz" WHERE "santriId" = $1 ${statusFilter} ORDER BY "createdAt" DESC`, [santriId]),
+  ]);
+
+  res.json({ santriId, raportAkademik, raportMental, raportTahfidz });
 }));
 
 // POST /api/santri - Tambah santri baru

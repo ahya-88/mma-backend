@@ -5,6 +5,8 @@ const {
   catatAbsensi, riwayatAbsensi, absensiPadaTanggal,
   ajukanPerizinan, prosesPerizinan, daftarPerizinan,
   catatPelanggaran, riwayatPelanggaran, semuaPelanggaran, hapusPelanggaran,
+  catatPenilaianKegiatan, semuaPenilaianKegiatan, hapusPenilaianKegiatan,
+  simpanRaportMental, semuaRaportMental, hapusRaportMental,
   profilPengasuhan,
 } = require("../pengasuhanService");
 
@@ -84,4 +86,60 @@ router.delete("/pelanggaran/:id", asyncHandler(async (req, res) => {
   res.json(hasil);
 }));
 
+// Penilaian Kegiatan (Pramuka, Pidato, dll)
+router.get("/penilaian-kegiatan", asyncHandler(async (req, res) => {
+  res.json(await semuaPenilaianKegiatan(req.query));
+}));
+router.post("/penilaian-kegiatan", validateBody({
+  santriId: { required: true, type: "string", label: "santriId" },
+  kegiatan: { required: true, type: "string", label: "kegiatan" },
+}), asyncHandler(async (req, res) => {
+  const { santriId, kegiatan, skor, tanggal, catatan } = req.body || {};
+  const hasil = await catatPenilaianKegiatan({
+    santriId, kegiatan, skor, tanggal, catatan, dicatatOleh: req.user.nama,
+  });
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengasuhan.penilaian_kegiatan_recorded",
+    targetType: "Santri", targetId: santriId, ip: req.ip, sesudah: { kegiatan, skor },
+  });
+  res.status(201).json(hasil);
+}));
+router.delete("/penilaian-kegiatan/:id", asyncHandler(async (req, res) => {
+  const hasil = await hapusPenilaianKegiatan(req.params.id);
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengasuhan.penilaian_kegiatan_deleted",
+    targetType: "PenilaianKegiatan", targetId: req.params.id, ip: req.ip,
+  });
+  res.json(hasil);
+}));
+
+// Rapor Mental
+router.get("/raport", asyncHandler(async (req, res) => {
+  res.json(await semuaRaportMental(req.query));
+}));
+router.post("/raport", validateBody({
+  santriId: { required: true, type: "string", label: "santriId" },
+  tahunAjaran: { required: true, type: "string", label: "tahunAjaran" },
+  semester: { required: true, type: "string", label: "semester" },
+}), asyncHandler(async (req, res) => {
+  const hasil = await simpanRaportMental({
+    ...req.body,
+    dibuatOleh: req.user.nama,
+  });
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengasuhan.raport_saved",
+    targetType: "Santri", targetId: req.body.santriId, ip: req.ip, sesudah: { tahunAjaran: req.body.tahunAjaran, semester: req.body.semester },
+  });
+  res.status(201).json(hasil);
+}));
+router.delete("/raport/:id", asyncHandler(async (req, res) => {
+  const hasil = await hapusRaportMental(req.params.id);
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengasuhan.raport_deleted",
+    targetType: "RaportMental", targetId: req.params.id, ip: req.ip,
+  });
+  res.json(hasil);
+}));
+
 module.exports = router;
+

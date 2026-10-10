@@ -653,4 +653,95 @@ CREATE TABLE IF NOT EXISTS "NomorSuratLog" (
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
 
+-- ==================== EKSTENSI PENILAIAN & RAPOR PESANTREN ====================
+ALTER TABLE "Nilai" ADD COLUMN IF NOT EXISTS "tahunAjaran" TEXT;
+ALTER TABLE "Nilai" ADD COLUMN IF NOT EXISTS "semester" TEXT;
+ALTER TABLE "Nilai" ADD COLUMN IF NOT EXISTS "jenisNilai" TEXT;
+CREATE INDEX IF NOT EXISTS idx_nilai_santri_periode ON "Nilai" ("santriId", "tahunAjaran", "semester");
+
+ALTER TABLE "Hafalan" ADD COLUMN IF NOT EXISTS "surah" TEXT;
+ALTER TABLE "Hafalan" ADD COLUMN IF NOT EXISTS "ayat" TEXT;
+ALTER TABLE "Hafalan" ADD COLUMN IF NOT EXISTS "predikat" TEXT;
+ALTER TABLE "Hafalan" ADD COLUMN IF NOT EXISTS "nilaiTajwid" INTEGER;
+ALTER TABLE "Hafalan" ADD COLUMN IF NOT EXISTS "nilaiFashahah" INTEGER;
+
+CREATE TABLE IF NOT EXISTS "PenilaianKegiatan" (
+  "id" TEXT PRIMARY KEY,
+  "santriId" TEXT NOT NULL REFERENCES "Santri"("id"),
+  "kegiatan" TEXT NOT NULL,
+  "skor" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "tanggal" TEXT NOT NULL,
+  "catatan" TEXT,
+  "dicatatOleh" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+CREATE INDEX IF NOT EXISTS idx_penilaian_kegiatan_santri ON "PenilaianKegiatan" ("santriId");
+
+CREATE TABLE IF NOT EXISTS "RaportAkademik" (
+  "id" TEXT PRIMARY KEY,
+  "santriId" TEXT NOT NULL REFERENCES "Santri"("id"),
+  "tahunAjaran" TEXT NOT NULL,
+  "semester" TEXT NOT NULL,
+  "peringkat" TEXT,
+  "totalSantri" INTEGER,
+  "rataRata" NUMERIC(5,2),
+  "catatan" TEXT,
+  "ringkasanRows" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "status" TEXT NOT NULL DEFAULT 'PUBLISHED',
+  "namaPembina" TEXT,
+  "tanggalCetak" TEXT,
+  "pimpinanId" TEXT,
+  "pimpinanNama" TEXT,
+  "pimpinanJabatan" TEXT,
+  "dibuatOleh" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  CONSTRAINT uq_raport_akademik_periode UNIQUE ("santriId", "tahunAjaran", "semester")
+);
+CREATE INDEX IF NOT EXISTS idx_raport_akademik_santri ON "RaportAkademik" ("santriId");
+CREATE INDEX IF NOT EXISTS idx_raport_akademik_status ON "RaportAkademik" ("status");
+
+CREATE TABLE IF NOT EXISTS "RaportMental" (
+  "id" TEXT PRIMARY KEY,
+  "santriId" TEXT NOT NULL REFERENCES "Santri"("id"),
+  "tahunAjaran" TEXT NOT NULL,
+  "semester" TEXT NOT NULL,
+  "catatan" TEXT,
+  "ringkasanRows" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "status" TEXT NOT NULL DEFAULT 'PUBLISHED',
+  "namaPembina" TEXT,
+  "tanggalCetak" TEXT,
+  "pimpinanId" TEXT,
+  "pimpinanNama" TEXT,
+  "pimpinanJabatan" TEXT,
+  "dibuatOleh" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  CONSTRAINT uq_raport_mental_periode UNIQUE ("santriId", "tahunAjaran", "semester")
+);
+CREATE INDEX IF NOT EXISTS idx_raport_mental_santri ON "RaportMental" ("santriId");
+CREATE INDEX IF NOT EXISTS idx_raport_mental_status ON "RaportMental" ("status");
+
+CREATE TABLE IF NOT EXISTS "RaportTahfidz" (
+  "id" TEXT PRIMARY KEY,
+  "santriId" TEXT NOT NULL REFERENCES "Santri"("id"),
+  "tahunAjaran" TEXT NOT NULL,
+  "semester" TEXT NOT NULL,
+  "catatan" TEXT,
+  "ringkasanRows" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "status" TEXT NOT NULL DEFAULT 'PUBLISHED',
+  "namaPembina" TEXT,
+  "tanggalCetak" TEXT,
+  "pimpinanId" TEXT,
+  "pimpinanNama" TEXT,
+  "pimpinanJabatan" TEXT,
+  "dibuatOleh" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  CONSTRAINT uq_raport_tahfidz_periode UNIQUE ("santriId", "tahunAjaran", "semester")
+);
+CREATE INDEX IF NOT EXISTS idx_raport_tahfidz_santri ON "RaportTahfidz" ("santriId");
+CREATE INDEX IF NOT EXISTS idx_raport_tahfidz_status ON "RaportTahfidz" ("status");
+
+
 

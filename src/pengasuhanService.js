@@ -134,9 +134,131 @@ async function hapusPelanggaran(id) {
   return { id, deleted: true };
 }
 
+// ==================== PENILAIAN KEGIATAN ====================
+async function catatPenilaianKegiatan({ santriId, kegiatan, skor, tanggal, catatan, dicatatOleh }) {
+  if (!santriId || !kegiatan) throw new CashlessError(400, "santriId dan kegiatan wajib diisi.");
+  const id = uid();
+  const tISO = tanggal || todayISO();
+  const skorJson = JSON.stringify(skor || {});
+
+  await query(`
+    INSERT INTO "PenilaianKegiatan" ("id", "santriId", "kegiatan", "skor", "tanggal", "catatan", "dicatatOleh")
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+  `, [id, santriId, kegiatan.trim(), skorJson, tISO, catatan || null, dicatatOleh || null]);
+
+  return queryOne('SELECT * FROM "PenilaianKegiatan" WHERE "id" = $1', [id]);
+}
+
+async function semuaPenilaianKegiatan({ santriId, kegiatan } = {}) {
+  const conditions = [];
+  const params = [];
+  if (santriId) {
+    params.push(santriId);
+    conditions.push(`pk."santriId" = $${params.length}`);
+  }
+  if (kegiatan) {
+    params.push(kegiatan);
+    conditions.push(`pk."kegiatan" = $${params.length}`);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  return queryAll(`
+    SELECT pk.*, s."nama" AS "namaSantri", s."kelas"
+    FROM "PenilaianKegiatan" pk
+    LEFT JOIN "Santri" s ON pk."santriId" = s."id"
+    ${where}
+    ORDER BY pk."createdAt" DESC
+  `, params);
+}
+
+async function hapusPenilaianKegiatan(id) {
+  const row = await queryOne('SELECT * FROM "PenilaianKegiatan" WHERE "id" = $1', [id]);
+  if (!row) throw new CashlessError(404, "Data penilaian kegiatan tidak ditemukan.");
+  await query('DELETE FROM "PenilaianKegiatan" WHERE "id" = $1', [id]);
+  return { id, deleted: true };
+}
+
+// ==================== RAPORT MENTAL ====================
+async function simpanRaportMental({
+  id, santriId, tahunAjaran, semester, catatan, ringkasanRows, status,
+  namaPembina, tanggalCetak, pimpinanId, pimpinanNama, pimpinanJabatan, dibuatOleh,
+}) {
+  if (!santriId || !tahunAjaran || !semester) {
+    throw new CashlessError(400, "santriId, tahunAjaran, dan semester wajib diisi.");
+  }
+  const raportId = id || uid();
+  const stat = status || "PUBLISHED";
+  const rowsJson = JSON.stringify(ringkasanRows || []);
+  const now = new Date().toISOString();
+
+  await query(`
+    INSERT INTO "RaportMental" (
+      "id", "santriId", "tahunAjaran", "semester", "catatan", "ringkasanRows", "status",
+      "namaPembina", "tanggalCetak", "pimpinanId", "pimpinanNama", "pimpinanJabatan", "dibuatOleh", "updatedAt"
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    ON CONFLICT ("santriId", "tahunAjaran", "semester")
+    DO UPDATE SET
+      "catatan" = EXCLUDED."catatan",
+      "ringkasanRows" = EXCLUDED."ringkasanRows",
+      "status" = EXCLUDED."status",
+      "namaPembina" = EXCLUDED."namaPembina",
+      "tanggalCetak" = EXCLUDED."tanggalCetak",
+      "pimpinanId" = EXCLUDED."pimpinanId",
+      "pimpinanNama" = EXCLUDED."pimpinanNama",
+      "pimpinanJabatan" = EXCLUDED."pimpinanJabatan",
+      "updatedAt" = EXCLUDED."updatedAt"
+  `, [
+    raportId, santriId, String(tahunAjaran).trim(), String(semester).trim(),
+    catatan || null, rowsJson, stat,
+    namaPembina || null, tanggalCetak || null,
+    pimpinanId || null, pimpinanNama || null, pimpinanJabatan || null,
+    dibuatOleh || null, now,
+  ]);
+
+  return queryOne('SELECT * FROM "RaportMental" WHERE "santriId" = $1 AND "tahunAjaran" = $2 AND "semester" = $3', [santriId, tahunAjaran, semester]);
+}
+
+async function semuaRaportMental({ santriId, tahunAjaran, semester, status } = {}) {
+  const conditions = [];
+  const params = [];
+  if (santriId) {
+    params.push(santriId);
+    conditions.push(`r."santriId" = $${params.length}`);
+  }
+  if (tahunAjaran) {
+    params.push(tahunAjaran);
+    conditions.push(`r."tahunAjaran" = $${params.length}`);
+  }
+  if (semester) {
+    params.push(semester);
+    conditions.push(`r."semester" = $${params.length}`);
+  }
+  if (status && status !== "Semua") {
+    params.push(status);
+    conditions.push(`r."status" = $${params.length}`);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  return queryAll(`
+    SELECT r.*, s."nama" AS "namaSantri", s."kelas", s."nis", s."nisn"
+    FROM "RaportMental" r
+    LEFT JOIN "Santri" s ON r."santriId" = s."id"
+    ${where}
+    ORDER BY r."createdAt" DESC
+  `, params);
+}
+
+async function hapusRaportMental(id) {
+  const row = await queryOne('SELECT * FROM "RaportMental" WHERE "id" = $1', [id]);
+  if (!row) throw new CashlessError(404, "Data raport mental tidak ditemukan.");
+  await query('DELETE FROM "RaportMental" WHERE "id" = $1', [id]);
+  return { id, deleted: true };
+}
+
 module.exports = {
   profilPengasuhan,
   catatAbsensi, absensiPadaTanggal, riwayatAbsensi,
   ajukanPerizinan, daftarPerizinan, prosesPerizinan,
   catatPelanggaran, semuaPelanggaran, riwayatPelanggaran, hapusPelanggaran,
+  catatPenilaianKegiatan, semuaPenilaianKegiatan, hapusPenilaianKegiatan,
+  simpanRaportMental, semuaRaportMental, hapusRaportMental,
 };
+

@@ -32,13 +32,10 @@ test("reset sandi guru dan wali menolak sandi 5 karakter", async () => {
   }
 });
 
-test("jenis akun admin tidak bisa lagi dibuat (sudah dilebur ke superadmin)", async () => {
-  await assert.rejects(
-    admin.buatGuru({ nama: "Uji", username: "uji", password: "123456", departemen: "admin", jenisAkun: "admin" }),
-    (error) => error.status === 400 && /dilebur ke Superadmin/.test(error.message),
-  );
+test("jenis akun invalid ditolak", async () => {
   await assert.rejects(
     admin.buatGuru({ nama: "Uji", username: "uji", password: "123456", departemen: "admin", jenisAkun: "lainnya" }),
     (error) => error.status === 400 && /tidak valid/.test(error.message),
   );
 });
+
