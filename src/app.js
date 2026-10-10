@@ -24,6 +24,7 @@ const wajahRoutes = require("./routes/wajah");
 const kartuRoutes = require("./routes/kartu");
 const kasirRoutes = require("./routes/kasir");
 const daftarUlangRoutes = require("./routes/daftarUlang");
+const sekretariatRoutes = require("./routes/sekretariat");
 const { CashlessError } = require("./cashlessService");
 
 const { httpLoggerMiddleware } = require("./logger");
@@ -189,6 +190,7 @@ app.use("/api/wajah", wajahRoutes);
 app.use("/api/kartu", kartuRoutes);
 app.use("/api/kasir", kasirRoutes);
 app.use("/api/daftar-ulang", daftarUlangRoutes);
+app.use("/api/sekretariat", sekretariatRoutes);
 
 const publicDir = path.join(__dirname, "..", "public");
 app.use(express.static(publicDir));

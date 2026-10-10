@@ -807,7 +807,7 @@ function Sidebar({ tabs, active, onChange }) {
           Ruang untuk sidebar ini disediakan oleh padding-left di GuruDashboard
           (lg:pl-64), bukan oleh spacer lokal, supaya Header dan KPI di atas
           panel ini juga ikut bergeser dan tidak tertutup sidebar. */}
-      <div className="hidden lg:flex flex-col w-64 fixed top-16 left-0 bottom-0 z-30 bg-white border-r border-[#E3E8EE] shadow-sm overflow-hidden">
+      <div className="hidden lg:flex flex-col w-64 fixed top-[calc(4rem+env(safe-area-inset-top,0px))] left-0 bottom-[env(safe-area-inset-bottom,0px)] z-30 bg-white border-r border-[#E3E8EE] shadow-sm overflow-hidden">
         <div className="px-4 pt-3.5 pb-2">
           <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#8FA3B3]">Menu Navigasi</p>
         </div>
@@ -1474,7 +1474,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden bg-[#F8FAFC]" style={{ fontFamily: `'${fontIsi || "Inter"}', sans-serif` }}>
+    <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden bg-[#F8FAFC] safe-area-app" style={{ fontFamily: `'${fontIsi || "Inter"}', sans-serif` }}>
       {/* Panel hero — Aurora Pesantren V3 */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-5/12 flex-col justify-between p-12 xl:p-16 relative overflow-hidden bg-gradient-to-br from-[#0C4A6E] via-[#0E5B84] to-[#083550] text-white">
         <div className="absolute -top-24 -left-16 w-96 h-96 rounded-full bg-[#29AAE1] opacity-35 blur-[110px]" style={{ animation: "auroraDrift 14s ease-in-out infinite" }} />
@@ -1484,22 +1484,24 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
 
         {/* Top Header in Hero */}
         <div className="relative z-10 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 text-[11px] tracking-[0.16em] uppercase font-semibold text-white/80 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3.5 py-1">
-            <ShieldCheck size={13} className="text-[#29AAE1]" /> Sistem Informasi Terpadu
+          <div className="inline-flex items-center gap-2 text-[11px] tracking-[0.16em] uppercase font-semibold text-white/90 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-3.5 py-1 shadow-sm">
+            <ShieldCheck size={13} className="text-[#38BDF8]" /> Sistem Informasi Terpadu
           </div>
-          <span className="text-[11px] text-white/60 tracking-wider">v3.0 Aurora</span>
+          <span className="text-[11px] text-white/75 font-medium tracking-wider">v3.0 Aurora</span>
         </div>
 
         {/* Center Content in Hero */}
         <div className="relative z-10 my-auto py-8">
-          <div className="w-16 h-16 rounded-2xl bg-white p-2.5 flex items-center justify-center mb-6 shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-white p-2.5 flex items-center justify-center mb-6 shadow-2xl border border-white/40 ring-4 ring-white/10">
             <img src={LOGO_MARK} alt="Logo" className="w-full h-full object-contain" />
           </div>
-          <p className="text-xs tracking-[0.2em] uppercase text-white/70 mb-2">Ma'had Mudaiyatul Anwar</p>
-          <h1 className="text-3xl xl:text-4xl font-bold mb-4 leading-tight text-white tracking-tight" style={{ fontFamily: "'Fraunces', serif" }}>
+          <div className="inline-block bg-[#0284C7]/30 border border-[#38BDF8]/40 px-3 py-1 rounded-full mb-3 backdrop-blur-sm">
+            <p className="text-xs tracking-[0.2em] uppercase font-bold text-[#E0F2FE]">MA'HAD MUDAIYATUL ANWAR</p>
+          </div>
+          <h1 className="text-3xl xl:text-4xl font-extrabold mb-4 leading-tight text-white tracking-tight drop-shadow-md" style={{ fontFamily: "'Fraunces', serif" }}>
             {namaAplikasi}
           </h1>
-          <p className="text-sm text-white/85 mb-8 leading-relaxed max-w-md font-light">
+          <p className="text-sm text-white/90 mb-8 leading-relaxed max-w-md font-normal">
             Portal terintegrasi untuk Guru, Wali Santri, Akademik, Tahfidz, Keuangan, dan Unit Usaha. Seluruh layanan pesantren dalam satu genggaman.
           </p>
 
@@ -1532,7 +1534,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
       </div>
 
       {/* Right Panel: Form Area */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 relative">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 relative pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))]">
         <div className="absolute inset-0 -z-10 overflow-hidden lg:hidden bg-gradient-to-br from-[#0C4A6E] via-[#0E5B84] to-[#083550]">
           <div className="absolute -top-24 -left-16 w-80 h-80 rounded-full opacity-40 blur-[90px] bg-[#29AAE1]" />
           <div className="absolute bottom-0 -right-16 w-80 h-80 rounded-full opacity-35 blur-[90px] bg-[#7C3AED]" />
@@ -1541,13 +1543,16 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi }) {
         <div className="w-full max-w-md animate-riseIn">
           {/* Mobile Top Brand (hidden on lg) */}
           <div className="lg:hidden text-center mb-6">
-            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white p-2 shadow-lg flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-3.5 rounded-2xl bg-white p-2.5 shadow-2xl flex items-center justify-center ring-4 ring-white/20">
               <img src={LOGO_MARK} alt="Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-white leading-tight" style={{ fontFamily: "'Fraunces', serif" }}>
+            <div className="inline-block bg-[#0284C7]/40 border border-[#38BDF8]/50 px-3.5 py-1 rounded-full mb-2 backdrop-blur-md shadow-sm">
+              <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-[#E0F2FE]">MA'HAD MUDAIYATUL ANWAR</p>
+            </div>
+            <h1 className="text-2xl font-extrabold text-white leading-tight drop-shadow-md" style={{ fontFamily: "'Fraunces', serif" }}>
               {namaAplikasi}
             </h1>
-            <p className="text-xs text-white/80 mt-1">Sistem Informasi Terpadu MMA</p>
+            <p className="text-xs text-white/90 mt-1 font-medium">Sistem Informasi Terpadu MMA</p>
           </div>
 
           {/* Login Card */}
@@ -1812,9 +1817,9 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
   };
 
   return (
-    <header className="sticky top-0 z-40 h-16 bg-white/90 backdrop-blur-md border-b border-[#E3E8EE] px-4 sm:px-6 flex items-center justify-between gap-4 transition-all">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E3E8EE] px-4 sm:px-6 pt-[env(safe-area-inset-top)] flex items-center justify-between gap-4 transition-all min-h-[calc(4rem+env(safe-area-inset-top,0px))]">
       {/* Brand & App Name */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-3 shrink-0 py-2.5">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 p-0.5 shadow-sm"
           style={{ background: `linear-gradient(135deg, ${warnaPrimer || "#29AAE1"}, ${warnaSekunder || "#0C4A6E"})` }}
@@ -1823,12 +1828,12 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
             <img src={LOGO_MARK} alt="Logo" className="w-6 h-6 object-contain" />
           </div>
         </div>
-        <div className="hidden sm:block">
-          <p className="text-[15px] font-bold leading-tight text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+        <div>
+          <p className="text-[13px] sm:text-[15px] font-bold leading-tight text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
             {namaAplikasi}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[11px] font-medium text-[#5B7C93]">{roleLabel}</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-[#5B7C93]">{roleLabel}</span>
             {user.unit && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#EAF4FB] text-[#0C4A6E] font-medium">{user.unit}</span>}
           </div>
         </div>
@@ -5776,14 +5781,86 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
 }
 
 
-// Kop surat dinamis untuk surat resmi (berbeda dari <Letterhead/> yang dipakai kwitansi/laporan internal —
-// surat keluar butuh alamat, kontak, dan nama penandatangan yang bisa diatur di menu Kop & Jenis Surat).
+// Kop surat dinamis untuk surat resmi dengan logo resmi & garis ganda standar kedinasan/pesantren
 function KopSuratResmi({ kop }) {
+  const logo = kop?.logoUrl || LOGO_MARK;
   return (
-    <div className="text-center border-b-2 border-[#0C4A6E] pb-3 mb-4">
-      <h3 className="text-lg font-semibold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>{kop.namaLembaga}</h3>
-      {kop.alamat && <p className="text-[11px] text-[#5B7C93] mt-0.5">{kop.alamat}</p>}
-      {kop.kontak && <p className="text-[11px] text-[#5B7C93]">{kop.kontak}</p>}
+    <div className="pb-3 mb-5 border-b-[3px] border-double border-[#17242E]">
+      <div className="flex items-center justify-between gap-3">
+        {logo && (
+          <div className="w-16 h-16 shrink-0 flex items-center justify-center p-1">
+            <img src={logo} alt="Logo" className="max-w-full max-h-full object-contain" />
+          </div>
+        )}
+        <div className="flex-1 text-center">
+          <h2 className="text-xl font-bold uppercase tracking-wide text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+            {kop?.namaLembaga || "Ma'had Mudaiyatul Anwar"}
+          </h2>
+          {kop?.tagline && <p className="text-xs italic font-medium text-[#45657A] mb-0.5">{kop.tagline}</p>}
+          {kop?.alamat && <p className="text-[11px] text-[#5B7C93] leading-tight">{kop.alamat}</p>}
+          {kop?.kontak && <p className="text-[11px] text-[#5B7C93]">{kop.kontak}</p>}
+        </div>
+        {logo && <div className="w-16 h-16 shrink-0 hidden sm:block opacity-0 pointer-events-none" />}
+      </div>
+    </div>
+  );
+}
+
+// Lembar Disposisi resmi untuk surat masuk
+function LembarDisposisiContent({ suratMasuk, kop }) {
+  const tglTerima = suratMasuk?.tanggalTerima || todayStr();
+  return (
+    <div className="avoid-break pdf-page p-6 max-w-2xl mx-auto">
+      <KopSuratResmi kop={kop} />
+      <div className="text-center mb-5">
+        <h3 className="text-base font-bold uppercase underline" style={{ fontFamily: "'Fraunces', serif" }}>
+          LEMBAR DISPOSISI SURAT MASUK
+        </h3>
+      </div>
+      <table className="w-full text-xs border border-[#17242E] mb-5">
+        <tbody>
+          <tr className="border-b border-[#17242E]">
+            <td className="p-2 font-semibold w-36 bg-[#F4F8FB]">Surat Dari / Instansi</td>
+            <td className="p-2">: {suratMasuk?.pengirim || "-"}</td>
+            <td className="p-2 font-semibold w-32 bg-[#F4F8FB]">Diterima Tanggal</td>
+            <td className="p-2">: {tglTerima}</td>
+          </tr>
+          <tr className="border-b border-[#17242E]">
+            <td className="p-2 font-semibold bg-[#F4F8FB]">Nomor Surat Asal</td>
+            <td className="p-2">: {suratMasuk?.nomorSuratAsal || "-"}</td>
+            <td className="p-2 font-semibold bg-[#F4F8FB]">Tanggal Surat Asal</td>
+            <td className="p-2">: {suratMasuk?.tanggalSurat || "-"}</td>
+          </tr>
+          <tr className="border-b border-[#17242E]">
+            <td className="p-2 font-semibold bg-[#F4F8FB]">Perihal</td>
+            <td colSpan={3} className="p-2 font-semibold">: {suratMasuk?.perihal || "-"}</td>
+          </tr>
+          <tr className="border-b border-[#17242E]">
+            <td className="p-2 font-semibold bg-[#F4F8FB]">Kategori</td>
+            <td className="p-2">: {suratMasuk?.kategori || "-"}</td>
+            <td className="p-2 font-semibold bg-[#F4F8FB]">Dicatat Oleh</td>
+            <td className="p-2">: {suratMasuk?.dicatatOleh || "-"}</td>
+          </tr>
+          <tr className="border-b border-[#17242E]">
+            <td className="p-2 font-semibold bg-[#F4F8FB] align-top">Disposisi Kepada</td>
+            <td colSpan={3} className="p-2 font-bold text-[#0C4A6E]">
+              ✓ Bagian {suratMasuk?.tujuan || "Pimpinan"}
+            </td>
+          </tr>
+          <tr>
+            <td className="p-2 font-semibold bg-[#F4F8FB] align-top">Petunjuk / Instruksi Pimpinan</td>
+            <td colSpan={3} className="p-2 h-32 align-top whitespace-pre-wrap">
+              {suratMasuk?.catatan ? suratMasuk.catatan : "........................................................................................................................\n\n........................................................................................................................"}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div className="flex justify-end pt-3">
+        <div className="text-center min-w-[220px]">
+          <p className="text-xs mb-14">{kop?.kota || "Magelang"}, {tglTerima}<br />Pimpinan / Penerima Disposisi,</p>
+          <p className="text-xs font-semibold border-t border-[#17242E] pt-1 inline-block px-6">{kop?.namaPenandatangan || "Pimpinan Pondok"}</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -5794,7 +5871,15 @@ function SuratKeluarContent({ surat, jenis, bagian, kepanitiaan, kop }) {
   const jumlahLampiran = Number(surat.jumlahLampiran || 0);
   const adaPenyetuju = !!(surat.namaPenyetuju || surat.jabatanPenyetuju);
   const namaPenerbit = kepanitiaan ? kepanitiaan.nama : (bagian ? `${kop.namaLembaga} — ${bagian.nama}` : kop.namaLembaga);
-  const tanggalDwiKalender = `${tanggalHijriLengkap(new Date())} / ${todayStr()}`;
+  
+  // Tanggal dokumen asli (tanggal disetujui atau tanggal dibuat, bukan new Date() dinamis)
+  const tglDoc = surat.tanggalDisetujui || surat.tanggalDibuat || todayStr();
+  const dObj = new Date(tglDoc);
+  const tanggalDwiKalender = `${tanggalHijriLengkap(isNaN(dObj.getTime()) ? new Date() : dObj)} / ${tglDoc}`;
+  
+  const isDraft = !["Disetujui", "Terkirim", "Diarsipkan"].includes(surat.status);
+  const namaPenandatanganUtama = surat.namaPenandatangan || kop?.namaPenandatangan || "Pimpinan Pondok";
+  const jabatanPenandatanganUtama = surat.jabatanPenandatangan || kop?.jabatanPenandatangan || (bagian ? bagian.nama : "Pimpinan Pondok");
 
   const isiSurat = (
     <>
@@ -5823,14 +5908,14 @@ function SuratKeluarContent({ surat, jenis, bagian, kepanitiaan, kop }) {
 
   const blokTandaTangan = (
     <div className={adaPenyetuju ? "grid grid-cols-2 gap-4" : "flex justify-end"}>
-      <div className={adaPenyetuju ? "text-left" : "text-center"}>
+      <div className={adaPenyetuju ? "text-left" : "text-center min-w-[200px]"}>
         <p className="mb-1 font-semibold">{namaPenerbit}</p>
         <p className="mb-14"></p>
-        <p className="border-t border-[#17242E] pt-1 inline-block px-4 font-medium">{kop.namaPenandatangan}</p>
-        <p className="font-semibold">{kop.jabatanPenandatangan}</p>
+        <p className="border-t border-[#17242E] pt-1 inline-block px-4 font-medium">{namaPenandatanganUtama}</p>
+        <p className="font-semibold text-xs text-[#5B7C93]">{jabatanPenandatanganUtama}</p>
       </div>
       {adaPenyetuju && (
-        <div className="text-left">
+        <div className="text-left min-w-[200px]">
           <p className="mb-1 italic">Mengetahui/Menyetujui,</p>
           <p className="mb-14 font-semibold">{surat.jabatanPenyetuju || "-"}</p>
           <p className="border-t border-[#17242E] pt-1 inline-block px-4 font-medium">{surat.namaPenyetuju || "........................"}</p>
@@ -5852,6 +5937,11 @@ function SuratKeluarContent({ surat, jenis, bagian, kepanitiaan, kop }) {
   return (
     <div>
       <div className="avoid-break pdf-page" style={{ pageBreakAfter: jumlahLampiran > 0 ? "always" : "auto", breakAfter: jumlahLampiran > 0 ? "page" : "auto" }}>
+        {isDraft && (
+          <div className="mb-4 py-1.5 px-3 border border-amber-300 bg-amber-50 rounded-lg text-amber-800 text-xs font-bold text-center uppercase tracking-widest">
+            DRAF SURAT — BELUM DITERBITKAN NOMOR RESMI
+          </div>
+        )}
         <KopSuratResmi kop={kop} />
 
         {layout === "Berperihal" && (
@@ -5859,7 +5949,7 @@ function SuratKeluarContent({ surat, jenis, bagian, kepanitiaan, kop }) {
             <div className="flex justify-between items-start text-xs mb-5">
               <table>
                 <tbody>
-                  <tr><td className="py-0.5 text-[#5B7C93] w-20">Nomor</td><td className="py-0.5 pr-1">:</td><td className="py-0.5">{surat.nomorSurat || "(belum diterbitkan)"}</td></tr>
+                  <tr><td className="py-0.5 text-[#5B7C93] w-20">Nomor</td><td className="py-0.5 pr-1">:</td><td className="py-0.5 font-mono">{surat.nomorSurat || "(belum diterbitkan)"}</td></tr>
                   {jumlahLampiran > 0 && <tr><td className="py-0.5 text-[#5B7C93]">Lampiran</td><td className="py-0.5 pr-1">:</td><td className="py-0.5">{jumlahLampiran} Lembar</td></tr>}
                   <tr><td className="py-0.5 text-[#5B7C93]">Perihal</td><td className="py-0.5 pr-1">:</td><td className="py-0.5 font-medium">{surat.perihal}</td></tr>
                 </tbody>
@@ -5873,7 +5963,7 @@ function SuratKeluarContent({ surat, jenis, bagian, kepanitiaan, kop }) {
         {layout === "Berjudul" && (
           <div className="text-center mb-4">
             <h2 className="text-base font-bold uppercase underline" style={{ fontFamily: "'Fraunces', serif" }}>{surat.judulKustom || jenis?.nama}</h2>
-            <p className="text-sm mt-1">Nomor: {surat.nomorSurat || "(belum diterbitkan)"}</p>
+            <p className="text-sm mt-1 font-mono">Nomor: {surat.nomorSurat || "(belum diterbitkan)"}</p>
             {jumlahLampiran > 0 && <p className="text-xs text-[#5B7C93]">Lampiran: {jumlahLampiran} Lembar</p>}
           </div>
         )}
@@ -5990,6 +6080,52 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
   useEffect(muatSantriBiodata, [isSekretariat, backendToken]);
   const [santriSaveError, setSantriSaveError] = useState("");
+
+  // ---- Persuratan & Sekretariat (backend-backed PostgreSQL) ----
+  const [sekretariatFetch, setSekretariatFetch] = useState({ loading: false, error: "" });
+  const muatSekretariatData = () => {
+    if (!isSekretariat) return;
+    if (!backendToken) return;
+    setSekretariatFetch({ loading: true, error: "" });
+    backendApi("/sekretariat/data", { token: backendToken })
+      .then((res) => {
+        setSekretariatFetch({ loading: false, error: "" });
+        if (res) {
+          setData((d) => {
+            const next = {
+              ...d,
+              kopSurat: res.kopSurat || d.kopSurat,
+              pimpinanList: res.pimpinanList || d.pimpinanList,
+              bagianList: res.bagianList || d.bagianList,
+              kepanitiaanList: res.kepanitiaanList || d.kepanitiaanList,
+              jenisSurat: res.jenisSurat || d.jenisSurat,
+              suratKeluar: res.suratKeluar || d.suratKeluar,
+              suratMasuk: res.suratMasuk || d.suratMasuk,
+              arsipManual: res.arsipManual || d.arsipManual,
+              nomorSuratCounter: res.nomorSuratCounter || d.nomorSuratCounter,
+              nomorSuratLog: res.nomorSuratLog || d.nomorSuratLog,
+            };
+            try { localStorage.setItem("mma_cached_sekretariat", JSON.stringify(res)); } catch {}
+            return next;
+          });
+          if (res.kopSurat) setKopForm(res.kopSurat);
+        }
+      })
+      .catch((e) => setSekretariatFetch({ loading: false, error: e.message }));
+  };
+  useEffect(muatSekretariatData, [isSekretariat, backendToken]);
+
+  const handleFileUpload = (e, callback) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      alert("Ukuran file maksimal 3 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => callback(reader.result, file.name);
+    reader.readAsDataURL(file);
+  };
 
   // ---- Absensi (backend-backed, khusus scope Pengasuhan) — ambil absen harian, klik langsung tersimpan ----
   const [absensiFetch, setAbsensiFetch] = useState({ loading: false, error: "", data: [] });
@@ -6884,47 +7020,97 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     judulKustom: "", perihal: "", tujuan: "", tempatTujuan: "", isi: "",
     menimbang: "", mengingat: "", memutuskan: "",
     namaPihak: "", identitasPihak: "", keperluan: "",
-    jumlahLampiran: "0", namaPenyetuju: "", jabatanPenyetuju: "",
+    jumlahLampiran: "0", namaPenandatangan: "", jabatanPenandatangan: "",
+    namaPenyetuju: "", jabatanPenyetuju: "",
   };
   const [suratForm, setSuratForm] = useState(kosongSuratForm);
   const [editingSuratId, setEditingSuratId] = useState(null);
   const [suratFilterStatus, setSuratFilterStatus] = useState("Semua");
+  const [suratBusy, setSuratBusy] = useState(false);
   const jenisSuratTerpilih = data.jenisSurat.find((j) => j.id === suratForm.jenisId);
   const formatSuratTerpilih = jenisSuratTerpilih?.formatTataLetak || "Berperihal";
   const tipeIsiTerpilih = jenisSuratTerpilih?.tipeIsi || "Bebas";
-  const simpanSurat = () => {
+
+  const simpanSurat = async () => {
     if (!suratForm.jenisId || !suratForm.bagianId || !suratForm.perihal) return;
     if (formatSuratTerpilih === "Berperihal" && !suratForm.tujuan) return;
-    if (editingSuratId) {
-      setData((d) => ({ ...d, suratKeluar: d.suratKeluar.map((s) => s.id === editingSuratId ? { ...s, ...suratForm } : s) }));
+    if (backendToken) {
+      setSuratBusy(true);
+      try {
+        if (editingSuratId) {
+          const res = await backendApi(`/sekretariat/surat-keluar/${editingSuratId}`, {
+            method: "PUT",
+            token: backendToken,
+            body: suratForm,
+          });
+          if (res?.surat) {
+            setData((d) => ({
+              ...d,
+              suratKeluar: d.suratKeluar.map((s) => s.id === editingSuratId ? res.surat : s),
+            }));
+          }
+        } else {
+          const res = await backendApi("/sekretariat/surat-keluar", {
+            method: "POST",
+            token: backendToken,
+            body: suratForm,
+          });
+          if (res?.surat) {
+            setData((d) => ({ ...d, suratKeluar: [...d.suratKeluar, res.surat] }));
+          }
+        }
+        setSuratForm(kosongSuratForm);
+        setEditingSuratId(null);
+      } catch (err) {
+        alert("Gagal menyimpan surat: " + err.message);
+      } finally {
+        setSuratBusy(false);
+      }
     } else {
-      setData((d) => ({
-        ...d,
-        suratKeluar: [...d.suratKeluar, {
-          id: uid(), ...suratForm, status: "Draft", nomorSurat: null,
-          dibuatOleh: petugas || "-", tanggalDibuat: todayStr(),
-          riwayatStatus: [{ status: "Draft", tanggal: todayStr(), oleh: petugas || "-" }],
-        }],
-      }));
+      if (editingSuratId) {
+        setData((d) => ({ ...d, suratKeluar: d.suratKeluar.map((s) => s.id === editingSuratId ? { ...s, ...suratForm } : s) }));
+      } else {
+        setData((d) => ({
+          ...d,
+          suratKeluar: [...d.suratKeluar, {
+            id: uid(), ...suratForm, status: "Draft", nomorSurat: null,
+            dibuatOleh: petugas || "-", tanggalDibuat: todayStr(),
+            riwayatStatus: [{ status: "Draft", tanggal: todayStr(), oleh: petugas || "-" }],
+          }],
+        }));
+      }
+      setSuratForm(kosongSuratForm); setEditingSuratId(null);
     }
-    setSuratForm(kosongSuratForm); setEditingSuratId(null);
   };
+
   const bukaEditSurat = (s) => {
     setSuratForm({
       jenisId: s.jenisId, bagianId: s.bagianId || data.bagianList[0]?.id || "", kepanitiaanId: s.kepanitiaanId || "",
-      judulKustom: s.judulKustom || "", perihal: s.perihal, tujuan: s.tujuan, tempatTujuan: s.tempatTujuan || "", isi: s.isi || "",
+      judulKustom: s.judulKustom || "", perihal: s.perihal, tujuan: s.tujuan || "", tempatTujuan: s.tempatTujuan || "", isi: s.isi || "",
       menimbang: s.menimbang || "", mengingat: s.mengingat || "", memutuskan: s.memutuskan || "",
       namaPihak: s.namaPihak || "", identitasPihak: s.identitasPihak || "", keperluan: s.keperluan || "",
-      jumlahLampiran: s.jumlahLampiran || "0", namaPenyetuju: s.namaPenyetuju || "", jabatanPenyetuju: s.jabatanPenyetuju || "",
+      jumlahLampiran: String(s.jumlahLampiran ?? "0"),
+      namaPenandatangan: s.namaPenandatangan || "", jabatanPenandatangan: s.jabatanPenandatangan || "",
+      namaPenyetuju: s.namaPenyetuju || "", jabatanPenyetuju: s.jabatanPenyetuju || "",
     });
     setEditingSuratId(s.id);
   };
   const batalEditSurat = () => { setSuratForm(kosongSuratForm); setEditingSuratId(null); };
-  const hapusSurat = (id) => setData((d) => ({ ...d, suratKeluar: d.suratKeluar.filter((s) => s.id !== id) }));
+
+  const hapusSurat = async (id) => {
+    if (window.confirm && !window.confirm("Yakin ingin menghapus surat ini?")) return;
+    if (backendToken) {
+      try {
+        await backendApi(`/sekretariat/surat-keluar/${id}`, { method: "DELETE", token: backendToken });
+      } catch (err) {
+        alert("Gagal menghapus surat: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, suratKeluar: d.suratKeluar.filter((s) => s.id !== id) }));
+  };
+
   // Format nomor surat: {urut}/{organisasi}/{inisialJabatan}-{kodeSurat}/{bulanRomawiHijri}/{tahunHijri}
-  // organisasi = kode kepanitiaan (jika surat diterbitkan atas nama kepanitiaan), atau singkatan organisasi milik
-  // Bagian penerbit (lihat Master Bagian), atau kode organisasi pondok (kop surat) sebagai fallback terakhir.
-  // Nomor urut RESET per kombinasi organisasi + bagian (inisial jabatan) + tahun Hijriyah.
   const komponenNomorSurat = (d, bagianId, kepanitiaanId, jenisId) => {
     const bagian = d.bagianList.find((b) => b.id === bagianId);
     const kepanitiaan = d.kepanitiaanList.find((k) => k.id === kepanitiaanId);
@@ -6937,14 +7123,34 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     return { kodeOrganisasi, kodeJabatan, kodeSurat, hijri, key };
   };
   const formatNomorSurat = (urut, k) => `${String(urut).padStart(2, "0")}/${k.kodeOrganisasi}/${k.kodeJabatan}-${k.kodeSurat}/${romawiBulan(k.hijri.bulan - 1)}/${k.hijri.tahun}`;
-  // Preview nomor yang AKAN diterbitkan untuk kombinasi bagian/kepanitiaan/jenis yang sedang dipilih di form (belum menambah counter).
+
   const previewNomorSurat = (bagianId, kepanitiaanId, jenisId) => {
     if (!bagianId || !jenisId) return null;
     const k = komponenNomorSurat(data, bagianId, kepanitiaanId, jenisId);
     const urutBerikutnya = (data.nomorSuratCounter[k.key] || 0) + 1;
     return formatNomorSurat(urutBerikutnya, k);
   };
-  const ubahStatusSurat = (id, statusBaru) => {
+
+  const ubahStatusSurat = async (id, statusBaru) => {
+    if (backendToken) {
+      try {
+        const res = await backendApi(`/sekretariat/surat-keluar/${id}/status`, {
+          method: "POST",
+          token: backendToken,
+          body: { status: statusBaru },
+        });
+        if (res?.surat) {
+          setData((d) => ({
+            ...d,
+            suratKeluar: d.suratKeluar.map((s) => s.id === id ? res.surat : s),
+          }));
+          return;
+        }
+      } catch (err) {
+        alert("Gagal mengubah status surat: " + err.message);
+        return;
+      }
+    }
     setData((d) => {
       const surat = d.suratKeluar.find((s) => s.id === id);
       if (!surat) return d;
@@ -6967,15 +7173,36 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       };
     });
   };
-  // Edit manual nomor surat (mis. koreksi kesalahan ketik) — hanya untuk surat yang sudah bernomor.
-  // Setiap perubahan dicatat pada data.nomorSuratLog (audit log): nomor lama, nomor baru, oleh siapa, dan kapan.
+
   const [editNomorId, setEditNomorId] = useState(null);
   const [editNomorValue, setEditNomorValue] = useState("");
   const bukaEditNomor = (s) => { setEditNomorId(s.id); setEditNomorValue(s.nomorSurat || ""); };
   const batalEditNomor = () => { setEditNomorId(null); setEditNomorValue(""); };
-  const simpanEditNomor = (id) => {
+
+  const simpanEditNomor = async (id) => {
     const nilaiBaru = editNomorValue.trim();
     if (!nilaiBaru) return;
+    if (backendToken) {
+      try {
+        const res = await backendApi(`/sekretariat/surat-keluar/${id}/edit-nomor`, {
+          method: "POST",
+          token: backendToken,
+          body: { nomorSuratBaru: nilaiBaru },
+        });
+        if (res?.surat) {
+          setData((d) => ({
+            ...d,
+            suratKeluar: d.suratKeluar.map((s) => s.id === id ? res.surat : s),
+            nomorSuratLog: res.log ? [...(d.nomorSuratLog || []), res.log] : d.nomorSuratLog,
+          }));
+          batalEditNomor();
+          return;
+        }
+      } catch (err) {
+        alert("Gagal mengubah nomor surat: " + err.message);
+        return;
+      }
+    }
     setData((d) => {
       const surat = d.suratKeluar.find((s) => s.id === id);
       if (!surat || surat.nomorSurat === nilaiBaru) return d;
@@ -6990,47 +7217,158 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     });
     batalEditNomor();
   };
+
   const cetakSurat = (s) => onPrint(<SuratKeluarContent surat={s} jenis={data.jenisSurat.find((j) => j.id === s.jenisId)} bagian={data.bagianList.find((b) => b.id === s.bagianId)} kepanitiaan={data.kepanitiaanList.find((k) => k.id === s.kepanitiaanId)} kop={data.kopSurat} />);
   const suratKeluarTampil = data.suratKeluar.filter((s) => suratFilterStatus === "Semua" || s.status === suratFilterStatus).slice().reverse();
 
   // ---------- SEKRETARIAT PONDOK: Surat Masuk ----------
-  const kosongSuratMasukForm = { nomorSuratAsal: "", pengirim: "", perihal: "", kategori: SURAT_MASUK_KATEGORI_OPSI[0], tujuan: SURAT_MASUK_TUJUAN_OPSI[0], tanggalSurat: "", catatan: "" };
+  const kosongSuratMasukForm = {
+    nomorSuratAsal: "", pengirim: "", perihal: "", kategori: SURAT_MASUK_KATEGORI_OPSI[0],
+    tujuan: SURAT_MASUK_TUJUAN_OPSI[0], tanggalSurat: "", catatan: "",
+    lampiranUrl: "", lampiranNama: "",
+  };
   const [suratMasukForm, setSuratMasukForm] = useState(kosongSuratMasukForm);
   const [editingSuratMasukId, setEditingSuratMasukId] = useState(null);
   const [suratMasukFilterStatus, setSuratMasukFilterStatus] = useState("Semua");
-  const simpanSuratMasuk = () => {
+  const [suratMasukBusy, setSuratMasukBusy] = useState(false);
+
+  const simpanSuratMasuk = async () => {
     if (!suratMasukForm.pengirim || !suratMasukForm.perihal) return;
-    if (editingSuratMasukId) {
-      setData((d) => ({ ...d, suratMasuk: d.suratMasuk.map((s) => s.id === editingSuratMasukId ? { ...s, ...suratMasukForm } : s) }));
-      setEditingSuratMasukId(null);
+    if (backendToken) {
+      setSuratMasukBusy(true);
+      try {
+        if (editingSuratMasukId) {
+          const res = await backendApi(`/sekretariat/surat-masuk/${editingSuratMasukId}`, {
+            method: "PUT",
+            token: backendToken,
+            body: suratMasukForm,
+          });
+          if (res?.surat) {
+            setData((d) => ({
+              ...d,
+              suratMasuk: d.suratMasuk.map((s) => s.id === editingSuratMasukId ? res.surat : s),
+            }));
+          }
+        } else {
+          const res = await backendApi("/sekretariat/surat-masuk", {
+            method: "POST",
+            token: backendToken,
+            body: suratMasukForm,
+          });
+          if (res?.surat) {
+            setData((d) => ({ ...d, suratMasuk: [...d.suratMasuk, res.surat] }));
+          }
+        }
+        setSuratMasukForm(kosongSuratMasukForm);
+        setEditingSuratMasukId(null);
+      } catch (err) {
+        alert("Gagal menyimpan surat masuk: " + err.message);
+      } finally {
+        setSuratMasukBusy(false);
+      }
     } else {
-      setData((d) => ({ ...d, suratMasuk: [...d.suratMasuk, { id: uid(), ...suratMasukForm, status: "Baru", tanggalTerima: todayStr(), dicatatOleh: petugas || "-" }] }));
+      if (editingSuratMasukId) {
+        setData((d) => ({ ...d, suratMasuk: d.suratMasuk.map((s) => s.id === editingSuratMasukId ? { ...s, ...suratMasukForm } : s) }));
+        setEditingSuratMasukId(null);
+      } else {
+        setData((d) => ({ ...d, suratMasuk: [...d.suratMasuk, { id: uid(), ...suratMasukForm, status: "Baru", tanggalTerima: todayStr(), dicatatOleh: petugas || "-" }] }));
+      }
+      setSuratMasukForm(kosongSuratMasukForm);
     }
-    setSuratMasukForm(kosongSuratMasukForm);
   };
-  const bukaEditSuratMasuk = (s) => { setSuratMasukForm({ nomorSuratAsal: s.nomorSuratAsal, pengirim: s.pengirim, perihal: s.perihal, kategori: s.kategori, tujuan: s.tujuan, tanggalSurat: s.tanggalSurat, catatan: s.catatan }); setEditingSuratMasukId(s.id); };
+
+  const bukaEditSuratMasuk = (s) => {
+    setSuratMasukForm({
+      nomorSuratAsal: s.nomorSuratAsal || "", pengirim: s.pengirim, perihal: s.perihal,
+      kategori: s.kategori, tujuan: s.tujuan, tanggalSurat: s.tanggalSurat || "", catatan: s.catatan || "",
+      lampiranUrl: s.lampiranUrl || "", lampiranNama: s.lampiranNama || "",
+    });
+    setEditingSuratMasukId(s.id);
+  };
   const batalEditSuratMasuk = () => { setSuratMasukForm(kosongSuratMasukForm); setEditingSuratMasukId(null); };
-  const hapusSuratMasuk = (id) => setData((d) => ({ ...d, suratMasuk: d.suratMasuk.filter((s) => s.id !== id) }));
-  const ubahStatusSuratMasuk = (id, statusBaru) => setData((d) => ({ ...d, suratMasuk: d.suratMasuk.map((s) => s.id === id ? { ...s, status: statusBaru } : s) }));
+
+  const hapusSuratMasuk = async (id) => {
+    if (window.confirm && !window.confirm("Yakin ingin menghapus catatan surat masuk ini?")) return;
+    if (backendToken) {
+      try {
+        await backendApi(`/sekretariat/surat-masuk/${id}`, { method: "DELETE", token: backendToken });
+      } catch (err) {
+        alert("Gagal menghapus surat masuk: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, suratMasuk: d.suratMasuk.filter((s) => s.id !== id) }));
+  };
+
+  const ubahStatusSuratMasuk = async (id, statusBaru) => {
+    if (backendToken) {
+      try {
+        await backendApi(`/sekretariat/surat-masuk/${id}/status`, {
+          method: "POST",
+          token: backendToken,
+          body: { status: statusBaru },
+        });
+      } catch (err) {
+        alert("Gagal mengubah status: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, suratMasuk: d.suratMasuk.map((s) => s.id === id ? { ...s, status: statusBaru } : s) }));
+  };
+
   const suratMasukTampil = data.suratMasuk.filter((s) => suratMasukFilterStatus === "Semua" || s.status === suratMasukFilterStatus).slice().reverse();
 
   // ---------- SEKRETARIAT PONDOK: Arsip Digital ----------
   const [arsipSearch, setArsipSearch] = useState("");
-  const kosongArsipForm = { judul: "", kategori: ARSIP_KATEGORI_OPSI[0], nomorReferensi: "", keterangan: "", bagianId: "" };
-  const [arsipForm, setArsipForm] = useState(kosongArsipForm);
-  const tambahArsipManual = () => {
-    if (!arsipForm.judul) return;
-    setData((d) => ({ ...d, arsipManual: [...d.arsipManual, { id: uid(), ...arsipForm, ditambahkanOleh: petugas || "-", tanggalCatat: todayStr() }] }));
-    setArsipForm(kosongArsipForm);
+  const kosongArsipForm = {
+    judul: "", kategori: ARSIP_KATEGORI_OPSI[0], nomorReferensi: "",
+    keterangan: "", bagianId: "", lampiranUrl: "", lampiranNama: "",
   };
-  const hapusArsipManual = (id) => setData((d) => ({ ...d, arsipManual: d.arsipManual.filter((a) => a.id !== id) }));
+  const [arsipForm, setArsipForm] = useState(kosongArsipForm);
+  const [arsipBusy, setArsipBusy] = useState(false);
+
+  const tambahArsipManual = async () => {
+    if (!arsipForm.judul) return;
+    if (backendToken) {
+      setArsipBusy(true);
+      try {
+        const res = await backendApi("/sekretariat/arsip-dokumen", {
+          method: "POST",
+          token: backendToken,
+          body: arsipForm,
+        });
+        if (res?.arsip) {
+          setData((d) => ({ ...d, arsipManual: [...d.arsipManual, res.arsip] }));
+        }
+        setArsipForm(kosongArsipForm);
+      } catch (err) {
+        alert("Gagal menyimpan dokumen: " + err.message);
+      } finally {
+        setArsipBusy(false);
+      }
+    } else {
+      setData((d) => ({ ...d, arsipManual: [...d.arsipManual, { id: uid(), ...arsipForm, ditambahkanOleh: petugas || "-", tanggalCatat: todayStr() }] }));
+      setArsipForm(kosongArsipForm);
+    }
+  };
+
+  const hapusArsipManual = async (id) => {
+    if (window.confirm && !window.confirm("Yakin ingin menghapus dokumen dari arsip?")) return;
+    if (backendToken) {
+      try {
+        await backendApi(`/sekretariat/arsip-dokumen/${id}`, { method: "DELETE", token: backendToken });
+      } catch (err) {
+        alert("Gagal menghapus arsip: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, arsipManual: d.arsipManual.filter((a) => a.id !== id) }));
+  };
+
   // Arsip digital = gabungan surat keluar yang sudah final, seluruh surat masuk yang tercatat, dan dokumen non-surat yang dicatat manual.
-  // Setiap entri diberi label "bagian" (& "organisasi" bagian tsb) agar bisa dikelompokkan Organisasi > Bagian.
   const namaBagian = (id) => data.bagianList.find((b) => b.id === id)?.nama;
   const organisasiBagian = (id) => data.bagianList.find((b) => b.id === id)?.organisasi;
-  // Hanya Bagian yang aktif & belum dihapus (soft delete) yang muncul sebagai pilihan pada form baru.
   const bagianAktifOpsi = data.bagianList.filter((b) => b.aktif !== false && !b.dihapus);
-  // Nomor surat yang diterbitkan sistem selalu berformat ".../{RomawiBulanHijri}/{TahunHijri}" di akhir — dipakai untuk filter Tahun/Bulan Hijriah.
   const parseHijriDariNomor = (nomor) => {
     const m = /\/([IVXLCDM]+)\/(\d{3,4})$/.exec(nomor || "");
     return m ? { bulanRomawi: m[1], tahun: m[2] } : null;
@@ -7051,6 +7389,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       status: "Tercatat", hijri: null, _raw: a,
     })),
   ];
+
   // ---- Filter Arsip Digital: Organisasi, Bagian, Jenis Surat, Tahun/Bulan Hijriah, Status ----
   const [arsipFilterOrganisasi, setArsipFilterOrganisasi] = useState("Semua");
   const [arsipFilterBagian, setArsipFilterBagian] = useState("Semua");
@@ -7073,7 +7412,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     .filter((a) => arsipFilterBulanHijri === "Semua" || a.hijri?.bulanRomawi === arsipFilterBulanHijri)
     .filter((a) => arsipFilterStatus === "Semua" || a.status === arsipFilterStatus)
     .slice().sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
-  // Kelompokkan hasil ke struktur bertingkat Organisasi > Bagian; urutan mengikuti daftar bagian yang ada, "Umum" di akhir.
+
   const urutanOrganisasi = [...Array.from(new Set(data.bagianList.map((b) => b.organisasi).filter(Boolean))), "Umum"];
   const urutanBagian = [...data.bagianList.map((b) => b.nama), "Umum"];
   const arsipPerOrganisasi = {};
@@ -7090,7 +7429,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     const ia = urutanBagian.indexOf(a), ib = urutanBagian.indexOf(b);
     return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
   });
-  // ---- Export Arsip: CSV (dibuka Excel) & PDF sederhana, per kelompok bagian ----
+
   const unduhBlob = (blob, namaFile) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -7124,12 +7463,52 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 
   // ---------- SEKRETARIAT PONDOK: Pengaturan (Kop Surat & Jenis Surat) ----------
   const [kopForm, setKopForm] = useState(data.kopSurat);
-  const simpanKop = () => setData((d) => ({ ...d, kopSurat: kopForm }));
+  useEffect(() => { setKopForm(data.kopSurat); }, [data.kopSurat]);
+
+  const simpanKop = async () => {
+    if (backendToken) {
+      try {
+        const res = await backendApi("/sekretariat/kop", {
+          method: "POST",
+          token: backendToken,
+          body: kopForm,
+        });
+        if (res?.kopSurat) {
+          setData((d) => ({ ...d, kopSurat: res.kopSurat }));
+          alert("Kop surat berhasil disimpan ke database.");
+          return;
+        }
+      } catch (err) {
+        alert("Gagal menyimpan kop surat: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, kopSurat: kopForm }));
+  };
+
   const kosongPimpinanForm = { nama: "", jabatan: "" };
   const [pimpinanForm, setPimpinanForm] = useState(kosongPimpinanForm);
   const [editingPimpinanId, setEditingPimpinanId] = useState(null);
-  const simpanPimpinan = () => {
+
+  const simpanPimpinan = async () => {
     if (!pimpinanForm.nama) return;
+    if (backendToken) {
+      try {
+        const res = await backendApi("/sekretariat/pimpinan", {
+          method: "POST",
+          token: backendToken,
+          body: { ...pimpinanForm, id: editingPimpinanId },
+        });
+        if (res?.pimpinanList) {
+          setData((d) => ({ ...d, pimpinanList: res.pimpinanList }));
+        }
+        setPimpinanForm(kosongPimpinanForm); setEditingPimpinanId(null);
+        return;
+      } catch (err) {
+        alert("Gagal menyimpan pimpinan: " + err.message);
+        return;
+      }
+    }
     if (editingPimpinanId) {
       setData((d) => ({ ...d, pimpinanList: d.pimpinanList.map((p) => p.id === editingPimpinanId ? { ...p, ...pimpinanForm } : p) }));
     } else {
@@ -7139,19 +7518,54 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
   const bukaEditPimpinan = (p) => { setPimpinanForm({ nama: p.nama, jabatan: p.jabatan }); setEditingPimpinanId(p.id); };
   const batalEditPimpinan = () => { setPimpinanForm(kosongPimpinanForm); setEditingPimpinanId(null); };
-  const hapusPimpinan = (id) => setData((d) => ({ ...d, pimpinanList: d.pimpinanList.filter((p) => p.id !== id) }));
+
+  const hapusPimpinan = async (id) => {
+    if (backendToken) {
+      try {
+        const res = await backendApi(`/sekretariat/pimpinan/${id}`, { method: "DELETE", token: backendToken });
+        if (res?.pimpinanList) {
+          setData((d) => ({ ...d, pimpinanList: res.pimpinanList }));
+          return;
+        }
+      } catch (err) {
+        alert("Gagal menghapus: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, pimpinanList: d.pimpinanList.filter((p) => p.id !== id) }));
+  };
 
   // ---- Bagian (divisi tetap) ----
   const kosongBagianForm = { kode: "", nama: "", organisasi: "MMA", deskripsi: "" };
   const [bagianForm, setBagianForm] = useState(kosongBagianForm);
   const [editingBagianId, setEditingBagianId] = useState(null);
   const [bagianError, setBagianError] = useState("");
-  const simpanBagian = () => {
+
+  const simpanBagian = async () => {
     setBagianError("");
     if (!bagianForm.kode || !bagianForm.nama || !bagianForm.organisasi) return;
-    const kodeUpper = bagianForm.kode.toUpperCase();
-    const orgUpper = bagianForm.organisasi.toUpperCase();
+    const kodeUpper = bagianForm.kode.toUpperCase().trim();
+    const orgUpper = bagianForm.organisasi.toUpperCase().trim();
     if (data.bagianList.some((b) => b.kode === kodeUpper && b.id !== editingBagianId)) { setBagianError("Kode bagian sudah dipakai — gunakan kode unik."); return; }
+    
+    if (backendToken) {
+      try {
+        const res = await backendApi("/sekretariat/bagian", {
+          method: "POST",
+          token: backendToken,
+          body: { ...bagianForm, id: editingBagianId, kode: kodeUpper, organisasi: orgUpper },
+        });
+        if (res?.bagianList) {
+          setData((d) => ({ ...d, bagianList: res.bagianList }));
+        }
+        setBagianForm(kosongBagianForm); setEditingBagianId(null);
+        return;
+      } catch (err) {
+        setBagianError(err.message);
+        return;
+      }
+    }
+
     if (editingBagianId) {
       setData((d) => ({ ...d, bagianList: d.bagianList.map((b) => b.id === editingBagianId ? { ...b, ...bagianForm, kode: kodeUpper, organisasi: orgUpper } : b) }));
     } else {
@@ -7161,9 +7575,39 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
   const bukaEditBagian = (b) => { setBagianForm({ kode: b.kode, nama: b.nama, organisasi: b.organisasi || "MMA", deskripsi: b.deskripsi || "" }); setEditingBagianId(b.id); setBagianError(""); };
   const batalEditBagian = () => { setBagianForm(kosongBagianForm); setEditingBagianId(null); setBagianError(""); };
-  // Hapus = soft delete (data tetap tersimpan agar surat lama yang mereferensikannya tetap utuh), bukan penghapusan permanen.
-  const hapusBagian = (id) => setData((d) => ({ ...d, bagianList: d.bagianList.map((b) => b.id === id ? { ...b, dihapus: true, aktif: false } : b) }));
-  const pulihkanBagian = (id) => setData((d) => ({ ...d, bagianList: d.bagianList.map((b) => b.id === id ? { ...b, dihapus: false, aktif: true } : b) }));
+
+  const hapusBagian = async (id) => {
+    if (backendToken) {
+      try {
+        const res = await backendApi(`/sekretariat/bagian/${id}`, { method: "DELETE", token: backendToken });
+        if (res?.bagianList) {
+          setData((d) => ({ ...d, bagianList: res.bagianList }));
+          return;
+        }
+      } catch (err) {
+        alert("Gagal menonaktifkan bagian: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, bagianList: d.bagianList.map((b) => b.id === id ? { ...b, dihapus: true, aktif: false } : b) }));
+  };
+
+  const pulihkanBagian = async (id) => {
+    if (backendToken) {
+      try {
+        const res = await backendApi(`/sekretariat/bagian/${id}/pulihkan`, { method: "POST", token: backendToken });
+        if (res?.bagianList) {
+          setData((d) => ({ ...d, bagianList: res.bagianList }));
+          return;
+        }
+      } catch (err) {
+        alert("Gagal memulihkan bagian: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, bagianList: d.bagianList.map((b) => b.id === id ? { ...b, dihapus: false, aktif: true } : b) }));
+  };
+
   const toggleAktifBagian = (id) => setData((d) => ({ ...d, bagianList: d.bagianList.map((b) => b.id === id ? { ...b, aktif: !b.aktif } : b) }));
 
   // ---- Kepanitiaan (panitia sementara) ----
@@ -7171,11 +7615,31 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [kepanitiaanForm, setKepanitiaanForm] = useState(kosongKepanitiaanForm);
   const [editingKepanitiaanId, setEditingKepanitiaanId] = useState(null);
   const [kepanitiaanError, setKepanitiaanError] = useState("");
-  const simpanKepanitiaan = () => {
+
+  const simpanKepanitiaan = async () => {
     setKepanitiaanError("");
     if (!kepanitiaanForm.kode || !kepanitiaanForm.nama) return;
-    const kodeUpper = kepanitiaanForm.kode.toUpperCase();
+    const kodeUpper = kepanitiaanForm.kode.toUpperCase().trim();
     if (data.kepanitiaanList.some((k) => k.kode === kodeUpper && k.id !== editingKepanitiaanId)) { setKepanitiaanError("Kode kepanitiaan sudah dipakai — gunakan kode unik."); return; }
+
+    if (backendToken) {
+      try {
+        const res = await backendApi("/sekretariat/kepanitiaan", {
+          method: "POST",
+          token: backendToken,
+          body: { ...kepanitiaanForm, id: editingKepanitiaanId, kode: kodeUpper },
+        });
+        if (res?.kepanitiaanList) {
+          setData((d) => ({ ...d, kepanitiaanList: res.kepanitiaanList }));
+        }
+        setKepanitiaanForm(kosongKepanitiaanForm); setEditingKepanitiaanId(null);
+        return;
+      } catch (err) {
+        setKepanitiaanError(err.message);
+        return;
+      }
+    }
+
     if (editingKepanitiaanId) {
       setData((d) => ({ ...d, kepanitiaanList: d.kepanitiaanList.map((k) => k.id === editingKepanitiaanId ? { ...k, ...kepanitiaanForm, kode: kodeUpper } : k) }));
     } else {
@@ -7185,30 +7649,78 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
   const bukaEditKepanitiaan = (k) => { setKepanitiaanForm({ kode: k.kode, nama: k.nama }); setEditingKepanitiaanId(k.id); setKepanitiaanError(""); };
   const batalEditKepanitiaan = () => { setKepanitiaanForm(kosongKepanitiaanForm); setEditingKepanitiaanId(null); setKepanitiaanError(""); };
-  const hapusKepanitiaan = (id) => setData((d) => ({ ...d, kepanitiaanList: d.kepanitiaanList.filter((k) => k.id !== id) }));
+
+  const hapusKepanitiaan = async (id) => {
+    if (backendToken) {
+      try {
+        const res = await backendApi(`/sekretariat/kepanitiaan/${id}`, { method: "DELETE", token: backendToken });
+        if (res?.kepanitiaanList) {
+          setData((d) => ({ ...d, kepanitiaanList: res.kepanitiaanList }));
+          return;
+        }
+      } catch (err) {
+        alert("Gagal menghapus kepanitiaan: " + err.message);
+        return;
+      }
+    }
+    setData((d) => ({ ...d, kepanitiaanList: d.kepanitiaanList.filter((k) => k.id !== id) }));
+  };
 
   const kosongJenisForm = { kode: "", nama: "", kategori: "Keluar", formatTataLetak: "Berperihal", tipeIsi: "Bebas" };
   const [jenisForm, setJenisForm] = useState(kosongJenisForm);
   const [editingJenisId, setEditingJenisId] = useState(null);
   const [jenisFormError, setJenisFormError] = useState("");
-  const simpanJenis = () => {
+
+  const simpanJenis = async () => {
     setJenisFormError("");
     if (!jenisForm.kode || !jenisForm.nama) return;
-    const kodeUpper = jenisForm.kode.toUpperCase();
-    if (data.jenisSurat.some((j) => j.kode === kodeUpper && j.id !== editingJenisId)) { setJenisFormError("Kode surat sudah dipakai jenis lain — gunakan kode unik."); return; }
+    const kodeLower = jenisForm.kode.toLowerCase().trim();
+    if (data.jenisSurat.some((j) => j.kode === kodeLower && j.id !== editingJenisId)) { setJenisFormError("Kode surat sudah dipakai jenis lain — gunakan kode unik."); return; }
+
+    if (backendToken) {
+      try {
+        const res = await backendApi("/sekretariat/jenis-surat", {
+          method: "POST",
+          token: backendToken,
+          body: { ...jenisForm, id: editingJenisId, kode: kodeLower },
+        });
+        if (res?.jenisSurat) {
+          setData((d) => ({ ...d, jenisSurat: res.jenisSurat }));
+        }
+        setJenisForm(kosongJenisForm); setEditingJenisId(null);
+        return;
+      } catch (err) {
+        setJenisFormError(err.message);
+        return;
+      }
+    }
+
     if (editingJenisId) {
-      setData((d) => ({ ...d, jenisSurat: d.jenisSurat.map((j) => j.id === editingJenisId ? { ...j, ...jenisForm, kode: kodeUpper } : j) }));
+      setData((d) => ({ ...d, jenisSurat: d.jenisSurat.map((j) => j.id === editingJenisId ? { ...j, ...jenisForm, kode: kodeLower } : j) }));
     } else {
-      setData((d) => ({ ...d, jenisSurat: [...d.jenisSurat, { id: uid(), ...jenisForm, kode: kodeUpper }] }));
+      setData((d) => ({ ...d, jenisSurat: [...d.jenisSurat, { id: uid(), ...jenisForm, kode: kodeLower }] }));
     }
     setJenisForm(kosongJenisForm); setEditingJenisId(null);
   };
   const bukaEditJenis = (j) => { setJenisForm({ kode: j.kode, nama: j.nama, kategori: j.kategori, formatTataLetak: j.formatTataLetak || "Berperihal", tipeIsi: j.tipeIsi || "Bebas" }); setEditingJenisId(j.id); setJenisFormError(""); };
   const batalEditJenis = () => { setJenisForm(kosongJenisForm); setEditingJenisId(null); setJenisFormError(""); };
   const [jenisHapusError, setJenisHapusError] = useState("");
-  const hapusJenis = (id) => {
+
+  const hapusJenis = async (id) => {
     if (data.suratKeluar.some((s) => s.jenisId === id)) { setJenisHapusError("Jenis surat ini sudah dipakai pada surat yang tercatat — tidak bisa dihapus."); return; }
     setJenisHapusError("");
+    if (backendToken) {
+      try {
+        const res = await backendApi(`/sekretariat/jenis-surat/${id}`, { method: "DELETE", token: backendToken });
+        if (res?.jenisSurat) {
+          setData((d) => ({ ...d, jenisSurat: res.jenisSurat }));
+          return;
+        }
+      } catch (err) {
+        setJenisHapusError(err.message);
+        return;
+      }
+    }
     setData((d) => ({ ...d, jenisSurat: d.jenisSurat.filter((j) => j.id !== id) }));
   };
 
@@ -9316,6 +9828,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             <span className="text-[11px] text-[#5B7C93]">Lembar halaman lampiran akan otomatis dibuat saat dicetak.</span>
           </div>
 
+          <div className="border border-dashed border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl p-3 mb-3">
+            <p className="text-[11px] uppercase tracking-wide text-[#5B7C93] mb-2">Penandatangan Utama (Opsional — default mengikuti Kop / Bagian)</p>
+            <div className="grid sm:grid-cols-2 gap-2">
+              <input placeholder={`Nama (default: ${data.kopSurat?.namaPenandatangan || "Pimpinan Pondok"})`} value={suratForm.namaPenandatangan} onChange={(e) => setSuratForm({ ...suratForm, namaPenandatangan: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+              <input placeholder={`Jabatan (default: ${data.kopSurat?.jabatanPenandatangan || "Pimpinan Pondok"})`} value={suratForm.jabatanPenandatangan} onChange={(e) => setSuratForm({ ...suratForm, jabatanPenandatangan: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            </div>
+          </div>
+
           <div className="border border-dashed border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-3 mb-3">
             <p className="text-[11px] uppercase tracking-wide text-[#5B7C93] mb-2">Tanda Tangan Kedua (opsional — "Mengetahui/Menyetujui")</p>
             <div className="grid sm:grid-cols-2 gap-2">
@@ -9325,7 +9845,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           </div>
 
           <div className="flex flex-wrap gap-2 mb-5">
-            <button onClick={simpanSurat} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />{editingSuratId ? "Simpan Perubahan" : "Simpan sebagai Draft"}</button>
+            <button onClick={simpanSurat} disabled={suratBusy} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{editingSuratId ? "Simpan Perubahan" : "Simpan sebagai Draft"}</button>
             {editingSuratId && <button onClick={batalEditSurat} className="text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]">Batal</button>}
           </div>
 
@@ -9371,6 +9891,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   {s.status === "Disetujui" && <button onClick={() => ubahStatusSurat(s.id, "Terkirim")} className="text-xs px-2.5 py-1 rounded-xl btn-gradient ">Tandai Terkirim</button>}
                   {s.status === "Terkirim" && <button onClick={() => ubahStatusSurat(s.id, "Diarsipkan")} className="text-xs px-2.5 py-1 rounded-xl border border-[#CFE3F0] text-[#45657A] hover:bg-white/60 hover:backdrop-blur-sm">Arsipkan</button>}
                   {s.status === "Ditolak" && <IconBtn onClick={() => hapusSurat(s.id)} title="Hapus"><Trash2 size={14} /></IconBtn>}
+                  {["Draft", "Diajukan"].includes(s.status) && (
+                    <button onClick={() => cetakSurat(s)} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl border border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100"><Printer size={13} />Pratinjau Draf</button>
+                  )}
                   {["Disetujui", "Terkirim", "Diarsipkan"].includes(s.status) && <button onClick={() => cetakSurat(s)} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white/60 hover:backdrop-blur-sm"><Printer size={13} />Cetak</button>}
                 </div>
               </div>
@@ -9409,9 +9932,21 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             </select>
             <input type="date" value={suratMasukForm.tanggalSurat} onChange={(e) => setSuratMasukForm({ ...suratMasukForm, tanggalSurat: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
           </div>
-          <textarea placeholder="Catatan (opsional)" value={suratMasukForm.catatan} onChange={(e) => setSuratMasukForm({ ...suratMasukForm, catatan: e.target.value })} rows={2} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-3" />
+          <textarea placeholder="Catatan (opsional)" value={suratMasukForm.catatan} onChange={(e) => setSuratMasukForm({ ...suratMasukForm, catatan: e.target.value })} rows={2} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-2" />
+          <div className="mb-3">
+            <label className="block text-xs text-[#5B7C93] mb-1">Lampiran Berkas (Scan/Foto/PDF, maks 3 MB):</label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, (url, nama) => setSuratMasukForm({ ...suratMasukForm, lampiranUrl: url, lampiranNama: nama }))} className="text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:bg-[#EAF4FB] file:text-[#0C4A6E]" />
+              {suratMasukForm.lampiranNama && (
+                <span className="text-xs text-[#0C4A6E] font-medium flex items-center gap-1 bg-[#EAF4FB] px-2 py-0.5 rounded-lg">
+                  {suratMasukForm.lampiranNama}
+                  <button type="button" onClick={() => setSuratMasukForm({ ...suratMasukForm, lampiranUrl: "", lampiranNama: "" })} className="text-red-500 hover:text-red-700 ml-1"><X size={12} /></button>
+                </span>
+              )}
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2 mb-5">
-            <button onClick={simpanSuratMasuk} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />{editingSuratMasukId ? "Simpan Perubahan" : "Catat Surat Masuk"}</button>
+            <button onClick={simpanSuratMasuk} disabled={suratMasukBusy} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{editingSuratMasukId ? "Simpan Perubahan" : "Catat Surat Masuk"}</button>
             {editingSuratMasukId && <button onClick={batalEditSuratMasuk} className="text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]">Batal</button>}
           </div>
 
@@ -9432,6 +9967,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                     <select value={s.status} onChange={(e) => ubahStatusSuratMasuk(s.id, e.target.value)} className="text-xs border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1">
                       {["Baru", "Diproses", "Selesai"].map((st) => <option key={st} value={st}>{st}</option>)}
                     </select>
+                  )}
+                  <button onClick={() => onPrint(<LembarDisposisiContent suratMasuk={s} kop={data.kopSurat} />)} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl border border-[#CFE3F0] text-[#0C4A6E] hover:bg-white/60"><Printer size={13} />Lembar Disposisi</button>
+                  {s.lampiranUrl && (
+                    <a href={s.lampiranUrl} target="_blank" rel="noreferrer" download={s.lampiranNama || "lampiran"} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl border border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100"><FileText size={13} />Lihat Berkas</a>
                   )}
                   <IconBtn tone="ok" onClick={() => bukaEditSuratMasuk(s)} title="Edit"><Pencil size={14} /></IconBtn>
                   <IconBtn onClick={() => hapusSuratMasuk(s.id)} title="Hapus"><Trash2 size={14} /></IconBtn>
@@ -9504,7 +10043,11 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
                                 <StatusPill status={a.status} />
+                                {a._raw?.lampiranUrl && (
+                                  <a href={a._raw.lampiranUrl} target="_blank" rel="noreferrer" download={a._raw.lampiranNama || "berkas"} className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100"><FileText size={12} />Berkas</a>
+                                )}
                                 {a.tipe === "Surat Keluar" && <IconBtn tone="ok" onClick={() => cetakSurat(a._raw)} title="Cetak"><Printer size={14} /></IconBtn>}
+                                {a.tipe === "Surat Masuk" && <IconBtn tone="ok" onClick={() => onPrint(<LembarDisposisiContent suratMasuk={a._raw} kop={data.kopSurat} />)} title="Cetak Disposisi"><Printer size={14} /></IconBtn>}
                               </div>
                             </div>
                           ))}
@@ -9532,13 +10075,31 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 {bagianAktifOpsi.map((b) => <option key={b.id} value={b.id}>Bagian: {b.nama}</option>)}
               </select>
             </div>
-            <textarea placeholder="Keterangan (opsional)" value={arsipForm.keterangan} onChange={(e) => setArsipForm({ ...arsipForm, keterangan: e.target.value })} rows={2} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-3" />
-            <button onClick={tambahArsipManual} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />Catat Dokumen</button>
+            <textarea placeholder="Keterangan (opsional)" value={arsipForm.keterangan} onChange={(e) => setArsipForm({ ...arsipForm, keterangan: e.target.value })} rows={2} className="w-full border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm mb-2" />
+            <div className="mb-3">
+              <label className="block text-xs text-[#5B7C93] mb-1">Lampiran Dokumen (Scan/PDF/Foto, maks 3 MB):</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, (url, nama) => setArsipForm({ ...arsipForm, lampiranUrl: url, lampiranNama: nama }))} className="text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:bg-[#EAF4FB] file:text-[#0C4A6E]" />
+                {arsipForm.lampiranNama && (
+                  <span className="text-xs text-[#0C4A6E] font-medium flex items-center gap-1 bg-[#EAF4FB] px-2 py-0.5 rounded-lg">
+                    {arsipForm.lampiranNama}
+                    <button type="button" onClick={() => setArsipForm({ ...arsipForm, lampiranUrl: "", lampiranNama: "" })} className="text-red-500 hover:text-red-700 ml-1"><X size={12} /></button>
+                  </span>
+                )}
+              </div>
+            </div>
+            <button onClick={tambahArsipManual} disabled={arsipBusy} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />Catat Dokumen</button>
 
             <div className="divide-y divide-[#DCEDF7] mt-4">
               {data.arsipManual.slice().reverse().map((a) => (
                 <div key={a.id} className="py-2 text-sm flex items-center justify-between gap-2">
-                  <div><span className="text-[#17242E]">{a.judul}</span><span className="text-[#5B7C93]"> · {a.kategori}</span></div>
+                  <div>
+                    <span className="text-[#17242E]">{a.judul}</span>
+                    <span className="text-[#5B7C93]"> · {a.kategori}</span>
+                    {a.lampiranUrl && (
+                      <a href={a.lampiranUrl} target="_blank" rel="noreferrer" download={a.lampiranNama || "dokumen"} className="ml-2 text-xs text-[#0C4A6E] underline inline-flex items-center gap-0.5"><FileText size={11} />{a.lampiranNama || "Berkas"}</a>
+                    )}
+                  </div>
                   <IconBtn onClick={() => hapusArsipManual(a.id)} title="Hapus"><Trash2 size={14} /></IconBtn>
                 </div>
               ))}
@@ -10498,6 +11059,11 @@ export default function App() {
           guruAwal = parsed;
         }
       }
+      var cachedSekretariat = null;
+      const cs = localStorage.getItem("mma_cached_sekretariat");
+      if (cs) {
+        try { cachedSekretariat = JSON.parse(cs); } catch {}
+      }
     } catch {}
 
     return {
@@ -10531,17 +11097,17 @@ export default function App() {
       inventaris: [
         { id: "i1", nama: "Kipas Angin Berdiri", kategori: "Elektronik", jumlah: 4, kondisi: "Baik", lokasi: "Aula Utama", tanggal: "2026-01-10", keterangan: "Merk Maspion, dibeli dari donasi wali santri" },
       ],
-      // ---- Sekretariat Pondok: surat-menyurat & arsip digital ----
-      kopSurat: { ...KOP_SURAT_DEFAULT },
-      pimpinanList: [{ id: "pp1", nama: "Nama Pimpinan Pondok", jabatan: "Pimpinan Pondok" }],
-      jenisSurat: JSON.parse(JSON.stringify(JENIS_SURAT_SEED)),
-      bagianList: JSON.parse(JSON.stringify(BAGIAN_SEED)),
-      kepanitiaanList: JSON.parse(JSON.stringify(KEPANITIAAN_SEED)),
-      suratKeluar: [],
-      suratMasuk: [],
-      nomorSuratCounter: {},
-      nomorSuratLog: [],
-      arsipManual: [],
+      // ---- Sekretariat Pondok: surat-menyurat & arsip digital (PostgreSQL / cached) ----
+      kopSurat: cachedSekretariat?.kopSurat || { ...KOP_SURAT_DEFAULT },
+      pimpinanList: cachedSekretariat?.pimpinanList || [{ id: "pp1", nama: "Nama Pimpinan Pondok", jabatan: "Pimpinan Pondok" }],
+      jenisSurat: cachedSekretariat?.jenisSurat || JSON.parse(JSON.stringify(JENIS_SURAT_SEED)),
+      bagianList: cachedSekretariat?.bagianList || JSON.parse(JSON.stringify(BAGIAN_SEED)),
+      kepanitiaanList: cachedSekretariat?.kepanitiaanList || JSON.parse(JSON.stringify(KEPANITIAAN_SEED)),
+      suratKeluar: cachedSekretariat?.suratKeluar || [],
+      suratMasuk: cachedSekretariat?.suratMasuk || [],
+      nomorSuratCounter: cachedSekretariat?.nomorSuratCounter || {},
+      nomorSuratLog: cachedSekretariat?.nomorSuratLog || [],
+      arsipManual: cachedSekretariat?.arsipManual || [],
       // ---- Keuangan: pengajuan anggaran ----
       pengajuanAnggaran: [],
       // ---- Admin: pengaturan tampilan aplikasi (logo, foto, warna tema) ----
@@ -10623,6 +11189,35 @@ export default function App() {
       .catch(() => {});
   }, [backendToken, backendOnline]);
 
+  // ---- Sinkronisasi Data Sekretariat dari Server Cloud Database ----
+  useEffect(() => {
+    if (!backendToken || backendOnline !== true) return;
+    const isSekretariatUser = session?.role === "admin" || (session?.role === "guru" && ["sekretariat", "admin"].includes(session?.user?.departemen));
+    if (!isSekretariatUser) return;
+    backendApi("/sekretariat/data", { token: backendToken })
+      .then((res) => {
+        if (res) {
+          setData((d) => ({
+            ...d,
+            kopSurat: res.kopSurat || d.kopSurat,
+            pimpinanList: res.pimpinanList || d.pimpinanList,
+            bagianList: res.bagianList || d.bagianList,
+            kepanitiaanList: res.kepanitiaanList || d.kepanitiaanList,
+            jenisSurat: res.jenisSurat || d.jenisSurat,
+            suratKeluar: res.suratKeluar || d.suratKeluar,
+            suratMasuk: res.suratMasuk || d.suratMasuk,
+            arsipManual: res.arsipManual || d.arsipManual,
+            nomorSuratCounter: res.nomorSuratCounter || d.nomorSuratCounter,
+            nomorSuratLog: res.nomorSuratLog || d.nomorSuratLog,
+          }));
+          try {
+            localStorage.setItem("mma_cached_sekretariat", JSON.stringify(res));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, [backendToken, backendOnline, session]);
+
   // ---- Terapkan pengaturan Tampilan (Admin): logo, foto gedung, warna tema ----
   LOGO_MARK = data.tampilan?.logoUrl || LOGO_MARK_DEFAULT;
   BUILDING_PHOTO = data.tampilan?.buildingPhotoUrl || BUILDING_PHOTO_DEFAULT;
@@ -10694,7 +11289,12 @@ export default function App() {
         .gradient-primary-text { background: var(--c-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .btn-gradient { background: var(--c-grad); color: white; box-shadow: 0 4px 14px rgba(41, 170, 225, 0.3); border-radius: 10px; font-weight: 600; }
         .btn-gradient:hover { box-shadow: 0 6px 20px rgba(41, 170, 225, 0.45); transform: translateY(-1px); }
-        .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -8px rgba(10,37,64,0.12); }
+        .safe-area-app {
+          padding-top: env(safe-area-inset-top, 0px);
+          padding-bottom: env(safe-area-inset-bottom, 0px);
+          padding-left: env(safe-area-inset-left, 0px);
+          padding-right: env(safe-area-inset-right, 0px);
+        }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after {
             animation-duration: 0.01ms !important;
@@ -10707,7 +11307,7 @@ export default function App() {
       {!session ? (
         <Login users={users} onLogin={handleLogin} onResetPassword={resetPassword} namaAplikasi={namaAplikasi} fontIsi={fontIsi} />
       ) : (
-        <div className="page-enter">
+        <div className="page-enter pb-[max(1rem,env(safe-area-inset-bottom))]">
           <TopBar role={session.role} user={session.user} onLogout={handleLogout} namaAplikasi={namaAplikasi} warnaPrimer={warnaPrimer} warnaSekunder={warnaSekunder} backendOnline={backendOnline} backendToken={backendToken} setBackendToken={setBackendToken} />
           <ErrorBoundary onReset={handleLogout}>
             {session.role === "guru" && <GuruDashboard guru={data.guru.find((g) => g.id === session.user.id) || session.user} data={data} setData={setData} onPrint={setPrintContent} backendToken={backendToken} backendOnline={backendOnline} />}

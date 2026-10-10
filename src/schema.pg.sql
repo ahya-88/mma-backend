@@ -518,3 +518,139 @@ SELECT gen_random_uuid()::text, NULL, 'system', 'admin.role_merged_to_superadmin
 FROM "Guru" WHERE "jenisAkun" = 'admin';
 UPDATE "Guru" SET "jenisAkun" = 'superadmin' WHERE "jenisAkun" = 'admin';
 
+-- ---------- MODUL PERSURATAN & SEKRETARIAT PONDOK ----------
+CREATE TABLE IF NOT EXISTS "KopSurat" (
+  "id" TEXT PRIMARY KEY DEFAULT 'default',
+  "namaLembaga" TEXT NOT NULL,
+  "alamat" TEXT,
+  "kontak" TEXT,
+  "kota" TEXT,
+  "kodeOrganisasi" TEXT,
+  "tagline" TEXT,
+  "motto" TEXT,
+  "namaPenandatangan" TEXT,
+  "jabatanPenandatangan" TEXT,
+  "logoUrl" TEXT,
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "MasterBagian" (
+  "id" TEXT PRIMARY KEY,
+  "kode" TEXT NOT NULL UNIQUE,
+  "nama" TEXT NOT NULL,
+  "organisasi" TEXT NOT NULL DEFAULT 'MMA',
+  "deskripsi" TEXT,
+  "aktif" BOOLEAN NOT NULL DEFAULT TRUE,
+  "dihapus" BOOLEAN NOT NULL DEFAULT FALSE,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "MasterKepanitiaan" (
+  "id" TEXT PRIMARY KEY,
+  "kode" TEXT NOT NULL UNIQUE,
+  "nama" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "MasterJenisSurat" (
+  "id" TEXT PRIMARY KEY,
+  "kode" TEXT NOT NULL UNIQUE,
+  "nama" TEXT NOT NULL,
+  "kategori" TEXT NOT NULL DEFAULT 'Keluar',
+  "formatTataLetak" TEXT NOT NULL DEFAULT 'Berperihal',
+  "tipeIsi" TEXT NOT NULL DEFAULT 'Bebas',
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "MasterPimpinan" (
+  "id" TEXT PRIMARY KEY,
+  "nama" TEXT NOT NULL,
+  "jabatan" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "SuratKeluar" (
+  "id" TEXT PRIMARY KEY,
+  "jenisId" TEXT REFERENCES "MasterJenisSurat"("id") ON DELETE SET NULL,
+  "bagianId" TEXT REFERENCES "MasterBagian"("id") ON DELETE SET NULL,
+  "kepanitiaanId" TEXT,
+  "judulKustom" TEXT,
+  "perihal" TEXT NOT NULL,
+  "tujuan" TEXT,
+  "tempatTujuan" TEXT,
+  "isi" TEXT,
+  "menimbang" TEXT,
+  "mengingat" TEXT,
+  "memutuskan" TEXT,
+  "namaPihak" TEXT,
+  "identitasPihak" TEXT,
+  "keperluan" TEXT,
+  "jumlahLampiran" INTEGER NOT NULL DEFAULT 0,
+  "namaPenandatangan" TEXT,
+  "jabatanPenandatangan" TEXT,
+  "namaPenyetuju" TEXT,
+  "jabatanPenyetuju" TEXT,
+  "status" TEXT NOT NULL DEFAULT 'Draft',
+  "nomorSurat" TEXT,
+  "dibuatOleh" TEXT NOT NULL,
+  "tanggalDibuat" TEXT NOT NULL,
+  "tanggalDisetujui" TEXT,
+  "riwayatStatus" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+CREATE INDEX IF NOT EXISTS idx_surat_keluar_status ON "SuratKeluar" ("status");
+CREATE INDEX IF NOT EXISTS idx_surat_keluar_tanggal ON "SuratKeluar" ("tanggalDibuat");
+
+CREATE TABLE IF NOT EXISTS "SuratMasuk" (
+  "id" TEXT PRIMARY KEY,
+  "nomorSuratAsal" TEXT,
+  "pengirim" TEXT NOT NULL,
+  "perihal" TEXT NOT NULL,
+  "kategori" TEXT NOT NULL,
+  "tujuan" TEXT NOT NULL,
+  "tanggalSurat" TEXT,
+  "tanggalTerima" TEXT NOT NULL,
+  "dicatatOleh" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'Baru',
+  "catatan" TEXT,
+  "lampiranUrl" TEXT,
+  "lampiranNama" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+CREATE INDEX IF NOT EXISTS idx_surat_masuk_status ON "SuratMasuk" ("status");
+CREATE INDEX IF NOT EXISTS idx_surat_masuk_tujuan ON "SuratMasuk" ("tujuan");
+
+CREATE TABLE IF NOT EXISTS "ArsipDokumen" (
+  "id" TEXT PRIMARY KEY,
+  "judul" TEXT NOT NULL,
+  "kategori" TEXT NOT NULL,
+  "nomorReferensi" TEXT,
+  "bagianId" TEXT REFERENCES "MasterBagian"("id") ON DELETE SET NULL,
+  "keterangan" TEXT,
+  "lampiranUrl" TEXT,
+  "lampiranNama" TEXT,
+  "ditambahkanOleh" TEXT NOT NULL,
+  "tanggalCatat" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "NomorSuratCounter" (
+  "key" TEXT PRIMARY KEY,
+  "urut" INTEGER NOT NULL DEFAULT 0,
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "NomorSuratLog" (
+  "id" TEXT PRIMARY KEY,
+  "suratId" TEXT NOT NULL,
+  "perihal" TEXT NOT NULL,
+  "nomorLama" TEXT,
+  "nomorBaru" TEXT NOT NULL,
+  "oleh" TEXT NOT NULL,
+  "tanggal" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+
