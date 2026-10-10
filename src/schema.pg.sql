@@ -750,6 +750,17 @@ ALTER TABLE "Perizinan" ADD COLUMN IF NOT EXISTS "penerimaKembali" TEXT;
 CREATE INDEX IF NOT EXISTS idx_perizinan_status ON "Perizinan" ("status");
 CREATE UNIQUE INDEX IF NOT EXISTS idx_absensi_santri_tanggal_uq ON "Absensi" ("santriId", "tanggalISO");
 
-
-
-
+-- ==================== EKSTENSI KEUANGAN & SARANA (INVENTARIS) ====================
+CREATE TABLE IF NOT EXISTS "Inventaris" (
+  "id" TEXT PRIMARY KEY,
+  "nama" TEXT NOT NULL,
+  "kategori" TEXT NOT NULL,
+  "jumlah" INTEGER NOT NULL DEFAULT 1,
+  "kondisi" TEXT NOT NULL DEFAULT 'Baik',
+  "lokasi" TEXT,
+  "tanggal" TEXT,
+  "keterangan" TEXT,
+  "dicatatOleh" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+CREATE INDEX IF NOT EXISTS idx_inventaris_kategori ON "Inventaris" ("kategori");

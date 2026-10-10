@@ -931,7 +931,7 @@ function PrintOverlay({ content, onClose }) {
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto print:max-h-none print:shadow-none print:max-w-none" id="print-area">
         <div className="p-6" style={{ fontFamily: "'Inter', sans-serif" }}>{content}</div>
       </div>
-      <div className="fixed bottom-6 flex flex-col items-center gap-2 print:hidden">
+      <div className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] flex flex-col items-center gap-2 print:hidden z-50">
         {errorUnduh && <p className="text-xs bg-white text-[#96271A] px-3 py-1.5 rounded-lg shadow">{errorUnduh}</p>}
         <div className="flex gap-2">
           <button onClick={() => window.print()} className="flex items-center gap-1.5 bg-[#0C4A6E] text-white text-sm px-5 py-2.5 rounded-xl hover:bg-[#0B3A57] hover:shadow-lg active:scale-95"><Printer size={16} />Cetak</button>
@@ -1958,7 +1958,7 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
       </div>
 
       {/* Right Controls: Backend Status, Ubah Sandi, Avatar, Logout */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 pr-[max(0.5rem,env(safe-area-inset-right,0px))]">
         {/* Backend status indicator */}
         <div
           className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border border-[#E3E8EE] bg-[#F8F9FA]"
@@ -1981,26 +1981,26 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
           </span>
         </div>
 
-        {/* Notif Bell */}
+        {/* Notif Bell - hidden on small mobile to give plenty of room */}
         <button
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#F4F8FB] transition-colors relative"
+          className="hidden xs:flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl items-center justify-center text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#F4F8FB] transition-colors relative"
           title="Notifikasi"
         >
-          <Bell size={17} strokeWidth={1.8} />
+          <Bell size={16} strokeWidth={1.8} />
         </button>
 
         {/* Tombol Ubah Password Mandiri */}
         <button
           onClick={() => { resetModalForm(); setShowPasswordModal(true); }}
-          className="h-9 px-2.5 sm:px-3 rounded-xl flex items-center gap-1.5 text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#F4F8FB] border border-[#E3E8EE] transition-all text-xs font-medium cursor-pointer"
+          className="h-8 sm:h-9 px-2 sm:px-3 rounded-xl flex items-center gap-1 text-[#5B7C93] hover:text-[#0C4A6E] hover:bg-[#F4F8FB] border border-[#E3E8EE] transition-all text-xs font-medium cursor-pointer shrink-0"
           title="Ubah kata sandi akun saya"
         >
-          <Lock size={14} className="text-[#29AAE1]" />
-          <span className="hidden md:inline">Ubah Sandi</span>
+          <Lock size={13} className="text-[#29AAE1]" />
+          <span className="hidden sm:inline">Ubah Sandi</span>
         </button>
 
         {/* User Card */}
-        <div className="flex items-center gap-2 pl-2 sm:pl-3 sm:border-l border-[#E3E8EE]">
+        <div className="flex items-center gap-1.5 pl-1.5 sm:pl-2.5 sm:border-l border-[#E3E8EE] shrink-0">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#EAF4FB] to-[#D0E6F5] text-[#0C4A6E] flex items-center justify-center text-xs font-bold shrink-0 border border-[#B9E6FE]">
             {initials}
           </div>
@@ -2010,13 +2010,14 @@ function TopBar({ role, user, onLogout, namaAplikasi, warnaPrimer, warnaSekunder
           </div>
         </div>
 
-        {/* Logout Button */}
+        {/* Logout Button: High contrast, clearly visible and never clipped */}
         <button
           onClick={onLogout}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5B7C93] hover:bg-[#FEF3F2] hover:text-[#B42318] transition-colors ml-1"
+          className="h-8 px-2.5 sm:px-3 rounded-xl flex items-center gap-1 bg-[#FEF3F2] border border-[#FECDCA] text-[#B42318] hover:bg-[#FEE4E2] active:scale-95 transition-all text-xs font-semibold shrink-0 shadow-2xs ml-0.5"
           title="Keluar dari akun"
         >
-          <LogOut size={16} strokeWidth={1.8} />
+          <LogOut size={14} strokeWidth={2} />
+          <span className="hidden sm:inline">Keluar</span>
         </button>
       </div>
 
@@ -2466,20 +2467,68 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
     onPrint(<LaporanContent judul={`Laporan ${periodeTipe === "bulanan" ? "Bulanan" : periodeTipe === "semester" ? "Semester" : "Tahunan"}`} periodeLabel={periodeAktif.label} ringkasan={ringkasan} rincianMasuk={rincianMasukKategori} rincianKeluar={rincianKeluarKategori} />);
   };
 
-  // ---- Inventaris ----
+  // ---- Inventaris (backend-backed) ----
   const kosongInv = { nama: "", kategori: KATEGORI_INVENTARIS[0], jumlah: "", kondisi: "Baik", lokasi: "", tanggal: "", keterangan: "" };
   const [invForm, setInvForm] = useState(kosongInv);
   const [showInvForm, setShowInvForm] = useState(false);
   const [editingInvId, setEditingInvId] = useState(null);
+  const [invFetch, setInvFetch] = useState({ loading: false, error: "", data: [] });
+  const [invBusy, setInvBusy] = useState(false);
   const bukaTambahInv = () => { setInvForm(kosongInv); setEditingInvId(null); setShowInvForm(true); };
   const bukaEditInv = (it) => { setInvForm(it); setEditingInvId(it.id); setShowInvForm(true); };
-  const simpanInv = () => {
-    if (!invForm.nama || !invForm.jumlah) return;
-    if (editingInvId) setData((d) => ({ ...d, inventaris: d.inventaris.map((it) => it.id === editingInvId ? { ...invForm, id: editingInvId, jumlah: Number(invForm.jumlah) } : it) }));
-    else setData((d) => ({ ...d, inventaris: [...d.inventaris, { ...invForm, id: uid(), jumlah: Number(invForm.jumlah) }] }));
-    setShowInvForm(false); setEditingInvId(null); setInvForm(kosongInv);
+
+  const muatInventaris = () => {
+    if (!backendToken) { setInvFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] }); return; }
+    setInvFetch((f) => ({ ...f, loading: true, error: "" }));
+    backendApi("/keuangan/inventaris", { token: backendToken })
+      .then((rows) => {
+        setInvFetch({ loading: false, error: "", data: rows });
+        setData((d) => ({ ...d, inventaris: rows.map((r) => ({ id: r.id, nama: r.nama, kategori: r.kategori, jumlah: Number(r.jumlah), kondisi: r.kondisi, lokasi: r.lokasi, tanggal: r.tanggal, keterangan: r.keterangan })) }));
+      })
+      .catch((e) => setInvFetch({ loading: false, error: e.message, data: [] }));
   };
-  const delInv = (id) => setData((d) => ({ ...d, inventaris: d.inventaris.filter((it) => it.id !== id) }));
+  useEffect(muatInventaris, [backendToken]);
+
+  const simpanInv = async () => {
+    setKeuanganError("");
+    if (!invForm.nama || !invForm.jumlah) return;
+    const payload = { ...invForm, jumlah: Number(invForm.jumlah) };
+    if (!backendToken) {
+      if (editingInvId) setData((d) => ({ ...d, inventaris: d.inventaris.map((it) => it.id === editingInvId ? { ...payload, id: editingInvId } : it) }));
+      else setData((d) => ({ ...d, inventaris: [...d.inventaris, { ...payload, id: uid() }] }));
+      setShowInvForm(false); setEditingInvId(null); setInvForm(kosongInv);
+      return;
+    }
+    setInvBusy(true);
+    try {
+      if (editingInvId) {
+        await backendApi(`/keuangan/inventaris/${editingInvId}`, { method: "PUT", token: backendToken, body: payload });
+      } else {
+        await backendApi("/keuangan/inventaris", { method: "POST", token: backendToken, body: payload });
+      }
+      setShowInvForm(false); setEditingInvId(null); setInvForm(kosongInv);
+      muatInventaris();
+    } catch (e) {
+      setKeuanganError(e.message);
+    } finally {
+      setInvBusy(false);
+    }
+  };
+
+  const delInv = async (id) => {
+    setKeuanganError("");
+    if (!backendToken) {
+      setData((d) => ({ ...d, inventaris: d.inventaris.filter((it) => it.id !== id) }));
+      return;
+    }
+    try {
+      await backendApi(`/keuangan/inventaris/${id}`, { method: "DELETE", token: backendToken });
+      muatInventaris();
+    } catch (e) {
+      setKeuanganError(e.message);
+    }
+  };
+
 
   return (
     <div className="flex flex-col lg:flex-row gap-5 items-start">
@@ -2816,7 +2865,9 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
 
       {tab === "inventaris" && (
         <ArchCard title="Inventaris Pondok" eyebrow={`${data.inventaris.length} Item Tercatat`} icon={Package}>
-          <button onClick={() => (showInvForm ? setShowInvForm(false) : bukaTambahInv())} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  mb-4"><Plus size={15} />{showInvForm ? "Tutup Form" : "Tambah Item"}</button>
+          {invFetch.error && <p className="text-xs text-[#B5533C] mb-3">{invFetch.error}</p>}
+          {keuanganError && <p className="text-xs text-[#B5533C] mb-3">{keuanganError}</p>}
+          <button onClick={() => (showInvForm ? setShowInvForm(false) : bukaTambahInv())} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl mb-4"><Plus size={15} />{showInvForm ? "Tutup Form" : "Tambah Item"}</button>
           {showInvForm && (
             <div className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors p-4 mb-5 bg-[#F0F8FE]">
               <div className="grid sm:grid-cols-3 gap-2 mb-3">
@@ -2828,7 +2879,7 @@ function KeuanganPanel({ data, setData, petugas, onPrint, backendToken, backendO
                 <input type="date" value={invForm.tanggal} onChange={(e) => setInvForm({ ...invForm, tanggal: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
                 <input placeholder="Keterangan tambahan" value={invForm.keterangan} onChange={(e) => setInvForm({ ...invForm, keterangan: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm sm:col-span-3" />
               </div>
-              <button onClick={simpanInv} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />{editingInvId ? "Simpan Perubahan" : "Simpan Item"}</button>
+              <button onClick={simpanInv} disabled={invBusy} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{invBusy ? "Menyimpan..." : editingInvId ? "Simpan Perubahan" : "Simpan Item"}</button>
             </div>
           )}
           <div className="divide-y divide-[#DCEDF7]">
@@ -11494,29 +11545,113 @@ class ErrorBoundary extends React.Component {
 // ---------- ROOT APP ----------
 
 export default function App() {
-  const [session, setSession] = useState(null);
-  // Token & status koneksi ke backend cashless (terpisah dari sesi lokal, karena backend-nya baru
-  // mencakup modul cashless — modul lain masih memakai state lokal seperti sebelumnya).
-  const [backendToken, setBackendToken] = useState(null);
-  const [backendOnline, setBackendOnline] = useState(null); // null = belum dicoba
-  // `tokenSudahAda`: dipakai ketika Login sudah lebih dulu berhasil login ke backend sendiri
-  // (jalur cadangan untuk akun yang belum/tidak ada di data lokal — lihat komponen Login), supaya
-  // di sini tidak perlu memanggil /auth/login dua kali dengan password yang sama.
+  const [session, setSession] = useState(() => {
+    try {
+      const raw = localStorage.getItem("mma_auth_session");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.user && parsed?.role) return parsed;
+      }
+    } catch {}
+    return null;
+  });
+
+  const [backendToken, setBackendToken] = useState(() => {
+    try {
+      const raw = localStorage.getItem("mma_auth_session");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.token) return parsed.token;
+      }
+    } catch {}
+    return null;
+  });
+
+  const [backendOnline, setBackendOnline] = useState(() => {
+    try {
+      const raw = localStorage.getItem("mma_auth_session");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.token) return true;
+      }
+    } catch {}
+    return null;
+  });
+
+  // Revalidasi token di background saat aplikasi dibuka kembali (silent verify)
+  useEffect(() => {
+    if (!backendToken) return;
+    backendApi("/admin/akses", { token: backendToken })
+      .then((userValid) => {
+        setBackendOnline(true);
+        if (userValid?.id) {
+          setSession((prev) => {
+            if (!prev) return prev;
+            const updated = { ...prev, user: { ...prev.user, ...userValid } };
+            try { localStorage.setItem("mma_auth_session", JSON.stringify({ ...updated, token: backendToken })); } catch {}
+            return updated;
+          });
+        }
+      })
+      .catch((err) => {
+        // Jika token dinyatakan tidak valid / 401 oleh server, barulah logout otomatis
+        if (err?.status === 401 || err?.message?.toLowerCase().includes("token") || err?.message?.toLowerCase().includes("unauthorized")) {
+          try { localStorage.removeItem("mma_auth_session"); } catch {}
+          setSession(null);
+          setBackendToken(null);
+          setBackendOnline(false);
+        } else {
+          // Hanya kendala jaringan sementara / offline, tetap biarkan sesi terbuka
+          setBackendOnline(false);
+        }
+      });
+  }, []);
+
   const handleLogin = (role, user, password, tokenSudahAda) => {
-    setSession({ role, user });
-    if (tokenSudahAda) { setBackendToken(tokenSudahAda); setBackendOnline(true); return; }
-    // "sekretariat" dan "admin" ditambahkan di sini: keduanya juga sudah/kini punya modul backend
-    // sendiri (Master Data Santri lengkap, dan modul Admin — akun staf/unit usaha/tahun ajaran/
-    // tampilan) sehingga butuh token juga. Sebelumnya "sekretariat" hilang dari daftar ini padahal
-    // DepartmentContent-nya sudah memanggil backendApi dengan backendToken — bug nyata yang
-    // membuat fetch Master Data Santri diam-diam tidak pernah jalan untuk staf Sekretariat.
+    const sessionObj = { role, user };
+    setSession(sessionObj);
+
+    if (tokenSudahAda) {
+      setBackendToken(tokenSudahAda);
+      setBackendOnline(true);
+      try {
+        localStorage.setItem("mma_auth_session", JSON.stringify({ role, user, token: tokenSudahAda }));
+      } catch {}
+      return;
+    }
+
     const perluBackend = role === "wali" || (role === "guru" && ["unitusaha", "pengasuhan", "pengajaran", "lptq", "administrasi", "sekretariat", "admin"].includes(user.departemen));
-    if (!perluBackend) { setBackendToken(null); setBackendOnline(null); return; }
+    if (!perluBackend) {
+      setBackendToken(null);
+      setBackendOnline(null);
+      try {
+        localStorage.setItem("mma_auth_session", JSON.stringify({ role, user, token: null }));
+      } catch {}
+      return;
+    }
+
     backendApi("/auth/login", { method: "POST", body: { username: user.username, password } })
-      .then((hasil) => { setBackendToken(hasil.token); setBackendOnline(true); })
-      .catch(() => { setBackendToken(null); setBackendOnline(false); });
+      .then((hasil) => {
+        setBackendToken(hasil.token);
+        setBackendOnline(true);
+        try {
+          localStorage.setItem("mma_auth_session", JSON.stringify({ role, user: hasil.user || user, token: hasil.token }));
+        } catch {}
+      })
+      .catch(() => {
+        setBackendToken(null);
+        setBackendOnline(false);
+      });
   };
-  const handleLogout = () => { setSession(null); setBackendToken(null); setBackendOnline(null); };
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem("mma_auth_session");
+    } catch {}
+    setSession(null);
+    setBackendToken(null);
+    setBackendOnline(null);
+  };
   const [printContent, setPrintContent] = useState(null);
   const [data, setData] = useState(() => {
     let santriAwal = [];
@@ -11801,7 +11936,7 @@ export default function App() {
       {!session ? (
         <Login users={users} onLogin={handleLogin} onResetPassword={resetPassword} namaAplikasi={namaAplikasi} fontIsi={fontIsi} />
       ) : (
-        <div className="page-enter pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="page-enter pb-[max(2.5rem,calc(env(safe-area-inset-bottom,0px)+1rem))]">
           <TopBar role={session.role} user={session.user} onLogout={handleLogout} namaAplikasi={namaAplikasi} warnaPrimer={warnaPrimer} warnaSekunder={warnaSekunder} backendOnline={backendOnline} backendToken={backendToken} setBackendToken={setBackendToken} />
           <ErrorBoundary onReset={handleLogout}>
             {session.role === "guru" && <GuruDashboard guru={data.guru.find((g) => g.id === session.user.id) || session.user} data={data} setData={setData} onPrint={setPrintContent} backendToken={backendToken} backendOnline={backendOnline} />}
