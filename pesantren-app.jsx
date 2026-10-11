@@ -8895,9 +8895,12 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         // non-BMT — spread terakhir sehingga field itu tidak ikut tertimpa/hilang.
         const merged = { ...(existing || {}), ...santriForm, ...saved };
         const ada = d.santri.some((s) => s.id === id);
-        return { ...d, santri: ada ? d.santri.map((s) => (s.id === id ? merged : s)) : [...d.santri, merged] };
+        const nextSantri = ada ? d.santri.map((s) => (s.id === id ? merged : s)) : [...d.santri, merged];
+        try { localStorage.setItem("mma_cached_santri", JSON.stringify(nextSantri)); } catch {}
+        return { ...d, santri: nextSantri };
       });
       batalFormSantri();
+      if (typeof muatSantriBiodata === "function") muatSantriBiodata();
     } catch (e) { setSantriSaveError(e.message); }
   };
   const delSantri = async (id) => {
@@ -8905,10 +8908,20 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     if (!backendToken) { setSantriSaveError("Tidak terhubung ke server. Coba logout lalu login ulang."); return; }
     try {
       await backendApi(`/santri/${id}`, { method: "DELETE", token: backendToken });
-      setData((d) => ({ ...d, santri: d.santri.filter((s) => s.id !== id) }));
+      setData((d) => {
+        const nextSantri = d.santri.filter((s) => s.id !== id);
+        try { localStorage.setItem("mma_cached_santri", JSON.stringify(nextSantri)); } catch {}
+        return { ...d, santri: nextSantri };
+      });
+      if (typeof muatSantriBiodata === "function") muatSantriBiodata();
     } catch (e) {
       if (/tidak ditemukan/i.test(e.message)) {
-        setData((d) => ({ ...d, santri: d.santri.filter((s) => s.id !== id) }));
+        setData((d) => {
+          const nextSantri = d.santri.filter((s) => s.id !== id);
+          try { localStorage.setItem("mma_cached_santri", JSON.stringify(nextSantri)); } catch {}
+          return { ...d, santri: nextSantri };
+        });
+        if (typeof muatSantriBiodata === "function") muatSantriBiodata();
       } else {
         setSantriSaveError(e.message);
       }
@@ -9460,17 +9473,34 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     setWaliBusy(true);
     try {
       if (editingWaliId) {
-        if (backendToken) {
-          await backendApi(`/admin/wali/${editingWaliId}`, {
-            method: "PUT",
-            token: backendToken,
-            body: { nama: waliForm.nama.trim(), hp: waliForm.hp.trim() },
-          });
+        if (!backendToken) {
+          throw new Error("Tidak terhubung ke server. Pastikan Anda sudah login.");
         }
-        setData((d) => ({
-          ...d,
-          wali: d.wali.map((w) => w.id === editingWaliId ? { ...w, nama: waliForm.nama.trim(), hp: waliForm.hp.trim() } : w),
-        }));
+        await backendApi(`/admin/wali/${editingWaliId}`, {
+          method: "PUT",
+          token: backendToken,
+          body: {
+            nama: waliForm.nama.trim(),
+            hp: waliForm.hp.trim(),
+            username: (waliForm.username || "").trim() || undefined,
+          },
+        });
+        setData((d) => {
+          const nextWali = d.wali.map((w) =>
+            w.id === editingWaliId
+              ? {
+                  ...w,
+                  nama: waliForm.nama.trim(),
+                  hp: waliForm.hp.trim(),
+                  username: (waliForm.username || "").trim() || w.username,
+                }
+              : w
+          );
+          try {
+            localStorage.setItem("mma_cached_wali", JSON.stringify(nextWali));
+          } catch {}
+          return { ...d, wali: nextWali };
+        });
         setWaliSuccessMsg("Perubahan data wali berhasil disimpan.");
       } else {
         if (!waliForm.username.trim() || !waliForm.password) {
@@ -9478,23 +9508,26 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           setWaliBusy(false);
           return;
         }
-        let createdWali = { ...waliForm, id: uid(), santriList: [] };
-        if (backendToken) {
-          createdWali = await backendApi("/admin/wali", {
-            method: "POST",
-            token: backendToken,
-            body: {
-              nama: waliForm.nama.trim(),
-              hp: waliForm.hp.trim(),
-              username: waliForm.username.trim(),
-              password: waliForm.password,
-            },
-          });
+        if (!backendToken) {
+          throw new Error("Tidak terhubung ke server. Pastikan Anda sudah login.");
         }
-        setData((d) => ({
-          ...d,
-          wali: [createdWali, ...d.wali.filter((w) => w.id !== createdWali.id)],
-        }));
+        const createdWali = await backendApi("/admin/wali", {
+          method: "POST",
+          token: backendToken,
+          body: {
+            nama: waliForm.nama.trim(),
+            hp: waliForm.hp.trim(),
+            username: waliForm.username.trim(),
+            password: waliForm.password,
+          },
+        });
+        setData((d) => {
+          const nextWali = [createdWali, ...d.wali.filter((w) => w.id !== createdWali.id)];
+          try {
+            localStorage.setItem("mma_cached_wali", JSON.stringify(nextWali));
+          } catch {}
+          return { ...d, wali: nextWali };
+        });
         setWaliSuccessMsg(`Akun wali "${createdWali.nama}" berhasil didaftarkan.`);
       }
       setWaliForm({ nama: "", hp: "", username: "", password: "" });
@@ -9539,11 +9572,19 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     if (!confirm(`Hapus akun wali ${namaWali}? Aksi ini permanen.`)) return;
 
     try {
-      if (backendToken) {
-        await backendApi(`/admin/wali/${id}`, { method: "DELETE", token: backendToken });
+      if (!backendToken) {
+        throw new Error("Tidak terhubung ke server. Pastikan Anda sudah login.");
       }
-      setData((d) => ({ ...d, wali: d.wali.filter((item) => item.id !== id) }));
+      await backendApi(`/admin/wali/${id}`, { method: "DELETE", token: backendToken });
+      setData((d) => {
+        const nextWali = d.wali.filter((item) => item.id !== id);
+        try {
+          localStorage.setItem("mma_cached_wali", JSON.stringify(nextWali));
+        } catch {}
+        return { ...d, wali: nextWali };
+      });
       setWaliSuccessMsg(`Akun wali "${namaWali}" berhasil dihapus.`);
+      if (typeof muatSantriBiodata === "function") muatSantriBiodata();
     } catch (err) {
       alert("Gagal menghapus akun wali: " + err.message);
     }
@@ -9559,19 +9600,24 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       alert("Kata sandi baru minimal 6 karakter.");
       return;
     }
+    if (!backendToken) {
+      alert("Tidak terhubung ke server. Pastikan Anda sudah login.");
+      return;
+    }
     setWaliPwBusyId(waliId);
     try {
-      if (backendToken) {
-        await backendApi(`/admin/wali/${waliId}/reset-password`, {
-          method: "POST",
-          token: backendToken,
-          body: { password: pw, newPassword: pw },
-        });
-      }
-      setData((d) => ({
-        ...d,
-        wali: d.wali.map((w) => w.id === waliId ? { ...w, password: pw, mustChangePassword: true, statusAkun: "Belum Aktivasi" } : w),
-      }));
+      await backendApi(`/admin/wali/${waliId}/reset-password`, {
+        method: "POST",
+        token: backendToken,
+        body: { password: pw, newPassword: pw },
+      });
+      setData((d) => {
+        const nextWali = d.wali.map((w) => w.id === waliId ? { ...w, password: pw, mustChangePassword: true, statusAkun: "Belum Aktivasi" } : w);
+        try {
+          localStorage.setItem("mma_cached_wali", JSON.stringify(nextWali));
+        } catch {}
+        return { ...d, wali: nextWali };
+      });
       setWaliPwDraft((d) => ({ ...d, [waliId]: "" }));
       alert("Kata sandi wali berhasil direset di server. Status akun menjadi 'Belum Aktivasi' (wali wajib ganti kata sandi saat login berikutnya).");
     } catch (err) {
@@ -13462,12 +13508,21 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
     ]).then(([santriRows, waliRes, guruRows, kelasRows]) => {
       setData((d) => {
         let updated = { ...d };
-        if (Array.isArray(santriRows)) updated.santri = santriRows;
+        if (Array.isArray(santriRows)) {
+          updated.santri = santriRows;
+          try { localStorage.setItem("mma_cached_santri", JSON.stringify(santriRows)); } catch {}
+        }
         if (waliRes) {
           const listWali = Array.isArray(waliRes) ? waliRes : (Array.isArray(waliRes.items) ? waliRes.items : null);
-          if (listWali) updated.wali = listWali;
+          if (listWali) {
+            updated.wali = listWali;
+            try { localStorage.setItem("mma_cached_wali", JSON.stringify(listWali)); } catch {}
+          }
         }
-        if (Array.isArray(guruRows)) updated.guru = guruRows;
+        if (Array.isArray(guruRows)) {
+          updated.guru = guruRows;
+          try { localStorage.setItem("mma_cached_guru", JSON.stringify(guruRows)); } catch {}
+        }
         if (Array.isArray(kelasRows) && kelasRows.length) {
           const list = kelasRows.map((r) => r.nama);
           const info = {};
