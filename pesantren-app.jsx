@@ -3874,6 +3874,12 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const [dbIsErr, setDbIsErr] = useState(false);
   const [dbSyncBusy, setDbSyncBusy] = useState(false);
 
+  // -- Monitoring Real-Time Eksekutif --
+  const [ringkasanData, setRingkasanData] = useState(null);
+  const [ringkasanLoading, setRingkasanLoading] = useState(false);
+  const [isLiveRealtime, setIsLiveRealtime] = useState(true);
+  const [lastLiveTick, setLastLiveTick] = useState(new Date().toLocaleTimeString("id-ID"));
+
   const ambilDbStatus = async () => {
     if (!backendToken) return;
     setDbLoading(true);
@@ -3887,9 +3893,38 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     }
   };
 
+  const ambilRingkasan = async (isSilent = false) => {
+    if (!backendToken) return;
+    if (!isSilent) setRingkasanLoading(true);
+    try {
+      const [ringkasanRes, statusRes] = await Promise.all([
+        backendApi("/admin/ringkasan", { token: backendToken }).catch(() => null),
+        backendApi("/admin/database/status", { token: backendToken }).catch(() => null),
+      ]);
+      if (ringkasanRes) setRingkasanData(ringkasanRes);
+      if (statusRes) setDbStatus(statusRes);
+      setLastLiveTick(new Date().toLocaleTimeString("id-ID"));
+    } catch (_) {
+    } finally {
+      if (!isSilent) setRingkasanLoading(false);
+    }
+  };
+
   useEffect(() => {
-    ambilDbStatus();
+    if (adminTab === "ringkasan" || adminTab === "database") {
+      ambilRingkasan();
+    } else {
+      ambilDbStatus();
+    }
   }, [backendToken, adminTab]);
+
+  useEffect(() => {
+    if (adminTab !== "ringkasan" || !isLiveRealtime || !backendToken) return;
+    const timer = setInterval(() => {
+      ambilRingkasan(true);
+    }, 30000); // interval polling 30 detik
+    return () => clearInterval(timer);
+  }, [adminTab, isLiveRealtime, backendToken]);
 
   const unduhBackupJson = async () => {
     try {
@@ -4025,45 +4060,266 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
 
         <div className="flex-1 min-w-0 w-full space-y-5">
           {adminTab === "ringkasan" && (
-            <ArchCard title="Pusat Pemantauan & Metrik Operasional" eyebrow="Monitoring Real-Time Eksekutif" icon={TrendingUp}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
-                <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
-                  <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {dbStatus?.totalSantri ?? (data?.santri || []).length}
-                  </p>
-                  <p className="text-xs font-semibold text-[#17242E] mt-1">Total Santri</p>
-                  <p className="text-[10px] text-[#5B7C93]">Terdaftar aktif</p>
+            <div className="space-y-5">
+              {/* HEADER CONTROL BAR: Telemetri Live & Kontrol Auto-Refresh */}
+              <div className="bg-white/90 backdrop-blur-md border border-[#CFE3F0] rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+                    isLiveRealtime ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200"
+                  }`}>
+                    <span className={`w-2.5 h-2.5 rounded-full ${isLiveRealtime ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                    <span>{isLiveRealtime ? "Monitoring Real-Time Aktif (30s)" : "Mode Manual"}</span>
+                  </div>
+                  <span className="text-xs text-[#5B7C93]">
+                    Terakhir diperbarui: <strong className="text-[#0C4A6E] font-medium">{lastLiveTick} WIB</strong>
+                  </span>
                 </div>
-                <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
-                  <p className="text-base sm:text-lg font-bold text-[#15803D]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {rupiah(dbStatus?.totalSaldoSemuaSantri ?? (data?.santri || []).reduce((acc, s) => acc + (Number(s.saldo) || 0), 0))}
-                  </p>
-                  <p className="text-xs font-semibold text-[#17242E] mt-1">Saldo BMT Santri</p>
-                  <p className="text-[10px] text-[#5B7C93]">Akumulasi cashless</p>
-                </div>
-                <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
-                  <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {dbStatus?.totalGuru ?? (guruList || []).length}
-                  </p>
-                  <p className="text-xs font-semibold text-[#17242E] mt-1">Akun Petugas</p>
-                  <p className="text-[10px] text-[#5B7C93]">Seluruh bagian</p>
-                </div>
-                <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
-                  <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {(data?.unitUsaha || []).length}
-                  </p>
-                  <p className="text-xs font-semibold text-[#17242E] mt-1">Unit Usaha</p>
-                  <p className="text-[10px] text-[#5B7C93]">Kantin, BMT, dll</p>
-                </div>
-                <div className="border border-[#0C4A6E] rounded-xl p-3.5 text-center bg-[#EAF4FB] shadow-sm transition-all hover:scale-[1.02] col-span-2 sm:col-span-1">
-                  <p className="text-sm sm:text-base font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                    {(data?.tahunAjaran || []).find((t) => t.aktif)?.label || "Aktif"}
-                  </p>
-                  <p className="text-xs font-semibold text-[#0C4A6E] mt-1">Tahun Ajaran</p>
-                  <p className="text-[10px] text-[#15803D] font-bold uppercase">Sedang Berjalan</p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsLiveRealtime(!isLiveRealtime)}
+                    className={`text-xs px-3 py-1.5 rounded-xl border font-medium transition-colors ${
+                      isLiveRealtime ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100" : "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                    }`}
+                  >
+                    {isLiveRealtime ? "Jeda Real-Time" : "Nyalakan Auto-Refresh"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => ambilRingkasan(false)}
+                    disabled={ringkasanLoading}
+                    className="flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-xl btn-gradient hover:shadow-md active:scale-95 disabled:opacity-50"
+                  >
+                    <RefreshCw size={13} className={ringkasanLoading ? "animate-spin" : ""} />
+                    <span>{ringkasanLoading ? "Memuat..." : "Perbarui Sekarang"}</span>
+                  </button>
                 </div>
               </div>
-            </ArchCard>
+
+              {/* CARD 1: KPI MASTER OPERASIONAL */}
+              <ArchCard title="Pusat Pemantauan & Metrik Operasional" eyebrow="Ringkasan Eksekutif Sistem" icon={TrendingUp}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
+                    <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                      {ringkasanData?.kartu?.santri ?? dbStatus?.totalSantri ?? (data?.santri || []).length}
+                    </p>
+                    <p className="text-xs font-semibold text-[#17242E] mt-1">Total Santri</p>
+                    <p className="text-[10px] text-[#5B7C93]">Terdaftar aktif</p>
+                  </div>
+                  <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
+                    <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                      {ringkasanData?.kartu?.wali ?? dbStatus?.totalWali ?? (data?.wali || []).length}
+                    </p>
+                    <p className="text-xs font-semibold text-[#17242E] mt-1">Wali Santri</p>
+                    <p className="text-[10px] text-[#5B7C93]">Akun keluarga</p>
+                  </div>
+                  <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
+                    <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                      {ringkasanData?.kartu?.guru ?? dbStatus?.totalGuru ?? (guruList || []).length}
+                    </p>
+                    <p className="text-xs font-semibold text-[#17242E] mt-1">Akun Petugas</p>
+                    <p className="text-[10px] text-[#5B7C93]">Seluruh bagian</p>
+                  </div>
+                  <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
+                    <p className="text-base sm:text-lg font-bold text-[#15803D]" style={{ fontFamily: "'Fraunces', serif" }}>
+                      {rupiah(ringkasanData?.kartu?.totalSaldoSantri ?? dbStatus?.totalSaldoSemuaSantri ?? 0)}
+                    </p>
+                    <p className="text-xs font-semibold text-[#17242E] mt-1">Saldo BMT Santri</p>
+                    <p className="text-[10px] text-[#5B7C93]">Akumulasi cashless</p>
+                  </div>
+                  <div className="border border-[#0C4A6E] rounded-xl p-3.5 text-center bg-[#EAF4FB] shadow-sm transition-all hover:scale-[1.02] col-span-2 sm:col-span-1">
+                    <p className="text-sm sm:text-base font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
+                      {(data?.tahunAjaran || []).find((t) => t.aktif)?.label || "Aktif"}
+                    </p>
+                    <p className="text-xs font-semibold text-[#0C4A6E] mt-1">Tahun Ajaran</p>
+                    <p className="text-[10px] text-[#15803D] font-bold uppercase">Sedang Berjalan</p>
+                  </div>
+                </div>
+              </ArchCard>
+
+              {/* CARD 2: ANTREAN PERSETUJUAN & STATUS HARI INI (ACTIONABLE) */}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="border border-sky-200 bg-sky-50/60 rounded-2xl p-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-sky-800 uppercase tracking-wide">Presensi Hari Ini</span>
+                    <CalendarCheck size={18} className="text-sky-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-sky-900 mt-2" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {ringkasanData?.kartu?.absensiHariIni ?? 0}
+                  </p>
+                  <p className="text-[11px] text-sky-700 mt-1">Santri tercatat hadir/absen</p>
+                </div>
+
+                <div className="border border-amber-200 bg-amber-50/60 rounded-2xl p-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wide">Perizinan Menunggu</span>
+                    <Clock size={18} className="text-amber-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-amber-900 mt-2" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {ringkasanData?.kartu?.izinMenunggu ?? 0}
+                  </p>
+                  <p className="text-[11px] text-amber-700 mt-1">Permohonan izin keluar/pulang</p>
+                </div>
+
+                <div className="border border-indigo-200 bg-indigo-50/60 rounded-2xl p-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-indigo-800 uppercase tracking-wide">Top-Up Klaim BMT</span>
+                    <Wallet size={18} className="text-indigo-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-indigo-900 mt-2" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {ringkasanData?.kartu?.topupMenunggu ?? 0}
+                  </p>
+                  <p className="text-[11px] text-indigo-700 mt-1">Verifikasi bukti transfer wali</p>
+                </div>
+
+                <div className="border border-purple-200 bg-purple-50/60 rounded-2xl p-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-purple-800 uppercase tracking-wide">Pengajuan Anggaran</span>
+                    <FileText size={18} className="text-purple-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-purple-900 mt-2" style={{ fontFamily: "'Fraunces', serif" }}>
+                    {ringkasanData?.kartu?.anggaranMenunggu ?? 0}
+                  </p>
+                  <p className="text-[11px] text-purple-700 mt-1">RAB unit/kepanitiaan baru</p>
+                </div>
+              </div>
+
+              {/* CARD 3: KEUANGAN, CASHLESS & TUNGGAKAN */}
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div className="border border-[#DCEDF7] bg-white/90 rounded-2xl p-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#17242E]">Transaksi Hari Ini</span>
+                    <ShoppingCart size={16} className="text-[#0C4A6E]" />
+                  </div>
+                  <p className="text-xl font-bold text-[#0C4A6E] mt-2">
+                    {rupiah(ringkasanData?.kartu?.nominalHariIni ?? 0)}
+                  </p>
+                  <p className="text-[11px] text-[#5B7C93] mt-0.5">
+                    {ringkasanData?.kartu?.transaksiHariIni ?? 0} transaksi di kasir kantin/unit
+                  </p>
+                </div>
+
+                <div className="border border-[#DCEDF7] bg-white/90 rounded-2xl p-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#17242E]">Tagihan Menunggak</span>
+                    <AlertTriangle size={16} className="text-[#B5533C]" />
+                  </div>
+                  <p className="text-xl font-bold text-[#B5533C] mt-2">
+                    {rupiah(ringkasanData?.kartu?.nominalTunggakan ?? 0)}
+                  </p>
+                  <p className="text-[11px] text-[#5B7C93] mt-0.5">
+                    {ringkasanData?.kartu?.tagihanMenunggak ?? 0} santri belum lunas
+                  </p>
+                </div>
+
+                <div className="border border-[#DCEDF7] bg-white/90 rounded-2xl p-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#17242E]">Perekaman Wajah (Face Biometric)</span>
+                    <Camera size={16} className="text-emerald-700" />
+                  </div>
+                  <p className="text-xl font-bold text-emerald-700 mt-2">
+                    {ringkasanData?.kartu?.persenFaceEnrollment ?? 0}%
+                  </p>
+                  <p className="text-[11px] text-[#5B7C93] mt-0.5">
+                    {ringkasanData?.kartu?.faceTemplates ?? 0} santri terdaftar template wajah
+                  </p>
+                </div>
+              </div>
+
+              {/* CARD 4: ARUS KAS 7 HARI & SEBARAN SANTRI */}
+              <div className="grid lg:grid-cols-2 gap-4">
+                <ArchCard title="Arus Kas 7 Hari Terakhir" eyebrow="Net Cashflow (Penerimaan vs Pengeluaran)" icon={TrendingUp}>
+                  <div className="space-y-2">
+                    {(ringkasanData?.cashflowTujuhHari || []).length > 0 ? (
+                      ringkasanData.cashflowTujuhHari.map((c) => (
+                        <div key={c.tanggal} className="flex items-center justify-between text-xs py-1.5 border-b border-[#EAF4FB] last:border-0">
+                          <span className="font-medium text-[#17242E]">{formatTanggalISO(c.tanggal)}</span>
+                          <span className={`font-bold ${c.neto >= 0 ? "text-emerald-700" : "text-[#B5533C]"}`}>
+                            {c.neto >= 0 ? "+" : ""}{rupiah(c.neto)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <EmptyState text="Belum ada catatan mutasi cashflow 7 hari terakhir." />
+                    )}
+                  </div>
+                </ArchCard>
+
+                <ArchCard title="Distribusi Santri per Kelas" eyebrow="Kapasitas & Rombel Terbesar" icon={School}>
+                  <div className="space-y-2">
+                    {(ringkasanData?.perKelas || []).length > 0 ? (
+                      ringkasanData.perKelas.map((k) => (
+                        <div key={k.kelas} className="flex items-center justify-between text-xs py-1.5 border-b border-[#EAF4FB] last:border-0">
+                          <span className="font-medium text-[#17242E]">{k.kelas}</span>
+                          <span className="font-bold text-[#0C4A6E] px-2 py-0.5 rounded-md bg-[#EAF4FB]">
+                            {k.jumlah} Santri
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <EmptyState text="Belum ada data distribusi kelas." />
+                    )}
+                  </div>
+                </ArchCard>
+              </div>
+
+              {/* CARD 5: LIVE AUDIT LOG STREAM & TELEMETRI SERVER */}
+              <div className="grid lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <ArchCard title="Aktivitas Terkini (Live Audit Stream)" eyebrow="10 Catatan Keamanan & Operasional Terakhir" icon={ClipboardList}>
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {(ringkasanData?.aktivitas || []).length > 0 ? (
+                        ringkasanData.aktivitas.map((act, i) => (
+                          <div key={i} className="text-xs py-2 border-b border-[#EAF4FB] last:border-0 flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-[#0C4A6E]">{act.aksi}</span>
+                                <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                                  {act.targetTipe || "System"}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-[#5B7C93] mt-0.5">
+                                Aktor: <strong className="text-[#17242E]">{act.aktorRole || "User"}</strong> {act.targetId ? `· Target ID: ${act.targetId.slice(0, 8)}...` : ""}
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-[#5B7C93] shrink-0 font-mono">
+                              {act.waktu ? new Date(act.waktu).toLocaleTimeString("id-ID") : "-"}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <EmptyState text="Belum ada rekaman audit log." />
+                      )}
+                    </div>
+                  </ArchCard>
+                </div>
+
+                <div>
+                  <ArchCard title="Telemetri Server" eyebrow="Koneksi & Status Database" icon={Database}>
+                    <div className="space-y-2.5 text-xs">
+                      <div className="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#DCEDF7]">
+                        <span className="text-[10px] text-[#5B7C93] uppercase font-bold tracking-wider">Engine Database</span>
+                        <p className="font-semibold text-[#0C4A6E] mt-0.5">PostgreSQL Cloud (Neon/Railway)</p>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#DCEDF7]">
+                        <span className="text-[10px] text-[#5B7C93] uppercase font-bold tracking-wider">Connection Pool</span>
+                        <div className="flex items-center justify-between font-semibold text-[#17242E] mt-0.5">
+                          <span>Koneksi Aktif: {ringkasanData?.poolStats?.totalCount ?? dbStatus?.poolStats?.totalCount ?? 1}</span>
+                          <span>Idle: {ringkasanData?.poolStats?.idleCount ?? dbStatus?.poolStats?.idleCount ?? 0}</span>
+                        </div>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#DCEDF7]">
+                        <span className="text-[10px] text-[#5B7C93] uppercase font-bold tracking-wider">Server Uptime</span>
+                        <p className="font-semibold text-emerald-700 mt-0.5">
+                          {Math.floor((ringkasanData?.serverUptimeDetik || 0) / 60)} menit berjalan lancar
+                        </p>
+                      </div>
+                    </div>
+                  </ArchCard>
+                </div>
+              </div>
+            </div>
           )}
 
           {adminTab === "akun" && (
@@ -9122,29 +9378,138 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [waliForm, setWaliForm] = useState({ nama: "", hp: "", username: "", password: "" });
   const [editingWaliId, setEditingWaliId] = useState(null);
   const [waliFormError, setWaliFormError] = useState("");
-  const simpanWali = () => {
+  const [waliSuccessMsg, setWaliSuccessMsg] = useState("");
+  const [waliBusy, setWaliBusy] = useState(false);
+
+  const simpanWali = async () => {
     setWaliFormError("");
-    if (!waliForm.nama || !waliForm.hp) return;
-    if (editingWaliId) {
-      setData((d) => ({ ...d, wali: d.wali.map((w) => w.id === editingWaliId ? { ...w, nama: waliForm.nama, hp: waliForm.hp } : w) }));
-    } else {
-      if (!waliForm.username || !waliForm.password) { setWaliFormError("Username dan kata sandi wajib diisi."); return; }
-      if (data.wali.some((w) => w.username === waliForm.username) || data.guru.some((g) => g.username === waliForm.username)) {
-        setWaliFormError("Username itu sudah dipakai (harus unik di seluruh sistem untuk login satu pintu)."); return;
-      }
-      setData((d) => ({ ...d, wali: [...d.wali, { ...waliForm, id: uid() }] }));
+    setWaliSuccessMsg("");
+    if (!waliForm.nama.trim() || !waliForm.hp.trim()) {
+      setWaliFormError("Nama dan nomor HP wali santri wajib diisi.");
+      return;
     }
-    setWaliForm({ nama: "", hp: "", username: "", password: "" }); setEditingWaliId(null);
+    setWaliBusy(true);
+    try {
+      if (editingWaliId) {
+        if (backendToken) {
+          await backendApi(`/admin/wali/${editingWaliId}`, {
+            method: "PUT",
+            token: backendToken,
+            body: { nama: waliForm.nama.trim(), hp: waliForm.hp.trim() },
+          });
+        }
+        setData((d) => ({
+          ...d,
+          wali: d.wali.map((w) => w.id === editingWaliId ? { ...w, nama: waliForm.nama.trim(), hp: waliForm.hp.trim() } : w),
+        }));
+        setWaliSuccessMsg("Perubahan data wali berhasil disimpan.");
+      } else {
+        if (!waliForm.username.trim() || !waliForm.password) {
+          setWaliFormError("Username dan kata sandi wajib diisi.");
+          setWaliBusy(false);
+          return;
+        }
+        let createdWali = { ...waliForm, id: uid(), santriList: [] };
+        if (backendToken) {
+          createdWali = await backendApi("/admin/wali", {
+            method: "POST",
+            token: backendToken,
+            body: {
+              nama: waliForm.nama.trim(),
+              hp: waliForm.hp.trim(),
+              username: waliForm.username.trim(),
+              password: waliForm.password,
+            },
+          });
+        }
+        setData((d) => ({
+          ...d,
+          wali: [createdWali, ...d.wali.filter((w) => w.id !== createdWali.id)],
+        }));
+        setWaliSuccessMsg(`Akun wali "${createdWali.nama}" berhasil didaftarkan.`);
+      }
+      setWaliForm({ nama: "", hp: "", username: "", password: "" });
+      setEditingWaliId(null);
+      if (typeof muatSantriBiodata === "function") muatSantriBiodata();
+    } catch (err) {
+      setWaliFormError(err.message || "Gagal menyimpan data wali.");
+    } finally {
+      setWaliBusy(false);
+    }
   };
-  const bukaEditWali = (w) => { setWaliForm({ nama: w.nama, hp: w.hp, username: w.username, password: "" }); setEditingWaliId(w.id); setWaliFormError(""); };
-  const batalEditWali = () => { setWaliForm({ nama: "", hp: "", username: "", password: "" }); setEditingWaliId(null); setWaliFormError(""); };
-  const delWali = (id) => setData((d) => ({ ...d, wali: d.wali.filter((w) => w.id !== id) }));
+
+  const bukaEditWali = (w) => {
+    setWaliForm({ nama: w.nama, hp: w.hp, username: w.username, password: "" });
+    setEditingWaliId(w.id);
+    setWaliFormError("");
+    setWaliSuccessMsg("");
+  };
+
+  const batalEditWali = () => {
+    setWaliForm({ nama: "", hp: "", username: "", password: "" });
+    setEditingWaliId(null);
+    setWaliFormError("");
+    setWaliSuccessMsg("");
+  };
+
+  const delWali = async (w) => {
+    const id = typeof w === "object" ? w.id : w;
+    const targetWali = data.wali.find((x) => x.id === id);
+    const namaWali = targetWali?.nama || "wali ini";
+
+    const anakTerkait = (targetWali?.santriList && targetWali.santriList.length)
+      ? targetWali.santriList
+      : data.santri.filter((s) => s.waliId === id);
+
+    if (anakTerkait.length > 0) {
+      const daftarNama = anakTerkait.map((a) => a.nama).join(", ");
+      alert(`Tidak dapat menghapus akun "${namaWali}" karena masih terhubung dengan ${anakTerkait.length} santri:\n${daftarNama}\n\nSilakan ubah wali di menu Santri terlebih dahulu.`);
+      return;
+    }
+
+    if (!confirm(`Hapus akun wali ${namaWali}? Aksi ini permanen.`)) return;
+
+    try {
+      if (backendToken) {
+        await backendApi(`/admin/wali/${id}`, { method: "DELETE", token: backendToken });
+      }
+      setData((d) => ({ ...d, wali: d.wali.filter((item) => item.id !== id) }));
+      setWaliSuccessMsg(`Akun wali "${namaWali}" berhasil dihapus.`);
+    } catch (err) {
+      alert("Gagal menghapus akun wali: " + err.message);
+    }
+  };
+
   const [waliPwDraft, setWaliPwDraft] = useState({});
-  const simpanPasswordWali = (waliId) => {
-    const pw = waliPwDraft[waliId];
+  const [waliPwBusyId, setWaliPwBusyId] = useState(null);
+
+  const simpanPasswordWali = async (waliId) => {
+    const pw = (waliPwDraft[waliId] || "").trim();
     if (!pw) return;
-    setData((d) => ({ ...d, wali: d.wali.map((w) => w.id === waliId ? { ...w, password: pw } : w) }));
-    setWaliPwDraft((d) => ({ ...d, [waliId]: "" }));
+    if (pw.length < 6) {
+      alert("Kata sandi baru minimal 6 karakter.");
+      return;
+    }
+    setWaliPwBusyId(waliId);
+    try {
+      if (backendToken) {
+        await backendApi(`/admin/wali/${waliId}/reset-password`, {
+          method: "POST",
+          token: backendToken,
+          body: { password: pw, newPassword: pw },
+        });
+      }
+      setData((d) => ({
+        ...d,
+        wali: d.wali.map((w) => w.id === waliId ? { ...w, password: pw, mustChangePassword: true, statusAkun: "Belum Aktivasi" } : w),
+      }));
+      setWaliPwDraft((d) => ({ ...d, [waliId]: "" }));
+      alert("Kata sandi wali berhasil direset di server. Status akun menjadi 'Belum Aktivasi' (wali wajib ganti kata sandi saat login berikutnya).");
+    } catch (err) {
+      alert("Gagal mengubah kata sandi: " + err.message);
+    } finally {
+      setWaliPwBusyId(null);
+    }
   };
 
   // ---------- SEKRETARIAT PONDOK: Surat Keluar ----------
@@ -12260,37 +12625,127 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       {tab === "wali" && (
         <ArchCard title="Data Wali Santri" eyebrow={`${data.wali.length} Wali Terdaftar`} icon={Users}>
           <div className="flex flex-wrap gap-2 mb-2">
-            <input placeholder="Nama wali" value={waliForm.nama} onChange={(e) => setWaliForm({ ...waliForm, nama: e.target.value })} className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-            <input placeholder="No. HP" value={waliForm.hp} onChange={(e) => setWaliForm({ ...waliForm, hp: e.target.value })} className="w-40 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            <input
+              placeholder="Nama wali"
+              value={waliForm.nama}
+              disabled={waliBusy}
+              onChange={(e) => setWaliForm({ ...waliForm, nama: e.target.value })}
+              className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm"
+            />
+            <input
+              placeholder="No. HP / WhatsApp"
+              value={waliForm.hp}
+              disabled={waliBusy}
+              onChange={(e) => setWaliForm({ ...waliForm, hp: e.target.value })}
+              className="w-48 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm"
+            />
           </div>
           {!editingWaliId && (
             <div className="flex flex-wrap gap-2 mb-2">
-              <input placeholder="Username" value={waliForm.username} onChange={(e) => setWaliForm({ ...waliForm, username: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-              <input type="password" placeholder="Kata sandi awal" value={waliForm.password} onChange={(e) => setWaliForm({ ...waliForm, password: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+              <input
+                placeholder="Username akun login"
+                value={waliForm.username}
+                disabled={waliBusy}
+                onChange={(e) => setWaliForm({ ...waliForm, username: e.target.value })}
+                className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm"
+              />
+              <input
+                type="password"
+                placeholder="Kata sandi awal (min. 6 karakter)"
+                value={waliForm.password}
+                disabled={waliBusy}
+                onChange={(e) => setWaliForm({ ...waliForm, password: e.target.value })}
+                className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm"
+              />
             </div>
           )}
           {waliFormError && <p className="text-xs text-[#B5533C] mb-2">{waliFormError}</p>}
+          {waliSuccessMsg && <p className="text-xs text-emerald-700 font-medium mb-2">✓ {waliSuccessMsg}</p>}
           <div className="flex flex-wrap gap-2 mb-5">
-            <button onClick={simpanWali} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />{editingWaliId ? "Simpan Perubahan" : "Tambah"}</button>
-            {editingWaliId && <button onClick={batalEditWali} className="text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]">Batal</button>}
+            <button
+              onClick={simpanWali}
+              disabled={waliBusy}
+              className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"
+            >
+              <Plus size={15} />
+              {waliBusy ? "Menyimpan..." : editingWaliId ? "Simpan Perubahan" : "Tambah Wali"}
+            </button>
+            {editingWaliId && (
+              <button
+                onClick={batalEditWali}
+                disabled={waliBusy}
+                className="text-sm px-4 py-2 rounded-xl border border-[#CFE3F0] text-[#45657A]"
+              >
+                Batal
+              </button>
+            )}
           </div>
+
           <div className="divide-y divide-[#DCEDF7]">
-            {data.wali.map((w) => (
-              <div key={w.id} className="py-2.5 text-sm">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div><span className="text-[#17242E] font-medium">{w.nama}</span><span className="text-[#5B7C93]"> · {w.hp} · Username: {w.username}</span></div>
-                  <div className="flex items-center gap-1">
-                    <IconBtn tone="ok" onClick={() => bukaEditWali(w)} title="Edit"><Pencil size={15} /></IconBtn>
-                    <IconBtn onClick={() => delWali(w.id)} title="Hapus"><Trash2 size={15} /></IconBtn>
+            {data.wali.map((w) => {
+              const anakTerkait = (w.santriList && w.santriList.length)
+                ? w.santriList
+                : data.santri.filter((s) => s.waliId === w.id);
+              const isAktif = w.statusAkun === "Aktif";
+
+              return (
+                <div key={w.id} className="py-3 text-sm space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#17242E] font-bold text-sm">{w.nama}</span>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                          isAktif ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}>
+                          {isAktif ? "Akun Aktif" : "Belum Aktivasi"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#5B7C93] mt-0.5">
+                        HP: <span className="font-medium text-[#17242E]">{w.hp || "-"}</span> · Username: <span className="font-mono text-[#0C4A6E] font-medium">{w.username}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <IconBtn tone="ok" onClick={() => bukaEditWali(w)} title="Edit Nama & Kontak"><Pencil size={15} /></IconBtn>
+                      <IconBtn onClick={() => delWali(w)} title="Hapus Akun Wali"><Trash2 size={15} /></IconBtn>
+                    </div>
+                  </div>
+
+                  {/* Badges Santri Terhubung */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[11px] text-[#5B7C93] font-medium">Santri Terhubung:</span>
+                    {anakTerkait.length > 0 ? (
+                      anakTerkait.map((s) => (
+                        <span key={s.id} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-[#EAF4FB] text-[#0C4A6E] border border-[#CFE3F0] px-2 py-0.5 rounded-lg">
+                          <GraduationCap size={12} />
+                          {s.nama} {s.kelas ? `(${s.kelas})` : ""}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[11px] text-[#94A3B8] italic">Belum ada santri terhubung</span>
+                    )}
+                  </div>
+
+                  {/* Reset Password Form */}
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <input
+                      type="password"
+                      placeholder="Kata sandi baru (reset)"
+                      value={waliPwDraft[w.id] || ""}
+                      onChange={(e) => setWaliPwDraft((d) => ({ ...d, [w.id]: e.target.value }))}
+                      className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2.5 py-1 text-xs flex-1 max-w-[220px]"
+                    />
+                    <button
+                      onClick={() => simpanPasswordWali(w.id)}
+                      disabled={waliPwBusyId === w.id}
+                      className="text-xs px-3 py-1 rounded-xl btn-gradient hover:shadow-lg active:scale-95 disabled:opacity-50"
+                    >
+                      {waliPwBusyId === w.id ? "Memproses..." : "Reset Sandi"}
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <input type="password" placeholder="Kata sandi baru" value={waliPwDraft[w.id] || ""} onChange={(e) => setWaliPwDraft((d) => ({ ...d, [w.id]: e.target.value }))} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-xs flex-1 max-w-[220px]" />
-                  <button onClick={() => simpanPasswordWali(w.id)} className="text-xs px-2.5 py-1 rounded-xl btn-gradient  hover:shadow-lg active:scale-95">Ubah Sandi</button>
-                </div>
-              </div>
-            ))}
-            {!data.wali.length && <EmptyState text="Belum ada wali terdaftar." />}
+              );
+            })}
+            {!data.wali.length && <EmptyState text="Belum ada wali santri terdaftar." />}
           </div>
         </ArchCard>
       )}

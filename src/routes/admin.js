@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const { query, queryOne, queryAll, withTransaction, getPoolStats } = require("../db");
 const { requireAuth, requireAdmin, requireDashboardAdmin, isSuperAdmin } = require("../auth");
 const {
-  semuaGuru, buatGuru, editGuru, editPasswordGuru, editPasswordWali, hapusGuru,
+  semuaGuru, buatGuru, editGuru, editPasswordGuru, buatWali, hapusWali, editPasswordWali, hapusGuru,
   semuaUnitUsaha, tambahUnitUsaha, hapusUnitUsaha,
   semuaTahunAjaran, tambahTahunAjaran, aktifkanTahunAjaran, hapusTahunAjaran,
   ambilTampilan, simpanTampilan, ringkasanSuperadmin, daftarWali, daftarKartuSuperadmin,
@@ -139,6 +139,21 @@ router.delete(["/guru/:id", "/staf/:id", "/akun/:id"], requireAuth, requireAdmin
 // ---- Pengelolaan Wali ----
 router.get("/wali", requireAuth, asyncHandler(async (req, res) => {
   res.json(await daftarWali({ page: req.query.page, limit: req.query.limit, q: req.query.q }));
+}));
+
+router.post("/wali", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedAdminOrSekretariat(req)) {
+    return res.status(403).json({ error: "Hanya Superadmin atau Sekretariat yang dapat menambah akun wali." });
+  }
+  const { nama, hp, username, password } = req.body || {};
+  res.status(201).json(await buatWali({ nama, hp, username, password, actingUserId: req.user.id }));
+}));
+
+router.delete("/wali/:id", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedAdminOrSekretariat(req)) {
+    return res.status(403).json({ error: "Hanya Superadmin atau Sekretariat yang dapat menghapus akun wali." });
+  }
+  res.json(await hapusWali({ id: req.params.id, actingUserId: req.user.id }));
 }));
 
 router.put("/wali/:id", requireAuth, asyncHandler(async (req, res) => {

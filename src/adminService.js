@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
-const { query, queryOne, queryAll, withTransaction } = require("./db");
+const { query, queryOne, queryAll, withTransaction, getPoolStats } = require("./db");
 const { CashlessError, SANTRI_BIODATA_FIELDS, getSantriRow } = require("./cashlessService");
 
 const uid = () => crypto.randomUUID();
@@ -155,6 +155,85 @@ async function editPasswordWali({ id, password, actingUserId }) {
 
     await catatAuditAdmin({ aktorId: actingUserId, aksi: "auth.password_reset", targetId: row.id, targetTipe: "Wali" });
     return { id: row.id, username: row.username, passwordDiubah: true };
+  });
+}
+
+async function buatWali({ nama, hp, username, password, actingUserId }) {
+  const { PASSWORD_MIN_LENGTH } = require("./passwordPolicy");
+  const cleanNama = String(nama || "").trim();
+  const cleanHp = hp ? String(hp).trim() : "";
+  const cleanUsername = String(username || "").trim().toLowerCase();
+  const cleanPassword = String(password || "").trim();
+
+  if (!cleanNama) throw new CashlessError(400, "Nama wali santri wajib diisi.");
+  if (!cleanUsername) throw new CashlessError(400, "Username wali wajib diisi.");
+  if (!cleanPassword || cleanPassword.length < PASSWORD_MIN_LENGTH) {
+    throw new CashlessError(400, `Password minimal ${PASSWORD_MIN_LENGTH} karakter.`);
+  }
+
+  return withTransaction(async () => {
+    const existingWali = await queryOne('SELECT "id" FROM "Wali" WHERE LOWER("username") = $1', [cleanUsername]);
+    if (existingWali) throw new CashlessError(400, "Username sudah digunakan oleh akun wali lain.");
+    const existingGuru = await queryOne('SELECT "id" FROM "Guru" WHERE LOWER("username") = $1', [cleanUsername]);
+    if (existingGuru) throw new CashlessError(400, "Username sudah digunakan oleh akun guru/staf.");
+
+    const newId = crypto.randomUUID();
+    const hash = await bcrypt.hash(cleanPassword, 10);
+    const nowUtc = new Date().toISOString();
+
+    await query(
+      `INSERT INTO "Wali" ("id", "nama", "hp", "username", "password", "mustChangePassword", "statusAkun", "createdAt")
+       VALUES ($1, $2, $3, $4, $5, TRUE, 'Belum Aktivasi', $6)`,
+      [newId, cleanNama, cleanHp, cleanUsername, hash, nowUtc]
+    );
+
+    await catatAuditAdmin({
+      aktorId: actingUserId,
+      aksi: "admin.wali_created",
+      targetId: newId,
+      targetTipe: "Wali",
+      detail: { nama: cleanNama, username: cleanUsername, hp: cleanHp },
+    });
+
+    return {
+      id: newId,
+      nama: cleanNama,
+      hp: cleanHp,
+      username: cleanUsername,
+      statusAkun: "Belum Aktivasi",
+      createdAt: nowUtc,
+      santriList: [],
+    };
+  });
+}
+
+async function hapusWali({ id, actingUserId }) {
+  if (!id) throw new CashlessError(400, "ID wali wajib diisi.");
+
+  return withTransaction(async () => {
+    const wali = await queryOne('SELECT "id", "nama", "username" FROM "Wali" WHERE "id" = $1', [id]);
+    if (!wali) throw new CashlessError(404, "Data wali santri tidak ditemukan.");
+
+    const santriTerkait = await queryAll('SELECT "id", "nama" FROM "Santri" WHERE "waliId" = $1', [id]);
+    if (santriTerkait.length > 0) {
+      const namaAnak = santriTerkait.map((s) => s.nama).slice(0, 3).join(", ");
+      throw new CashlessError(
+        400,
+        `Tidak dapat menghapus akun wali karena masih terhubung dengan ${santriTerkait.length} santri (${namaAnak}). Putuskan atau ubah tautan wali santri terlebih dahulu.`
+      );
+    }
+
+    await query('DELETE FROM "Wali" WHERE "id" = $1', [id]);
+
+    await catatAuditAdmin({
+      aktorId: actingUserId,
+      aksi: "admin.wali_deleted",
+      targetId: id,
+      targetTipe: "Wali",
+      detail: { nama: wali.nama, username: wali.username },
+    });
+
+    return { id, ok: true, message: `Akun wali ${wali.nama} berhasil dihapus.` };
   });
 }
 
@@ -363,63 +442,113 @@ async function simpanTampilan(tampilan) {
 }
 
 async function ringkasanSuperadmin() {
-  const count = async (table, condition = "", params = []) => Number((await queryOne(`SELECT COUNT(*) AS "n" FROM "${table}" ${condition}`, params)).n);
   const today = new Date().toISOString().slice(0, 10);
-  const [santri, wali, guru, absensiHariIni, izinMenunggu, topupMenunggu, anggaranMenunggu,
-    tagihan, transaksi, faceTemplates, cashflowTujuhHari, perKelas, aktivitas] = await Promise.all([
-    count("Santri"),
-    count("Wali"),
-    count("Guru"),
-    count("Absensi", 'WHERE "tanggalISO" = $1', [today]),
-    count("Perizinan", 'WHERE "status" = \'Menunggu\''),
-    count("PermintaanBMT", 'WHERE "status" = \'Menunggu\''),
-    count("PengajuanAnggaran", 'WHERE "status" = \'Diajukan\''),
+  const [countsRow, tagihan, transaksi, faceTemplatesRow, cashflowTujuhHari, perKelas, aktivitas] = await Promise.all([
+    queryOne(`
+      SELECT
+        (SELECT COUNT(*) FROM "Santri") AS "santri",
+        (SELECT COUNT(*) FROM "Wali") AS "wali",
+        (SELECT COUNT(*) FROM "Guru") AS "guru",
+        (SELECT COUNT(*) FROM "Absensi" WHERE "tanggalISO" = $1) AS "absensiHariIni",
+        (SELECT COUNT(*) FROM "Perizinan" WHERE "status" = 'Menunggu') AS "izinMenunggu",
+        (SELECT COUNT(*) FROM "PermintaanBMT" WHERE "status" = 'Menunggu') AS "topupMenunggu",
+        (SELECT COUNT(*) FROM "PengajuanAnggaran" WHERE "status" = 'Diajukan') AS "anggaranMenunggu",
+        (SELECT COALESCE(SUM("saldo"), 0) FROM "Santri") AS "totalSaldoSantri"
+    `, [today]),
     queryOne('SELECT COUNT(*) AS "jumlah", COALESCE(SUM("jumlah" - "jumlahDibayar"), 0) AS "tunggakan" FROM "Tagihan" WHERE "jumlah" > "jumlahDibayar"'),
-    queryOne('SELECT COUNT(*) AS "jumlah", COALESCE(SUM("jumlah"), 0) AS "nominal" FROM "TransaksiCashless"'),
-    count("FaceTemplate"),
+    queryOne(`
+      SELECT
+        COUNT(*) AS "jumlahTotal",
+        COALESCE(SUM("jumlah"), 0) AS "nominalTotal",
+        COUNT(CASE WHEN "tanggalISO" = $1 THEN 1 END) AS "jumlahHariIni",
+        COALESCE(SUM(CASE WHEN "tanggalISO" = $1 THEN "jumlah" ELSE 0 END), 0) AS "nominalHariIni"
+      FROM "TransaksiCashless"
+    `, [today]),
+    queryOne('SELECT COUNT(*) AS "total" FROM "FaceTemplate"'),
     queryAll(`SELECT "tanggalISO" AS "tanggal", SUM(CASE WHEN "jenis" = 'Masuk' THEN "jumlah" ELSE -"jumlah" END) AS "neto"
       FROM "Cashflow" WHERE "tanggalISO" >= to_char(CURRENT_DATE - INTERVAL '6 days', 'YYYY-MM-DD')
       GROUP BY "tanggalISO" ORDER BY "tanggalISO"`),
     queryAll('SELECT COALESCE("kelas", \'Belum ditentukan\') AS "kelas", COUNT(*) AS "jumlah" FROM "Santri" GROUP BY "kelas" ORDER BY "jumlah" DESC LIMIT 8'),
-    queryAll(`SELECT "waktu", "aktorRole", "aksi", "targetTipe", "targetId"
-      FROM "AuditLog" ORDER BY "waktu" DESC LIMIT 8`),
+    queryAll(`SELECT "waktu", "aktorRole", "aksi", "targetTipe", "targetId", "detail"
+      FROM "AuditLog" ORDER BY "waktu" DESC LIMIT 10`),
   ]);
+
+  const santri = Number(countsRow?.santri || 0);
+  const wali = Number(countsRow?.wali || 0);
+  const guru = Number(countsRow?.guru || 0);
+  const absensiHariIni = Number(countsRow?.absensiHariIni || 0);
+  const izinMenunggu = Number(countsRow?.izinMenunggu || 0);
+  const topupMenunggu = Number(countsRow?.topupMenunggu || 0);
+  const anggaranMenunggu = Number(countsRow?.anggaranMenunggu || 0);
+  const totalSaldoSantri = Number(countsRow?.totalSaldoSantri || 0);
+  const faceTemplates = Number(faceTemplatesRow?.total || 0);
 
   const statusLayanan = await queryOne('SELECT 1 AS "ok"');
   return {
     diperbaruiPada: new Date().toISOString(),
     kartu: {
       santri, wali, guru, absensiHariIni, izinMenunggu, topupMenunggu, anggaranMenunggu,
-      tagihanMenunggak: Number(tagihan.jumlah),
-      nominalTunggakan: Number(tagihan.tunggakan),
-      jumlahTransaksiCashless: Number(transaksi.jumlah),
-      nominalTransaksiCashless: Number(transaksi.nominal),
+      totalSaldoSantri,
+      tagihanMenunggak: Number(tagihan?.jumlah || 0),
+      nominalTunggakan: Number(tagihan?.tunggakan || 0),
+      jumlahTransaksiCashless: Number(transaksi?.jumlahTotal || 0),
+      nominalTransaksiCashless: Number(transaksi?.nominalTotal || 0),
+      transaksiHariIni: Number(transaksi?.jumlahHariIni || 0),
+      nominalHariIni: Number(transaksi?.nominalHariIni || 0),
       faceTemplates,
+      persenFaceEnrollment: santri > 0 ? Math.round((faceTemplates / santri) * 100) : 0,
     },
-    cashflowTujuhHari: cashflowTujuhHari.map((row) => ({ ...row, neto: Number(row.neto) })),
-    perKelas: perKelas.map((row) => ({ ...row, jumlah: Number(row.jumlah) })),
-    aktivitas,
+    cashflowTujuhHari: (cashflowTujuhHari || []).map((row) => ({ ...row, neto: Number(row.neto) })),
+    perKelas: (perKelas || []).map((row) => ({ ...row, jumlah: Number(row.jumlah) })),
+    aktivitas: aktivitas || [],
     statusLayanan: !!statusLayanan?.ok,
+    poolStats: typeof getPoolStats === "function" ? getPoolStats() : null,
+    serverUptimeDetik: Math.floor(process.uptime()),
   };
 }
 
 async function daftarWali({ page, limit, q } = {}) {
+  const selectCols = `
+    w."id", w."nama", w."hp", w."username", w."statusAkun", w."createdAt",
+    COALESCE(
+      json_agg(
+        json_build_object('id', s."id", 'nama', s."nama", 'kelas', s."kelas", 'nis', s."nis")
+      ) FILTER (WHERE s."id" IS NOT NULL),
+      '[]'::json
+    ) AS "santriList"
+  `;
+
   if (page || limit || q) {
     const p = Math.max(1, Number(page || 1));
     const l = Math.min(100, Math.max(1, Number(limit || 20)));
     const offset = (p - 1) * l;
     const queryStr = (q || "").trim().toLowerCase();
-    const whereSql = queryStr ? `WHERE LOWER("nama") LIKE $1 OR LOWER(COALESCE("hp", '')) LIKE $1 OR LOWER("username") LIKE $1` : "";
+    const whereSql = queryStr ? `WHERE LOWER(w."nama") LIKE $1 OR LOWER(COALESCE(w."hp", '')) LIKE $1 OR LOWER(w."username") LIKE $1` : "";
     const params = queryStr ? [`%${queryStr}%`] : [];
 
     const [items, countRow] = await Promise.all([
-      queryAll(`SELECT "id", "nama", "hp", "username", "statusAkun", "createdAt" FROM "Wali" ${whereSql} ORDER BY "nama" LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, [...params, l, offset]),
-      queryOne(`SELECT COUNT(*) AS "total" FROM "Wali" ${whereSql}`, params),
+      queryAll(`
+        SELECT ${selectCols}
+        FROM "Wali" w
+        LEFT JOIN "Santri" s ON s."waliId" = w."id"
+        ${whereSql}
+        GROUP BY w."id"
+        ORDER BY w."nama"
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      `, [...params, l, offset]),
+      queryOne(`SELECT COUNT(*) AS "total" FROM "Wali" w ${whereSql}`, params),
     ]);
     const total = Number(countRow.total);
     return { items, page: p, limit: l, total, totalPages: Math.ceil(total / l) };
   }
-  return queryAll('SELECT "id", "nama", "hp", "username", "statusAkun", "createdAt" FROM "Wali" ORDER BY "nama"');
+
+  return queryAll(`
+    SELECT ${selectCols}
+    FROM "Wali" w
+    LEFT JOIN "Santri" s ON s."waliId" = w."id"
+    GROUP BY w."id"
+    ORDER BY w."nama"
+  `);
 }
 
 async function daftarKartuSuperadmin({ page, limit, q, kelas } = {}) {
@@ -521,7 +650,7 @@ async function ubahStatusProduk({ id, aktif }) {
 }
 
 module.exports = {
-  semuaGuru, buatGuru, editGuru, editPasswordGuru, editPasswordWali, hapusGuru,
+  semuaGuru, buatGuru, editGuru, editPasswordGuru, buatWali, hapusWali, editPasswordWali, hapusGuru,
   semuaUnitUsaha, tambahUnitUsaha, hapusUnitUsaha,
   semuaTahunAjaran, tambahTahunAjaran, aktifkanTahunAjaran, hapusTahunAjaran,
   ambilTampilan, simpanTampilan, ringkasanSuperadmin, daftarWali, daftarKartuSuperadmin,
