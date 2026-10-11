@@ -13,6 +13,7 @@ import {
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
+import * as XLSX from "xlsx";
 
 // ---------- SEED DATA (data contoh, sementara di memori) ----------
 
@@ -8389,10 +8390,88 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [imporError, setImporError] = useState("");
   const [imporSuccess, setImporSuccess] = useState("");
 
+  const parseSantriRows = (rows2D) => {
+    if (!Array.isArray(rows2D) || rows2D.length < 2) return [];
+
+    const normalisasiTgl = (val) => {
+      if (!val) return "";
+      if (typeof val === "number" && val > 20000 && val < 60000) {
+        const utc_days = Math.floor(val - 25569);
+        const date_info = new Date(utc_days * 86400 * 1000);
+        if (!isNaN(date_info.getTime())) return date_info.toISOString().slice(0, 10);
+      }
+      if (val instanceof Date && !isNaN(val.getTime())) {
+        return val.toISOString().slice(0, 10);
+      }
+      const s = String(val).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (dmyMatch) {
+        return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`;
+      }
+      return s;
+    };
+
+    const normalisasiJK = (val) => {
+      if (!val) return "";
+      const s = String(val).trim().toUpperCase();
+      if (s.startsWith("L") || s.includes("LAKI")) return "L";
+      if (s.startsWith("P") || s.includes("PEREMPUAN")) return "P";
+      return s;
+    };
+
+    // Cari baris header yang paling sesuai (biasanya baris 0, atau baris 1-5 jika ada judul)
+    let headerRowIndex = 0;
+    for (let r = 0; r < Math.min(6, rows2D.length); r++) {
+      const rowStrings = (rows2D[r] || []).map((c) => String(c || "").toLowerCase().replace(/[^a-z0-9]/g, ''));
+      const hasKeywords = rowStrings.some((c) => ["nama", "namasantri", "namalengkap", "nis", "noinduk", "kelas"].includes(c));
+      if (hasKeywords) {
+        headerRowIndex = r;
+        break;
+      }
+    }
+
+    const headers = (rows2D[headerRowIndex] || []).map((h) => String(h || "").toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const rows = [];
+
+    for (let i = headerRowIndex + 1; i < rows2D.length; i++) {
+      const values = rows2D[i] || [];
+      if (!values.some((v) => v !== "" && v !== null && v !== undefined)) continue;
+      const rowObj = {};
+      headers.forEach((h, idx) => {
+        let key = h;
+        if (["namasantri", "nama_santri", "namalengkap", "nama", "namasiswa"].includes(h)) key = "nama";
+        else if (["nis", "noinduk", "nomorinduk", "stambuk", "nostambuk", "nomorstambuk", "nostambuknis"].includes(h)) key = "nis";
+        else if (["nisn", "nomorinduknasional", "noinduknasional"].includes(h)) key = "nisn";
+        else if (["kelas", "rombonganbelajar", "rombel", "kls"].includes(h)) key = "kelas";
+        else if (["jeniskelamin", "jk", "gender", "jeniskelaminlp", "lp"].includes(h)) key = "jenisKelamin";
+        else if (["namawali", "nama_wali", "namaayah", "namaibu", "orangtua", "wali", "wali_santri", "ayah", "ibu"].includes(h)) key = "namaWali";
+        else if (["hpwali", "hp_wali", "nohp", "nodarurat", "handphone", "nohpwali", "teleponwali", "nohpwhatsappwali", "nohpwalisantri", "kontakwali", "no_hp", "no_wa", "whatsapp"].includes(h)) key = "hpWali";
+        else if (["tanggallahir", "tanggal_lahir", "tgl_lahir", "tgllahir", "tanggallahiryyyymmdd", "tgl"].includes(h)) key = "tanggalLahir";
+        else if (["tempatlahir", "tempat_lahir", "tmptlahir", "kotalahir", "tempat"].includes(h)) key = "tempatLahir";
+        else if (["alamat", "alamatlengkap", "domisili", "alamatdomisili"].includes(h)) key = "alamat";
+        else if (["asrama", "namasrama", "kobong", "kamar", "kamarasrama", "gedung"].includes(h)) key = "asrama";
+
+        let rawVal = values[idx];
+        if (rawVal === undefined || rawVal === null) rawVal = "";
+        if (typeof rawVal === "string") {
+          rawVal = rawVal.trim();
+          if (rawVal.startsWith("'")) rawVal = rawVal.slice(1).trim();
+        }
+
+        if (key === "tanggalLahir") rawVal = normalisasiTgl(rawVal);
+        else if (key === "jenisKelamin") rawVal = normalisasiJK(rawVal);
+
+        rowObj[key] = String(rawVal);
+      });
+      if (rowObj.nama) rows.push(rowObj);
+    }
+    return rows;
+  };
+
   const parseSantriCSV = (text) => {
     if (!text || typeof text !== "string") return [];
     let cleanText = text;
-    // Hapus UTF-8 BOM jika ada
     if (cleanText.charCodeAt(0) === 0xFEFF) {
       cleanText = cleanText.slice(1);
     }
@@ -8418,57 +8497,61 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       return result;
     };
 
-    const headers = parseLine(lines[0]).map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
-    const rows = [];
+    const rows2D = lines.map(parseLine);
+    return parseSantriRows(rows2D);
+  };
 
-    const normalisasiTgl = (val) => {
-      if (!val) return "";
-      const s = String(val).trim();
-      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-      const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-      if (dmyMatch) {
-        return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`;
+  const parseSantriExcel = async (file) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const wb = XLSX.read(arrayBuffer, { type: "array", cellDates: true });
+    let allRows = [];
+    for (const sheetName of wb.SheetNames) {
+      const sheet = wb.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+      if (data && data.length > 1) {
+        const parsedSheet = parseSantriRows(data);
+        allRows = [...allRows, ...parsedSheet];
       }
-      return s;
-    };
-
-    const normalisasiJK = (val) => {
-      if (!val) return "";
-      const s = String(val).trim().toUpperCase();
-      if (s.startsWith("L") || s.includes("LAKI")) return "L";
-      if (s.startsWith("P") || s.includes("PEREMPUAN")) return "P";
-      return s;
-    };
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = parseLine(lines[i]);
-      if (!values.some((v) => v !== "")) continue;
-      const rowObj = {};
-      headers.forEach((h, idx) => {
-        let key = h;
-        if (["namasantri", "nama_santri", "namalengkap", "nama", "namasiswa"].includes(h)) key = "nama";
-        else if (["nis", "noinduk", "nomorinduk", "stambuk", "nostambuk", "nomorstambuk", "nostambuknis"].includes(h)) key = "nis";
-        else if (["nisn", "nomorinduknasional", "noinduknasional"].includes(h)) key = "nisn";
-        else if (["kelas", "rombonganbelajar", "rombel"].includes(h)) key = "kelas";
-        else if (["jeniskelamin", "jk", "gender", "jeniskelaminlp", "lp"].includes(h)) key = "jenisKelamin";
-        else if (["namawali", "nama_wali", "namaayah", "namaibu", "orangtua", "wali"].includes(h)) key = "namaWali";
-        else if (["hpwali", "hp_wali", "nohp", "nodarurat", "handphone", "nohpwali", "teleponwali", "nohpwhatsappwali", "nohpwalisantri", "kontakwali"].includes(h)) key = "hpWali";
-        else if (["tanggallahir", "tanggal_lahir", "tgl_lahir", "tgllahir", "tanggallahiryyyymmdd"].includes(h)) key = "tanggalLahir";
-        else if (["tempatlahir", "tempat_lahir", "tmptlahir", "kotalahir"].includes(h)) key = "tempatLahir";
-        else if (["alamat", "alamatlengkap", "domisili", "alamatdomisili"].includes(h)) key = "alamat";
-        else if (["asrama", "namasrama", "kobong", "kamar", "kamarasrama"].includes(h)) key = "asrama";
-
-        let rawVal = (values[idx] || "").trim();
-        if (rawVal.startsWith("'")) rawVal = rawVal.slice(1).trim();
-
-        if (key === "tanggalLahir") rawVal = normalisasiTgl(rawVal);
-        else if (key === "jenisKelamin") rawVal = normalisasiJK(rawVal);
-
-        rowObj[key] = rawVal;
-      });
-      if (rowObj.nama) rows.push(rowObj);
     }
-    return rows;
+    return allRows;
+  };
+
+  const unduhTemplateSantriExcel = async () => {
+    try {
+      const res = await fetch(`${BACKEND_API_BASE}/admin/impor/template.xlsx`, {
+        headers: { ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {}) },
+      });
+      if (!res.ok) throw new Error("Gagal mengunduh berkas Excel dari server.");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Template_Impor_Santri_MMA.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (_) {
+      const headers = [
+        "nama", "nis", "nisn", "kelas", "jenisKelamin",
+        "tempatLahir", "tanggalLahir", "alamat", "asrama",
+        "namaWali", "hpWali"
+      ];
+      const data = [
+        headers,
+        ["Ahmad Ridwan", "1001", "0012345678", "7A", "L", "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri", "Bpk. Ridwan", "081234567890"],
+        ["Siti Fatimah", "1002", "0087654321", "7B", "P", "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah", "Ibu Fatimah", "081987654321"],
+        ["Muhammad Farhan", "1003", "0091122334", "8A", "L", "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi", "Bpk. Hendra Gunawan", "082133445566"]
+      ];
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws["!cols"] = [
+        { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 14 },
+        { wch: 18 }, { wch: 15 }, { wch: 38 }, { wch: 22 }, { wch: 24 }, { wch: 18 }
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, "Data Santri");
+      XLSX.writeFile(wb, "Template_Impor_Santri_MMA.xlsx");
+    }
   };
 
   const unduhTemplateSantri = async () => {
@@ -10463,11 +10546,19 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 </button>
                 <button
                   type="button"
+                  onClick={unduhTemplateSantriExcel}
+                  className="flex items-center gap-1.5 border border-emerald-200 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors shadow-sm"
+                  title="Unduh format template Microsoft Excel (.xlsx) untuk impor santri"
+                >
+                  <Download size={14} /> Template Excel (.xlsx)
+                </button>
+                <button
+                  type="button"
                   onClick={unduhTemplateSantri}
                   className="flex items-center gap-1.5 border border-[#CFE3F0] text-[#0C4A6E] bg-white hover:bg-gray-50 text-xs px-3.5 py-2 rounded-xl font-semibold transition-colors"
-                  title="Unduh format template CSV/Excel untuk impor santri"
+                  title="Unduh format template CSV untuk impor santri"
                 >
-                  <Download size={14} /> Unduh Format CSV
+                  <Download size={14} /> Template CSV
                 </button>
                 <button
                   type="button"
@@ -10948,34 +11039,42 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   </div>
 
                   <div>
-                    <label className="font-semibold text-[#17242E] block mb-1">2. Pilih Berkas CSV / Excel</label>
+                    <label className="font-semibold text-[#17242E] block mb-1">2. Pilih Berkas Excel (.xlsx, .xls) atau CSV</label>
                     <div className="border-2 border-dashed border-[#CFE3F0] rounded-xl p-4 text-center hover:bg-gray-50/80 transition-colors">
                       <input
                         type="file"
                         id="input-impor-file"
-                        accept=".csv,.txt"
+                        accept=".xlsx,.xls,.csv,.txt"
                         className="hidden"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           setImporFileName(file.name);
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            const text = ev.target?.result || "";
-                            setImporFileText(text);
-                            const parsed = parseSantriCSV(text);
+                          setImporLoading(true);
+                          setImporError("");
+                          try {
+                            let parsed = [];
+                            if (/\.(xlsx|xls)$/i.test(file.name)) {
+                              parsed = await parseSantriExcel(file);
+                            } else {
+                              const text = await file.text();
+                              setImporFileText(text);
+                              parsed = parseSantriCSV(text);
+                            }
                             jalankanDryRunImpor(parsed);
-                          };
-                          reader.readAsText(file, "UTF-8");
+                          } catch (err) {
+                            setImporError("Gagal membaca berkas: " + (err.message || String(err)));
+                            setImporLoading(false);
+                          }
                         }}
                       />
                       <label htmlFor="input-impor-file" className="cursor-pointer block space-y-1.5">
                         <UploadCloud size={28} className="mx-auto text-[#0C4A6E]" />
                         <p className="font-medium text-[#0C4A6E]">
-                          {imporFileName ? `Berkas terpilih: ${imporFileName}` : "Klik untuk memilih berkas .CSV"}
+                          {imporFileName ? `Berkas terpilih: ${imporFileName}` : "Klik untuk memilih berkas Excel (.xlsx / .xls) atau CSV"}
                         </p>
                         <p className="text-[11px] text-[#5B7C93]">
-                          Gunakan berkas format CSV sesuai template (kolom: nama, nis, nisn, kelas, jenisKelamin, tempatLahir, tanggalLahir, alamat, asrama, namaWali, hpWali)
+                          Mendukung langsung berkas Excel (.xlsx, .xls) dan CSV satu lembar banyak kolom.
                         </p>
                       </label>
                     </div>
@@ -11060,13 +11159,24 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t">
-                  <button
-                    type="button"
-                    onClick={unduhTemplateSantri}
-                    className="text-xs text-[#0C4A6E] font-semibold underline flex items-center gap-1"
-                  >
-                    <Download size={13} /> Unduh Format Template
-                  </button>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={unduhTemplateSantriExcel}
+                      className="text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 transition-colors"
+                      title="Unduh Format Template Microsoft Excel (.xlsx)"
+                    >
+                      <Download size={13} /> Unduh Format Excel (.xlsx)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={unduhTemplateSantri}
+                      className="text-xs text-[#0C4A6E] hover:underline font-semibold flex items-center gap-1"
+                      title="Unduh Format Template CSV (.csv)"
+                    >
+                      <Download size={13} /> Format CSV
+                    </button>
+                  </div>
                   <div className="flex gap-2">
                     <button
                       type="button"

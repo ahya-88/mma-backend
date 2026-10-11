@@ -12,7 +12,7 @@ const {
   daftarPermintaanSuperadmin, daftarAuditSuperadmin, ubahStatusProduk,
 } = require("../adminService");
 const { CashlessError, getSantriRow, toPublicSantri } = require("../cashlessService");
-const { buatTemplateImporCSV } = require("../imporService");
+const { buatTemplateImporCSV, buatTemplateImporExcelBuffer } = require("../imporService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
@@ -239,6 +239,13 @@ router.get("/impor/template", requireAuth, asyncHandler(async (req, res) => {
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="Template_Impor_Santri_MMA.csv"');
   res.send(csvTemplate);
+}));
+
+router.get(["/impor/template.xlsx", "/impor/template-excel"], requireAuth, asyncHandler(async (req, res) => {
+  const buffer = buatTemplateImporExcelBuffer();
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", 'attachment; filename="Template_Impor_Santri_MMA.xlsx"');
+  res.send(buffer);
 }));
 
 router.post("/impor/dry-run", requireAuth, asyncHandler(async (req, res) => {

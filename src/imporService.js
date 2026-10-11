@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const { query, queryOne, queryAll, withTransaction } = require("./db");
 const { CashlessError, getSantriRow, SANTRI_BIODATA_FIELDS } = require("./cashlessService");
+const XLSX = require("xlsx");
 
 const uid = () => crypto.randomUUID();
 
@@ -64,6 +65,52 @@ function buatTemplateImporCSV() {
 
   const toCSVRow = (arr) => arr.map((item) => `"${String(item).replace(/"/g, '""')}"`).join(",");
   return "\uFEFF" + [headers.join(","), toCSVRow(contohBaris1), toCSVRow(contohBaris2), toCSVRow(contohBaris3)].join("\r\n") + "\r\n";
+}
+
+function buatTemplateImporExcelBuffer() {
+  const headers = [
+    "nama", "nis", "nisn", "kelas", "jenisKelamin",
+    "tempatLahir", "tanggalLahir", "alamat", "asrama",
+    "namaWali", "hpWali"
+  ];
+  const data = [
+    headers,
+    [
+      "Ahmad Ridwan", "1001", "0012345678", "7A", "L",
+      "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri",
+      "Bpk. Ridwan", "081234567890"
+    ],
+    [
+      "Siti Fatimah", "1002", "0087654321", "7B", "P",
+      "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah",
+      "Ibu Fatimah", "081987654321"
+    ],
+    [
+      "Muhammad Farhan", "1003", "0091122334", "8A", "L",
+      "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi",
+      "Bpk. Hendra Gunawan", "082133445566"
+    ]
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+
+  ws["!cols"] = [
+    { wch: 25 }, // nama
+    { wch: 12 }, // nis
+    { wch: 15 }, // nisn
+    { wch: 10 }, // kelas
+    { wch: 14 }, // jenisKelamin
+    { wch: 18 }, // tempatLahir
+    { wch: 15 }, // tanggalLahir
+    { wch: 38 }, // alamat
+    { wch: 22 }, // asrama
+    { wch: 24 }, // namaWali
+    { wch: 18 }, // hpWali
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Data Santri");
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
 async function prosesDryRunImpor(rows) {
@@ -542,6 +589,7 @@ async function bersihkanDataDemo({ konfirmasi, aktorId }) {
 
 module.exports = {
   buatTemplateImporCSV,
+  buatTemplateImporExcelBuffer,
   prosesDryRunImpor,
   eksekusiImporBatch,
   rollbackBatchImpor,
