@@ -38,7 +38,9 @@ async function backupDanBersihkan() {
     "RaportMental",
     "RaportTahfidz",
     "BatchImpor",
-    "RekonsiliasiImpor"
+    "RekonsiliasiImpor",
+    "TransaksiUnitUsaha",
+    "Cashflow"
   ];
 
   const backupData = {};
@@ -60,10 +62,12 @@ async function backupDanBersihkan() {
   // 2. Eksekusi pembersihan dalam transaksi tunggal PostgreSQL yang aman
   console.log("2. Menjalankan transaksi pembersihan di PostgreSQL...");
   await withTransaction(async (client) => {
-    // A. Antrean & Transaksi Cashless
+    // A. Antrean & Transaksi Cashless serta Keuangan Unit
     await client.query('DELETE FROM "QueueOfflineKasir"');
     await client.query('DELETE FROM "TransaksiCashless"');
     await client.query('DELETE FROM "TransaksiCashlessIdempotency"');
+    await client.query('DELETE FROM "TransaksiUnitUsaha"');
+    await client.query('DELETE FROM "Cashflow"');
     await client.query('DELETE FROM "Ledger"');
     await client.query('DELETE FROM "LogPin"');
     await client.query('DELETE FROM "PermintaanBMT"');
