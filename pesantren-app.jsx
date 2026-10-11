@@ -3495,16 +3495,69 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const deptKeys = Object.keys(DEPT_META);
   const [adminTab, setAdminTab] = useState("ringkasan");
 
+  // -- Database Persistence & Automated Backup --
+  const [dbStatus, setDbStatus] = useState(null);
+  const [dbLoading, setDbLoading] = useState(false);
+  const [dbMsg, setDbMsg] = useState("");
+  const [dbIsErr, setDbIsErr] = useState(false);
+  const [dbSyncBusy, setDbSyncBusy] = useState(false);
+
+  // -- Monitoring Real-Time Eksekutif --
+  const [ringkasanData, setRingkasanData] = useState(null);
+  const [ringkasanLoading, setRingkasanLoading] = useState(false);
+  const [isLiveRealtime, setIsLiveRealtime] = useState(true);
+  const [lastLiveTick, setLastLiveTick] = useState(new Date().toLocaleTimeString("id-ID"));
+
+  const ambilDbStatus = async () => {
+    if (!backendToken) return;
+    setDbLoading(true);
+    try {
+      const res = await backendApi("/admin/database/status", { token: backendToken });
+      setDbStatus(res);
+    } catch (e) {
+      setDbStatus(null);
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
+  const ambilRingkasan = async (isSilent = false) => {
+    if (!backendToken) return;
+    if (!isSilent) setRingkasanLoading(true);
+    try {
+      const [ringkasanRes, statusRes] = await Promise.all([
+        backendApi("/admin/ringkasan", { token: backendToken }).catch(() => null),
+        backendApi("/admin/database/status", { token: backendToken }).catch(() => null),
+      ]);
+      if (ringkasanRes) setRingkasanData(ringkasanRes);
+      if (statusRes) setDbStatus(statusRes);
+      setLastLiveTick(new Date().toLocaleTimeString("id-ID"));
+    } catch (_) {
+    } finally {
+      if (!isSilent) setRingkasanLoading(false);
+    }
+  };
+
   // -- Akun Guru/Staf --
   const [guruFetch, setGuruFetch] = useState({ loading: true, error: "", data: [] });
   const muatGuru = () => {
     if (!backendToken) { setGuruFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] }); return; }
     setGuruFetch((f) => ({ ...f, loading: true }));
     backendApi("/admin/guru", { token: backendToken })
-      .then((rows) => setGuruFetch({ loading: false, error: "", data: Array.isArray(rows) ? rows : [] }))
+      .then((rows) => {
+        const list = Array.isArray(rows) ? rows : [];
+        setGuruFetch({ loading: false, error: "", data: list });
+        if (typeof setData === "function") {
+          setData((d) => ({ ...d, guru: list }));
+        }
+      })
       .catch((e) => setGuruFetch({ loading: false, error: e.message || "Gagal memuat daftar akun.", data: [] }));
   };
-  useEffect(muatGuru, [backendToken]);
+  useEffect(() => {
+    if (adminTab === "akun" || !guruFetch.data.length) {
+      muatGuru();
+    }
+  }, [backendToken, adminTab]);
   const guruList = Array.isArray(guruFetch.data) ? guruFetch.data : [];
 
   const [guruBusyId, setGuruBusyId] = useState(null);
@@ -3563,6 +3616,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setGuruActionError("");
       setGuruActionMsg("Perubahan akun berhasil disimpan.");
       muatGuru();
+      ambilRingkasan(true);
     } catch (e) {
       setGuruActionError(e.message || "Gagal menyimpan perubahan akun.");
     } finally {
@@ -3596,6 +3650,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setGuruActionError("");
       setGuruActionMsg("Kata sandi berhasil diperbarui.");
       muatGuru();
+      ambilRingkasan(true);
     } catch (e) {
       setGuruActionError(e.message || "Gagal mengubah kata sandi.");
     } finally {
@@ -3614,6 +3669,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setGuruActionError("");
       setGuruActionMsg("Akun berhasil dihapus.");
       muatGuru();
+      ambilRingkasan(true);
     } catch (e) {
       setGuruActionError(e.message || "Gagal menghapus akun.");
     } finally {
@@ -3638,7 +3694,8 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
       setForm({ nama: "", username: "", departemen: deptKeys[0], unit: data.unitUsaha[0] || "", password: "" });
       setFormError("");
       muatGuru();
-      if (typeof ambilDbStatus === "function") ambilDbStatus();
+      ambilRingkasan(true);
+      ambilDbStatus();
     } catch (e) { setFormError(e.message || "Gagal membuat akun."); }
     finally { setFormBusy(false); }
   };
@@ -3661,10 +3718,15 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
           unitUsaha: unitRows.map((u) => u.nama),
           tahunAjaran: tahunRows.map((t) => ({ ...buatTahunAjaran(t.tahunMulai, t.aktif), id: t.id })),
         }));
+        ambilRingkasan(true);
       })
       .catch(() => {});
   };
-  useEffect(muatReferensi, [backendToken]);
+  useEffect(() => {
+    if (adminTab === "unit" || adminTab === "tahun" || adminTab === "ringkasan" || !refRows.unit.length) {
+      muatReferensi();
+    }
+  }, [backendToken, adminTab]);
 
   const [unitBaruDraft, setUnitBaruDraft] = useState("");
   const [unitError, setUnitError] = useState("");
@@ -3877,49 +3939,7 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     setActiveSlideIdx(targetIdx);
   };
 
-  // -- Database Persistence & Automated Backup --
-  const [dbStatus, setDbStatus] = useState(null);
-  const [dbLoading, setDbLoading] = useState(false);
-  const [dbMsg, setDbMsg] = useState("");
-  const [dbIsErr, setDbIsErr] = useState(false);
-  const [dbSyncBusy, setDbSyncBusy] = useState(false);
-
-  // -- Monitoring Real-Time Eksekutif --
-  const [ringkasanData, setRingkasanData] = useState(null);
-  const [ringkasanLoading, setRingkasanLoading] = useState(false);
-  const [isLiveRealtime, setIsLiveRealtime] = useState(true);
-  const [lastLiveTick, setLastLiveTick] = useState(new Date().toLocaleTimeString("id-ID"));
-
-  const ambilDbStatus = async () => {
-    if (!backendToken) return;
-    setDbLoading(true);
-    try {
-      const res = await backendApi("/admin/database/status", { token: backendToken });
-      setDbStatus(res);
-    } catch (e) {
-      setDbStatus(null);
-    } finally {
-      setDbLoading(false);
-    }
-  };
-
-  const ambilRingkasan = async (isSilent = false) => {
-    if (!backendToken) return;
-    if (!isSilent) setRingkasanLoading(true);
-    try {
-      const [ringkasanRes, statusRes] = await Promise.all([
-        backendApi("/admin/ringkasan", { token: backendToken }).catch(() => null),
-        backendApi("/admin/database/status", { token: backendToken }).catch(() => null),
-      ]);
-      if (ringkasanRes) setRingkasanData(ringkasanRes);
-      if (statusRes) setDbStatus(statusRes);
-      setLastLiveTick(new Date().toLocaleTimeString("id-ID"));
-    } catch (_) {
-    } finally {
-      if (!isSilent) setRingkasanLoading(false);
-    }
-  };
-
+  // -- Siklus Sinkronisasi Real-Time & Event Listener Window --
   useEffect(() => {
     if (adminTab === "ringkasan" || adminTab === "database") {
       ambilRingkasan();
@@ -3932,9 +3952,25 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
     if (adminTab !== "ringkasan" || !isLiveRealtime || !backendToken) return;
     const timer = setInterval(() => {
       ambilRingkasan(true);
-    }, 30000); // interval polling 30 detik
+    }, 15000); // interval polling 15 detik lebih responsif
     return () => clearInterval(timer);
   }, [adminTab, isLiveRealtime, backendToken]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible" && backendToken) {
+        if (adminTab === "ringkasan" || adminTab === "database") {
+          ambilRingkasan(true);
+        } else if (adminTab === "akun") {
+          muatGuru();
+        } else if (adminTab === "unit" || adminTab === "tahun") {
+          muatReferensi();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [backendToken, adminTab]);
 
   const unduhBackupJson = async () => {
     try {
@@ -4112,21 +4148,21 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                     <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                      {ringkasanData?.kartu?.santri ?? dbStatus?.totalSantri ?? (data?.santri || []).length}
+                      {Array.isArray(data?.santri) && data.santri.length ? data.santri.length : (ringkasanData?.kartu?.santri ?? dbStatus?.totalSantri ?? 0)}
                     </p>
                     <p className="text-xs font-semibold text-[#17242E] mt-1">Total Santri</p>
                     <p className="text-[10px] text-[#5B7C93]">Terdaftar aktif</p>
                   </div>
                   <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                     <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                      {ringkasanData?.kartu?.wali ?? dbStatus?.totalWali ?? (data?.wali || []).length}
+                      {Array.isArray(data?.wali) && data.wali.length ? data.wali.length : (ringkasanData?.kartu?.wali ?? dbStatus?.totalWali ?? 0)}
                     </p>
                     <p className="text-xs font-semibold text-[#17242E] mt-1">Wali Santri</p>
                     <p className="text-[10px] text-[#5B7C93]">Akun keluarga</p>
                   </div>
                   <div className="border border-[#DCEDF7] rounded-xl p-3.5 text-center bg-white/80 shadow-sm transition-all hover:scale-[1.02]">
                     <p className="text-2xl font-bold text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
-                      {ringkasanData?.kartu?.guru ?? dbStatus?.totalGuru ?? (guruList || []).length}
+                      {(guruList && guruList.length) ? guruList.length : (Array.isArray(data?.guru) && data.guru.length ? data.guru.length : (ringkasanData?.kartu?.guru ?? dbStatus?.totalGuru ?? 0))}
                     </p>
                     <p className="text-xs font-semibold text-[#17242E] mt-1">Akun Petugas</p>
                     <p className="text-[10px] text-[#5B7C93]">Seluruh bagian</p>
@@ -11544,7 +11580,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                               {s.nama}
                             </button>
                             <p className="text-[11px] text-[#5B7C93]">
-                              {stbVal ? `Stb: ${stbVal}` : "No Stb: -"} {s.nik ? `· NIK: ${s.nik}` : ""} {s.nisn ? `· NISN: ${s.nisn}` : ""}
+                              {stbVal ? `Stb: ${stbVal}` : "No Stb: -"} {s.nik ? `· NIK: ${s.nik}` : "· NIK: -"} {s.nisn ? `· NISN: ${s.nisn}` : ""}
                             </p>
                           </div>
                         </div>
@@ -13415,6 +13451,35 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
   const [adminActiveScope, setAdminActiveScope] = useState("admin");
   const [adminActiveUnit, setAdminActiveUnit] = useState((data?.unitUsaha && data.unitUsaha[0]) || "BMT");
 
+  // Sinkronisasi data master otomatis saat beralih lingkup departemen
+  useEffect(() => {
+    if (!backendToken || backendOnline !== true) return;
+    Promise.all([
+      backendApi("/santri", { token: backendToken }).catch(() => null),
+      backendApi("/admin/wali", { token: backendToken }).catch(() => null),
+      backendApi("/admin/guru", { token: backendToken }).catch(() => null),
+      backendApi("/pengajaran/kelas", { token: backendToken }).catch(() => null),
+    ]).then(([santriRows, waliRes, guruRows, kelasRows]) => {
+      setData((d) => {
+        let updated = { ...d };
+        if (Array.isArray(santriRows)) updated.santri = santriRows;
+        if (waliRes) {
+          const listWali = Array.isArray(waliRes) ? waliRes : (Array.isArray(waliRes.items) ? waliRes.items : null);
+          if (listWali) updated.wali = listWali;
+        }
+        if (Array.isArray(guruRows)) updated.guru = guruRows;
+        if (Array.isArray(kelasRows) && kelasRows.length) {
+          const list = kelasRows.map((r) => r.nama);
+          const info = {};
+          kelasRows.forEach((r) => { info[r.nama] = { waliKelasId: r.waliKelasId || null }; });
+          updated.kelas = Array.from(new Set([...list, ...(d.kelas || [])]));
+          updated.kelasInfo = { ...d.kelasInfo, ...info };
+        }
+        return updated;
+      });
+    }).catch(() => {});
+  }, [adminActiveScope, backendToken, backendOnline]);
+
   const effectiveDept = isSuper ? adminActiveScope : dept;
   const effectiveUnit = isSuper ? adminActiveUnit : guru.unit;
 
@@ -13449,7 +13514,14 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
         { icon: Users, label: "Total Santri", value: (data?.santri || []).length },
         { icon: User, label: "Wali Santri", value: (data?.wali || []).length },
         { icon: GraduationCap, label: "Guru & Staff", value: (data?.guru || []).length },
-        { icon: School, label: "Jumlah Kelas", value: (data?.kelas || []).length },
+        {
+          icon: School,
+          label: "Jumlah Kelas",
+          value: Array.from(new Set([
+            ...(data?.kelas || []),
+            ...(data?.santri || []).map((s) => s.kelas).filter(Boolean),
+          ])).length,
+        },
       ]} />
 
       {/* Master Department Switcher Khusus Admin */}
@@ -14303,15 +14375,16 @@ export default function App() {
       .catch(() => {}); // gagal diam-diam — panel yang membutuhkan tetap menampilkan data lama/lokal
   }, [backendToken, backendOnline]);
 
-  // ---- Sinkronisasi Global Master Data Santri, Wali & Guru/Staf dari Server Cloud Database ----
+  // ---- Sinkronisasi Global Master Data Santri, Wali, Guru/Staf & Kelas dari Server Cloud Database ----
   useEffect(() => {
     if (!backendToken || backendOnline !== true) return;
     Promise.all([
       backendApi("/santri", { token: backendToken }).catch(() => null),
       backendApi("/admin/wali", { token: backendToken }).catch(() => null),
       backendApi("/admin/guru", { token: backendToken }).catch(() => null),
+      backendApi("/pengajaran/kelas", { token: backendToken }).catch(() => null),
     ])
-      .then(([santriRows, waliRes, guruRows]) => {
+      .then(([santriRows, waliRes, guruRows, kelasRows]) => {
         if (Array.isArray(santriRows)) {
           setData((d) => {
             try {
@@ -14338,6 +14411,16 @@ export default function App() {
             } catch {}
             return { ...d, guru: guruRows };
           });
+        }
+        if (Array.isArray(kelasRows) && kelasRows.length) {
+          const list = kelasRows.map((r) => r.nama);
+          const info = {};
+          kelasRows.forEach((r) => { info[r.nama] = { waliKelasId: r.waliKelasId || null }; });
+          setData((d) => ({
+            ...d,
+            kelas: Array.from(new Set([...list, ...(d.kelas || [])])),
+            kelasInfo: { ...d.kelasInfo, ...info },
+          }));
         }
       })
       .catch(() => {});
