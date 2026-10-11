@@ -14895,6 +14895,14 @@ export default function App() {
     let waliAwal = [];
     let guruAwal = [];
     try {
+      const MMA_CACHE_EPOCH = "v_clean_20261011_reupload";
+      const currentEpoch = localStorage.getItem("mma_cache_epoch");
+      if (currentEpoch !== MMA_CACHE_EPOCH) {
+        localStorage.removeItem("mma_cached_santri");
+        localStorage.removeItem("mma_cached_wali");
+        localStorage.removeItem("mma_offline_kasir_queue");
+        localStorage.setItem("mma_cache_epoch", MMA_CACHE_EPOCH);
+      }
       const cachedS = localStorage.getItem("mma_cached_santri");
       if (cachedS) {
         const parsed = JSON.parse(cachedS);
