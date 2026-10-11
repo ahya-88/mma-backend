@@ -5566,12 +5566,13 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
     { key: "cashflow", label: "Cashflow Unit", icon: TrendingUp },
     { key: "laporan", label: "Laporan", icon: FileText },
   ] : [
+    { key: "kasir", label: "Kasir POS", icon: ShoppingCart },
     { key: "katalog", label: "Katalog & Stok", icon: Package },
     { key: "transaksi", label: "Riwayat Transaksi", icon: Wallet },
     { key: "cashflow", label: "Cashflow Unit", icon: TrendingUp },
     { key: "laporan", label: "Laporan", icon: FileText },
   ];
-  const [tab, setTab] = useState(isBMT ? "transaksi" : "katalog");
+  const [tab, setTab] = useState(isBMT ? "transaksi" : "kasir");
 
   const tahunAjaranAktif = data.tahunAjaran.find((t) => t.aktif) || data.tahunAjaran[0];
   const bulanAktif = tahunAjaranAktif ? tahunAjaranAktif.bulan : BULAN_OPSI;
@@ -5729,6 +5730,38 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
   const [kasirError, setKasirError] = useState("");
   const [kasirSuccessMsg, setKasirSuccessMsg] = useState("");
   const [strukTerakhir, setStrukTerakhir] = useState(null);
+  const [tipePelanggan, setTipePelanggan] = useState("santri"); // "santri" | "umum"
+  const [metodeBayarUmum, setMetodeBayarUmum] = useState("cash"); // "cash" | "qris"
+  const [uangDiterima, setUangDiterima] = useState("");
+
+  const [offlineKasirQueue, setOfflineKasirQueue] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("mma_offline_kasir_queue") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  const syncAntrianOffline = async () => {
+    if (!backendToken || !offlineKasirQueue.length) return;
+    setKasirBusy(true);
+    setKasirError("");
+    try {
+      const res = await backendApi("/transaksi/sync-offline", {
+        method: "POST",
+        token: backendToken,
+        body: { items: offlineKasirQueue },
+      });
+      localStorage.removeItem("mma_offline_kasir_queue");
+      setOfflineKasirQueue([]);
+      setKasirSuccessMsg(`Berhasil menyinkronkan ${res.suksesCount} transaksi offline ke server (${res.gagalCount} gagal/ditolak).`);
+      muatProduk();
+    } catch (e) {
+      setKasirError("Gagal menyinkronkan transaksi offline: " + e.message);
+    } finally {
+      setKasirBusy(false);
+    }
+  };
 
   const santriKasir = data.santri.find((s) => s.id === kasirSantriId);
 
@@ -5788,6 +5821,86 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       setKasirError("Keranjang belanja masih kosong.");
       return;
     }
+
+    const ringkasanItem = cart.map((c) => `${c.nama} x${c.qty}`).join(", ");
+    const itemsPayload = cart.map((c) => ({ id: c.produkId, nama: c.nama, qty: c.qty }));
+    const idemKey = uid();
+
+    if (tipePelanggan === "umum") {
+      const nominalBayar = Number(uangDiterima) || totalBelanjaCart;
+      if (metodeBayarUmum === "cash" && uangDiterima && nominalBayar < totalBelanjaCart) {
+        setKasirError(`Uang diterima (${rupiah(nominalBayar)}) kurang dari total belanja (${rupiah(totalBelanjaCart)}).`);
+        return;
+      }
+      setKasirBusy(true);
+      try {
+        const payload = {
+          santriId: "UMUM",
+          unit,
+          jumlah: totalBelanjaCart,
+          keterangan: `Penjualan Kasir Umum (${metodeBayarUmum.toUpperCase()}): ${ringkasanItem}`,
+          metode: metodeBayarUmum,
+          items: itemsPayload,
+          idempotencyKey: idemKey,
+        };
+
+        if (!backendToken || backendOnline === false) {
+          const nextQueue = [...offlineKasirQueue, payload];
+          try { localStorage.setItem("mma_offline_kasir_queue", JSON.stringify(nextQueue)); } catch {}
+          setOfflineKasirQueue(nextQueue);
+          setStrukTerakhir({
+            id: idemKey,
+            pelanggan: "Pelanggan Umum (Tunai)",
+            isUmum: true,
+            items: [...cart],
+            total: totalBelanjaCart,
+            bayar: nominalBayar,
+            kembalian: Math.max(0, nominalBayar - totalBelanjaCart),
+            metode: metodeBayarUmum.toUpperCase(),
+            unit,
+            tanggal: todayStr(),
+            petugas,
+            isOffline: true,
+          });
+          kosongkanCart();
+          setUangDiterima("");
+          setKasirSuccessMsg("Transaksi Kasir Umum tersimpan di antrian lokal (mode offline).");
+          return;
+        }
+
+        const hasil = await backendApi("/transaksi", {
+          method: "POST",
+          token: backendToken,
+          body: payload,
+        });
+
+        setStrukTerakhir({
+          id: hasil.transaksi?.id || idemKey,
+          pelanggan: "Pelanggan Umum",
+          isUmum: true,
+          items: [...cart],
+          total: totalBelanjaCart,
+          bayar: nominalBayar,
+          kembalian: Math.max(0, nominalBayar - totalBelanjaCart),
+          metode: metodeBayarUmum.toUpperCase(),
+          unit,
+          tanggal: hasil.transaksi?.tanggalISO ? formatTanggalISO(hasil.transaksi.tanggalISO) : todayStr(),
+          petugas,
+        });
+
+        kosongkanCart();
+        setUangDiterima("");
+        setKasirSuccessMsg(`Transaksi kasir umum berhasil! Total: ${rupiah(totalBelanjaCart)}.`);
+        muatProduk();
+      } catch (e) {
+        setKasirError(e.message || "Gagal memproses transaksi kasir umum.");
+      } finally {
+        setKasirBusy(false);
+      }
+      return;
+    }
+
+    // Kasus Santri
     if (!kasirSantriId) {
       setKasirError("Pilih santri terlebih dahulu.");
       return;
@@ -5797,7 +5910,7 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       return;
     }
     if (isBlokirAktif(santriKasir)) {
-      setKasirError(`Akun cashless santri sedang diblokir sampai ${formatTanggalISO(santriKasir.blokirCashless.sampaiISO)} (${santriKasir.blokirCashless.alasan}).`);
+      setKasirError(`Akun cashless santri sedang diblokir sampai ${formatTanggalISO(santriKasir.blokirCashless?.sampaiISO || santriKasir.blokir?.sampaiISO)} (${santriKasir.blokirCashless?.alasan || santriKasir.blokir?.alasan || "Limit terlampaui"}).`);
       return;
     }
     if ((santriKasir.saldo || 0) < totalBelanjaCart) {
@@ -5812,22 +5925,57 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
 
     setKasirBusy(true);
     try {
-      await syncSantriKeBackend(santriKasir, backendToken);
-      const ringkasanItem = cart.map((c) => `${c.nama} x${c.qty}`).join(", ");
       const keteranganTx = `Belanja ${unit}: ${ringkasanItem}`;
+      const payload = {
+        santriId: kasirSantriId,
+        unit,
+        jenis: "Tarik Tunai",
+        kategori: "Jajan Harian",
+        jumlah: totalBelanjaCart,
+        keterangan: keteranganTx,
+        bulan: bulanTxOtomatis,
+        pin: kasirPin || undefined,
+        metode: kasirPin ? "manual" : "qr",
+        items: itemsPayload,
+        idempotencyKey: idemKey,
+      };
+
+      if (!backendToken || backendOnline === false) {
+        const nextQueue = [...offlineKasirQueue, payload];
+        try { localStorage.setItem("mma_offline_kasir_queue", JSON.stringify(nextQueue)); } catch {}
+        setOfflineKasirQueue(nextQueue);
+        setData((d) => ({
+          ...d,
+          santri: d.santri.map((s) => s.id === kasirSantriId ? { ...s, saldo: (s.saldo || 0) - totalBelanjaCart } : s),
+        }));
+        setStrukTerakhir({
+          id: idemKey,
+          santri: santriKasir,
+          items: [...cart],
+          total: totalBelanjaCart,
+          unit,
+          tanggal: todayStr(),
+          saldoSetelah: (santriKasir.saldo || 0) - totalBelanjaCart,
+          petugas,
+          isOffline: true,
+        });
+        kosongkanCart();
+        setKasirPin("");
+        setKasirSuccessMsg(`Transaksi offline dicatat. Saldo lokal dipotong ${rupiah(totalBelanjaCart)}.`);
+        return;
+      }
+
+      await syncSantriKeBackend(santriKasir, backendToken);
       const hasil = await backendApi("/transaksi", {
-        method: "POST", token: backendToken,
-        body: {
-          santriId: kasirSantriId,
-          jenis: "Tarik Tunai",
-          kategori: "Jajan Harian",
-          jumlah: totalBelanjaCart,
-          keterangan: keteranganTx,
-          bulan: bulanTxOtomatis,
-          pin: kasirPin || undefined,
-          metode: "manual",
-        },
+        method: "POST",
+        token: backendToken,
+        body: payload,
       });
+
+      if (hasil.pinError) {
+        setKasirError(hasil.pinError);
+        return;
+      }
 
       terapkanSantriDariBackend(kasirSantriId, hasil.santri);
       setData((d) => ({
@@ -5878,8 +6026,17 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           <p className="text-[10px] text-gray-500">{struk.tanggal} · Petugas: {struk.petugas}</p>
         </div>
         <div className="mb-2">
-          <p>Santri: <span className="font-bold">{struk.santri.nama}</span></p>
-          <p>No. Stambuk: {struk.santri.nis || "-"} · Kelas: {struk.santri.kelas || "-"}</p>
+          {struk.isUmum ? (
+            <>
+              <p>Pelanggan: <span className="font-bold">UMUM / Non-Santri</span></p>
+              <p>Metode: <span className="font-bold">{struk.metode || "TUNAI"}</span></p>
+            </>
+          ) : (
+            <>
+              <p>Santri: <span className="font-bold">{struk.santri?.nama}</span></p>
+              <p>No. Stambuk: {struk.santri?.nis || "-"} · Kelas: {struk.santri?.kelas || "-"}</p>
+            </>
+          )}
         </div>
         <div className="border-t border-b py-2 my-2 divide-y divide-dashed">
           {struk.items.map((it, idx) => (
@@ -5893,9 +6050,65 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
           <span>TOTAL:</span>
           <span>{rupiah(struk.total)}</span>
         </div>
+        {struk.isUmum ? (
+          <div className="border-t pt-1 mt-1 text-[11px] space-y-0.5">
+            <div className="flex justify-between"><span>Tunai Diterima:</span><span>{rupiah(struk.bayar || struk.total)}</span></div>
+            <div className="flex justify-between font-semibold"><span>Kembalian:</span><span>{rupiah(struk.kembalian || 0)}</span></div>
+          </div>
+        ) : (
+          <div className="border-t pt-2 mt-2 text-center text-[10px] text-gray-500">
+            <p>Sisa Saldo: {rupiah(struk.saldoSetelah)}</p>
+          </div>
+        )}
         <div className="border-t pt-2 mt-2 text-center text-[10px] text-gray-500">
-          <p>Sisa Saldo: {rupiah(struk.saldoSetelah)}</p>
           <p className="mt-1">Terima Kasih atas Kunjungan Anda</p>
+        </div>
+      </div>
+    );
+  };
+
+  const cetakZReport = () => {
+    const today = todayISO();
+    const txHariIni = (data.transaksiCashless || []).filter((t) => t.unit === unit && (t.tanggalISO === today || t.tanggal === todayStr() || t.tanggalLabel === todayStr()));
+    const totalCashless = txHariIni.filter((t) => t.jenis === "Tarik Tunai").reduce((acc, t) => acc + Number(t.jumlah || 0), 0);
+    const countCashless = txHariIni.filter((t) => t.jenis === "Tarik Tunai").length;
+
+    const cfHariIni = (data.cashflowUnit || []).filter((c) => c.unitTujuan === unit && (c.tanggalISO === today || c.tanggal === todayStr()));
+    const totalTunaiUmum = cfHariIni.filter((c) => c.jenis === "Dana Masuk" || c.keterangan?.toLowerCase().includes("kasir umum")).reduce((acc, c) => acc + Number(c.jumlah || 0), 0);
+    const countTunaiUmum = cfHariIni.length;
+
+    const grandTotal = totalCashless + totalTunaiUmum;
+    const totalTx = countCashless + countTunaiUmum;
+
+    onPrint(
+      <div className="max-w-sm mx-auto p-4 bg-white text-xs font-mono border border-gray-300">
+        <div className="text-center border-b pb-2 mb-2">
+          <p className="font-bold text-sm">MA'HAD MUDAIYATUL ANWAR</p>
+          <p className="font-bold">LAPORAN TUTUP KASIR (Z-REPORT)</p>
+          <p className="text-[10px] text-gray-500">UNIT {unit.toUpperCase()} · {todayLabel()}</p>
+          <p className="text-[10px] text-gray-500">Petugas: {petugas}</p>
+        </div>
+        <div className="space-y-1.5 py-2 border-b">
+          <div className="flex justify-between">
+            <span>Penjualan Cashless Santri:</span>
+            <span className="font-semibold">{rupiah(totalCashless)} ({countCashless} tx)</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Penjualan Tunai / Umum:</span>
+            <span className="font-semibold">{rupiah(totalTunaiUmum)} ({countTunaiUmum} tx)</span>
+          </div>
+          <div className="flex justify-between text-sm font-bold pt-1 border-t">
+            <span>TOTAL OMZET SHIFT:</span>
+            <span>{rupiah(grandTotal)}</span>
+          </div>
+        </div>
+        <div className="pt-2 text-[10px] text-gray-500 space-y-1">
+          <p>Total Transaksi: {totalTx} transaksi</p>
+          <p>Waktu Cetak: {new Date().toLocaleTimeString("id-ID")}</p>
+          <div className="flex justify-between pt-4 text-center">
+            <div><p className="border-b pb-8">Kasir Bertugas</p><p>{petugas}</p></div>
+            <div><p className="border-b pb-8">Pimpinan / BMT</p><p>(.....................)</p></div>
+          </div>
         </div>
       </div>
     );
@@ -6390,6 +6603,368 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
       <Sidebar tabs={UNIT_TABS} active={tab} onChange={setTab} />
       <div className="flex-1 min-w-0 w-full">
       <Breadcrumb items={["Unit Usaha", unit, UNIT_TABS.find((t) => t.key === tab)?.label || ""]} />
+      {tab === "kasir" && !isBMT && (
+        <div className="space-y-5">
+          {/* Header Status & Top bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-[#CFE3F0] shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#EAF4FB] text-[#0C4A6E] flex items-center justify-center font-bold">
+                <ShoppingCart size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#17242E]">Kasir Point of Sale (POS) — {unit}</h3>
+                <p className="text-xs text-[#5B7C93]">Petugas: <span className="font-semibold text-[#0C4A6E]">{petugas}</span> · Mode: {backendOnline === true ? "Online Cloud" : "Offline / Lokal"}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {offlineKasirQueue.length > 0 && (
+                <button
+                  type="button"
+                  onClick={syncAntrianOffline}
+                  disabled={kasirBusy || backendOnline !== true}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                  title="Sinkronkan antrian offline ke server"
+                >
+                  <RefreshCw size={13} className={kasirBusy ? "animate-spin" : ""} />
+                  Sync Antrian Offline ({offlineKasirQueue.length})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={cetakZReport}
+                className="border border-[#CFE3F0] hover:bg-[#EAF4FB] text-[#0C4A6E] text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5"
+                title="Cetak ringkasan tutup kasir shift hari ini"
+              >
+                <FileText size={14} /> Tutup Kasir Shift (Z-Report)
+              </button>
+            </div>
+          </div>
+
+          {/* Notifikasi feedback */}
+          {kasirError && (
+            <div className="p-3 bg-[#FBE4E1] border border-[#F3C9C2] rounded-xl text-xs text-[#96271A] flex items-center gap-2">
+              <AlertCircle size={15} className="shrink-0" />
+              <span>{kasirError}</span>
+            </div>
+          )}
+          {kasirSuccessMsg && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />
+                <span>{kasirSuccessMsg}</span>
+              </div>
+              {strukTerakhir && (
+                <button
+                  type="button"
+                  onClick={() => cetakStrukKasir(strukTerakhir)}
+                  className="bg-emerald-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1 hover:bg-emerald-800"
+                >
+                  <Printer size={12} /> Cetak Struk
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Grid POS: Katalog Scanner & Keranjang Checkout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            {/* Bagian Kiri: Katalog & Barcode Search (7 cols) */}
+            <div className="lg:col-span-7 space-y-4">
+              <ArchCard title="Pilih Produk & Barcode" eyebrow="Scan Barcode / Cari Cepat" icon={Search}>
+                {/* Barcode scanner input */}
+                <form onSubmit={handleBarcodeSubmit} className="flex gap-2 mb-4">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Scan Barcode / Masukkan Kode SKU / Nama produk lalu tekan Enter..."
+                      value={kasirBarcodeScan}
+                      onChange={(e) => setKasirBarcodeScan(e.target.value)}
+                      className="w-full border border-[#CFE3F0] bg-white rounded-xl pl-9 pr-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                      autoFocus
+                    />
+                    <Search size={14} className="absolute left-3 top-3 text-[#5B7C93]" />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-semibold shrink-0"
+                  >
+                    Tambah
+                  </button>
+                </form>
+
+                {/* Filter Kategori */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {["Semua", ...Array.from(new Set(produkList.map((p) => p.kategori).filter(Boolean)))].map((kat) => (
+                    <button
+                      key={kat}
+                      type="button"
+                      onClick={() => setProdukKategoriFilter(kat)}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${
+                        produkKategoriFilter === kat
+                          ? "bg-[#0C4A6E] text-white border-[#0C4A6E] font-semibold"
+                          : "border-[#CFE3F0] text-[#5B7C93] hover:bg-[#EAF4FB]"
+                      }`}
+                    >
+                      {kat}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Grid Item Produk */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[28rem] overflow-y-auto pr-1">
+                  {produkList
+                    .filter((p) => p.aktif)
+                    .filter((p) => produkKategoriFilter === "Semua" || p.kategori === produkKategoriFilter)
+                    .map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => tambahItemKeCart(p)}
+                        className="bg-white border border-[#DCEDF7] hover:border-[#0C4A6E] p-2.5 rounded-xl transition-all duration-150 cursor-pointer hover:shadow-sm flex flex-col justify-between group"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between text-[10px] text-[#5B7C93] mb-1">
+                            <span className="truncate">{p.kategori || "Umum"}</span>
+                            <span className={`px-1.5 py-0.2 rounded font-semibold ${p.stok <= 0 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
+                              Stok {p.stok}
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-[#17242E] group-hover:text-[#0C4A6E] line-clamp-2">
+                            {p.nama}
+                          </p>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-[#F0F6FA] flex items-center justify-between">
+                          <span className="text-xs font-semibold text-[#0C4A6E]">
+                            {rupiah(p.harga)}
+                          </span>
+                          <span className="w-6 h-6 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] flex items-center justify-center font-bold text-xs group-hover:bg-[#0C4A6E] group-hover:text-white transition-colors">
+                            +
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  {!produkList.filter((p) => p.aktif).length && (
+                    <div className="col-span-full py-8 text-center text-xs text-[#5B7C93]">
+                      Belum ada produk aktif di katalog {unit}. Buka tab "Katalog & Stok" untuk menambah produk.
+                    </div>
+                  )}
+                </div>
+              </ArchCard>
+            </div>
+
+            {/* Bagian Kanan: Keranjang & Checkout (5 cols) */}
+            <div className="lg:col-span-5 space-y-4">
+              <ArchCard title={`Keranjang Belanja (${totalItemCart})`} eyebrow="Daftar Pembelian & Bayar" icon={ShoppingCart}>
+                {/* Daftar Item di Keranjang */}
+                <div className="divide-y divide-[#DCEDF7] max-h-56 overflow-y-auto pr-1 mb-3">
+                  {cart.map((item) => (
+                    <div key={item.produkId} className="py-2 flex items-center justify-between gap-2 text-xs">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-[#17242E] truncate">{item.nama}</p>
+                        <p className="text-[11px] text-[#5B7C93]">{rupiah(item.harga)} x {item.qty} = <span className="font-medium text-[#0C4A6E]">{rupiah(item.harga * item.qty)}</span></p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => ubahQtyCart(item.produkId, -1)}
+                          className="w-6 h-6 rounded-lg border border-[#CFE3F0] text-[#0C4A6E] hover:bg-[#EAF4FB] flex items-center justify-center font-bold"
+                        >
+                          -
+                        </button>
+                        <span className="w-6 text-center font-semibold text-xs">{item.qty}</span>
+                        <button
+                          type="button"
+                          onClick={() => ubahQtyCart(item.produkId, 1)}
+                          className="w-6 h-6 rounded-lg border border-[#CFE3F0] text-[#0C4A6E] hover:bg-[#EAF4FB] flex items-center justify-center font-bold"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => hapusItemCart(item.produkId)}
+                          className="text-red-500 hover:text-red-700 p-1 ml-1"
+                          title="Hapus item"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {!cart.length && (
+                    <div className="py-6 text-center text-xs text-[#5B7C93] italic">
+                      Keranjang kosong. Klik produk di katalog atau scan barcode untuk menambah belanjaan.
+                    </div>
+                  )}
+                </div>
+
+                {/* Subtotal & Ringkasan */}
+                <div className="bg-[#EAF4FB]/60 border border-[#CFE3F0] p-3 rounded-xl mb-3 space-y-1 text-xs">
+                  <div className="flex justify-between text-[#5B7C93]">
+                    <span>Jumlah Item:</span>
+                    <span className="font-semibold text-[#17242E]">{totalItemCart} item</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold text-[#0C4A6E] pt-1 border-t border-[#CFE3F0]/60">
+                    <span>Total Tagihan:</span>
+                    <span className="text-base">{rupiah(totalBelanjaCart)}</span>
+                  </div>
+                </div>
+
+                {/* Identitas Pembeli: Santri vs Pelanggan Umum */}
+                <div className="space-y-3 pt-2 border-t border-[#DCEDF7]">
+                  <div className="flex rounded-xl p-1 bg-[#EAF4FB] border border-[#CFE3F0]">
+                    <button
+                      type="button"
+                      onClick={() => setTipePelanggan("santri")}
+                      className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                        tipePelanggan === "santri"
+                          ? "bg-[#0C4A6E] text-white shadow-xs"
+                          : "text-[#45657A] hover:text-[#0C4A6E]"
+                      }`}
+                    >
+                      Santri (Cashless)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTipePelanggan("umum")}
+                      className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                        tipePelanggan === "umum"
+                          ? "bg-[#0C4A6E] text-white shadow-xs"
+                          : "text-[#45657A] hover:text-[#0C4A6E]"
+                      }`}
+                    >
+                      Pelanggan Umum (Tunai)
+                    </button>
+                  </div>
+
+                  {tipePelanggan === "santri" ? (
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-semibold text-[#5B7C93] uppercase">Pilih Santri Pembeli:</label>
+                      <SantriSearchSelect
+                        santriList={data.santri}
+                        value={kasirSantriId}
+                        onChange={(id) => {
+                          setKasirSantriId(id);
+                          setKasirError("");
+                          setKasirSuccessMsg("");
+                        }}
+                        placeholder="Ketik nama atau NIS santri..."
+                      />
+
+                      {santriKasir && (
+                        <div className="p-2.5 rounded-xl bg-white border border-[#CFE3F0] text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-[#5B7C93]">Saldo Dompet:</span>
+                            <span className={`font-bold ${(santriKasir.saldo || 0) < totalBelanjaCart ? "text-red-600" : "text-emerald-700"}`}>
+                              {rupiah(santriKasir.saldo || 0)}
+                            </span>
+                          </div>
+                          {santriKasir.limitJajanHarian && (
+                            <div className="flex justify-between text-[11px] text-[#5B7C93]">
+                              <span>Sisa Limit Hari Ini:</span>
+                              <span className="font-semibold text-[#0C4A6E]">
+                                {rupiah(sisaLimitHarian(santriKasir, data.transaksiCashless))}
+                              </span>
+                            </div>
+                          )}
+                          {isBlokirAktif(santriKasir) && (
+                            <p className="text-[10px] text-red-600 font-medium pt-1">
+                              ⚠ Akun santri sedang diblokir!
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      <div>
+                        <input
+                          type="password"
+                          placeholder="PIN Kasir Santri (opsional / 6 angka)"
+                          value={kasirPin}
+                          onChange={(e) => setKasirPin(e.target.value)}
+                          maxLength={6}
+                          className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        {["cash", "qris"].map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setMetodeBayarUmum(m)}
+                            className={`flex-1 py-1.5 rounded-lg border text-xs font-semibold uppercase ${
+                              metodeBayarUmum === m
+                                ? "bg-[#0C4A6E] text-white border-[#0C4A6E]"
+                                : "border-[#CFE3F0] text-[#5B7C93] hover:bg-[#EAF4FB]"
+                            }`}
+                          >
+                            {m === "cash" ? "Tunai / Cash" : "QRIS"}
+                          </button>
+                        ))}
+                      </div>
+
+                      {metodeBayarUmum === "cash" && (
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-semibold text-[#5B7C93]">Uang Diterima (Rp):</label>
+                          <input
+                            type="number"
+                            placeholder="Nominal uang tunai..."
+                            value={uangDiterima}
+                            onChange={(e) => setUangDiterima(e.target.value)}
+                            className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E]"
+                          />
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {[totalBelanjaCart, 10000, 20000, 50000, 100000].filter((v) => v >= totalBelanjaCart).map((nom) => (
+                              <button
+                                key={nom}
+                                type="button"
+                                onClick={() => setUangDiterima(String(nom))}
+                                className="text-[10px] px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-[#45657A] font-medium"
+                              >
+                                {nom === totalBelanjaCart ? "Uang Pas" : rupiah(nom)}
+                              </button>
+                            ))}
+                          </div>
+                          {uangDiterima && Number(uangDiterima) >= totalBelanjaCart && (
+                            <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-200 text-xs flex justify-between font-bold text-emerald-800">
+                              <span>Kembalian:</span>
+                              <span>{rupiah(Number(uangDiterima) - totalBelanjaCart)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tombol Eksekusi Bayar */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={bayarKasir}
+                      disabled={kasirBusy || !cart.length}
+                      className="w-full btn-gradient text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                    >
+                      <ShoppingCart size={16} />
+                      {kasirBusy ? "Memproses..." : `Bayar Sekarang (${rupiah(totalBelanjaCart)})`}
+                    </button>
+                    {cart.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={kosongkanCart}
+                        disabled={kasirBusy}
+                        className="w-full text-center text-xs text-[#5B7C93] hover:text-red-600 mt-2 py-1"
+                      >
+                        Batal & Kosongkan Keranjang
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </ArchCard>
+            </div>
+          </div>
+        </div>
+      )}
+
       {tab === "transaksi" && (
         <div className="space-y-5">
           {isBMT ? (
@@ -6541,6 +7116,16 @@ function UnitUsahaPanel({ data, setData, unit, petugas, onPrint, backendToken, b
                           </button>
                         </td>
                         <td className="py-2.5 px-3 text-right space-x-1">
+                          {p.aktif && (
+                            <button
+                              type="button"
+                              onClick={() => { tambahItemKeCart(p); setTab("kasir"); }}
+                              className="btn-gradient text-white rounded-lg px-2 py-1 text-[11px] inline-flex items-center gap-1 font-semibold"
+                              title="Beli di Kasir POS"
+                            >
+                              <ShoppingCart size={12} /> Beli
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => bukaStokOpname(p)}
