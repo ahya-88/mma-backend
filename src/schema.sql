@@ -6,6 +6,11 @@ CREATE TABLE IF NOT EXISTS Wali (
   id        TEXT PRIMARY KEY,
   nama      TEXT NOT NULL,
   hp        TEXT,
+  nik       TEXT,
+  nikAyah   TEXT,
+  nikIbu    TEXT,
+  namaAyah  TEXT,
+  namaIbu   TEXT,
   username  TEXT NOT NULL UNIQUE,
   password  TEXT NOT NULL, -- hash bcrypt
   createdAt TEXT NOT NULL DEFAULT (datetime('now'))
@@ -58,7 +63,13 @@ CREATE TABLE IF NOT EXISTS Santri (
   pendidikanSMA    TEXT,
   tahunSMA         TEXT,
   riwayatKelas     TEXT,             -- JSON array [{kelas, tanggal}]
-  statusSantri     TEXT NOT NULL DEFAULT 'Aktif', -- Aktif | Alumni | Mundur | Cuti
+  noStambuk        TEXT,
+  angkatan         INTEGER,
+  tahunMasuk       TEXT,
+  nik              TEXT,
+  nikAyah          TEXT,
+  nikIbu           TEXT,
+  statusSantri     TEXT NOT NULL DEFAULT 'Aktif', -- Aktif | Alumni | Mundur | Cuti | Wafat
   alumniTahunLulus TEXT,
   alumniStatusSaatIni TEXT,
   alumniInstansiTujuan TEXT,

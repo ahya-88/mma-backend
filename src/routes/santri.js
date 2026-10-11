@@ -69,9 +69,15 @@ router.get("/", requireAuth, asyncHandler(async (req, res) => {
     whereConditions.push(`s."jenisKelamin" = $${params.length}`);
   }
 
+  const angkatan = req.query.angkatan ? Number(req.query.angkatan) : null;
+  if (angkatan) {
+    params.push(angkatan);
+    whereConditions.push(`s."angkatan" = $${params.length}`);
+  }
+
   if (q) {
     params.push(`%${q}%`);
-    whereConditions.push(`(LOWER(s."nama") LIKE $${params.length} OR LOWER(COALESCE(s."nis", '')) LIKE $${params.length} OR LOWER(COALESCE(s."nisn", '')) LIKE $${params.length} OR LOWER(COALESCE(w."nama", '')) LIKE $${params.length})`);
+    whereConditions.push(`(LOWER(s."nama") LIKE $${params.length} OR LOWER(COALESCE(s."noStambuk", '')) LIKE $${params.length} OR LOWER(COALESCE(s."nis", '')) LIKE $${params.length} OR LOWER(COALESCE(s."nik", '')) LIKE $${params.length} OR LOWER(COALESCE(s."nisn", '')) LIKE $${params.length} OR LOWER(COALESCE(w."nama", '')) LIKE $${params.length})`);
   }
 
   const whereSql = whereConditions.length ? `WHERE ${whereConditions.join(" AND ")}` : "";
@@ -248,24 +254,25 @@ router.post("/", requireAuth, asyncHandler(async (req, res) => {
     return res.status(403).json({ error: "Hanya Sekretariat atau Superadmin yang dapat menambah santri." });
   }
 
-  const { nama, kelas, nis, nisn, waliId, limitJajanHarian } = req.body || {};
+  const { nama, kelas, nis, noStambuk, nisn, waliId, limitJajanHarian } = req.body || {};
   if (!nama || typeof nama !== "string" || !nama.trim()) {
     throw new CashlessError(400, "Nama santri wajib diisi.");
   }
 
   const id = crypto.randomUUID();
   const limitVal = limitJajanHarian ? Number(limitJajanHarian) : null;
+  const stambukVal = (noStambuk || nis || "").trim() || null;
 
   await withTransaction(async (client) => {
-    if (nis && nis.trim()) {
-      const adaNis = await client.query('SELECT "id" FROM "Santri" WHERE "nis" = $1', [nis.trim()]);
-      if (adaNis.rowCount) throw new CashlessError(400, "NIS sudah digunakan oleh santri lain.");
+    if (stambukVal) {
+      const adaNis = await client.query('SELECT "id" FROM "Santri" WHERE "nis" = $1 OR "noStambuk" = $1', [stambukVal]);
+      if (adaNis.rowCount) throw new CashlessError(400, "Nomor Stambuk / NIS sudah digunakan oleh santri lain.");
     }
 
     await client.query(
-      `INSERT INTO "Santri" ("id", "nama", "kelas", "nis", "nisn", "waliId", "limitJajanHarian", "saldo")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 0)`,
-      [id, nama.trim(), kelas ? kelas.trim() : null, nis ? nis.trim() : null, nisn ? nisn.trim() : null, waliId || null, limitVal],
+      `INSERT INTO "Santri" ("id", "nama", "kelas", "nis", "noStambuk", "nisn", "waliId", "limitJajanHarian", "saldo")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0)`,
+      [id, nama.trim(), kelas ? kelas.trim() : null, stambukVal, stambukVal, nisn ? nisn.trim() : null, waliId || null, limitVal],
     );
   });
 
@@ -333,15 +340,16 @@ router.post("/upsert", requireAuth, asyncHandler(async (req, res) => {
 
   const santriId = (body.id && String(body.id).trim()) ? String(body.id).trim() : crypto.randomUUID();
   const kelas = body.kelas ? String(body.kelas).trim() : null;
-  const nis = body.nis ? String(body.nis).trim() : null;
+  const stambukVal = (body.noStambuk || body.nis || "").trim() || null;
+  const nis = stambukVal;
   const nisn = body.nisn ? String(body.nisn).trim() : null;
   const waliId = body.waliId ? String(body.waliId).trim() : null;
   const limitVal = body.limitJajanHarian !== undefined && body.limitJajanHarian !== null ? Number(body.limitJajanHarian) : null;
 
   await withTransaction(async (client) => {
     if (nis) {
-      const adaNis = await client.query('SELECT "id" FROM "Santri" WHERE "nis" = $1 AND "id" <> $2', [nis, santriId]);
-      if (adaNis.rowCount) throw new CashlessError(400, "NIS sudah digunakan oleh santri lain.");
+      const adaNis = await client.query('SELECT "id" FROM "Santri" WHERE ("nis" = $1 OR "noStambuk" = $1) AND "id" <> $2', [nis, santriId]);
+      if (adaNis.rowCount) throw new CashlessError(400, "Nomor Stambuk / NIS sudah digunakan oleh santri lain.");
     }
 
     const existing = await client.query('SELECT "id" FROM "Santri" WHERE "id" = $1 FOR UPDATE', [santriId]);

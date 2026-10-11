@@ -12,7 +12,7 @@ const {
   daftarPermintaanSuperadmin, daftarAuditSuperadmin, ubahStatusProduk,
 } = require("../adminService");
 const { CashlessError, getSantriRow, toPublicSantri } = require("../cashlessService");
-const { buatTemplateImporCSV, buatTemplateImporExcelBuffer } = require("../imporService");
+const { buatTemplateImporCSV, buatTemplateImporExcelBuffer, prosesDryRunImpor, eksekusiImporBatch } = require("../imporService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
@@ -258,40 +258,8 @@ router.post("/impor/dry-run", requireAuth, asyncHandler(async (req, res) => {
     throw new CashlessError(400, "Data baris impor tidak boleh kosong.");
   }
 
-  let jumlahBaru = 0;
-  let jumlahUpdate = 0;
-  let jumlahGagal = 0;
-  const detailGagal = [];
-
-  for (let idx = 0; idx < rows.length; idx++) {
-    const row = rows[idx];
-    const barisNum = idx + 2;
-    const nama = (row.nama || "").trim();
-    const nis = (row.nis || "").trim();
-
-    if (!nama) {
-      jumlahGagal++;
-      detailGagal.push({ baris: barisNum, nama: nama || "-", alasan: "Nama santri wajib diisi." });
-      continue;
-    }
-
-    if (nis) {
-      const existing = await queryOne('SELECT "id" FROM "Santri" WHERE "nis" = $1', [nis]);
-      if (existing) jumlahUpdate++;
-      else jumlahBaru++;
-    } else {
-      jumlahBaru++;
-    }
-  }
-
-  res.json({
-    valid: jumlahGagal === 0,
-    totalBaris: rows.length,
-    jumlahBaru,
-    jumlahUpdate,
-    jumlahGagal,
-    detailGagal,
-  });
+  const result = await prosesDryRunImpor(rows);
+  res.json(result);
 }));
 
 router.post("/impor/eksekusi", requireAuth, asyncHandler(async (req, res) => {
@@ -304,107 +272,19 @@ router.post("/impor/eksekusi", requireAuth, asyncHandler(async (req, res) => {
     throw new CashlessError(400, "Data baris impor tidak boleh kosong.");
   }
 
-  const bcrypt = require("bcryptjs");
-  const batchId = uid();
-  const defaultWaliPass = "wali123";
-  const defaultWaliHash = await bcrypt.hash(defaultWaliPass, 10);
-
-  let totalSantri = 0;
-  let totalWaliBaru = 0;
-
-  await withTransaction(async (client) => {
-    // Record BatchImpor
-    await client.query(
-      `INSERT INTO "BatchImpor" ("id", "namaBatch", "sumber", "jumlahSantri", "status", "dibuatOleh")
-       VALUES ($1, $2, 'excel', $3, 'Berhasil', $4)`,
-      [batchId, (namaBatch || "Impor Santri").trim(), rows.length, req.user.nama],
-    );
-
-    for (const row of rows) {
-      const nama = (row.nama || "").trim();
-      const nis = (row.nis || "").trim() || null;
-      const nisn = (row.nisn || "").trim() || null;
-      const kelas = (row.kelas || "").trim() || null;
-      let jenisKelamin = (row.jenisKelamin || "").trim() || null;
-      if (jenisKelamin) {
-        const up = jenisKelamin.toUpperCase();
-        if (up.startsWith("L") || up.includes("LAKI")) jenisKelamin = "L";
-        else if (up.startsWith("P") || up.includes("PEREMPUAN")) jenisKelamin = "P";
-      }
-      const tempatLahir = (row.tempatLahir || "").trim() || null;
-      let tanggalLahir = (row.tanggalLahir || "").trim() || null;
-      if (tanggalLahir) {
-        const dmyMatch = tanggalLahir.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-        if (dmyMatch) {
-          tanggalLahir = `${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`;
-        }
-      }
-      const alamat = (row.alamat || "").trim() || null;
-      const asrama = (row.asrama || "").trim() || null;
-      const namaWali = (row.namaWali || "").trim();
-      const hpWali = (row.hpWali || "").trim();
-
-      if (!nama) continue;
-
-      let waliId = null;
-      if (namaWali) {
-        // Cari atau buat akun Wali secara otomatis
-        const usernameWali = hpWali
-          ? `wali.${hpWali.slice(-6)}`
-          : `wali.${namaWali.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10)}.${Math.floor(1000 + Math.random() * 9000)}`;
-
-        let waliRow = await client.query('SELECT "id" FROM "Wali" WHERE "nama" = $1 AND ("hp" = $2 OR "username" = $3)', [namaWali, hpWali || "", usernameWali]);
-        if (waliRow.rowCount) {
-          waliId = waliRow.rows[0].id;
-        } else {
-          waliId = uid();
-          await client.query(
-            `INSERT INTO "Wali" ("id", "nama", "hp", "username", "password", "mustChangePassword", "statusAkun", "importBatchId")
-             VALUES ($1, $2, $3, $4, $5, TRUE, 'Belum Aktivasi', $6)`,
-            [waliId, namaWali, hpWali || null, usernameWali, defaultWaliHash, batchId],
-          );
-          totalWaliBaru++;
-        }
-      }
-
-      // Upsert data Santri berdasarkan NIS atau UUID baru
-      let existingSantri = nis ? await client.query('SELECT "id" FROM "Santri" WHERE "nis" = $1', [nis]) : { rowCount: 0 };
-
-      if (existingSantri.rowCount) {
-        const santriId = existingSantri.rows[0].id;
-        await client.query(
-          `UPDATE "Santri" SET
-            "nama" = $1, "kelas" = COALESCE($2, "kelas"), "nisn" = COALESCE($3, "nisn"),
-            "jenisKelamin" = COALESCE($4, "jenisKelamin"), "tempatLahir" = COALESCE($5, "tempatLahir"),
-            "tanggalLahir" = COALESCE($6, "tanggalLahir"), "alamat" = COALESCE($7, "alamat"),
-            "asrama" = COALESCE($8, "asrama"), "waliId" = COALESCE($9, "waliId"),
-            "importBatchId" = $10
-           WHERE "id" = $11`,
-          [nama, kelas, nisn, jenisKelamin, tempatLahir, tanggalLahir, alamat, asrama, waliId, batchId, santriId],
-        );
-      } else {
-        const santriId = uid();
-        await client.query(
-          `INSERT INTO "Santri"
-            ("id", "nama", "kelas", "nis", "nisn", "jenisKelamin", "tempatLahir", "tanggalLahir", "alamat", "asrama", "waliId", "saldo", "importBatchId")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12)`,
-          [santriId, nama, kelas, nis, nisn, jenisKelamin, tempatLahir, tanggalLahir, alamat, asrama, waliId, batchId],
-        );
-      }
-      totalSantri++;
-    }
-
-    await client.query(
-      'UPDATE "BatchImpor" SET "jumlahSantri" = $1, "jumlahWali" = $2 WHERE "id" = $3',
-      [totalSantri, totalWaliBaru, batchId],
-    );
+  const result = await eksekusiImporBatch({
+    namaBatch,
+    rows,
+    aktorId: req.user.id,
+    aktorNama: req.user.nama,
   });
 
   res.json({
-    batchId,
-    totalSantri,
-    totalWaliBaru,
-    pesan: `Berhasil mengimpor ${totalSantri} data santri dan memproses ${totalWaliBaru} akun wali baru.`,
+    batchId: result.batchId,
+    totalSantri: result.totalSantri,
+    totalWaliBaru: result.totalWaliBaru,
+    daftarKredensialAwal: result.daftarKredensialAwal,
+    pesan: `Berhasil mengimpor ${result.totalSantri} data santri dan memproses ${result.totalWaliBaru} akun wali baru.`,
   });
 }));
 

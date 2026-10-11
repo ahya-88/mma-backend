@@ -79,6 +79,12 @@ CREATE TABLE IF NOT EXISTS "Santri" (
   "pendidikanSMA" TEXT,
   "tahunSMA" TEXT,
   "riwayatKelas" TEXT,
+  "noStambuk" TEXT,
+  "angkatan" INTEGER,
+  "tahunMasuk" TEXT,
+  "nik" TEXT,
+  "nikAyah" TEXT,
+  "nikIbu" TEXT,
   "pinHash" TEXT,
   "pinGagal" INTEGER NOT NULL DEFAULT 0,
   "pinKunciSampai" TEXT,
@@ -484,12 +490,30 @@ CREATE INDEX IF NOT EXISTS idx_offline_queue_status ON "QueueOfflineKasir" ("sta
 
 ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "statusAkun" TEXT NOT NULL DEFAULT 'Belum Aktivasi';
 ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "importBatchId" TEXT REFERENCES "BatchImpor"("id");
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "nik" TEXT;
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "nikAyah" TEXT;
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "nikIbu" TEXT;
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "namaAyah" TEXT;
+ALTER TABLE "Wali" ADD COLUMN IF NOT EXISTS "namaIbu" TEXT;
+CREATE INDEX IF NOT EXISTS idx_wali_nik ON "Wali" ("nik");
+CREATE INDEX IF NOT EXISTS idx_wali_nik_ayah ON "Wali" ("nikAyah");
+CREATE INDEX IF NOT EXISTS idx_wali_nik_ibu ON "Wali" ("nikIbu");
+
 ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "importBatchId" TEXT REFERENCES "BatchImpor"("id");
 ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "statusSantri" TEXT NOT NULL DEFAULT 'Aktif';
 ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "alumniTahunLulus" TEXT;
 ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "alumniStatusSaatIni" TEXT;
 ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "alumniInstansiTujuan" TEXT;
 ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "alumniNoHp" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "noStambuk" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "angkatan" INTEGER;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "tahunMasuk" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "nik" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "nikAyah" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "nikIbu" TEXT;
+CREATE INDEX IF NOT EXISTS idx_santri_nostambuk ON "Santri" ("noStambuk");
+CREATE INDEX IF NOT EXISTS idx_santri_angkatan ON "Santri" ("angkatan");
+CREATE INDEX IF NOT EXISTS idx_santri_nik ON "Santri" ("nik");
 
 CREATE TABLE IF NOT EXISTS "PendaftaranUlang" (
   "id" TEXT PRIMARY KEY,

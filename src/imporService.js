@@ -22,6 +22,92 @@ function sanitizeUsername(str) {
     .slice(0, 30);
 }
 
+const INDONESIA_BULAN_MAP = {
+  januari: "01", jan: "01",
+  februari: "02", febuari: "02", feb: "02",
+  maret: "03", mar: "03",
+  april: "04", apr: "04",
+  mei: "05", may: "05",
+  juni: "06", jun: "06",
+  juli: "07", jul: "07",
+  agustus: "08", ags: "08", agust: "08",
+  september: "09", septermer: "09", sep: "09", sept: "09",
+  oktober: "10", okt: "10", oct: "10",
+  november: "11", nopember: "11", nov: "11",
+  desember: "12", des: "12", dec: "12",
+};
+
+function parseTTL(rawStr) {
+  if (!rawStr || typeof rawStr !== "string") return { tempatLahir: "", tanggalLahir: "" };
+  const str = rawStr.trim();
+  if (!str) return { tempatLahir: "", tanggalLahir: "" };
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return { tempatLahir: "", tanggalLahir: str };
+  }
+
+  const pureDmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (pureDmy) {
+    const d = pureDmy[1].padStart(2, "0");
+    const m = pureDmy[2].padStart(2, "0");
+    const y = pureDmy[3];
+    return { tempatLahir: "", tanggalLahir: `${y}-${m}-${d}` };
+  }
+
+  const dmyEndMatch = str.match(/^(.*?)(?:,\s*|\s+)(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmyEndMatch) {
+    const tempat = dmyEndMatch[1].replace(/,/g, "").trim();
+    const d = dmyEndMatch[2].padStart(2, "0");
+    const m = dmyEndMatch[3].padStart(2, "0");
+    const y = dmyEndMatch[4];
+    return { tempatLahir: tempat, tanggalLahir: `${y}-${m}-${d}` };
+  }
+
+  const textDateMatch = str.match(/^(.*?)(?:,\s*|\s+)(\d{1,2})[a-zA-Z]?\s+([a-zA-Z]+)\s+(\d{4})$/);
+  if (textDateMatch) {
+    const tempat = textDateMatch[1].replace(/,/g, "").trim();
+    const d = textDateMatch[2].padStart(2, "0");
+    const bulanKey = textDateMatch[3].toLowerCase();
+    const y = textDateMatch[4];
+    const m = INDONESIA_BULAN_MAP[bulanKey];
+    if (m) {
+      return { tempatLahir: tempat, tanggalLahir: `${y}-${m}-${d}` };
+    }
+  }
+
+  const monthYearMatch = str.match(/^(.*?)(?:,\s*|\s+)([a-zA-Z]+)\s+(\d{4})$/);
+  if (monthYearMatch) {
+    const bulanKey = monthYearMatch[2].toLowerCase();
+    const m = INDONESIA_BULAN_MAP[bulanKey];
+    if (m) {
+      const tempat = monthYearMatch[1].replace(/,/g, "").trim();
+      const y = monthYearMatch[3];
+      return { tempatLahir: tempat, tanggalLahir: `${y}-${m}-01` };
+    }
+  }
+
+  return { tempatLahir: str, tanggalLahir: "" };
+}
+
+function sanitizeNIK(val) {
+  if (val === undefined || val === null) return null;
+  const cleaned = String(val).replace(/['"\s\-]/g, "").trim();
+  if (!cleaned || /tidak|ada|alm/i.test(cleaned)) return null;
+  if (/^\d+$/.test(cleaned)) return cleaned;
+  return null;
+}
+
+function normalizeStatusSantri(rawStatus, nama = "") {
+  if (nama && /\(\s*ALM\s*\)/i.test(nama)) return "Wafat";
+  if (!rawStatus || typeof rawStatus !== "string") return "Aktif";
+  const s = rawStatus.trim().toLowerCase();
+  if (s.includes("alumni") || s.includes("lulus") || s.includes("tamat")) return "Alumni";
+  if (s.includes("keluar") || s.includes("pindah") || s.includes("mutasi") || s.includes("mundur") || s.includes("berhenti")) return "Keluar";
+  if (s.includes("wafat") || s.includes("alm") || s.includes("meninggal")) return "Wafat";
+  if (s.includes("aktif")) return "Aktif";
+  return "Aktif";
+}
+
 function validTanggal(isoStr) {
   if (!isoStr || typeof isoStr !== "string") return true;
   return /^\d{4}-\d{2}-\d{2}$/.test(isoStr.trim());
@@ -38,6 +124,8 @@ function normalisasiTanggal(str) {
     const y = dmyMatch[3];
     return `${y}-${m}-${d}`;
   }
+  const parsed = parseTTL(s);
+  if (parsed.tanggalLahir) return parsed.tanggalLahir;
   return s;
 }
 
@@ -118,30 +206,48 @@ async function prosesDryRunImpor(rows) {
     throw new CashlessError(400, "Data impor kosong. Sediakan minimal satu baris data.");
   }
 
+  const rowsValid = rows.filter((r) => {
+    if (!r) return false;
+    const values = Object.values(r).map((v) => String(v || "").trim()).filter(Boolean);
+    return values.length > 0;
+  });
+
+  if (!rowsValid.length) {
+    throw new CashlessError(400, "Data impor kosong. Sediakan minimal satu baris data.");
+  }
+
   const detailGagal = [];
   const nisInBatch = new Set();
   const nisnInBatch = new Set();
   let jumlahValid = 0;
 
-  for (let i = 0; i < rows.length; i++) {
-    const baris = rows[i] || {};
+  for (let i = 0; i < rowsValid.length; i++) {
+    const baris = rowsValid[i] || {};
     const noBaris = i + 1;
     const pesans = [];
 
-    const nama = (baris.nama || "").trim();
-    const nis = (baris.nis || "").trim();
-    const nisn = (baris.nisn || "").trim();
-    const kelas = (baris.kelas || "").trim();
-    let jenisKelamin = (baris.jenisKelamin || "").trim().toUpperCase();
+    const nama = (baris.nama || baris["NAMA LENGKAP"] || baris["NAMA"] || "").trim();
+    const stambuk = String(baris.noStambuk || baris["No. STAMBUK"] || baris["NO. STAMBUK"] || baris["No Stambuk"] || baris["NO STAMBUK"] || baris.stambuk || baris.nis || "").trim();
+    const nis = stambuk;
+    const nisn = (baris.nisn || baris["NISN"] || "").trim();
+    const angkatan = baris.angkatan || baris["ANGKATAN"] ? Number(baris.angkatan || baris["ANGKATAN"]) : null;
+    const rawKelas = (baris.kelas || baris["KELAS"] || "").trim();
+    const kelas = rawKelas || (angkatan ? `Angkatan ${angkatan}` : "Belum Ditentukan");
+
+    let jenisKelamin = (baris.jenisKelamin || baris["JK"] || baris["JENIS KELAMIN"] || "").trim().toUpperCase();
     if (jenisKelamin.startsWith("L") || jenisKelamin.includes("LAKI")) jenisKelamin = "L";
     else if (jenisKelamin.startsWith("P") || jenisKelamin.includes("PEREMPUAN")) jenisKelamin = "P";
 
-    const rawTanggal = (baris.tanggalLahir || "").trim();
+    const rawTTL = (baris.ttl || baris["TTL"] || "").trim();
+    let rawTanggal = (baris.tanggalLahir || "").trim();
+    if (!rawTanggal && rawTTL) {
+      const parsed = parseTTL(rawTTL);
+      rawTanggal = parsed.tanggalLahir;
+    }
     const tanggalLahir = normalisasiTanggal(rawTanggal);
 
     if (!nama) pesans.push("Nama santri wajib diisi");
-    if (!nis) pesans.push("NIS wajib diisi");
-    if (!kelas) pesans.push("Kelas wajib diisi");
+    if (!nis) pesans.push("Nomor Stambuk / NIS wajib diisi");
 
     if (jenisKelamin && !["L", "P", "LAKI-LAKI", "PEREMPUAN"].includes(jenisKelamin)) {
       pesans.push("Jenis kelamin harus 'L', 'P', 'Laki-laki', atau 'Perempuan'");
@@ -153,7 +259,7 @@ async function prosesDryRunImpor(rows) {
 
     if (nis) {
       if (nisInBatch.has(nis)) {
-        pesans.push(`NIS '${nis}' duplikat dalam berkas impor ini`);
+        pesans.push(`Nomor Stambuk / NIS '${nis}' duplikat dalam berkas impor ini`);
       } else {
         nisInBatch.add(nis);
       }
@@ -174,29 +280,29 @@ async function prosesDryRunImpor(rows) {
     }
   }
 
-  const existingNis = await queryAll('SELECT "nis" FROM "Santri" WHERE "nis" IS NOT NULL AND "nis" != \'\'');
-  const existingNisSet = new Set(existingNis.map((r) => r.nis));
+  const existingNis = await queryAll('SELECT "nis", "noStambuk" FROM "Santri" WHERE ("nis" IS NOT NULL AND "nis" != \'\') OR ("noStambuk" IS NOT NULL AND "noStambuk" != \'\')');
+  const existingNisSet = new Set(existingNis.map((r) => r.noStambuk || r.nis).filter(Boolean));
   const existingNisn = await queryAll('SELECT "nisn" FROM "Santri" WHERE "nisn" IS NOT NULL AND "nisn" != \'\'');
-  const existingNisnSet = new Set(existingNisn.map((r) => r.nisn));
+  const existingNisnSet = new Set(existingNisn.map((r) => r.nisn).filter(Boolean));
 
   const updateList = [];
   const baruList = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const baris = rows[i] || {};
-    const nis = (baris.nis || "").trim();
-    const nisn = (baris.nisn || "").trim();
-    if (!nis) continue;
-    if (existingNisSet.has(nis) || (nisn && existingNisnSet.has(nisn))) {
-      updateList.push(nis);
+  for (let i = 0; i < rowsValid.length; i++) {
+    const baris = rowsValid[i] || {};
+    const stambuk = String(baris.noStambuk || baris["No. STAMBUK"] || baris["NO. STAMBUK"] || baris["No Stambuk"] || baris["NO STAMBUK"] || baris.stambuk || baris.nis || "").trim();
+    const nisn = (baris.nisn || baris["NISN"] || "").trim();
+    if (!stambuk) continue;
+    if (existingNisSet.has(stambuk) || (nisn && existingNisnSet.has(nisn))) {
+      updateList.push(stambuk);
     } else {
-      baruList.push(nis);
+      baruList.push(stambuk);
     }
   }
 
   return {
     valid: detailGagal.length === 0,
-    totalBaris: rows.length,
+    totalBaris: rowsValid.length,
     jumlahValid,
     jumlahGagal: detailGagal.length,
     jumlahBaru: baruList.length,
@@ -206,7 +312,13 @@ async function prosesDryRunImpor(rows) {
 }
 
 async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
-  const validation = await prosesDryRunImpor(rows);
+  const rowsValid = (rows || []).filter((r) => {
+    if (!r) return false;
+    const values = Object.values(r).map((v) => String(v || "").trim()).filter(Boolean);
+    return values.length > 0;
+  });
+
+  const validation = await prosesDryRunImpor(rowsValid);
   if (!validation.valid) {
     throw new CashlessError(400, `Validasi impor gagal pada ${validation.jumlahGagal} baris data.`, { detailGagal: validation.detailGagal });
   }
@@ -215,25 +327,82 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
     const batchId = uid();
     await query(
       'INSERT INTO "BatchImpor" ("id", "namaBatch", "sumber", "jumlahSantri", "jumlahWali", "status", "dibuatOleh") VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [batchId, namaBatch || `Impor ${new Date().toISOString().slice(0, 10)}`, "excel", rows.length, 0, "Berhasil", aktorNama || null],
+      [batchId, namaBatch || `Impor ${new Date().toISOString().slice(0, 10)}`, "excel", rowsValid.length, 0, "Berhasil", aktorNama || null],
     );
 
     const daftarKredensialAwal = [];
     let waliBaruCount = 0;
+    const waliByNikMap = new Map();
 
-    for (const baris of rows) {
-      const nis = baris.nis.trim();
-      const nama = baris.nama.trim();
-      const kelas = baris.kelas.trim();
-      const nisn = (baris.nisn || "").trim() || null;
-      const namaWali = (baris.namaWali || baris.namaAyah || baris.namaIbu || "").trim();
+    for (const baris of rowsValid) {
+      const nama = (baris.nama || baris["NAMA LENGKAP"] || baris["NAMA"] || "").trim();
+      const stambuk = String(baris.noStambuk || baris["No. STAMBUK"] || baris["NO. STAMBUK"] || baris["No Stambuk"] || baris["NO STAMBUK"] || baris.stambuk || baris.nis || "").trim();
+      const nis = stambuk;
+      const nisn = (baris.nisn || baris["NISN"] || "").trim() || null;
+      const angkatan = baris.angkatan || baris["ANGKATAN"] ? Number(baris.angkatan || baris["ANGKATAN"]) : null;
+      const tahunMasuk = (baris.tahunMasuk || baris["PPSB TAHUN"] || baris.ppsbTahun || "").trim() || null;
+      const rawKelas = (baris.kelas || baris["KELAS"] || "").trim();
+      const kelas = rawKelas || (angkatan ? `Angkatan ${angkatan}` : "Belum Ditentukan");
+
+      const nikSantri = sanitizeNIK(baris.nik || baris["NIK"] || baris["NIK SANTRI"]);
+      const namaAyah = (baris.namaAyah || baris["NAMA AYAH"] || "").trim() || null;
+      const nikAyah = sanitizeNIK(baris.nikAyah || baris["NIK AYAH"]);
+      const namaIbu = (baris.namaIbu || baris["NAMA IBU"] || "").trim() || null;
+      const nikIbu = sanitizeNIK(baris.nikIbu || baris["NIK IBU"]);
+      const alamat = (baris.alamat || baris["ALAMAT"] || "").trim() || null;
+
+      let jk = (baris.jenisKelamin || baris["JK"] || baris["JENIS KELAMIN"] || "").trim().toUpperCase();
+      if (jk.startsWith("L") || jk.includes("LAKI")) jk = "L";
+      else if (jk.startsWith("P") || jk.includes("PEREMPUAN")) jk = "P";
+
+      const rawTTL = (baris.ttl || baris["TTL"] || "").trim();
+      let tempatLahir = (baris.tempatLahir || "").trim();
+      let tanggalLahir = (baris.tanggalLahir || "").trim();
+      if (rawTTL) {
+        const parsed = parseTTL(rawTTL);
+        if (!tempatLahir && parsed.tempatLahir) tempatLahir = parsed.tempatLahir;
+        if (!tanggalLahir && parsed.tanggalLahir) tanggalLahir = parsed.tanggalLahir;
+      }
+      tanggalLahir = normalisasiTanggal(tanggalLahir) || null;
+      tempatLahir = tempatLahir || null;
+
+      const rawStatus = baris.statusSantri || baris.status || baris["STATUS"] || baris["STATUS SANTRI"] || "";
+      const statusSantri = normalizeStatusSantri(rawStatus, nama);
+
+      const namaWaliRaw = (baris.namaWali || namaAyah || namaIbu || "").trim();
       const hpWali = (baris.hpWali || baris.noDarurat || "").trim() || null;
 
+      // ---- Family Clustering & Wali Deduplication ----
       let waliId = null;
-      if (namaWali) {
-        let existingWali = await queryOne('SELECT * FROM "Wali" WHERE "nama" = $1 AND ("hp" = $2 OR "hp" IS NULL)', [namaWali, hpWali]);
-        if (!existingWali) {
-          const usernameBase = `wali.${nis || sanitizeUsername(namaWali)}`;
+      if (nikAyah && waliByNikMap.has(nikAyah)) {
+        waliId = waliByNikMap.get(nikAyah);
+      } else if (nikIbu && waliByNikMap.has(nikIbu)) {
+        waliId = waliByNikMap.get(nikIbu);
+      }
+
+      if (!waliId && (nikAyah || nikIbu)) {
+        let existingWali = null;
+        if (nikAyah) {
+          existingWali = await queryOne('SELECT "id" FROM "Wali" WHERE "nik" = $1 OR "nikAyah" = $1', [nikAyah]);
+        }
+        if (!existingWali && nikIbu) {
+          existingWali = await queryOne('SELECT "id" FROM "Wali" WHERE "nik" = $1 OR "nikIbu" = $1', [nikIbu]);
+        }
+        if (existingWali) {
+          waliId = existingWali.id;
+          if (nikAyah) waliByNikMap.set(nikAyah, waliId);
+          if (nikIbu) waliByNikMap.set(nikIbu, waliId);
+        }
+      }
+
+      if (!waliId && namaWaliRaw) {
+        let existingWali = await queryOne('SELECT * FROM "Wali" WHERE "nama" = $1 AND ("hp" = $2 OR "hp" IS NULL)', [namaWaliRaw, hpWali]);
+        if (existingWali) {
+          waliId = existingWali.id;
+          if (nikAyah) waliByNikMap.set(nikAyah, waliId);
+          if (nikIbu) waliByNikMap.set(nikIbu, waliId);
+        } else {
+          const usernameBase = `wali.${stambuk || sanitizeUsername(namaWaliRaw)}`;
           let username = usernameBase;
           let counter = 1;
           while (await queryOne('SELECT "id" FROM "Wali" WHERE "username" = $1', [username])) {
@@ -243,23 +412,42 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
           const rawPass = generateRandomPassword(8);
           const hashPass = await bcrypt.hash(rawPass, 10);
           waliId = uid();
+          const namaFinalWali = namaWaliRaw || namaAyah || namaIbu || `Wali ${nama}`;
 
           await query(
-            'INSERT INTO "Wali" ("id", "nama", "hp", "username", "password", "mustChangePassword", "statusAkun", "importBatchId") VALUES ($1, $2, $3, $4, $5, TRUE, \'Belum Aktivasi\', $6)',
-            [waliId, namaWali, hpWali, username, hashPass, batchId],
+            'INSERT INTO "Wali" ("id", "nama", "hp", "nik", "nikAyah", "nikIbu", "namaAyah", "namaIbu", "username", "password", "mustChangePassword", "statusAkun", "importBatchId") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE, \'Belum Aktivasi\', $11)',
+            [waliId, namaFinalWali, hpWali, nikAyah || nikIbu || null, nikAyah, nikIbu, namaAyah, namaIbu, username, hashPass, batchId],
           );
 
           waliBaruCount++;
-          daftarKredensialAwal.push({ waliId, namaWali, username, passwordAwal: rawPass, santriNama: nama, kelas });
-        } else {
-          waliId = existingWali.id;
+          if (nikAyah) waliByNikMap.set(nikAyah, waliId);
+          if (nikIbu) waliByNikMap.set(nikIbu, waliId);
+          daftarKredensialAwal.push({ waliId, namaWali: namaFinalWali, username, passwordAwal: rawPass, santriNama: nama, kelas });
         }
       }
 
-      const existingSantri = await queryOne('SELECT * FROM "Santri" WHERE "nis" = $1 OR ("nisn" IS NOT NULL AND "nisn" = $2)', [nis, nisn]);
+      const existingSantri = await queryOne(
+        'SELECT * FROM "Santri" WHERE ("noStambuk" IS NOT NULL AND "noStambuk" = $1) OR ("nis" IS NOT NULL AND "nis" = $1) OR ("nisn" IS NOT NULL AND "nisn" = $2)',
+        [stambuk, nisn]
+      );
       const santriId = existingSantri ? existingSantri.id : uid();
 
-      const biodataToSet = {};
+      const biodataToSet = {
+        noStambuk: stambuk,
+        statusSantri,
+      };
+      if (angkatan) biodataToSet.angkatan = angkatan;
+      if (tahunMasuk) biodataToSet.tahunMasuk = tahunMasuk;
+      if (nikSantri) biodataToSet.nik = nikSantri;
+      if (namaAyah) biodataToSet.namaAyah = namaAyah;
+      if (nikAyah) biodataToSet.nikAyah = nikAyah;
+      if (namaIbu) biodataToSet.namaIbu = namaIbu;
+      if (nikIbu) biodataToSet.nikIbu = nikIbu;
+      if (alamat) biodataToSet.alamat = alamat;
+      if (tempatLahir) biodataToSet.tempatLahir = tempatLahir;
+      if (tanggalLahir) biodataToSet.tanggalLahir = tanggalLahir;
+      if (jk) biodataToSet.jenisKelamin = jk;
+
       for (const field of SANTRI_BIODATA_FIELDS) {
         if (field in baris && baris[field] !== undefined && baris[field] !== null && String(baris[field]).trim() !== "") {
           let val = String(baris[field]).trim();
@@ -274,8 +462,8 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
       }
 
       if (existingSantri) {
-        const sets = ['"nama" = $1', '"kelas" = $2', '"importBatchId" = $3'];
-        const values = [nama, kelas, batchId];
+        const sets = ['"nama" = $1', '"kelas" = $2', '"nis" = $3', '"importBatchId" = $4'];
+        const values = [nama, kelas, stambuk, batchId];
 
         if (nisn) { sets.push(`"nisn" = $${values.length + 1}`); values.push(nisn); }
         if (waliId) { sets.push(`"waliId" = $${values.length + 1}`); values.push(waliId); }
@@ -289,7 +477,7 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
         await query(`UPDATE "Santri" SET ${sets.join(", ")} WHERE "id" = $${values.length}`, values);
       } else {
         const cols = ["id", "nama", "kelas", "nis", "nisn", "waliId", "saldo", "importBatchId", ...Object.keys(biodataToSet)];
-        const vals = [santriId, nama, kelas, nis, nisn, waliId, 0, batchId, ...Object.values(biodataToSet)];
+        const vals = [santriId, nama, kelas, stambuk, nisn, waliId, 0, batchId, ...Object.values(biodataToSet)];
         await query(
           `INSERT INTO "Santri" (${cols.map((c) => `"${c}"`).join(", ")}) VALUES (${vals.map((_, idx) => `$${idx + 1}`).join(", ")})`,
           vals,
@@ -302,12 +490,12 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
     await query(
       `INSERT INTO "AuditLog" ("id", "aktorId", "aktorRole", "aksi", "targetTipe", "targetId", "detail")
        VALUES ($1, $2, 'guru', 'impor.batch_executed', 'BatchImpor', $3, $4::jsonb)`,
-      [uid(), aktorId || null, batchId, JSON.stringify({ namaBatch, jumlahSantri: rows.length, jumlahWaliBaru: waliBaruCount })],
+      [uid(), aktorId || null, batchId, JSON.stringify({ namaBatch, jumlahSantri: rowsValid.length, jumlahWaliBaru: waliBaruCount })],
     );
 
     return {
       batchId,
-      totalSantri: rows.length,
+      totalSantri: rowsValid.length,
       totalWaliBaru: waliBaruCount,
       daftarKredensialAwal,
     };
@@ -560,21 +748,38 @@ async function bersihkanDataDemo({ konfirmasi, aktorId }) {
       "Prestasi",
       "Hafalan",
       "PenilaianUbudiyah",
+      "PenilaianKegiatan",
+      "RaportAkademik",
+      "RaportMental",
+      "RaportTahfidz",
+      "PendaftaranUlang",
       "FaceTemplate",
       "LogPin",
       "LogWajah",
-      "RekonsiliasiImpor",
-      "BatchImpor",
       "Santri",
       "Wali",
+      "RekonsiliasiImpor",
+      "BatchImpor",
     ];
+
+    let existingTableNames = new Set(tablesToClear);
+    try {
+      const existingTablesRes = await query(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+      );
+      if (existingTablesRes && existingTablesRes.rows) {
+        existingTableNames = new Set(existingTablesRes.rows.map((r) => r.table_name));
+      }
+    } catch (_) {}
 
     let totalSantriDihapus = 0;
     for (const table of tablesToClear) {
-      try {
-        const res = await query(`DELETE FROM "${table}"`);
-        if (table === "Santri") totalSantriDihapus = Number(res.rowCount || 0);
-      } catch (_) {}
+      if (existingTableNames.has(table)) {
+        try {
+          const res = await query(`DELETE FROM "${table}"`);
+          if (table === "Santri") totalSantriDihapus = Number(res.rowCount || 0);
+        } catch (_) {}
+      }
     }
 
     await query(
@@ -598,4 +803,7 @@ module.exports = {
   rekonsiliasiSaldoDanTagihan,
   kelengkapanDataSekretariat,
   bersihkanDataDemo,
+  parseTTL,
+  sanitizeNIK,
+  normalizeStatusSantri,
 };

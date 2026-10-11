@@ -81,6 +81,7 @@ const SANTRI_BIODATA_FIELDS = [
   "asalSekolah", "programPilihan", "citaCita", "pendidikanSD", "tahunSD",
   "pendidikanSMP", "tahunSMP", "pendidikanSMA", "tahunSMA",
   "statusSantri", "alumniTahunLulus", "alumniStatusSaatIni", "alumniInstansiTujuan", "alumniNoHp",
+  "noStambuk", "angkatan", "tahunMasuk", "nik", "nikAyah", "nikIbu",
 ];
 
 async function toPublicSantri(santri, includeFoto = true) {
@@ -91,14 +92,21 @@ async function toPublicSantri(santri, includeFoto = true) {
   }
   let riwayatKelas = [];
   try { riwayatKelas = santri.riwayatKelas ? JSON.parse(santri.riwayatKelas) : []; } catch (_) {}
+  const stambukVal = santri.noStambuk || santri.nis || "";
   return {
     id: santri.id,
     nama: santri.nama,
     kelas: santri.kelas ?? "",
-    nis: santri.nis ?? "",
+    noStambuk: stambukVal,
+    nis: stambukVal,
     nisn: santri.nisn ?? "",
     waliId: santri.waliId ?? null,
     statusSantri: santri.statusSantri || "Aktif",
+    angkatan: santri.angkatan ? Number(santri.angkatan) : null,
+    tahunMasuk: santri.tahunMasuk ?? "",
+    nik: santri.nik ?? "",
+    nikAyah: santri.nikAyah ?? "",
+    nikIbu: santri.nikIbu ?? "",
     saldo: Number(santri.saldo || 0),
     limitJajanHarian: santri.limitJajanHarian ? Number(santri.limitJajanHarian) : null,
     durasiBlokirHari: Number(santri.durasiBlokirHari || DEFAULT_DURASI_BLOKIR_HARI),
