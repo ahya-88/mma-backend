@@ -254,7 +254,8 @@ router.post("/", requireAuth, asyncHandler(async (req, res) => {
     return res.status(403).json({ error: "Hanya Sekretariat atau Superadmin yang dapat menambah santri." });
   }
 
-  const { nama, kelas, nis, noStambuk, nisn, waliId, limitJajanHarian } = req.body || {};
+  const body = req.body || {};
+  const { nama, kelas, nis, noStambuk, nisn, waliId, limitJajanHarian } = body;
   if (!nama || typeof nama !== "string" || !nama.trim()) {
     throw new CashlessError(400, "Nama santri wajib diisi.");
   }
@@ -269,10 +270,22 @@ router.post("/", requireAuth, asyncHandler(async (req, res) => {
       if (adaNis.rowCount) throw new CashlessError(400, "Nomor Stambuk / NIS sudah digunakan oleh santri lain.");
     }
 
+    const cols = ['"id"', '"nama"', '"kelas"', '"nis"', '"noStambuk"', '"nisn"', '"waliId"', '"limitJajanHarian"', '"saldo"'];
+    const vals = ['$1', '$2', '$3', '$4', '$5', '$6', '$7', '$8', '0'];
+    const params = [id, nama.trim(), kelas ? kelas.trim() : null, stambukVal, stambukVal, nisn ? nisn.trim() : null, waliId || null, limitVal];
+
+    for (const field of SANTRI_BIODATA_FIELDS) {
+      if (field === "noStambuk") continue;
+      if (body[field] !== undefined && body[field] !== null) {
+        params.push(body[field]);
+        cols.push(`"${field}"`);
+        vals.push(`$${params.length}`);
+      }
+    }
+
     await client.query(
-      `INSERT INTO "Santri" ("id", "nama", "kelas", "nis", "noStambuk", "nisn", "waliId", "limitJajanHarian", "saldo")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0)`,
-      [id, nama.trim(), kelas ? kelas.trim() : null, stambukVal, stambukVal, nisn ? nisn.trim() : null, waliId || null, limitVal],
+      `INSERT INTO "Santri" (${cols.join(", ")}) VALUES (${vals.join(", ")})`,
+      params,
     );
   });
 
@@ -296,22 +309,24 @@ router.put("/:id", requireAuth, asyncHandler(async (req, res) => {
     const row = existing.rows[0];
     const namaFinal = body.nama !== undefined ? String(body.nama).trim() : row.nama;
     const kelasFinal = body.kelas !== undefined ? String(body.kelas).trim() : row.kelas;
-    const nisFinal = body.nis !== undefined ? (body.nis ? String(body.nis).trim() : null) : row.nis;
+    const stambukInput = body.noStambuk !== undefined ? body.noStambuk : body.nis;
+    const nisFinal = stambukInput !== undefined ? (stambukInput ? String(stambukInput).trim() : null) : (row.noStambuk || row.nis);
     const nisnFinal = body.nisn !== undefined ? (body.nisn ? String(body.nisn).trim() : null) : row.nisn;
     const waliIdFinal = body.waliId !== undefined ? (body.waliId || null) : row.waliId;
     const limitFinal = body.limitJajanHarian !== undefined ? (body.limitJajanHarian ? Number(body.limitJajanHarian) : null) : row.limitJajanHarian;
 
-    if (nisFinal && nisFinal !== row.nis) {
-      const adaNis = await client.query('SELECT "id" FROM "Santri" WHERE "nis" = $1 AND "id" <> $2', [nisFinal, santriId]);
-      if (adaNis.rowCount) throw new CashlessError(400, "NIS sudah digunakan oleh santri lain.");
+    if (nisFinal && nisFinal !== (row.noStambuk || row.nis)) {
+      const adaNis = await client.query('SELECT "id" FROM "Santri" WHERE ("nis" = $1 OR "noStambuk" = $1) AND "id" <> $2', [nisFinal, santriId]);
+      if (adaNis.rowCount) throw new CashlessError(400, "Nomor Stambuk / NIS sudah digunakan oleh santri lain.");
     }
 
     const updates = [
-      '"nama" = $1', '"kelas" = $2', '"nis" = $3', '"nisn" = $4', '"waliId" = $5', '"limitJajanHarian" = $6',
+      '"nama" = $1', '"kelas" = $2', '"nis" = $3', '"noStambuk" = $3', '"nisn" = $4', '"waliId" = $5', '"limitJajanHarian" = $6',
     ];
     const params = [namaFinal, kelasFinal, nisFinal, nisnFinal, waliIdFinal, limitFinal];
 
     for (const field of SANTRI_BIODATA_FIELDS) {
+      if (field === "noStambuk") continue;
       if (body[field] !== undefined) {
         params.push(body[field]);
         updates.push(`"${field}" = $${params.length}`);
@@ -355,7 +370,7 @@ router.post("/upsert", requireAuth, asyncHandler(async (req, res) => {
     const existing = await client.query('SELECT "id" FROM "Santri" WHERE "id" = $1 FOR UPDATE', [santriId]);
     if (existing.rowCount) {
       const updates = [
-        '"nama" = $1', '"kelas" = $2', '"nis" = $3', '"nisn" = $4', '"waliId" = $5',
+        '"nama" = $1', '"kelas" = $2', '"nis" = $3', '"noStambuk" = $3', '"nisn" = $4', '"waliId" = $5',
       ];
       const params = [nama, kelas, nis, nisn, waliId];
       if (limitVal !== null) {
@@ -363,6 +378,7 @@ router.post("/upsert", requireAuth, asyncHandler(async (req, res) => {
         updates.push(`"limitJajanHarian" = $${params.length}`);
       }
       for (const field of SANTRI_BIODATA_FIELDS) {
+        if (field === "noStambuk") continue;
         if (body[field] !== undefined) {
           params.push(body[field]);
           updates.push(`"${field}" = $${params.length}`);
@@ -371,8 +387,8 @@ router.post("/upsert", requireAuth, asyncHandler(async (req, res) => {
       params.push(santriId);
       await client.query(`UPDATE "Santri" SET ${updates.join(", ")} WHERE "id" = $${params.length}`, params);
     } else {
-      const cols = ['"id"', '"nama"', '"kelas"', '"nis"', '"nisn"', '"waliId"', '"saldo"'];
-      const vals = ['$1', '$2', '$3', '$4', '$5', '$6', '0'];
+      const cols = ['"id"', '"nama"', '"kelas"', '"nis"', '"noStambuk"', '"nisn"', '"waliId"', '"saldo"'];
+      const vals = ['$1', '$2', '$3', '$4', '$4', '$5', '$6', '0'];
       const params = [santriId, nama, kelas, nis, nisn, waliId];
       if (limitVal !== null) {
         params.push(limitVal);
@@ -380,6 +396,7 @@ router.post("/upsert", requireAuth, asyncHandler(async (req, res) => {
         vals.push(`$${params.length}`);
       }
       for (const field of SANTRI_BIODATA_FIELDS) {
+        if (field === "noStambuk") continue;
         if (body[field] !== undefined) {
           params.push(body[field]);
           cols.push(`"${field}"`);

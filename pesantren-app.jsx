@@ -203,12 +203,22 @@ const SANTRI_BIODATA_KEYS = [
   "noDarurat", "catatanKesehatan", "halaqoh", "foto", "namaAyah", "namaIbu",
   "asalSekolah", "programPilihan", "citaCita", "pendidikanSD", "tahunSD",
   "pendidikanSMP", "tahunSMP", "pendidikanSMA", "tahunSMA",
+  "nik", "nikAyah", "nikIbu", "noStambuk", "angkatan", "tahunMasuk", "statusSantri",
 ];
 // Pastikan identitas dasar santri sudah ada di backend sebelum transaksi/permintaan diproses
 // (mis. santri baru yang ditambahkan lewat modul Pengasuhan lokal, belum pernah tersinkron).
 const syncSantriKeBackend = (santri, token) => backendApi("/santri/upsert", {
   method: "POST", token,
-  body: { id: santri.id, nama: santri.nama, kelas: santri.kelas, nis: santri.nis, nisn: santri.nisn, waliId: santri.waliId },
+  body: {
+    id: santri.id,
+    nama: santri.nama,
+    kelas: santri.kelas,
+    nis: santri.noStambuk || santri.nis,
+    noStambuk: santri.noStambuk || santri.nis,
+    nik: santri.nik,
+    nisn: santri.nisn,
+    waliId: santri.waliId,
+  },
 });
 const hexToRgbTriplet = (hex) => {
   const h = (hex || "#1E3A8A").replace("#", "");
@@ -8815,10 +8825,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [showSantriForm, setShowSantriForm] = useState(false);
   const [editingSantriId, setEditingSantriId] = useState(null);
   const [detailSantriId, setDetailSantriId] = useState(null);
-  const kosongSantriForm = { nama: "", kelas: data.kelas[0] || "", waliId: data.wali[0]?.id || "", nis: "", nisn: "", jenisKelamin: "Laki-laki", tempatLahir: "", tanggalLahir: "", alamat: "", asrama: "", golDarah: "", noDarurat: "", catatanKesehatan: "", halaqoh: "", foto: "", limitJajanHarian: "", namaAyah: "", namaIbu: "", asalSekolah: "", programPilihan: "", citaCita: "", pendidikanSD: "", tahunSD: "", pendidikanSMP: "", tahunSMP: "", pendidikanSMA: "", tahunSMA: "" };
+  const kosongSantriForm = { nama: "", kelas: data.kelas[0] || "", waliId: data.wali[0]?.id || "", nis: "", noStambuk: "", nik: "", nikAyah: "", nikIbu: "", angkatan: "", tahunMasuk: "", statusSantri: "Aktif", nisn: "", jenisKelamin: "Laki-laki", tempatLahir: "", tanggalLahir: "", alamat: "", asrama: "", golDarah: "", noDarurat: "", catatanKesehatan: "", halaqoh: "", foto: "", limitJajanHarian: "", namaAyah: "", namaIbu: "", asalSekolah: "", programPilihan: "", citaCita: "", pendidikanSD: "", tahunSD: "", pendidikanSMP: "", tahunSMP: "", pendidikanSMA: "", tahunSMA: "" };
   const [santriForm, setSantriForm] = useState(kosongSantriForm);
   const bukaTambahSantri = () => { setSantriForm(kosongSantriForm); setEditingSantriId(null); setShowSantriForm(true); };
-  const bukaEditSantri = (s) => { setSantriForm({ ...kosongSantriForm, ...s }); setEditingSantriId(s.id); setShowSantriForm(true); };
+  const bukaEditSantri = (s) => { setSantriForm({ ...kosongSantriForm, ...s, noStambuk: s.noStambuk || s.nis || "", nis: s.noStambuk || s.nis || "" }); setEditingSantriId(s.id); setShowSantriForm(true); };
   const batalFormSantri = () => { setShowSantriForm(false); setEditingSantriId(null); setSantriForm(kosongSantriForm); };
   const pilihFoto = (e) => {
     const file = e.target.files?.[0];
@@ -8836,8 +8846,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     const riwayatKelas = existing && existing.kelas !== santriForm.kelas
       ? [...(existing.riwayatKelas || []), { kelas: santriForm.kelas, tanggal: todayStr() }]
       : (existing?.riwayatKelas?.length ? existing.riwayatKelas : [{ kelas: santriForm.kelas, tanggal: todayStr() }]);
+    const stambukVal = santriForm.noStambuk || santriForm.nis || "";
     const payload = {
-      id, nama: santriForm.nama, kelas: santriForm.kelas, nis: santriForm.nis, nisn: santriForm.nisn, waliId: santriForm.waliId,
+      id, nama: santriForm.nama, kelas: santriForm.kelas, nis: stambukVal, noStambuk: stambukVal, nik: santriForm.nik, nisn: santriForm.nisn, waliId: santriForm.waliId,
       riwayatKelas,
       ...SANTRI_BIODATA_KEYS.reduce((acc, k) => { acc[k] = santriForm[k] || ""; return acc; }, {}),
     };
@@ -8931,9 +8942,18 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         if (["namasantri", "nama_santri", "namalengkap", "nama", "namasiswa"].includes(h)) key = "nama";
         else if (["nis", "noinduk", "nomorinduk", "stambuk", "nostambuk", "nomorstambuk", "nostambuknis"].includes(h)) key = "nis";
         else if (["nisn", "nomorinduknasional", "noinduknasional"].includes(h)) key = "nisn";
+        else if (["nik", "niksantri", "nik_santri", "noktp", "ktp"].includes(h)) key = "nik";
+        else if (["nikayah", "nik_ayah"].includes(h)) key = "nikAyah";
+        else if (["nikibu", "nik_ibu"].includes(h)) key = "nikIbu";
+        else if (["namaayah", "nama_ayah", "ayah"].includes(h)) key = "namaAyah";
+        else if (["namaibu", "nama_ibu", "ibu"].includes(h)) key = "namaIbu";
+        else if (["angkatan"].includes(h)) key = "angkatan";
+        else if (["tahunmasuk", "ppsbtahun", "tahun_masuk"].includes(h)) key = "tahunMasuk";
+        else if (["status", "statussantri", "status_santri"].includes(h)) key = "statusSantri";
+        else if (["ttl"].includes(h)) key = "ttl";
         else if (["kelas", "rombonganbelajar", "rombel", "kls"].includes(h)) key = "kelas";
         else if (["jeniskelamin", "jk", "gender", "jeniskelaminlp", "lp"].includes(h)) key = "jenisKelamin";
-        else if (["namawali", "nama_wali", "namaayah", "namaibu", "orangtua", "wali", "wali_santri", "ayah", "ibu"].includes(h)) key = "namaWali";
+        else if (["namawali", "nama_wali", "orangtua", "wali", "wali_santri"].includes(h)) key = "namaWali";
         else if (["hpwali", "hp_wali", "nohp", "nodarurat", "handphone", "nohpwali", "teleponwali", "nohpwhatsappwali", "nohpwalisantri", "kontakwali", "no_hp", "no_wa", "whatsapp"].includes(h)) key = "hpWali";
         else if (["tanggallahir", "tanggal_lahir", "tgl_lahir", "tgllahir", "tanggallahiryyyymmdd", "tgl"].includes(h)) key = "tanggalLahir";
         else if (["tempatlahir", "tempat_lahir", "tmptlahir", "kotalahir", "tempat"].includes(h)) key = "tempatLahir";
@@ -8951,6 +8971,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         else if (key === "jenisKelamin") rawVal = normalisasiJK(rawVal);
 
         rowObj[key] = String(rawVal);
+        if (key === "nis") rowObj.noStambuk = String(rawVal);
       });
       if (rowObj.nama) rows.push(rowObj);
     }
@@ -9021,21 +9042,22 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       window.URL.revokeObjectURL(url);
     } catch (_) {
       const headers = [
-        "nama", "nis", "nisn", "kelas", "jenisKelamin",
+        "nama", "nis", "nisn", "kelas", "jenisKelamin", "nik",
         "tempatLahir", "tanggalLahir", "alamat", "asrama",
-        "namaWali", "hpWali"
+        "namaWali", "hpWali", "nikAyah", "nikIbu", "angkatan", "tahunMasuk", "status"
       ];
       const data = [
         headers,
-        ["Ahmad Ridwan", "1001", "0012345678", "7A", "L", "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri", "Bpk. Ridwan", "081234567890"],
-        ["Siti Fatimah", "1002", "0087654321", "7B", "P", "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah", "Ibu Fatimah", "081987654321"],
-        ["Muhammad Farhan", "1003", "0091122334", "8A", "L", "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi", "Bpk. Hendra Gunawan", "082133445566"]
+        ["Ahmad Ridwan", "1001", "0012345678", "7A", "L", "3201012345670001", "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri", "Bpk. Ridwan", "081234567890", "3201011122330001", "3201014455660002", "1", "2018", "Aktif"],
+        ["Siti Fatimah", "1002", "0087654321", "7B", "P", "3202022345670002", "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah", "Ibu Fatimah", "081987654321", "3202021122330003", "3202024455660004", "1", "2018", "Aktif"],
+        ["Muhammad Farhan", "1003", "0091122334", "8A", "L", "3203032345670003", "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi", "Bpk. Hendra Gunawan", "082133445566", "3203031122330005", "3203034455660006", "2", "2019", "Alumni"]
       ];
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(data);
       ws["!cols"] = [
-        { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 14 },
-        { wch: 18 }, { wch: 15 }, { wch: 38 }, { wch: 22 }, { wch: 24 }, { wch: 18 }
+        { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 14 }, { wch: 20 },
+        { wch: 18 }, { wch: 15 }, { wch: 38 }, { wch: 22 }, { wch: 24 }, { wch: 18 },
+        { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
       ];
       XLSX.utils.book_append_sheet(wb, ws, "Data Santri");
       XLSX.writeFile(wb, "Template_Impor_Santri_MMA.xlsx");
@@ -9058,10 +9080,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (_) {
-      const fallbackCsv = "\uFEFFnama,nis,nisn,kelas,jenisKelamin,tempatLahir,tanggalLahir,alamat,asrama,namaWali,hpWali\r\n" +
-        '"Ahmad Ridwan","1001","0012345678","7A","L","Jakarta","2012-05-15","Jl. Pondok Pesantren No. 1, RT 01/RW 02","Asrama Sunan Giri","Bpk. Ridwan","081234567890"\r\n' +
-        '"Siti Fatimah","1002","0087654321","7B","P","Surabaya","2012-08-20","Jl. Pesantren No. 5, Surabaya","Asrama Khadijah","Ibu Fatimah","081987654321"\r\n' +
-        '"Muhammad Farhan","1003","0091122334","8A","L","Bandung","2011-11-10","Jl. Al-Falah No. 17, Bandung","Asrama Imam Nawawi","Bpk. Hendra Gunawan","082133445566"\r\n';
+      const fallbackCsv = "\uFEFFnama,nis,nisn,kelas,jenisKelamin,nik,tempatLahir,tanggalLahir,alamat,asrama,namaWali,hpWali,nikAyah,nikIbu,angkatan,tahunMasuk,status\r\n" +
+        '"Ahmad Ridwan","1001","0012345678","7A","L","3201012345670001","Jakarta","2012-05-15","Jl. Pondok Pesantren No. 1, RT 01/RW 02","Asrama Sunan Giri","Bpk. Ridwan","081234567890","3201011122330001","3201014455660002","1","2018","Aktif"\r\n' +
+        '"Siti Fatimah","1002","0087654321","7B","P","3202022345670002","Surabaya","2012-08-20","Jl. Pesantren No. 5, Surabaya","Asrama Khadijah","Ibu Fatimah","081987654321","3202021122330003","3202024455660004","1","2018","Aktif"\r\n' +
+        '"Muhammad Farhan","1003","0091122334","8A","L","3203032345670003","Bandung","2011-11-10","Jl. Al-Falah No. 17, Bandung","Asrama Imam Nawawi","Bpk. Hendra Gunawan","082133445566","3203031122330005","3203034455660006","2","2019","Alumni"\r\n';
       const blob = new Blob([fallbackCsv], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -9201,19 +9223,30 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 
   const eksporSantriAktifCSV = () => {
     const aktif = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif");
-    const headers = ["No", "Nama", "No Stambuk (NIS)", "NISN", "Kelas", "Kamar / Asrama", "Jenis Kelamin", "Nama Wali", "No HP Wali", "Alamat", "Saldo Cashless"];
+    const headers = [
+      "No", "Nama", "No Stambuk (NIS)", "NIK", "NISN", "Kelas", "Angkatan", "Tahun Masuk",
+      "Kamar / Asrama", "Jenis Kelamin", "Nama Wali", "No HP Wali", "Nama Ayah", "NIK Ayah",
+      "Nama Ibu", "NIK Ibu", "Alamat", "Saldo Cashless"
+    ];
     const rows = aktif.map((s, idx) => {
       const wali = data.wali.find((w) => w.id === s.waliId);
       return [
         idx + 1,
         `"${(s.nama || "").replace(/"/g, '""')}"`,
-        `"${s.nis || ""}"`,
+        `"${s.noStambuk || s.nis || ""}"`,
+        `"${s.nik || ""}"`,
         `"${s.nisn || ""}"`,
         `"${s.kelas || ""}"`,
+        `"${s.angkatan || ""}"`,
+        `"${s.tahunMasuk || ""}"`,
         `"${(s.asrama || "").replace(/"/g, '""')}"`,
         `"${s.jenisKelamin || ""}"`,
         `"${(wali?.nama || "").replace(/"/g, '""')}"`,
         `"${wali?.hp || ""}"`,
+        `"${(s.namaAyah || "").replace(/"/g, '""')}"`,
+        `"${s.nikAyah || ""}"`,
+        `"${(s.namaIbu || "").replace(/"/g, '""')}"`,
+        `"${s.nikIbu || ""}"`,
         `"${(s.alamat || "").replace(/"/g, '""')}"`,
         s.saldo || 0,
       ].join(",");
@@ -11326,10 +11359,11 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           if (q) {
             const wali = (data.wali || []).find((w) => w.id === s.waliId);
             const matchNama = (s.nama || "").toLowerCase().includes(q);
-            const matchNis = (s.nis || "").toLowerCase().includes(q);
+            const matchNis = (s.noStambuk || s.nis || "").toLowerCase().includes(q);
+            const matchNik = (s.nik || "").toLowerCase().includes(q);
             const matchNisn = (s.nisn || "").toLowerCase().includes(q);
             const matchWali = (wali?.nama || "").toLowerCase().includes(q);
-            if (!matchNama && !matchNis && !matchNisn && !matchWali) return false;
+            if (!matchNama && !matchNis && !matchNik && !matchNisn && !matchWali) return false;
           }
           return true;
         });
@@ -11438,7 +11472,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 <input
                   value={santriSearch}
                   onChange={(e) => { setSantriSearch(e.target.value); setSantriPage(1); }}
-                  placeholder="Cari nama, NIS, NISN, wali..."
+                  placeholder="Cari nama, No. Stambuk, NIK, NISN, wali..."
                   className="w-full pl-8 pr-3 py-1.5 border border-[#CFE3F0] bg-white rounded-xl text-xs text-[#17242E] placeholder-[#8FB0C7] focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
                 />
               </div>
@@ -11492,6 +11526,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 {santriPagingItems.map((s, idx) => {
                   const noUrut = (santriPageClamped - 1) * santriLimit + idx + 1;
                   const wali = (data.wali || []).find((w) => w.id === s.waliId);
+                  const stbVal = s.noStambuk || s.nis;
                   return (
                     <tr key={s.id} className="hover:bg-[#F4F9FD] transition-colors">
                       <td className="py-2.5 px-3 text-center text-[#5B7C93] font-medium">{noUrut}</td>
@@ -11509,7 +11544,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                               {s.nama}
                             </button>
                             <p className="text-[11px] text-[#5B7C93]">
-                              {s.nis ? `Stb: ${s.nis}` : "No Stb: -"} {s.nisn ? `· NISN: ${s.nisn}` : ""}
+                              {stbVal ? `Stb: ${stbVal}` : "No Stb: -"} {s.nik ? `· NIK: ${s.nik}` : ""} {s.nisn ? `· NISN: ${s.nisn}` : ""}
                             </p>
                           </div>
                         </div>
@@ -11621,8 +11656,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   <p className="font-semibold uppercase tracking-wide text-[#0C4A6E]">Data Pokok</p>
                   <div className="grid sm:grid-cols-3 gap-2">
                     <input placeholder="Nama lengkap *" value={santriForm.nama} onChange={(e) => setSantriForm({ ...santriForm, nama: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
-                    <input placeholder="No. Stambuk (NIS)" value={santriForm.nis} onChange={(e) => setSantriForm({ ...santriForm, nis: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
-                    <input placeholder="NISN" value={santriForm.nisn} onChange={(e) => setSantriForm({ ...santriForm, nisn: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="No. Stambuk (NIS)" value={santriForm.noStambuk || santriForm.nis || ""} onChange={(e) => setSantriForm({ ...santriForm, noStambuk: e.target.value, nis: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="NIK Santri (16 Digit)" value={santriForm.nik || ""} onChange={(e) => setSantriForm({ ...santriForm, nik: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 font-mono" />
+                    <input placeholder="NISN" value={santriForm.nisn || ""} onChange={(e) => setSantriForm({ ...santriForm, nisn: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
                     <select value={santriForm.jenisKelamin} onChange={(e) => setSantriForm({ ...santriForm, jenisKelamin: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
                       <option>Laki-laki</option><option>Perempuan</option>
                     </select>
@@ -11637,6 +11673,22 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                       <option value="">Halaqoh (opsional)</option>
                       {(data.halaqoh || []).map((h) => <option key={h} value={h}>{h}</option>)}
                     </select>
+                    <input type="number" placeholder="Angkatan (mis. 1)" value={santriForm.angkatan || ""} onChange={(e) => setSantriForm({ ...santriForm, angkatan: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="Tahun Masuk (mis. 2018)" value={santriForm.tahunMasuk || ""} onChange={(e) => setSantriForm({ ...santriForm, tahunMasuk: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <select value={santriForm.statusSantri || "Aktif"} onChange={(e) => setSantriForm({ ...santriForm, statusSantri: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
+                      <option value="Aktif">Status: Aktif</option>
+                      <option value="Alumni">Status: Alumni</option>
+                      <option value="Keluar">Status: Keluar</option>
+                      <option value="Wafat">Status: Wafat</option>
+                    </select>
+                  </div>
+
+                  <p className="font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2">Data Orang Tua / Keluarga & NIK</p>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    <input placeholder="Nama Ayah" value={santriForm.namaAyah || ""} onChange={(e) => setSantriForm({ ...santriForm, namaAyah: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="NIK Ayah (16 Digit)" value={santriForm.nikAyah || ""} onChange={(e) => setSantriForm({ ...santriForm, nikAyah: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 font-mono" />
+                    <input placeholder="Nama Ibu" value={santriForm.namaIbu || ""} onChange={(e) => setSantriForm({ ...santriForm, namaIbu: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
+                    <input placeholder="NIK Ibu (16 Digit)" value={santriForm.nikIbu || ""} onChange={(e) => setSantriForm({ ...santriForm, nikIbu: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 font-mono" />
                   </div>
 
                   <p className="font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2">Kelahiran & Alamat</p>
@@ -11694,7 +11746,9 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   <div>
                     <h4 className="text-lg font-bold text-[#17242E]">{detailSantriData.nama}</h4>
                     <p className="text-xs text-[#5B7C93] mt-0.5">
-                      No. Stambuk: <span className="font-semibold text-[#0C4A6E]">{detailSantriData.nis || "-"}</span> · NISN: <span className="font-semibold text-[#0C4A6E]">{detailSantriData.nisn || "-"}</span>
+                      No. Stambuk: <span className="font-semibold text-[#0C4A6E]">{detailSantriData.noStambuk || detailSantriData.nis || "-"}</span>
+                      {detailSantriData.nik ? <> · NIK: <span className="font-semibold text-[#0C4A6E] font-mono">{detailSantriData.nik}</span></> : ""}
+                      {detailSantriData.nisn ? <> · NISN: <span className="font-semibold text-[#0C4A6E]">{detailSantriData.nisn}</span></> : ""}
                     </p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       <span className="px-2 py-0.5 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] text-[11px] font-medium border border-[#CFE3F0]">
@@ -11706,18 +11760,28 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                       <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-[#45657A] text-[11px] font-medium">
                         {detailSantriData.jenisKelamin || "-"}
                       </span>
+                      {(detailSantriData.angkatan || detailSantriData.tahunMasuk) && (
+                        <span className="px-2 py-0.5 rounded-lg bg-sky-50 text-sky-800 text-[11px] font-medium border border-sky-200">
+                          {detailSantriData.angkatan ? `Angkatan ${detailSantriData.angkatan}` : ""} {detailSantriData.tahunMasuk ? `(${detailSantriData.tahunMasuk})` : ""}
+                        </span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded-lg text-[11px] font-medium ${detailSantriData.statusSantri === 'Alumni' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
+                        {detailSantriData.statusSantri || "Aktif"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Grid Rincian Biodata */}
                 <div className="grid sm:grid-cols-2 gap-3 text-xs bg-[#F7FAFD] p-3.5 rounded-xl border border-[#CFE3F0]/70">
+                  <div><span className="text-[#5B7C93]">NIK Santri:</span> <p className="font-semibold text-[#0C4A6E] font-mono">{detailSantriData.nik || "-"}</p></div>
                   <div><span className="text-[#5B7C93]">Tempat, Tgl Lahir:</span> <p className="font-medium text-[#17242E]">{detailSantriData.tempatLahir || "-"}{detailSantriData.tanggalLahir ? `, ${detailSantriData.tanggalLahir}` : ""}</p></div>
+                  <div><span className="text-[#5B7C93]">Ayah Kandung:</span> <p className="font-medium text-[#17242E]">{detailSantriData.namaAyah || "-"} {detailSantriData.nikAyah ? <span className="text-[#5B7C93] font-mono font-normal">(NIK: {detailSantriData.nikAyah})</span> : ""}</p></div>
+                  <div><span className="text-[#5B7C93]">Ibu Kandung:</span> <p className="font-medium text-[#17242E]">{detailSantriData.namaIbu || "-"} {detailSantriData.nikIbu ? <span className="text-[#5B7C93] font-mono font-normal">(NIK: {detailSantriData.nikIbu})</span> : ""}</p></div>
                   <div><span className="text-[#5B7C93]">Golongan Darah:</span> <p className="font-medium text-[#17242E]">{detailSantriData.golDarah || "-"}</p></div>
-                  <div className="sm:col-span-2"><span className="text-[#5B7C93]">Alamat:</span> <p className="font-medium text-[#17242E]">{detailSantriData.alamat || "-"}</p></div>
                   <div><span className="text-[#5B7C93]">Wali Santri:</span> <p className="font-medium text-[#17242E]">{(data.wali || []).find(w => w.id === detailSantriData.waliId)?.nama || "-"}</p></div>
                   <div><span className="text-[#5B7C93]">Kontak Darurat / HP:</span> <p className="font-medium text-[#17242E]">{detailSantriData.noDarurat || (data.wali || []).find(w => w.id === detailSantriData.waliId)?.hp || "-"}</p></div>
-                  <div><span className="text-[#5B7C93]">Nama Ayah & Ibu:</span> <p className="font-medium text-[#17242E]">{detailSantriData.namaAyah || "-"} / {detailSantriData.namaIbu || "-"}</p></div>
+                  <div className="sm:col-span-2"><span className="text-[#5B7C93]">Alamat:</span> <p className="font-medium text-[#17242E]">{detailSantriData.alamat || "-"}</p></div>
                   <div><span className="text-[#5B7C93]">Catatan Kesehatan:</span> <p className="font-medium text-[#17242E]">{detailSantriData.catatanKesehatan || "-"}</p></div>
                   <div><span className="text-[#5B7C93]">Saldo BMT Cashless:</span> <p className="font-semibold text-[#0C4A6E]">{rupiah(detailSantriData.saldo || 0)}</p></div>
                   <div><span className="text-[#5B7C93]">Limit Jajan Harian:</span> <p className="font-medium text-[#17242E]">{detailSantriData.limitJajanHarian ? rupiah(detailSantriData.limitJajanHarian) : "Bebas / Tanpa batas"}</p></div>

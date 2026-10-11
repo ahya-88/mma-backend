@@ -131,24 +131,24 @@ function normalisasiTanggal(str) {
 
 function buatTemplateImporCSV() {
   const headers = [
-    "nama", "nis", "nisn", "kelas", "jenisKelamin",
+    "nama", "nis", "nisn", "kelas", "jenisKelamin", "nik",
     "tempatLahir", "tanggalLahir", "alamat", "asrama",
-    "namaWali", "hpWali"
+    "namaWali", "hpWali", "nikAyah", "nikIbu", "angkatan", "tahunMasuk", "status"
   ];
   const contohBaris1 = [
-    "Ahmad Ridwan", "1001", "0012345678", "7A", "L",
+    "Ahmad Ridwan", "1001", "0012345678", "7A", "L", "3201012345670001",
     "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri",
-    "Bpk. Ridwan", "081234567890"
+    "Bpk. Ridwan", "081234567890", "3201011122330001", "3201014455660002", "1", "2018", "Aktif"
   ];
   const contohBaris2 = [
-    "Siti Fatimah", "1002", "0087654321", "7B", "P",
+    "Siti Fatimah", "1002", "0087654321", "7B", "P", "3202022345670002",
     "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah",
-    "Ibu Fatimah", "081987654321"
+    "Ibu Fatimah", "081987654321", "3202021122330003", "3202024455660004", "1", "2018", "Aktif"
   ];
   const contohBaris3 = [
-    "Muhammad Farhan", "1003", "0091122334", "8A", "L",
+    "Muhammad Farhan", "1003", "0091122334", "8A", "L", "3203032345670003",
     "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi",
-    "Bpk. Hendra Gunawan", "082133445566"
+    "Bpk. Hendra Gunawan", "082133445566", "3203031122330005", "3203034455660006", "2", "2019", "Alumni"
   ];
 
   const toCSVRow = (arr) => arr.map((item) => `"${String(item).replace(/"/g, '""')}"`).join(",");
@@ -157,26 +157,26 @@ function buatTemplateImporCSV() {
 
 function buatTemplateImporExcelBuffer() {
   const headers = [
-    "nama", "nis", "nisn", "kelas", "jenisKelamin",
+    "nama", "nis", "nisn", "kelas", "jenisKelamin", "nik",
     "tempatLahir", "tanggalLahir", "alamat", "asrama",
-    "namaWali", "hpWali"
+    "namaWali", "hpWali", "nikAyah", "nikIbu", "angkatan", "tahunMasuk", "status"
   ];
   const data = [
     headers,
     [
-      "Ahmad Ridwan", "1001", "0012345678", "7A", "L",
+      "Ahmad Ridwan", "1001", "0012345678", "7A", "L", "3201012345670001",
       "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri",
-      "Bpk. Ridwan", "081234567890"
+      "Bpk. Ridwan", "081234567890", "3201011122330001", "3201014455660002", "1", "2018", "Aktif"
     ],
     [
-      "Siti Fatimah", "1002", "0087654321", "7B", "P",
+      "Siti Fatimah", "1002", "0087654321", "7B", "P", "3202022345670002",
       "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah",
-      "Ibu Fatimah", "081987654321"
+      "Ibu Fatimah", "081987654321", "3202021122330003", "3202024455660004", "1", "2018", "Aktif"
     ],
     [
-      "Muhammad Farhan", "1003", "0091122334", "8A", "L",
+      "Muhammad Farhan", "1003", "0091122334", "8A", "L", "3203032345670003",
       "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi",
-      "Bpk. Hendra Gunawan", "082133445566"
+      "Bpk. Hendra Gunawan", "082133445566", "3203031122330005", "3203034455660006", "2", "2019", "Alumni"
     ]
   ];
 
@@ -189,12 +189,18 @@ function buatTemplateImporExcelBuffer() {
     { wch: 15 }, // nisn
     { wch: 10 }, // kelas
     { wch: 14 }, // jenisKelamin
+    { wch: 20 }, // nik
     { wch: 18 }, // tempatLahir
     { wch: 15 }, // tanggalLahir
     { wch: 38 }, // alamat
     { wch: 22 }, // asrama
     { wch: 24 }, // namaWali
     { wch: 18 }, // hpWali
+    { wch: 20 }, // nikAyah
+    { wch: 20 }, // nikIbu
+    { wch: 10 }, // angkatan
+    { wch: 12 }, // tahunMasuk
+    { wch: 12 }, // status
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, "Data Santri");
