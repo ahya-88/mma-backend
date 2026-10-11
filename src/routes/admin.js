@@ -12,6 +12,7 @@ const {
   daftarPermintaanSuperadmin, daftarAuditSuperadmin, ubahStatusProduk,
 } = require("../adminService");
 const { CashlessError, getSantriRow, toPublicSantri } = require("../cashlessService");
+const { buatTemplateImporCSV } = require("../imporService");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
@@ -234,10 +235,7 @@ router.get("/audit", requireAuth, requireAdmin, asyncHandler(async (req, res) =>
 
 // ---- Impor Excel / CSV Santri (Sekretariat & Admin Sync Fix) ----
 router.get("/impor/template", requireAuth, asyncHandler(async (req, res) => {
-  const csvTemplate = `nama,nis,nisn,kelas,jenisKelamin,namaWali,hpWali,tempatLahir,tanggalLahir
-Ahmad Fauzi,1001,00812345,7A,L,Budi Santoso,08123456789,Jakarta,2010-05-15
-Siti Aminah,1002,00812346,7A,P,Rudi Hermawan,08123456780,Bandung,2010-08-20
-`;
+  const csvTemplate = buatTemplateImporCSV();
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="Template_Impor_Santri_MMA.csv"');
   res.send(csvTemplate);
@@ -320,9 +318,22 @@ router.post("/impor/eksekusi", requireAuth, asyncHandler(async (req, res) => {
       const nis = (row.nis || "").trim() || null;
       const nisn = (row.nisn || "").trim() || null;
       const kelas = (row.kelas || "").trim() || null;
-      const jenisKelamin = (row.jenisKelamin || "").trim() || null;
+      let jenisKelamin = (row.jenisKelamin || "").trim() || null;
+      if (jenisKelamin) {
+        const up = jenisKelamin.toUpperCase();
+        if (up.startsWith("L") || up.includes("LAKI")) jenisKelamin = "L";
+        else if (up.startsWith("P") || up.includes("PEREMPUAN")) jenisKelamin = "P";
+      }
       const tempatLahir = (row.tempatLahir || "").trim() || null;
-      const tanggalLahir = (row.tanggalLahir || "").trim() || null;
+      let tanggalLahir = (row.tanggalLahir || "").trim() || null;
+      if (tanggalLahir) {
+        const dmyMatch = tanggalLahir.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (dmyMatch) {
+          tanggalLahir = `${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`;
+        }
+      }
+      const alamat = (row.alamat || "").trim() || null;
+      const asrama = (row.asrama || "").trim() || null;
       const namaWali = (row.namaWali || "").trim();
       const hpWali = (row.hpWali || "").trim();
 
@@ -358,18 +369,19 @@ router.post("/impor/eksekusi", requireAuth, asyncHandler(async (req, res) => {
           `UPDATE "Santri" SET
             "nama" = $1, "kelas" = COALESCE($2, "kelas"), "nisn" = COALESCE($3, "nisn"),
             "jenisKelamin" = COALESCE($4, "jenisKelamin"), "tempatLahir" = COALESCE($5, "tempatLahir"),
-            "tanggalLahir" = COALESCE($6, "tanggalLahir"), "waliId" = COALESCE($7, "waliId"),
-            "importBatchId" = $8
-           WHERE "id" = $9`,
-          [nama, kelas, nisn, jenisKelamin, tempatLahir, tanggalLahir, waliId, batchId, santriId],
+            "tanggalLahir" = COALESCE($6, "tanggalLahir"), "alamat" = COALESCE($7, "alamat"),
+            "asrama" = COALESCE($8, "asrama"), "waliId" = COALESCE($9, "waliId"),
+            "importBatchId" = $10
+           WHERE "id" = $11`,
+          [nama, kelas, nisn, jenisKelamin, tempatLahir, tanggalLahir, alamat, asrama, waliId, batchId, santriId],
         );
       } else {
         const santriId = uid();
         await client.query(
           `INSERT INTO "Santri"
-            ("id", "nama", "kelas", "nis", "nisn", "jenisKelamin", "tempatLahir", "tanggalLahir", "waliId", "saldo", "importBatchId")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10)`,
-          [santriId, nama, kelas, nis, nisn, jenisKelamin, tempatLahir, tanggalLahir, waliId, batchId],
+            ("id", "nama", "kelas", "nis", "nisn", "jenisKelamin", "tempatLahir", "tanggalLahir", "alamat", "asrama", "waliId", "saldo", "importBatchId")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12)`,
+          [santriId, nama, kelas, nis, nisn, jenisKelamin, tempatLahir, tanggalLahir, alamat, asrama, waliId, batchId],
         );
       }
       totalSantri++;

@@ -8390,7 +8390,13 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [imporSuccess, setImporSuccess] = useState("");
 
   const parseSantriCSV = (text) => {
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (!text || typeof text !== "string") return [];
+    let cleanText = text;
+    // Hapus UTF-8 BOM jika ada
+    if (cleanText.charCodeAt(0) === 0xFEFF) {
+      cleanText = cleanText.slice(1);
+    }
+    const lines = cleanText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
     if (lines.length < 2) return [];
 
     const parseLine = (line) => {
@@ -8415,22 +8421,50 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     const headers = parseLine(lines[0]).map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
     const rows = [];
 
+    const normalisasiTgl = (val) => {
+      if (!val) return "";
+      const s = String(val).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (dmyMatch) {
+        return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`;
+      }
+      return s;
+    };
+
+    const normalisasiJK = (val) => {
+      if (!val) return "";
+      const s = String(val).trim().toUpperCase();
+      if (s.startsWith("L") || s.includes("LAKI")) return "L";
+      if (s.startsWith("P") || s.includes("PEREMPUAN")) return "P";
+      return s;
+    };
+
     for (let i = 1; i < lines.length; i++) {
       const values = parseLine(lines[i]);
       if (!values.some((v) => v !== "")) continue;
       const rowObj = {};
       headers.forEach((h, idx) => {
         let key = h;
-        if (["namasantri", "nama_santri", "namalengkap", "nama"].includes(h)) key = "nama";
-        else if (["nis", "noinduk", "nomorinduk", "stambuk", "nostambuk", "nomorstambuk"].includes(h)) key = "nis";
-        else if (["nisn", "nomorinduknasional"].includes(h)) key = "nisn";
-        else if (["kelas", "rombonganbelajar"].includes(h)) key = "kelas";
-        else if (["jeniskelamin", "jk", "gender"].includes(h)) key = "jenisKelamin";
-        else if (["namawali", "nama_wali", "namaayah", "namaibu"].includes(h)) key = "namaWali";
-        else if (["hpwali", "hp_wali", "nohp", "nodarurat", "handphone"].includes(h)) key = "hpWali";
-        else if (["tanggallahir", "tanggal_lahir"].includes(h)) key = "tanggalLahir";
-        else if (["tempatlahir", "tempat_lahir"].includes(h)) key = "tempatLahir";
-        rowObj[key] = values[idx] || "";
+        if (["namasantri", "nama_santri", "namalengkap", "nama", "namasiswa"].includes(h)) key = "nama";
+        else if (["nis", "noinduk", "nomorinduk", "stambuk", "nostambuk", "nomorstambuk", "nostambuknis"].includes(h)) key = "nis";
+        else if (["nisn", "nomorinduknasional", "noinduknasional"].includes(h)) key = "nisn";
+        else if (["kelas", "rombonganbelajar", "rombel"].includes(h)) key = "kelas";
+        else if (["jeniskelamin", "jk", "gender", "jeniskelaminlp", "lp"].includes(h)) key = "jenisKelamin";
+        else if (["namawali", "nama_wali", "namaayah", "namaibu", "orangtua", "wali"].includes(h)) key = "namaWali";
+        else if (["hpwali", "hp_wali", "nohp", "nodarurat", "handphone", "nohpwali", "teleponwali", "nohpwhatsappwali", "nohpwalisantri", "kontakwali"].includes(h)) key = "hpWali";
+        else if (["tanggallahir", "tanggal_lahir", "tgl_lahir", "tgllahir", "tanggallahiryyyymmdd"].includes(h)) key = "tanggalLahir";
+        else if (["tempatlahir", "tempat_lahir", "tmptlahir", "kotalahir"].includes(h)) key = "tempatLahir";
+        else if (["alamat", "alamatlengkap", "domisili", "alamatdomisili"].includes(h)) key = "alamat";
+        else if (["asrama", "namasrama", "kobong", "kamar", "kamarasrama"].includes(h)) key = "asrama";
+
+        let rawVal = (values[idx] || "").trim();
+        if (rawVal.startsWith("'")) rawVal = rawVal.slice(1).trim();
+
+        if (key === "tanggalLahir") rawVal = normalisasiTgl(rawVal);
+        else if (key === "jenisKelamin") rawVal = normalisasiJK(rawVal);
+
+        rowObj[key] = rawVal;
       });
       if (rowObj.nama) rows.push(rowObj);
     }
@@ -8453,7 +8487,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (_) {
-      const fallbackCsv = "nama,nis,nisn,kelas,jenisKelamin,namaWali,hpWali,tempatLahir,tanggalLahir\nAhmad Fauzi,1001,00812345,7A,L,Budi Santoso,08123456789,Jakarta,2010-05-15\nSiti Aminah,1002,00812346,7A,P,Rudi Hermawan,08123456780,Bandung,2010-08-20\n";
+      const fallbackCsv = "\uFEFFnama,nis,nisn,kelas,jenisKelamin,tempatLahir,tanggalLahir,alamat,asrama,namaWali,hpWali\r\n" +
+        '"Ahmad Ridwan","1001","0012345678","7A","L","Jakarta","2012-05-15","Jl. Pondok Pesantren No. 1, RT 01/RW 02","Asrama Sunan Giri","Bpk. Ridwan","081234567890"\r\n' +
+        '"Siti Fatimah","1002","0087654321","7B","P","Surabaya","2012-08-20","Jl. Pesantren No. 5, Surabaya","Asrama Khadijah","Ibu Fatimah","081987654321"\r\n' +
+        '"Muhammad Farhan","1003","0091122334","8A","L","Bandung","2011-11-10","Jl. Al-Falah No. 17, Bandung","Asrama Imam Nawawi","Bpk. Hendra Gunawan","082133445566"\r\n';
       const blob = new Blob([fallbackCsv], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -10938,7 +10975,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                           {imporFileName ? `Berkas terpilih: ${imporFileName}` : "Klik untuk memilih berkas .CSV"}
                         </p>
                         <p className="text-[11px] text-[#5B7C93]">
-                          Gunakan berkas format CSV sesuai template (kolom: nama, nis, nisn, kelas, jenisKelamin, namaWali, hpWali, tempatLahir, tanggalLahir)
+                          Gunakan berkas format CSV sesuai template (kolom: nama, nis, nisn, kelas, jenisKelamin, tempatLahir, tanggalLahir, alamat, asrama, namaWali, hpWali)
                         </p>
                       </label>
                     </div>
@@ -10995,6 +11032,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                                   <th className="p-2">Nama</th>
                                   <th className="p-2">No. Stambuk</th>
                                   <th className="p-2">Kelas</th>
+                                  <th className="p-2">L/P</th>
+                                  <th className="p-2">Asrama</th>
                                   <th className="p-2">Wali</th>
                                   <th className="p-2">HP Wali</th>
                                 </tr>
@@ -11005,6 +11044,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                                     <td className="p-2 font-medium">{r.nama}</td>
                                     <td className="p-2 text-[#5B7C93]">{r.nis || "—"}</td>
                                     <td className="p-2 text-[#5B7C93]">{r.kelas || "—"}</td>
+                                    <td className="p-2 text-[#5B7C93]">{r.jenisKelamin || "—"}</td>
+                                    <td className="p-2 text-[#5B7C93]">{r.asrama || "—"}</td>
                                     <td className="p-2 text-[#5B7C93]">{r.namaWali || "—"}</td>
                                     <td className="p-2 text-[#5B7C93]">{r.hpWali || "—"}</td>
                                   </tr>

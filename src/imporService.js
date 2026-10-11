@@ -26,6 +26,20 @@ function validTanggal(isoStr) {
   return /^\d{4}-\d{2}-\d{2}$/.test(isoStr.trim());
 }
 
+function normalisasiTanggal(str) {
+  if (!str || typeof str !== "string") return "";
+  const s = str.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmyMatch) {
+    const d = dmyMatch[1].padStart(2, "0");
+    const m = dmyMatch[2].padStart(2, "0");
+    const y = dmyMatch[3];
+    return `${y}-${m}-${d}`;
+  }
+  return s;
+}
+
 function buatTemplateImporCSV() {
   const headers = [
     "nama", "nis", "nisn", "kelas", "jenisKelamin",
@@ -34,17 +48,22 @@ function buatTemplateImporCSV() {
   ];
   const contohBaris1 = [
     "Ahmad Ridwan", "1001", "0012345678", "7A", "L",
-    "Jakarta", "2012-05-15", "Jl. Pondok No. 1", "Asrama Sunan Giri",
+    "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri",
     "Bpk. Ridwan", "081234567890"
   ];
   const contohBaris2 = [
     "Siti Fatimah", "1002", "0087654321", "7B", "P",
-    "Surabaya", "2012-08-20", "Jl. Pesantren No. 5", "Asrama Khadijah",
+    "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah",
     "Ibu Fatimah", "081987654321"
+  ];
+  const contohBaris3 = [
+    "Muhammad Farhan", "1003", "0091122334", "8A", "L",
+    "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi",
+    "Bpk. Hendra Gunawan", "082133445566"
   ];
 
   const toCSVRow = (arr) => arr.map((item) => `"${String(item).replace(/"/g, '""')}"`).join(",");
-  return [headers.join(","), toCSVRow(contohBaris1), toCSVRow(contohBaris2)].join("\r\n");
+  return "\uFEFF" + [headers.join(","), toCSVRow(contohBaris1), toCSVRow(contohBaris2), toCSVRow(contohBaris3)].join("\r\n") + "\r\n";
 }
 
 async function prosesDryRunImpor(rows) {
@@ -66,8 +85,12 @@ async function prosesDryRunImpor(rows) {
     const nis = (baris.nis || "").trim();
     const nisn = (baris.nisn || "").trim();
     const kelas = (baris.kelas || "").trim();
-    const jenisKelamin = (baris.jenisKelamin || "").trim().toUpperCase();
-    const tanggalLahir = (baris.tanggalLahir || "").trim();
+    let jenisKelamin = (baris.jenisKelamin || "").trim().toUpperCase();
+    if (jenisKelamin.startsWith("L") || jenisKelamin.includes("LAKI")) jenisKelamin = "L";
+    else if (jenisKelamin.startsWith("P") || jenisKelamin.includes("PEREMPUAN")) jenisKelamin = "P";
+
+    const rawTanggal = (baris.tanggalLahir || "").trim();
+    const tanggalLahir = normalisasiTanggal(rawTanggal);
 
     if (!nama) pesans.push("Nama santri wajib diisi");
     if (!nis) pesans.push("NIS wajib diisi");
@@ -192,7 +215,14 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
       const biodataToSet = {};
       for (const field of SANTRI_BIODATA_FIELDS) {
         if (field in baris && baris[field] !== undefined && baris[field] !== null && String(baris[field]).trim() !== "") {
-          biodataToSet[field] = String(baris[field]).trim();
+          let val = String(baris[field]).trim();
+          if (field === "tanggalLahir") val = normalisasiTanggal(val);
+          if (field === "jenisKelamin") {
+            const up = val.toUpperCase();
+            if (up.startsWith("L") || up.includes("LAKI")) val = "L";
+            else if (up.startsWith("P") || up.includes("PEREMPUAN")) val = "P";
+          }
+          biodataToSet[field] = val;
         }
       }
 
