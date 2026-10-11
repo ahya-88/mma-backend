@@ -7831,28 +7831,53 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const perizinanTampil = isPengasuhan ? izinFetch.data : data.perizinan;
   const pelanggaranTampil = isPengasuhan ? pelFetch.data : data.pelanggaran;
 
-  const [nilaiForm, setNilaiForm] = useState({ santriId: "", mapel: "", nilai: "" });
+  const [nilaiForm, setNilaiForm] = useState({
+    santriId: "", mapel: "", nilai: "",
+    tahunAjaran: tahunAjaranAktifDept?.label || "", semester: "Ganjil", jenisNilai: "UAS"
+  });
   const [nilaiPanel, setNilaiPanel] = useState(false);
   const [nilaiFetch, setNilaiFetch] = useState({ loading: false, error: "", data: [] });
   const [nilaiBusy, setNilaiBusy] = useState(false);
+  const [editingNilaiId, setEditingNilaiId] = useState(null);
+  const [editNilaiForm, setEditNilaiForm] = useState({ mapel: "", nilai: "", tahunAjaran: "", semester: "Ganjil", jenisNilai: "UAS" });
+
   const muatNilai = () => {
     if (!isPengajaran) return;
     if (!backendToken) { setNilaiFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] }); return; }
     setNilaiFetch((f) => ({ ...f, loading: true, error: "" }));
     backendApi("/pengajaran/nilai", { token: backendToken })
-      .then((rows) => { setNilaiFetch({ loading: false, error: "", data: rows }); setData((d) => ({ ...d, nilai: rows.map((r) => ({ id: r.id, santriId: r.santriId, mapel: r.mapel, nilai: r.nilai, tanggal: formatTanggalISO(r.tanggalISO) })) })); })
+      .then((rows) => {
+        setNilaiFetch({ loading: false, error: "", data: rows });
+        setData((d) => ({
+          ...d,
+          nilai: rows.map((r) => ({
+            id: r.id, santriId: r.santriId, mapel: r.mapel, nilai: r.nilai,
+            tahunAjaran: r.tahunAjaran, semester: r.semester, jenisNilai: r.jenisNilai,
+            tanggal: formatTanggalISO(r.tanggalISO)
+          }))
+        }));
+      })
       .catch((e) => setNilaiFetch({ loading: false, error: e.message, data: [] }));
   };
   useEffect(muatNilai, [isPengajaran, backendToken]);
+
   const addNilai = async () => {
     setPengasuhanError("");
-    if (!nilaiForm.santriId || !nilaiForm.mapel || !nilaiForm.nilai) return;
+    if (!nilaiForm.santriId || !nilaiForm.mapel || nilaiForm.nilai === "") return;
     if (!backendToken) { setPengasuhanError("Tidak terhubung ke server. Coba logout lalu login ulang."); return; }
     setNilaiBusy(true);
     try {
       const santri = data.santri.find((s) => s.id === nilaiForm.santriId);
       if (santri) await syncSantriKeBackend(santri, backendToken);
-      await backendApi("/pengajaran/nilai", { method: "POST", token: backendToken, body: { santriId: nilaiForm.santriId, mapel: nilaiForm.mapel, nilai: Number(nilaiForm.nilai) } });
+      await backendApi("/pengajaran/nilai", {
+        method: "POST", token: backendToken,
+        body: {
+          santriId: nilaiForm.santriId, mapel: nilaiForm.mapel, nilai: Number(nilaiForm.nilai),
+          tahunAjaran: nilaiForm.tahunAjaran || tahunAjaranAktifDept?.label || "",
+          semester: nilaiForm.semester || "Ganjil",
+          jenisNilai: nilaiForm.jenisNilai || "UAS"
+        }
+      });
       setNilaiForm({ ...nilaiForm, mapel: "", nilai: "" });
       muatNilai();
     } catch (e) {
@@ -7861,6 +7886,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setNilaiBusy(false);
     }
   };
+
   const delNilai = async (id) => {
     setPengasuhanError("");
     if (!backendToken) { setPengasuhanError("Tidak terhubung ke server."); return; }
@@ -7868,9 +7894,46 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     catch (e) { setPengasuhanError(e.message); }
   };
 
+  const bukaEditNilai = (n) => {
+    setEditingNilaiId(n.id);
+    setEditNilaiForm({
+      mapel: n.mapel, nilai: n.nilai,
+      tahunAjaran: n.tahunAjaran || tahunAjaranAktifDept?.label || "",
+      semester: n.semester || "Ganjil",
+      jenisNilai: n.jenisNilai || "UAS"
+    });
+  };
+  const batalEditNilai = () => setEditingNilaiId(null);
+  const simpanEditNilai = async () => {
+    if (!editNilaiForm.mapel || editNilaiForm.nilai === "") return;
+    if (!backendToken) return;
+    setNilaiBusy(true);
+    try {
+      await backendApi(`/pengajaran/nilai/${editingNilaiId}`, {
+        method: "PUT", token: backendToken,
+        body: {
+          mapel: editNilaiForm.mapel,
+          nilai: Number(editNilaiForm.nilai),
+          tahunAjaran: editNilaiForm.tahunAjaran,
+          semester: editNilaiForm.semester,
+          jenisNilai: editNilaiForm.jenisNilai,
+        }
+      });
+      setEditingNilaiId(null);
+      muatNilai();
+    } catch (e) {
+      setPengasuhanError(e.message);
+    } finally {
+      setNilaiBusy(false);
+    }
+  };
+
   const [prestasiForm, setPrestasiForm] = useState({ santriId: "", judul: "", tingkat: TINGKAT_PRESTASI[0] });
   const [prestasiFetch, setPrestasiFetch] = useState({ loading: false, error: "", data: [] });
   const [prestasiBusy, setPrestasiBusy] = useState(false);
+  const [editingPrestasiId, setEditingPrestasiId] = useState(null);
+  const [editPrestasiForm, setEditPrestasiForm] = useState({ judul: "", tingkat: TINGKAT_PRESTASI[0] });
+
   const muatPrestasi = () => {
     if (!isPengajaran) return;
     if (!backendToken) { setPrestasiFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] }); return; }
@@ -7880,6 +7943,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       .catch((e) => setPrestasiFetch({ loading: false, error: e.message, data: [] }));
   };
   useEffect(muatPrestasi, [isPengajaran, backendToken]);
+
   const addPrestasi = async () => {
     setPengasuhanError("");
     if (!prestasiForm.santriId || !prestasiForm.judul) return;
@@ -7897,6 +7961,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setPrestasiBusy(false);
     }
   };
+
   const delPrestasi = async (id) => {
     setPengasuhanError("");
     if (!backendToken) { setPengasuhanError("Tidak terhubung ke server."); return; }
@@ -7904,28 +7969,82 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     catch (e) { setPengasuhanError(e.message); }
   };
 
-  const [hafalanForm, setHafalanForm] = useState({ santriId: "", juz: "" });
+  const bukaEditPrestasi = (p) => {
+    setEditingPrestasiId(p.id);
+    setEditPrestasiForm({ judul: p.judul, tingkat: p.tingkat });
+  };
+  const batalEditPrestasi = () => setEditingPrestasiId(null);
+  const simpanEditPrestasi = async () => {
+    if (!editPrestasiForm.judul) return;
+    if (!backendToken) return;
+    setPrestasiBusy(true);
+    try {
+      await backendApi(`/pengajaran/prestasi/${editingPrestasiId}`, {
+        method: "PUT", token: backendToken,
+        body: editPrestasiForm,
+      });
+      setEditingPrestasiId(null);
+      muatPrestasi();
+    } catch (e) {
+      setPengasuhanError(e.message);
+    } finally {
+      setPrestasiBusy(false);
+    }
+  };
+
+  const [hafalanForm, setHafalanForm] = useState({
+    santriId: "", juz: "30", surah: "", ayat: "",
+    predikat: "Mumtaz", nilaiTajwid: "", nilaiFashahah: ""
+  });
   const [hafalanFetch, setHafalanFetch] = useState({ loading: false, error: "", data: [] });
   const [hafalanBusy, setHafalanBusy] = useState(false);
+  const [editingHafalanId, setEditingHafalanId] = useState(null);
+  const [editHafalanForm, setEditHafalanForm] = useState({
+    juz: "30", surah: "", ayat: "", predikat: "Mumtaz", nilaiTajwid: "", nilaiFashahah: ""
+  });
+
   const muatHafalan = () => {
     if (!isLPTQ) return;
     if (!backendToken) { setHafalanFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] }); return; }
     setHafalanFetch((f) => ({ ...f, loading: true, error: "" }));
     backendApi("/lptq/hafalan", { token: backendToken })
-      .then((rows) => { setHafalanFetch({ loading: false, error: "", data: rows }); setData((d) => ({ ...d, hafalan: rows.map((r) => ({ id: r.id, santriId: r.santriId, juz: r.juz, tanggal: formatTanggalISO(r.tanggalISO) })) })); })
+      .then((rows) => {
+        setHafalanFetch({ loading: false, error: "", data: rows });
+        setData((d) => ({
+          ...d,
+          hafalan: rows.map((r) => ({
+            id: r.id, santriId: r.santriId, juz: r.juz,
+            surah: r.surah, ayat: r.ayat, predikat: r.predikat,
+            nilaiTajwid: r.nilaiTajwid, nilaiFashahah: r.nilaiFashahah,
+            tanggal: formatTanggalISO(r.tanggalISO)
+          }))
+        }));
+      })
       .catch((e) => setHafalanFetch({ loading: false, error: e.message, data: [] }));
   };
   useEffect(muatHafalan, [isLPTQ, backendToken]);
+
   const addHafalan = async () => {
     setPengasuhanError("");
-    if (!hafalanForm.santriId || !hafalanForm.juz) return;
+    if (!hafalanForm.santriId || (!hafalanForm.juz && !hafalanForm.surah)) return;
     if (!backendToken) { setPengasuhanError("Tidak terhubung ke server. Coba logout lalu login ulang."); return; }
     setHafalanBusy(true);
     try {
       const santri = data.santri.find((s) => s.id === hafalanForm.santriId);
       if (santri) await syncSantriKeBackend(santri, backendToken);
-      await backendApi("/lptq/hafalan", { method: "POST", token: backendToken, body: { santriId: hafalanForm.santriId, juz: hafalanForm.juz } });
-      setHafalanForm({ ...hafalanForm, juz: "" });
+      await backendApi("/lptq/hafalan", {
+        method: "POST", token: backendToken,
+        body: {
+          santriId: hafalanForm.santriId,
+          juz: hafalanForm.juz || "30",
+          surah: hafalanForm.surah || "",
+          ayat: hafalanForm.ayat || "",
+          predikat: hafalanForm.predikat || "Mumtaz",
+          nilaiTajwid: hafalanForm.nilaiTajwid !== "" ? Number(hafalanForm.nilaiTajwid) : null,
+          nilaiFashahah: hafalanForm.nilaiFashahah !== "" ? Number(hafalanForm.nilaiFashahah) : null,
+        }
+      });
+      setHafalanForm({ ...hafalanForm, surah: "", ayat: "", nilaiTajwid: "", nilaiFashahah: "" });
       muatHafalan();
     } catch (e) {
       setPengasuhanError(e.message);
@@ -7933,11 +8052,49 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setHafalanBusy(false);
     }
   };
+
   const delHafalan = async (id) => {
     setPengasuhanError("");
     if (!backendToken) { setPengasuhanError("Tidak terhubung ke server."); return; }
     try { await backendApi(`/lptq/hafalan/${id}`, { method: "DELETE", token: backendToken }); muatHafalan(); }
     catch (e) { setPengasuhanError(e.message); }
+  };
+
+  const bukaEditHafalan = (h) => {
+    setEditingHafalanId(h.id);
+    setEditHafalanForm({
+      juz: h.juz || "30",
+      surah: h.surah || "",
+      ayat: h.ayat || "",
+      predikat: h.predikat || "Mumtaz",
+      nilaiTajwid: h.nilaiTajwid ?? "",
+      nilaiFashahah: h.nilaiFashahah ?? "",
+    });
+  };
+  const batalEditHafalan = () => setEditingHafalanId(null);
+  const simpanEditHafalan = async () => {
+    if (!editHafalanForm.juz && !editHafalanForm.surah) return;
+    if (!backendToken) return;
+    setHafalanBusy(true);
+    try {
+      await backendApi(`/lptq/hafalan/${editingHafalanId}`, {
+        method: "PUT", token: backendToken,
+        body: {
+          juz: editHafalanForm.juz,
+          surah: editHafalanForm.surah,
+          ayat: editHafalanForm.ayat,
+          predikat: editHafalanForm.predikat,
+          nilaiTajwid: editHafalanForm.nilaiTajwid !== "" ? Number(editHafalanForm.nilaiTajwid) : null,
+          nilaiFashahah: editHafalanForm.nilaiFashahah !== "" ? Number(editHafalanForm.nilaiFashahah) : null,
+        }
+      });
+      setEditingHafalanId(null);
+      muatHafalan();
+    } catch (e) {
+      setPengasuhanError(e.message);
+    } finally {
+      setHafalanBusy(false);
+    }
   };
 
   // ---- Penilaian Kegiatan (Pengasuhan) ----
@@ -8160,6 +8317,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     const entry = {
       id: uid(), santriId: raForm.santriId, tahunAjaran: tahunLabel, semester: raForm.semester,
       catatan: raForm.catatan, peringkat: raForm.peringkat, rataRata,
+      totalSantri: raForm.totalSantri || (raForm.peringkat && raForm.peringkat.includes("dari") ? Number(raForm.peringkat.split("dari")[1].trim()) : null),
       ringkasanRows: [...ringkasanDasar, { label: "Rata-rata Keseluruhan", value: rataRata }],
       status: raForm.status || "PUBLISHED",
       namaPembina: raForm.namaPembina, tanggalCetak: raForm.tanggalCetak,
@@ -8199,15 +8357,29 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const gantiJenisUb = (j) => setUbForm({ ...ubForm, jenis: j, materi: (j === "Ubudiyah" ? data.materiUbudiyah : data.materiDoa)[0] || "" });
   const [ubudiyahFetch, setUbudiyahFetch] = useState({ loading: false, error: "", data: [] });
   const [ubudiyahBusy, setUbudiyahBusy] = useState(false);
+  const [editingUbId, setEditingUbId] = useState(null);
+  const [editUbForm, setEditUbForm] = useState({ jenis: "Ubudiyah", materi: "", predikat: PREDIKAT_LIST[0], catatan: "" });
+
   const muatUbudiyah = () => {
     if (!isLPTQ) return;
     if (!backendToken) { setUbudiyahFetch({ loading: false, error: backendOnline === false ? "Tidak terhubung ke server." : "", data: [] }); return; }
     setUbudiyahFetch((f) => ({ ...f, loading: true, error: "" }));
     backendApi("/lptq/ubudiyah", { token: backendToken })
-      .then((rows) => { setUbudiyahFetch({ loading: false, error: "", data: rows }); setData((d) => ({ ...d, penilaianUbudiyah: rows.map((r) => ({ id: r.id, santriId: r.santriId, jenis: r.jenis, materi: r.materi, predikat: r.predikat, catatan: r.catatan, tanggal: formatTanggalISO(r.tanggalISO) })) })); })
+      .then((rows) => {
+        setUbudiyahFetch({ loading: false, error: "", data: rows });
+        setData((d) => ({
+          ...d,
+          penilaianUbudiyah: rows.map((r) => ({
+            id: r.id, santriId: r.santriId, jenis: r.jenis, materi: r.materi, predikat: r.predikat,
+            catatan: r.catatan, tahunAjaran: r.tahunAjaran, semester: r.semester,
+            tanggal: formatTanggalISO(r.tanggalISO)
+          }))
+        }));
+      })
       .catch((e) => setUbudiyahFetch({ loading: false, error: e.message, data: [] }));
   };
   useEffect(muatUbudiyah, [isLPTQ, backendToken]);
+
   const addUbudiyah = async () => {
     setPengasuhanError("");
     if (!ubForm.santriId || !ubForm.materi) return;
@@ -8216,7 +8388,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     try {
       const santri = data.santri.find((s) => s.id === ubForm.santriId);
       if (santri) await syncSantriKeBackend(santri, backendToken);
-      await backendApi("/lptq/ubudiyah", { method: "POST", token: backendToken, body: { santriId: ubForm.santriId, jenis: ubForm.jenis, materi: ubForm.materi, predikat: ubForm.predikat, catatan: ubForm.catatan } });
+      await backendApi("/lptq/ubudiyah", {
+        method: "POST", token: backendToken,
+        body: { santriId: ubForm.santriId, jenis: ubForm.jenis, materi: ubForm.materi, predikat: ubForm.predikat, catatan: ubForm.catatan }
+      });
       setUbForm({ ...ubForm, catatan: "" });
       muatUbudiyah();
     } catch (e) {
@@ -8225,6 +8400,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       setUbudiyahBusy(false);
     }
   };
+
   const delUbudiyah = async (id) => {
     setPengasuhanError("");
     if (!backendToken) { setPengasuhanError("Tidak terhubung ke server."); return; }
@@ -8232,8 +8408,49 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     catch (e) { setPengasuhanError(e.message); }
   };
 
-  // ---- Kelola Item Materi Ubudiyah & Doa (dinamis) ----
-  const addMateriUb = (jenis, itemBaru) => {
+  const bukaEditUb = (u) => {
+    setEditingUbId(u.id);
+    setEditUbForm({ jenis: u.jenis, materi: u.materi, predikat: u.predikat, catatan: u.catatan || "" });
+  };
+  const batalEditUb = () => setEditingUbId(null);
+  const simpanEditUb = async () => {
+    if (!editUbForm.materi) return;
+    if (!backendToken) return;
+    setUbudiyahBusy(true);
+    try {
+      await backendApi(`/lptq/ubudiyah/${editingUbId}`, {
+        method: "PUT", token: backendToken,
+        body: editUbForm,
+      });
+      setEditingUbId(null);
+      muatUbudiyah();
+    } catch (e) {
+      setPengasuhanError(e.message);
+    } finally {
+      setUbudiyahBusy(false);
+    }
+  };
+
+  // ---- Kelola Item Materi Ubudiyah & Doa (dinamis & sinkron server) ----
+  const muatMateriUbudiyah = () => {
+    if (!isLPTQ || !backendToken) return;
+    backendApi("/lptq/materi-ubudiyah", { token: backendToken })
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          const ubList = rows.filter((r) => r.jenis === "Ubudiyah").map((r) => r.nama);
+          const doaList = rows.filter((r) => r.jenis === "Doa").map((r) => r.nama);
+          setData((d) => ({
+            ...d,
+            materiUbudiyah: ubList.length ? ubList : d.materiUbudiyah,
+            materiDoa: doaList.length ? doaList : d.materiDoa,
+          }));
+        }
+      })
+      .catch((e) => console.warn("Gagal muat materi ubudiyah:", e.message));
+  };
+  useEffect(muatMateriUbudiyah, [isLPTQ, backendToken]);
+
+  const addMateriUb = async (jenis, itemBaru) => {
     const nama = itemBaru.trim();
     if (!nama) return;
     const key = jenis === "Ubudiyah" ? "materiUbudiyah" : "materiDoa";
@@ -8241,11 +8458,26 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       if (d[key].some((x) => x.toLowerCase() === nama.toLowerCase())) return d;
       return { ...d, [key]: [...d[key], nama] };
     });
+    if (backendToken) {
+      try {
+        await backendApi("/lptq/materi-ubudiyah", { method: "POST", token: backendToken, body: { nama, jenis } });
+      } catch (e) {
+        console.warn("Gagal tambah materi ubudiyah:", e.message);
+      }
+    }
   };
-  const delMateriUb = (jenis, item) => {
+
+  const delMateriUb = async (jenis, item) => {
     const key = jenis === "Ubudiyah" ? "materiUbudiyah" : "materiDoa";
     setData((d) => ({ ...d, [key]: d[key].filter((x) => x !== item) }));
     setUbForm((f) => (f.jenis === jenis && f.materi === item ? { ...f, materi: "" } : f));
+    if (backendToken) {
+      try {
+        await backendApi(`/lptq/materi-ubudiyah/${encodeURIComponent(item)}?jenis=${encodeURIComponent(jenis)}`, { method: "DELETE", token: backendToken });
+      } catch (e) {
+        console.warn("Gagal hapus materi ubudiyah:", e.message);
+      }
+    }
   };
 
   // ---- Rapor Tahfidz (LPTQ) ----
@@ -9630,25 +9862,97 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [waliKelasForm, setWaliKelasForm] = useState("");
   const [editingKelas, setEditingKelas] = useState(null);
   const [editKelasNama, setEditKelasNama] = useState("");
-  const addKelas = () => { if (!kelasForm || data.kelas.includes(kelasForm)) return; setData((d) => ({ ...d, kelas: [...d.kelas, kelasForm], kelasInfo: { ...d.kelasInfo, [kelasForm]: { waliKelasId: waliKelasForm || null } } })); setKelasForm(""); setWaliKelasForm(""); };
-  const delKelas = (k) => setData((d) => { const info = { ...d.kelasInfo }; delete info[k]; return { ...d, kelas: d.kelas.filter((x) => x !== k), kelasInfo: info }; });
-  const setWaliKelas = (k, guruId) => setData((d) => ({ ...d, kelasInfo: { ...d.kelasInfo, [k]: { ...d.kelasInfo[k], waliKelasId: guruId || null } } }));
-  const bukaEditKelas = (k) => { setEditingKelas(k); setEditKelasNama(k); };
-  const simpanEditKelas = () => {
-    if (!editKelasNama || (editKelasNama !== editingKelas && data.kelas.includes(editKelasNama))) return;
+
+  const muatKelas = () => {
+    if (!isPengajaran) return;
+    if (!backendToken) return;
+    backendApi("/pengajaran/kelas", { token: backendToken })
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          const list = rows.map((r) => r.nama);
+          const info = {};
+          rows.forEach((r) => { info[r.nama] = { waliKelasId: r.waliKelasId || null }; });
+          setData((d) => ({ ...d, kelas: list, kelasInfo: { ...d.kelasInfo, ...info } }));
+        }
+      })
+      .catch((e) => console.warn("Gagal muat kelas:", e.message));
+  };
+  useEffect(muatKelas, [isPengajaran, backendToken]);
+
+  const addKelas = async () => {
+    if (!kelasForm || data.kelas.includes(kelasForm)) return;
+    const kNama = kelasForm;
+    const wId = waliKelasForm || null;
+    setData((d) => ({ ...d, kelas: [...d.kelas, kNama], kelasInfo: { ...d.kelasInfo, [kNama]: { waliKelasId: wId } } }));
+    setKelasForm(""); setWaliKelasForm("");
+    if (backendToken) {
+      try {
+        await backendApi("/pengajaran/kelas", { method: "POST", token: backendToken, body: { nama: kNama, waliKelasId: wId } });
+        muatKelas();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
+  };
+
+  const delKelas = async (k) => {
     setData((d) => {
       const info = { ...d.kelasInfo };
-      info[editKelasNama] = info[editingKelas];
-      if (editKelasNama !== editingKelas) delete info[editingKelas];
+      delete info[k];
+      return { ...d, kelas: d.kelas.filter((x) => x !== k), kelasInfo: info };
+    });
+    if (backendToken) {
+      try {
+        await backendApi(`/pengajaran/kelas/${encodeURIComponent(k)}`, { method: "DELETE", token: backendToken });
+        muatKelas();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
+  };
+
+  const setWaliKelas = async (k, guruId) => {
+    setData((d) => ({ ...d, kelasInfo: { ...d.kelasInfo, [k]: { ...d.kelasInfo[k], waliKelasId: guruId || null } } }));
+    if (backendToken) {
+      try {
+        await backendApi(`/pengajaran/kelas/${encodeURIComponent(k)}/wali`, { method: "PUT", token: backendToken, body: { waliKelasId: guruId || null } });
+        muatKelas();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
+  };
+
+  const bukaEditKelas = (k) => { setEditingKelas(k); setEditKelasNama(k); };
+  const simpanEditKelas = async () => {
+    if (!editKelasNama || (editKelasNama !== editingKelas && data.kelas.includes(editKelasNama))) return;
+    const oldNama = editingKelas;
+    const newNama = editKelasNama;
+    const currentWali = data.kelasInfo?.[oldNama]?.waliKelasId || null;
+    setData((d) => {
+      const info = { ...d.kelasInfo };
+      info[newNama] = info[oldNama];
+      if (newNama !== oldNama) delete info[oldNama];
       return {
         ...d,
-        kelas: d.kelas.map((x) => x === editingKelas ? editKelasNama : x),
-        santri: d.santri.map((s) => s.kelas === editingKelas ? { ...s, kelas: editKelasNama } : s),
-        guru: d.guru.map((g) => g.kelas.includes(editingKelas) ? { ...g, kelas: g.kelas.map((x) => x === editingKelas ? editKelasNama : x) } : g),
+        kelas: d.kelas.map((x) => x === oldNama ? newNama : x),
+        santri: d.santri.map((s) => s.kelas === oldNama ? { ...s, kelas: newNama } : s),
+        guru: d.guru.map((g) => g.kelas.includes(oldNama) ? { ...g, kelas: g.kelas.map((x) => x === oldNama ? newNama : x) } : g),
         kelasInfo: info,
       };
     });
     setEditingKelas(null); setEditKelasNama("");
+    if (backendToken) {
+      try {
+        await backendApi(`/pengajaran/kelas/${encodeURIComponent(oldNama)}`, {
+          method: "PUT", token: backendToken,
+          body: { nama: newNama, waliKelasId: currentWali }
+        });
+        muatKelas();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
   };
 
   // -- Halaqoh (LPTQ) --
@@ -9656,24 +9960,96 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [pembimbingHalaqohForm, setPembimbingHalaqohForm] = useState("");
   const [editingHalaqoh, setEditingHalaqoh] = useState(null);
   const [editHalaqohNama, setEditHalaqohNama] = useState("");
-  const addHalaqoh = () => { if (!halaqohForm || (data.halaqoh || []).includes(halaqohForm)) return; setData((d) => ({ ...d, halaqoh: [...(d.halaqoh || []), halaqohForm], halaqohInfo: { ...d.halaqohInfo, [halaqohForm]: { pembimbingId: pembimbingHalaqohForm || null } } })); setHalaqohForm(""); setPembimbingHalaqohForm(""); };
-  const delHalaqoh = (h) => setData((d) => { const info = { ...d.halaqohInfo }; delete info[h]; return { ...d, halaqoh: (d.halaqoh || []).filter((x) => x !== h), halaqohInfo: info }; });
-  const setPembimbingHalaqoh = (h, guruId) => setData((d) => ({ ...d, halaqohInfo: { ...d.halaqohInfo, [h]: { ...d.halaqohInfo?.[h], pembimbingId: guruId || null } } }));
-  const bukaEditHalaqoh = (h) => { setEditingHalaqoh(h); setEditHalaqohNama(h); };
-  const simpanEditHalaqoh = () => {
-    if (!editHalaqohNama || (editHalaqohNama !== editingHalaqoh && (data.halaqoh || []).includes(editHalaqohNama))) return;
+
+  const muatHalaqoh = () => {
+    if (!isLPTQ) return;
+    if (!backendToken) return;
+    backendApi("/lptq/halaqoh", { token: backendToken })
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          const list = rows.map((r) => r.nama);
+          const info = {};
+          rows.forEach((r) => { info[r.nama] = { pembimbingId: r.pembimbingId || null }; });
+          setData((d) => ({ ...d, halaqoh: list, halaqohInfo: { ...d.halaqohInfo, ...info } }));
+        }
+      })
+      .catch((e) => console.warn("Gagal muat halaqoh:", e.message));
+  };
+  useEffect(muatHalaqoh, [isLPTQ, backendToken]);
+
+  const addHalaqoh = async () => {
+    if (!halaqohForm || (data.halaqoh || []).includes(halaqohForm)) return;
+    const hNama = halaqohForm;
+    const pId = pembimbingHalaqohForm || null;
+    setData((d) => ({ ...d, halaqoh: [...(d.halaqoh || []), hNama], halaqohInfo: { ...d.halaqohInfo, [hNama]: { pembimbingId: pId } } }));
+    setHalaqohForm(""); setPembimbingHalaqohForm("");
+    if (backendToken) {
+      try {
+        await backendApi("/lptq/halaqoh", { method: "POST", token: backendToken, body: { nama: hNama, pembimbingId: pId } });
+        muatHalaqoh();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
+  };
+
+  const delHalaqoh = async (h) => {
     setData((d) => {
       const info = { ...d.halaqohInfo };
-      info[editHalaqohNama] = info[editingHalaqoh];
-      if (editHalaqohNama !== editingHalaqoh) delete info[editingHalaqoh];
+      delete info[h];
+      return { ...d, halaqoh: (d.halaqoh || []).filter((x) => x !== h), halaqohInfo: info };
+    });
+    if (backendToken) {
+      try {
+        await backendApi(`/lptq/halaqoh/${encodeURIComponent(h)}`, { method: "DELETE", token: backendToken });
+        muatHalaqoh();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
+  };
+
+  const setPembimbingHalaqoh = async (h, guruId) => {
+    setData((d) => ({ ...d, halaqohInfo: { ...d.halaqohInfo, [h]: { ...d.halaqohInfo?.[h], pembimbingId: guruId || null } } }));
+    if (backendToken) {
+      try {
+        await backendApi(`/lptq/halaqoh/${encodeURIComponent(h)}/pembimbing`, { method: "PUT", token: backendToken, body: { pembimbingId: guruId || null } });
+        muatHalaqoh();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
+  };
+
+  const bukaEditHalaqoh = (h) => { setEditingHalaqoh(h); setEditHalaqohNama(h); };
+  const simpanEditHalaqoh = async () => {
+    if (!editHalaqohNama || (editHalaqohNama !== editingHalaqoh && (data.halaqoh || []).includes(editHalaqohNama))) return;
+    const oldNama = editingHalaqoh;
+    const newNama = editHalaqohNama;
+    const currentPembimbing = data.halaqohInfo?.[oldNama]?.pembimbingId || null;
+    setData((d) => {
+      const info = { ...d.halaqohInfo };
+      info[newNama] = info[oldNama];
+      if (newNama !== oldNama) delete info[oldNama];
       return {
         ...d,
-        halaqoh: (d.halaqoh || []).map((x) => x === editingHalaqoh ? editHalaqohNama : x),
-        santri: d.santri.map((s) => s.halaqoh === editingHalaqoh ? { ...s, halaqoh: editHalaqohNama } : s),
+        halaqoh: (d.halaqoh || []).map((x) => x === oldNama ? newNama : x),
+        santri: d.santri.map((s) => s.halaqoh === oldNama ? { ...s, halaqoh: newNama } : s),
         halaqohInfo: info,
       };
     });
     setEditingHalaqoh(null); setEditHalaqohNama("");
+    if (backendToken) {
+      try {
+        await backendApi(`/lptq/halaqoh/${encodeURIComponent(oldNama)}`, {
+          method: "PUT", token: backendToken,
+          body: { nama: newNama, pembimbingId: currentPembimbing }
+        });
+        muatHalaqoh();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
   };
 
   return (
@@ -10217,7 +10593,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                     <p className="text-xs uppercase tracking-wide text-[#5B7C93]">Form Input Nilai — {s.nama}</p>
                     <div className="flex flex-wrap gap-2">
                       <input placeholder="Mata pelajaran" value={nilaiForm.mapel} onChange={(e) => setNilaiForm({ ...nilaiForm, mapel: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-                      <input type="number" min="0" max="100" placeholder="Nilai" value={nilaiForm.nilai} onChange={(e) => setNilaiForm({ ...nilaiForm, nilai: e.target.value })} className="w-24 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                      <input type="number" min="0" max="100" placeholder="Nilai (0-100)" value={nilaiForm.nilai} onChange={(e) => setNilaiForm({ ...nilaiForm, nilai: e.target.value })} className="w-28 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+                      <select value={nilaiForm.jenisNilai || "UAS"} onChange={(e) => setNilaiForm({ ...nilaiForm, jenisNilai: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm">
+                        {["UH", "UTS", "UAS", "Tugas", "Praktik"].map((j) => <option key={j} value={j}>{j}</option>)}
+                      </select>
+                      <select value={nilaiForm.semester || "Ganjil"} onChange={(e) => setNilaiForm({ ...nilaiForm, semester: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm">
+                        {SEMESTER_LIST.map((sem) => <option key={sem} value={sem}>{sem}</option>)}
+                      </select>
+                      <input placeholder="Tahun Ajaran" value={nilaiForm.tahunAjaran || tahunAjaranAktifDept?.label || ""} onChange={(e) => setNilaiForm({ ...nilaiForm, tahunAjaran: e.target.value })} className="w-32 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm" />
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => { addNilai(); setNilaiPanel(false); }} disabled={nilaiBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{nilaiBusy ? "Menyimpan..." : "Simpan"}</button>
@@ -10230,9 +10613,34 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-1.5">Riwayat Nilai — {s.nama}</p>
                   <div className="divide-y divide-[#DCEDF7]">
                     {nilaiS.length ? nilaiS.slice().reverse().map((n) => (
-                      <div key={n.id} className="flex items-center justify-between py-2.5 text-sm">
-                        <span>{n.mapel}</span>
-                        <div className="flex items-center gap-2"><span className="font-semibold text-[#0C4A6E]">{n.nilai}</span><IconBtn onClick={() => delNilai(n.id)} title="Hapus"><Trash2 size={15} /></IconBtn></div>
+                      <div key={n.id} className="py-2.5 text-sm">
+                        {editingNilaiId === n.id ? (
+                          <div className="flex flex-wrap items-center gap-2 w-full p-2 bg-[#F8FBFE] border border-[#CFE3F0] rounded-xl">
+                            <input value={editNilaiForm.mapel} onChange={(e) => setEditNilaiForm({ ...editNilaiForm, mapel: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs flex-1" placeholder="Mapel" />
+                            <input type="number" min="0" max="100" value={editNilaiForm.nilai} onChange={(e) => setEditNilaiForm({ ...editNilaiForm, nilai: e.target.value })} className="w-16 border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs" placeholder="Nilai" />
+                            <select value={editNilaiForm.jenisNilai} onChange={(e) => setEditNilaiForm({ ...editNilaiForm, jenisNilai: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs">
+                              {["UH", "UTS", "UAS", "Tugas", "Praktik"].map((j) => <option key={j} value={j}>{j}</option>)}
+                            </select>
+                            <select value={editNilaiForm.semester} onChange={(e) => setEditNilaiForm({ ...editNilaiForm, semester: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs">
+                              {SEMESTER_LIST.map((sem) => <option key={sem} value={sem}>{sem}</option>)}
+                            </select>
+                            <input value={editNilaiForm.tahunAjaran} onChange={(e) => setEditNilaiForm({ ...editNilaiForm, tahunAjaran: e.target.value })} className="w-24 border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs" placeholder="Thn Ajaran" />
+                            <IconBtn tone="ok" onClick={simpanEditNilai} title="Simpan"><Check size={14} /></IconBtn>
+                            <IconBtn onClick={batalEditNilai} title="Batal"><X size={14} /></IconBtn>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium text-[#17242E]">{n.mapel}</span>
+                              <span className="text-xs text-[#5B7C93] ml-2">({n.jenisNilai || "Nilai"} · {n.semester || "-"} {n.tahunAjaran || ""})</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-[#0C4A6E]">{n.nilai}</span>
+                              <IconBtn tone="ok" onClick={() => bukaEditNilai(n)} title="Ubah"><Pencil size={14} /></IconBtn>
+                              <IconBtn onClick={() => delNilai(n.id)} title="Hapus"><Trash2 size={14} /></IconBtn>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )) : <EmptyState text="Belum ada nilai tercatat untuk santri ini." />}
                   </div>
@@ -10309,9 +10717,25 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
           </div>
           <div className="divide-y divide-[#DCEDF7]">
             {data.prestasi.filter((p) => santriTampil.some((s) => s.id === p.santriId)).slice().reverse().map((p) => (
-              <div key={p.id} className="flex items-center justify-between py-2.5 text-sm">
-                <div><p className="text-[#17242E] font-medium">{namaSantri(p.santriId)} — {p.judul}</p><p className="text-xs text-[#5B7C93]">{p.tingkat} · {p.tanggal}</p></div>
-                <IconBtn onClick={() => delPrestasi(p.id)} title="Hapus"><Trash2 size={15} /></IconBtn>
+              <div key={p.id} className="py-2.5 text-sm">
+                {editingPrestasiId === p.id ? (
+                  <div className="flex flex-wrap items-center gap-2 w-full p-2 bg-[#F8FBFE] border border-[#CFE3F0] rounded-xl">
+                    <input value={editPrestasiForm.judul} onChange={(e) => setEditPrestasiForm({ ...editPrestasiForm, judul: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs flex-1" placeholder="Judul prestasi" />
+                    <select value={editPrestasiForm.tingkat} onChange={(e) => setEditPrestasiForm({ ...editPrestasiForm, tingkat: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs">
+                      {TINGKAT_PRESTASI.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <IconBtn tone="ok" onClick={simpanEditPrestasi} title="Simpan"><Check size={14} /></IconBtn>
+                    <IconBtn onClick={batalEditPrestasi} title="Batal"><X size={14} /></IconBtn>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div><p className="text-[#17242E] font-medium">{namaSantri(p.santriId)} — {p.judul}</p><p className="text-xs text-[#5B7C93]">{p.tingkat} · {p.tanggal}</p></div>
+                    <div className="flex items-center gap-1">
+                      <IconBtn tone="ok" onClick={() => bukaEditPrestasi(p)} title="Ubah"><Pencil size={14} /></IconBtn>
+                      <IconBtn onClick={() => delPrestasi(p.id)} title="Hapus"><Trash2 size={15} /></IconBtn>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             {!data.prestasi.filter((p) => santriTampil.some((s) => s.id === p.santriId)).length && <EmptyState text="Belum ada prestasi tercatat." />}
@@ -10329,14 +10753,44 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             <select value={hafalanForm.santriId} onChange={(e) => setHafalanForm({ ...hafalanForm, santriId: e.target.value })} className="flex-1 min-w-[140px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm">
               <option value="">Pilih santri</option>{santriTampil.map((s) => <option key={s.id} value={s.id}>{s.nama}</option>)}
             </select>
-            <input placeholder="Juz / Surah / Materi mengaji" value={hafalanForm.juz} onChange={(e) => setHafalanForm({ ...hafalanForm, juz: e.target.value })} className="flex-1 min-w-[160px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
-            <button onClick={addHafalan} disabled={hafalanBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{hafalanBusy ? "Menyimpan..." : "Simpan"}</button>
+            <input placeholder="Juz (mis. 30)" value={hafalanForm.juz} onChange={(e) => setHafalanForm({ ...hafalanForm, juz: e.target.value })} className="w-24 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            <input placeholder="Nama Surah" value={hafalanForm.surah} onChange={(e) => setHafalanForm({ ...hafalanForm, surah: e.target.value })} className="flex-1 min-w-[130px] border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            <input placeholder="Ayat (mis. 1-15)" value={hafalanForm.ayat} onChange={(e) => setHafalanForm({ ...hafalanForm, ayat: e.target.value })} className="w-28 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            <select value={hafalanForm.predikat} onChange={(e) => setHafalanForm({ ...hafalanForm, predikat: e.target.value })} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl px-3 py-2 text-sm">
+              {["Mumtaz", "Jayyid Jiddan", "Jayyid", "Maqbul"].map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <input type="number" min="0" max="100" placeholder="Tajwid (0-100)" value={hafalanForm.nilaiTajwid} onChange={(e) => setHafalanForm({ ...hafalanForm, nilaiTajwid: e.target.value })} className="w-28 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            <input type="number" min="0" max="100" placeholder="Fashahah (0-100)" value={hafalanForm.nilaiFashahah} onChange={(e) => setHafalanForm({ ...hafalanForm, nilaiFashahah: e.target.value })} className="w-28 border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-sm" />
+            <button onClick={addHafalan} disabled={hafalanBusy || backendOnline !== true} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl hover:shadow-lg active:scale-95 disabled:opacity-50"><Plus size={15} />{hafalanBusy ? "Menyimpan..." : "Simpan"}</button>
           </div>
           <div className="divide-y divide-[#DCEDF7]">
             {data.hafalan.filter((h) => santriTampil.some((s) => s.id === h.santriId)).slice().reverse().map((h) => (
-              <div key={h.id} className="flex items-center justify-between py-2.5 text-sm">
-                <span>{namaSantri(h.santriId)} — {h.juz}</span>
-                <div className="flex items-center gap-2"><span className="text-[#5B7C93]">{h.tanggal}</span><IconBtn onClick={() => delHafalan(h.id)} title="Hapus"><Trash2 size={15} /></IconBtn></div>
+              <div key={h.id} className="py-2.5 text-sm">
+                {editingHafalanId === h.id ? (
+                  <div className="flex flex-wrap items-center gap-2 w-full p-2 bg-[#F8FBFE] border border-[#CFE3F0] rounded-xl">
+                    <input value={editHafalanForm.juz} onChange={(e) => setEditHafalanForm({ ...editHafalanForm, juz: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs w-20" placeholder="Juz" />
+                    <input value={editHafalanForm.surah} onChange={(e) => setEditHafalanForm({ ...editHafalanForm, surah: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs flex-1" placeholder="Surah" />
+                    <input value={editHafalanForm.ayat} onChange={(e) => setEditHafalanForm({ ...editHafalanForm, ayat: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs w-20" placeholder="Ayat" />
+                    <select value={editHafalanForm.predikat} onChange={(e) => setEditHafalanForm({ ...editHafalanForm, predikat: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs">
+                      {["Mumtaz", "Jayyid Jiddan", "Jayyid", "Maqbul"].map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <input type="number" min="0" max="100" value={editHafalanForm.nilaiTajwid} onChange={(e) => setEditHafalanForm({ ...editHafalanForm, nilaiTajwid: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs w-16" placeholder="Tajwid" />
+                    <input type="number" min="0" max="100" value={editHafalanForm.nilaiFashahah} onChange={(e) => setEditHafalanForm({ ...editHafalanForm, nilaiFashahah: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs w-16" placeholder="Fashahah" />
+                    <IconBtn tone="ok" onClick={simpanEditHafalan} title="Simpan"><Check size={14} /></IconBtn>
+                    <IconBtn onClick={batalEditHafalan} title="Batal"><X size={14} /></IconBtn>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-[#17242E]">{namaSantri(h.santriId)} — {h.juz ? `Juz ${h.juz}` : ""} {h.surah ? `(${h.surah}${h.ayat ? `:${h.ayat}` : ""})` : ""}</p>
+                      <p className="text-xs text-[#5B7C93]">{h.predikat ? `Predikat: ${h.predikat}` : ""} {h.nilaiTajwid !== null && h.nilaiTajwid !== undefined ? `· Tajwid: ${h.nilaiTajwid}` : ""} {h.nilaiFashahah !== null && h.nilaiFashahah !== undefined ? `· Fashahah: ${h.nilaiFashahah}` : ""} · {h.tanggal}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <IconBtn tone="ok" onClick={() => bukaEditHafalan(h)} title="Ubah"><Pencil size={14} /></IconBtn>
+                      <IconBtn onClick={() => delHafalan(h.id)} title="Hapus"><Trash2 size={15} /></IconBtn>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             {!data.hafalan.filter((h) => santriTampil.some((s) => s.id === h.santriId)).length && <EmptyState text="Belum ada setoran tercatat." />}
@@ -10417,9 +10871,33 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   <p className="text-xs uppercase tracking-wide text-[#5B7C93] mb-1.5">Riwayat Ubudiyah & Doa — {s.nama}</p>
                   <div className="divide-y divide-[#DCEDF7]">
                     {ubS.length ? ubS.slice().reverse().map((u) => (
-                      <div key={u.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
-                        <div className="min-w-0"><p className="text-[#17242E] truncate">{u.jenis}: {u.materi}</p><p className="text-[10px] text-[#5B7C93]">{u.catatan || "-"} · {u.tanggal}</p></div>
-                        <div className="flex items-center gap-2 shrink-0"><span className="font-medium" style={{ color: predikatColor(u.predikat) }}>{u.predikat}</span><IconBtn onClick={() => delUbudiyah(u.id)} title="Hapus"><Trash2 size={15} /></IconBtn></div>
+                      <div key={u.id} className="py-2.5 text-sm">
+                        {editingUbId === u.id ? (
+                          <div className="flex flex-wrap items-center gap-2 w-full p-2 bg-[#F8FBFE] border border-[#CFE3F0] rounded-xl">
+                            <select value={editUbForm.jenis} onChange={(e) => setEditUbForm({ ...editUbForm, jenis: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs">
+                              <option value="Ubudiyah">Ubudiyah</option>
+                              <option value="Doa">Doa</option>
+                            </select>
+                            <select value={editUbForm.materi} onChange={(e) => setEditUbForm({ ...editUbForm, materi: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs flex-1">
+                              {(editUbForm.jenis === "Ubudiyah" ? data.materiUbudiyah : data.materiDoa).map((m) => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                            <select value={editUbForm.predikat} onChange={(e) => setEditUbForm({ ...editUbForm, predikat: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs">
+                              {PREDIKAT_LIST.map((p) => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                            <input value={editUbForm.catatan} onChange={(e) => setEditUbForm({ ...editUbForm, catatan: e.target.value })} className="border border-[#CFE3F0] rounded-lg px-2 py-1 text-xs flex-1" placeholder="Catatan" />
+                            <IconBtn tone="ok" onClick={simpanEditUb} title="Simpan"><Check size={14} /></IconBtn>
+                            <IconBtn onClick={batalEditUb} title="Batal"><X size={14} /></IconBtn>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0"><p className="text-[#17242E] truncate">{u.jenis}: {u.materi}</p><p className="text-[10px] text-[#5B7C93]">{u.catatan || "-"} · {u.tanggal}</p></div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="font-medium" style={{ color: predikatColor(u.predikat) }}>{u.predikat}</span>
+                              <IconBtn tone="ok" onClick={() => bukaEditUb(u)} title="Ubah"><Pencil size={14} /></IconBtn>
+                              <IconBtn onClick={() => delUbudiyah(u.id)} title="Hapus"><Trash2 size={15} /></IconBtn>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )) : <EmptyState text="Belum ada penilaian ubudiyah/doa untuk santri ini." />}
                   </div>

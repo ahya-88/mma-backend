@@ -176,19 +176,22 @@ router.get("/:id/rapor-ringkas", requireAuth, asyncHandler(async (req, res) => {
     return res.status(403).json({ error: "Akses ditolak." });
   }
 
-  const [
-    hafalan, ubudiyah, nilai, prestasi, pelanggaran,
-    raportAkademik, raportMental, raportTahfidz, penilaianKegiatan,
-    absensi, perizinan, tagihan,
-  ] = await Promise.all([
+  // Jalankan query secara bertahap (batching) agar tidak membanjiri connection pool Postgres
+  const [hafalan, ubudiyah, nilai, prestasi] = await Promise.all([
     queryAll('SELECT * FROM "Hafalan" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
     queryAll('SELECT * FROM "PenilaianUbudiyah" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
     queryAll('SELECT * FROM "Nilai" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 20', [santriId]),
     queryAll('SELECT * FROM "Prestasi" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
+  ]);
+
+  const [pelanggaran, raportAkademik, raportMental, raportTahfidz] = await Promise.all([
     queryAll('SELECT * FROM "Pelanggaran" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 10', [santriId]),
     queryAll('SELECT * FROM "RaportAkademik" WHERE "santriId" = $1 AND "status" = \'PUBLISHED\' ORDER BY "createdAt" DESC', [santriId]),
     queryAll('SELECT * FROM "RaportMental" WHERE "santriId" = $1 AND "status" = \'PUBLISHED\' ORDER BY "createdAt" DESC', [santriId]),
     queryAll('SELECT * FROM "RaportTahfidz" WHERE "santriId" = $1 AND "status" = \'PUBLISHED\' ORDER BY "createdAt" DESC', [santriId]),
+  ]);
+
+  const [penilaianKegiatan, absensi, perizinan, tagihan] = await Promise.all([
     queryAll('SELECT * FROM "PenilaianKegiatan" WHERE "santriId" = $1 ORDER BY "createdAt" DESC LIMIT 20', [santriId]),
     queryAll('SELECT * FROM "Absensi" WHERE "santriId" = $1 ORDER BY "tanggalISO" DESC LIMIT 30', [santriId]),
     queryAll('SELECT * FROM "Perizinan" WHERE "santriId" = $1 ORDER BY "createdAt" DESC LIMIT 15', [santriId]),

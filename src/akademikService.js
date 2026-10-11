@@ -5,7 +5,149 @@ const { CashlessError } = require("./cashlessService");
 const uid = () => crypto.randomUUID();
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-// Hafalan (LPTQ)
+// ==================== MASTER KELAS (PENGAJARAN) ====================
+async function semuaKelas() {
+  return queryAll(`
+    SELECT k.*, g."nama" AS "namaWaliKelas",
+      (SELECT COUNT(*)::int FROM "Santri" s WHERE s."kelas" = k."nama" AND s."is_deleted" = FALSE) AS "jumlahSantri"
+    FROM "MasterKelas" k
+    LEFT JOIN "Guru" g ON k."waliKelasId" = g."id"
+    ORDER BY k."nama" ASC
+  `);
+}
+
+async function tambahKelas({ nama, waliKelasId, tingkat }) {
+  if (!nama || !nama.trim()) throw new CashlessError(400, "Nama kelas wajib diisi.");
+  const trimmedNama = nama.trim();
+  const existing = await queryOne('SELECT * FROM "MasterKelas" WHERE "nama" = $1', [trimmedNama]);
+  if (existing) throw new CashlessError(400, `Kelas "${trimmedNama}" sudah ada.`);
+  const id = uid();
+  await query(
+    `INSERT INTO "MasterKelas" ("id", "nama", "waliKelasId", "tingkat") VALUES ($1, $2, $3, $4)`,
+    [id, trimmedNama, waliKelasId || null, tingkat || null],
+  );
+  return queryOne('SELECT * FROM "MasterKelas" WHERE "id" = $1', [id]);
+}
+
+async function ubahKelas(id, { nama, waliKelasId, tingkat }) {
+  const existing = await queryOne('SELECT * FROM "MasterKelas" WHERE "id" = $1 OR "nama" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Kelas tidak ditemukan.");
+  const realId = existing.id;
+  const newNama = nama !== undefined && nama.trim() ? nama.trim() : existing.nama;
+  const newWali = waliKelasId !== undefined ? (waliKelasId || null) : existing.waliKelasId;
+  const newTingkat = tingkat !== undefined ? (tingkat || null) : existing.tingkat;
+
+  if (newNama !== existing.nama) {
+    const duplicate = await queryOne('SELECT * FROM "MasterKelas" WHERE "nama" = $1 AND "id" != $2', [newNama, realId]);
+    if (duplicate) throw new CashlessError(400, `Kelas dengan nama "${newNama}" sudah ada.`);
+  }
+
+  await query(
+    `UPDATE "MasterKelas" SET "nama" = $1, "waliKelasId" = $2, "tingkat" = $3 WHERE "id" = $4`,
+    [newNama, newWali, newTingkat, realId],
+  );
+
+  if (newNama !== existing.nama) {
+    await query('UPDATE "Santri" SET "kelas" = $1 WHERE "kelas" = $2', [newNama, existing.nama]);
+  }
+
+  return queryOne('SELECT * FROM "MasterKelas" WHERE "id" = $1', [realId]);
+}
+
+async function hapusKelas(id) {
+  const existing = await queryOne('SELECT * FROM "MasterKelas" WHERE "id" = $1 OR "nama" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Kelas tidak ditemukan.");
+  await query('DELETE FROM "MasterKelas" WHERE "id" = $1', [existing.id]);
+  return { id: existing.id, deleted: true, nama: existing.nama };
+}
+
+// ==================== MASTER HALAQOH (LPTQ) ====================
+async function semuaHalaqoh() {
+  return queryAll(`
+    SELECT h.*, g."nama" AS "namaPembimbing",
+      (SELECT COUNT(*)::int FROM "Santri" s WHERE s."halaqoh" = h."nama" AND s."is_deleted" = FALSE) AS "jumlahSantri"
+    FROM "MasterHalaqoh" h
+    LEFT JOIN "Guru" g ON h."pembimbingId" = g."id"
+    ORDER BY h."nama" ASC
+  `);
+}
+
+async function tambahHalaqoh({ nama, pembimbingId }) {
+  if (!nama || !nama.trim()) throw new CashlessError(400, "Nama halaqoh wajib diisi.");
+  const trimmedNama = nama.trim();
+  const existing = await queryOne('SELECT * FROM "MasterHalaqoh" WHERE "nama" = $1', [trimmedNama]);
+  if (existing) throw new CashlessError(400, `Halaqoh "${trimmedNama}" sudah ada.`);
+  const id = uid();
+  await query(
+    `INSERT INTO "MasterHalaqoh" ("id", "nama", "pembimbingId") VALUES ($1, $2, $3)`,
+    [id, trimmedNama, pembimbingId || null],
+  );
+  return queryOne('SELECT * FROM "MasterHalaqoh" WHERE "id" = $1', [id]);
+}
+
+async function ubahHalaqoh(id, { nama, pembimbingId }) {
+  const existing = await queryOne('SELECT * FROM "MasterHalaqoh" WHERE "id" = $1 OR "nama" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Halaqoh tidak ditemukan.");
+  const realId = existing.id;
+  const newNama = nama !== undefined && nama.trim() ? nama.trim() : existing.nama;
+  const newPembimbing = pembimbingId !== undefined ? (pembimbingId || null) : existing.pembimbingId;
+
+  if (newNama !== existing.nama) {
+    const duplicate = await queryOne('SELECT * FROM "MasterHalaqoh" WHERE "nama" = $1 AND "id" != $2', [newNama, realId]);
+    if (duplicate) throw new CashlessError(400, `Halaqoh dengan nama "${newNama}" sudah ada.`);
+  }
+
+  await query(
+    `UPDATE "MasterHalaqoh" SET "nama" = $1, "pembimbingId" = $2 WHERE "id" = $3`,
+    [newNama, newPembimbing, realId],
+  );
+
+  if (newNama !== existing.nama) {
+    await query('UPDATE "Santri" SET "halaqoh" = $1 WHERE "halaqoh" = $2', [newNama, existing.nama]);
+  }
+
+  return queryOne('SELECT * FROM "MasterHalaqoh" WHERE "id" = $1', [realId]);
+}
+
+async function hapusHalaqoh(id) {
+  const existing = await queryOne('SELECT * FROM "MasterHalaqoh" WHERE "id" = $1 OR "nama" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Halaqoh tidak ditemukan.");
+  await query('DELETE FROM "MasterHalaqoh" WHERE "id" = $1', [existing.id]);
+  return { id: existing.id, deleted: true, nama: existing.nama };
+}
+
+// ==================== MASTER MATERI UBUDIYAH & DOA (LPTQ) ====================
+async function semuaMateriUbudiyah(jenis) {
+  const params = [];
+  const where = jenis ? 'WHERE "jenis" = $1' : '';
+  if (jenis) params.push(jenis);
+  return queryAll(`SELECT * FROM "MasterMateriUbudiyah" ${where} ORDER BY "createdAt" ASC`, params);
+}
+
+async function tambahMateriUbudiyah({ jenis, nama }) {
+  if (!jenis || !nama || !nama.trim()) throw new CashlessError(400, "Jenis dan nama materi wajib diisi.");
+  const id = uid();
+  await query(
+    `INSERT INTO "MasterMateriUbudiyah" ("id", "jenis", "nama") VALUES ($1, $2, $3)
+     ON CONFLICT ("jenis", "nama") DO NOTHING`,
+    [id, jenis, nama.trim()],
+  );
+  return queryOne('SELECT * FROM "MasterMateriUbudiyah" WHERE "jenis" = $1 AND "nama" = $2', [jenis, nama.trim()]);
+}
+
+async function hapusMateriUbudiyah(id, jenis) {
+  let existing;
+  if (jenis) {
+    existing = await queryOne('SELECT * FROM "MasterMateriUbudiyah" WHERE ("id" = $1 OR "nama" = $1) AND "jenis" = $2', [id, jenis]);
+  } else {
+    existing = await queryOne('SELECT * FROM "MasterMateriUbudiyah" WHERE "id" = $1 OR "nama" = $1', [id]);
+  }
+  if (!existing) throw new CashlessError(404, "Materi tidak ditemukan.");
+  await query('DELETE FROM "MasterMateriUbudiyah" WHERE "id" = $1', [existing.id]);
+  return { id: existing.id, deleted: true };
+}
+
+// ==================== HAFALAN TAHFIDZ (LPTQ) ====================
 async function semuaHafalan(santriId) {
   const params = [];
   let where = "";
@@ -18,7 +160,7 @@ async function semuaHafalan(santriId) {
     FROM "Hafalan" h
     LEFT JOIN "Santri" s ON h."santriId" = s."id"
     ${where}
-    ORDER BY h."createdAt" DESC
+    ORDER BY h."tanggalISO" DESC, h."createdAt" DESC
   `, params);
 }
 
@@ -33,9 +175,29 @@ async function catatHafalan({ santriId, juz, surah, ayat, predikat, nilaiTajwid,
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
       id, santriId, juzVal, surah || null, ayat || null, predikat || null,
-      nilaiTajwid ? Number(nilaiTajwid) : null, nilaiFashahah ? Number(nilaiFashahah) : null,
+      nilaiTajwid !== undefined && nilaiTajwid !== null && nilaiTajwid !== "" ? Number(nilaiTajwid) : null,
+      nilaiFashahah !== undefined && nilaiFashahah !== null && nilaiFashahah !== "" ? Number(nilaiFashahah) : null,
       tISO, dicatatOleh || null,
     ],
+  );
+  return queryOne('SELECT * FROM "Hafalan" WHERE "id" = $1', [id]);
+}
+
+async function ubahHafalan(id, { juz, surah, ayat, predikat, nilaiTajwid, nilaiFashahah }) {
+  const existing = await queryOne('SELECT * FROM "Hafalan" WHERE "id" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Data hafalan tidak ditemukan.");
+  const newJuz = juz !== undefined ? String(juz) : existing.juz;
+  const newSurah = surah !== undefined ? surah : existing.surah;
+  const newAyat = ayat !== undefined ? ayat : existing.ayat;
+  const newPredikat = predikat !== undefined ? predikat : existing.predikat;
+  const newTajwid = nilaiTajwid !== undefined ? (nilaiTajwid ? Number(nilaiTajwid) : null) : existing.nilaiTajwid;
+  const newFashahah = nilaiFashahah !== undefined ? (nilaiFashahah ? Number(nilaiFashahah) : null) : existing.nilaiFashahah;
+
+  await query(
+    `UPDATE "Hafalan"
+     SET "juz" = $1, "surah" = $2, "ayat" = $3, "predikat" = $4, "nilaiTajwid" = $5, "nilaiFashahah" = $6
+     WHERE "id" = $7`,
+    [newJuz, newSurah, newAyat, newPredikat, newTajwid, newFashahah, id],
   );
   return queryOne('SELECT * FROM "Hafalan" WHERE "id" = $1', [id]);
 }
@@ -47,13 +209,13 @@ async function hapusHafalan(id) {
   return { id, deleted: true };
 }
 
-// Penilaian Ubudiyah (LPTQ)
+// ==================== PENILAIAN UBUDIYAH (LPTQ) ====================
 async function semuaUbudiyah() {
   return queryAll(`
     SELECT u.*, s."nama" AS "namaSantri", s."kelas"
     FROM "PenilaianUbudiyah" u
     LEFT JOIN "Santri" s ON u."santriId" = s."id"
-    ORDER BY u."createdAt" DESC
+    ORDER BY u."tanggalISO" DESC, u."createdAt" DESC
   `);
 }
 
@@ -69,6 +231,23 @@ async function catatUbudiyah({ santriId, jenis, materi, predikat, catatan, dicat
   return queryOne('SELECT * FROM "PenilaianUbudiyah" WHERE "id" = $1', [id]);
 }
 
+async function ubahUbudiyah(id, { jenis, materi, predikat, catatan }) {
+  const existing = await queryOne('SELECT * FROM "PenilaianUbudiyah" WHERE "id" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Data ubudiyah tidak ditemukan.");
+  const newJenis = jenis !== undefined ? jenis : existing.jenis;
+  const newMateri = materi !== undefined ? materi : existing.materi;
+  const newPredikat = predikat !== undefined ? predikat : existing.predikat;
+  const newCatatan = catatan !== undefined ? catatan : existing.catatan;
+
+  await query(
+    `UPDATE "PenilaianUbudiyah"
+     SET "jenis" = $1, "materi" = $2, "predikat" = $3, "catatan" = $4
+     WHERE "id" = $5`,
+    [newJenis, newMateri, newPredikat, newCatatan, id],
+  );
+  return queryOne('SELECT * FROM "PenilaianUbudiyah" WHERE "id" = $1', [id]);
+}
+
 async function hapusUbudiyah(id) {
   const row = await queryOne('SELECT * FROM "PenilaianUbudiyah" WHERE "id" = $1', [id]);
   if (!row) throw new CashlessError(404, "Data ubudiyah tidak ditemukan.");
@@ -76,7 +255,7 @@ async function hapusUbudiyah(id) {
   return { id, deleted: true };
 }
 
-// Nilai Akademik (Pengajaran)
+// ==================== NILAI AKADEMIK (PENGAJARAN) ====================
 async function semuaNilai({ santriId, tahunAjaran, semester, mapel } = {}) {
   const conditions = [];
   const params = [];
@@ -102,7 +281,7 @@ async function semuaNilai({ santriId, tahunAjaran, semester, mapel } = {}) {
     FROM "Nilai" n
     LEFT JOIN "Santri" s ON n."santriId" = s."id"
     ${where}
-    ORDER BY n."createdAt" DESC
+    ORDER BY n."tanggalISO" DESC, n."createdAt" DESC
   `, params);
 }
 
@@ -124,6 +303,30 @@ async function catatNilai({ santriId, mapel, nilai, tahunAjaran, semester, jenis
   return queryOne('SELECT * FROM "Nilai" WHERE "id" = $1', [id]);
 }
 
+async function ubahNilai(id, { mapel, nilai, tahunAjaran, semester, jenisNilai }) {
+  const existing = await queryOne('SELECT * FROM "Nilai" WHERE "id" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Data nilai tidak ditemukan.");
+  const newMapel = mapel !== undefined ? mapel.trim() : existing.mapel;
+  let newNilai = existing.nilai;
+  if (nilai !== undefined && nilai !== null && nilai !== "") {
+    newNilai = Number(nilai);
+    if (Number.isNaN(newNilai) || newNilai < 0 || newNilai > 100) {
+      throw new CashlessError(400, "Nilai harus berupa angka antara 0 sampai 100.");
+    }
+  }
+  const newTA = tahunAjaran !== undefined ? tahunAjaran : existing.tahunAjaran;
+  const newSem = semester !== undefined ? semester : existing.semester;
+  const newJenis = jenisNilai !== undefined ? jenisNilai : existing.jenisNilai;
+
+  await query(
+    `UPDATE "Nilai"
+     SET "mapel" = $1, "nilai" = $2, "tahunAjaran" = $3, "semester" = $4, "jenisNilai" = $5
+     WHERE "id" = $6`,
+    [newMapel, newNilai, newTA, newSem, newJenis, id],
+  );
+  return queryOne('SELECT * FROM "Nilai" WHERE "id" = $1', [id]);
+}
+
 async function hapusNilai(id) {
   const row = await queryOne('SELECT * FROM "Nilai" WHERE "id" = $1', [id]);
   if (!row) throw new CashlessError(404, "Data nilai tidak ditemukan.");
@@ -131,13 +334,13 @@ async function hapusNilai(id) {
   return { id, deleted: true };
 }
 
-// Prestasi (Pengajaran)
+// ==================== PRESTASI (PENGAJARAN) ====================
 async function semuaPrestasi() {
   return queryAll(`
     SELECT p.*, s."nama" AS "namaSantri", s."kelas"
     FROM "Prestasi" p
     LEFT JOIN "Santri" s ON p."santriId" = s."id"
-    ORDER BY p."createdAt" DESC
+    ORDER BY p."tanggalISO" DESC, p."createdAt" DESC
   `);
 }
 
@@ -149,6 +352,18 @@ async function catatPrestasi({ santriId, judul, tingkat, dicatatOleh }) {
     `INSERT INTO "Prestasi" ("id", "santriId", "judul", "tingkat", "tanggalISO", "dicatatOleh")
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [id, santriId, judul.trim(), tingkat || null, tISO, dicatatOleh || null],
+  );
+  return queryOne('SELECT * FROM "Prestasi" WHERE "id" = $1', [id]);
+}
+
+async function ubahPrestasi(id, { judul, tingkat }) {
+  const existing = await queryOne('SELECT * FROM "Prestasi" WHERE "id" = $1', [id]);
+  if (!existing) throw new CashlessError(404, "Data prestasi tidak ditemukan.");
+  const newJudul = judul !== undefined ? judul.trim() : existing.judul;
+  const newTingkat = tingkat !== undefined ? tingkat : existing.tingkat;
+  await query(
+    `UPDATE "Prestasi" SET "judul" = $1, "tingkat" = $2 WHERE "id" = $3`,
+    [newJudul, newTingkat, id],
   );
   return queryOne('SELECT * FROM "Prestasi" WHERE "id" = $1', [id]);
 }
@@ -177,6 +392,15 @@ async function simpanRaportAkademik({
   const rowsJson = JSON.stringify(ringkasanRows || []);
   const now = new Date().toISOString();
 
+  let parsedTotal = totalSantri ? Number(totalSantri) : null;
+  let parsedRank = peringkat ? String(peringkat).trim() : null;
+  if (!parsedTotal && parsedRank && parsedRank.includes("dari")) {
+    const parts = parsedRank.split("dari").map((s) => s.trim());
+    if (parts.length === 2 && !isNaN(Number(parts[1]))) {
+      parsedTotal = Number(parts[1]);
+    }
+  }
+
   await query(`
     INSERT INTO "RaportAkademik" (
       "id", "santriId", "tahunAjaran", "semester", "peringkat", "totalSantri", "rataRata",
@@ -186,7 +410,7 @@ async function simpanRaportAkademik({
     ON CONFLICT ("santriId", "tahunAjaran", "semester")
     DO UPDATE SET
       "peringkat" = EXCLUDED."peringkat",
-      "totalSantri" = EXCLUDED."totalSantri",
+      "totalSantri" = COALESCE(EXCLUDED."totalSantri", "RaportAkademik"."totalSantri"),
       "rataRata" = EXCLUDED."rataRata",
       "catatan" = EXCLUDED."catatan",
       "ringkasanRows" = EXCLUDED."ringkasanRows",
@@ -199,8 +423,7 @@ async function simpanRaportAkademik({
       "updatedAt" = EXCLUDED."updatedAt"
   `, [
     raportId, santriId, String(tahunAjaran).trim(), String(semester).trim(),
-    peringkat ? String(peringkat).trim() : null,
-    totalSantri ? Number(totalSantri) : null,
+    parsedRank, parsedTotal,
     rataRata ? Number(rataRata) : null,
     catatan || null, rowsJson, stat,
     namaPembina || null, tanggalCetak || null,
@@ -374,11 +597,13 @@ async function hapusRaportTahfidz(id) {
 }
 
 module.exports = {
-  semuaHafalan, catatHafalan, hapusHafalan,
-  semuaUbudiyah, catatUbudiyah, hapusUbudiyah,
-  semuaNilai, catatNilai, hapusNilai, nilaiPerSantri,
-  semuaPrestasi, catatPrestasi, hapusPrestasi,
+  semuaKelas, tambahKelas, ubahKelas, hapusKelas,
+  semuaHalaqoh, tambahHalaqoh, ubahHalaqoh, hapusHalaqoh,
+  semuaMateriUbudiyah, tambahMateriUbudiyah, hapusMateriUbudiyah,
+  semuaHafalan, catatHafalan, ubahHafalan, hapusHafalan,
+  semuaUbudiyah, catatUbudiyah, ubahUbudiyah, hapusUbudiyah,
+  semuaNilai, catatNilai, ubahNilai, hapusNilai, nilaiPerSantri,
+  semuaPrestasi, catatPrestasi, ubahPrestasi, hapusPrestasi,
   simpanRaportAkademik, semuaRaportAkademik, hapusRaportAkademik, hitungRankingKelas,
   simpanRaportTahfidz, semuaRaportTahfidz, hapusRaportTahfidz,
 };
-

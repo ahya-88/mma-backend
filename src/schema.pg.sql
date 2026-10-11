@@ -764,3 +764,29 @@ CREATE TABLE IF NOT EXISTS "Inventaris" (
   "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 );
 CREATE INDEX IF NOT EXISTS idx_inventaris_kategori ON "Inventaris" ("kategori");
+
+-- ==================== EKSTENSI PENGAJARAN & LPTQ (KELAS, HALAQOH, MATERI UBUDIYAH) ====================
+CREATE TABLE IF NOT EXISTS "MasterKelas" (
+  "id" TEXT PRIMARY KEY,
+  "nama" TEXT NOT NULL UNIQUE,
+  "waliKelasId" TEXT,
+  "tingkat" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "MasterHalaqoh" (
+  "id" TEXT PRIMARY KEY,
+  "nama" TEXT NOT NULL UNIQUE,
+  "pembimbingId" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE TABLE IF NOT EXISTS "MasterMateriUbudiyah" (
+  "id" TEXT PRIMARY KEY,
+  "jenis" TEXT NOT NULL,
+  "nama" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  CONSTRAINT uq_materi_ubudiyah UNIQUE ("jenis", "nama")
+);
+CREATE INDEX IF NOT EXISTS idx_materi_ubudiyah_jenis ON "MasterMateriUbudiyah" ("jenis");
+

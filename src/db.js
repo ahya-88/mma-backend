@@ -35,8 +35,8 @@ const pool = new Pool({
   connectionString: connectionUrl,
   max: maxPoolSize,
   idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 5000,
-  statement_timeout: 10000,
+  connectionTimeoutMillis: 10000,
+  statement_timeout: 15000,
   ssl: sslConfig,
 });
 const transactionContext = new AsyncLocalStorage();
