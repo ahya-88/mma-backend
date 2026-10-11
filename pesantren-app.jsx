@@ -1752,7 +1752,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
 
   return (
     <div
-      className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-[#F0FDF4] via-[#F8FAFC] to-[#EFF6FF] text-[#1E293B] relative overflow-x-hidden safe-area-app"
+      className="min-h-screen lg:h-screen lg:max-h-screen flex flex-col justify-between bg-gradient-to-br from-[#F0FDF4] via-[#F8FAFC] to-[#EFF6FF] text-[#1E293B] relative overflow-x-hidden lg:overflow-hidden safe-area-app"
       style={{ fontFamily: `'${fontIsi || "Inter"}', sans-serif` }}
     >
       {/* Background Decor - Ambient Minimalist Glow */}
@@ -1760,21 +1760,21 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
       <div className="absolute bottom-10 right-10 w-[32rem] h-[32rem] rounded-full bg-sky-200/35 blur-[130px] pointer-events-none" />
 
       {/* Top Navigation Bar - Minimalis & Informatif */}
-      <header className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white p-1.5 shadow-sm border border-emerald-100 flex items-center justify-center">
+      <header className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-2.5 sm:pt-4 pb-1 sm:pb-2 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white p-1 shadow-xs border border-emerald-100 flex items-center justify-center shrink-0">
             <img src={LOGO_MARK} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-sm sm:text-base font-bold text-[#0C4A6E] tracking-tight leading-none" style={{ fontFamily: "'Fraunces', serif" }}>
               {namaAplikasi || "Ma'had Mudaiyatul Anwar"}
             </h1>
-            <p className="text-[11px] text-[#059669] font-medium mt-0.5">Islamic Boarding School · Portal Terpadu</p>
+            <p className="text-[10px] sm:text-[11px] text-[#059669] font-medium mt-0.5">Islamic Boarding School · Portal Terpadu</p>
           </div>
         </div>
 
         {/* Quick Nav Items (Desktop/Tablet) */}
-        <div className="hidden md:flex items-center gap-5 text-xs font-semibold text-[#475569]">
+        <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-[#475569]">
           <button
             type="button"
             onClick={() => { setInfoModalTab("profil"); setShowInfoModal(true); }}
@@ -1797,8 +1797,8 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
             <ShieldCheck size={14} className="text-[#10B981]" /> Kontak Sekretariat
           </button>
           <div className="h-4 w-px bg-slate-200" />
-          <div className="inline-flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="inline-flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Sistem Aktif 24/7
           </div>
         </div>
@@ -1806,24 +1806,24 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
 
       {/* Pengumuman Banner (Jika diaktifkan oleh Admin) */}
       {cfg.pengumuman?.aktif && cfg.pengumuman?.pesan && (
-        <div className="relative z-30 w-full max-w-5xl mx-auto px-4 sm:px-6 mb-1">
-          <div className={`p-3 rounded-2xl flex items-center gap-3 border shadow-xs transition-all ${
+        <div className="relative z-30 w-full max-w-5xl mx-auto px-4 sm:px-6 mb-1 shrink-0">
+          <div className={`py-1.5 px-3 rounded-xl flex items-center gap-2.5 border shadow-xs transition-all ${
             cfg.pengumuman.tipe === "peringatan"
               ? "bg-amber-500/10 text-amber-900 border-amber-300/80"
               : cfg.pengumuman.tipe === "sukses"
               ? "bg-emerald-500/10 text-emerald-900 border-emerald-300/80"
               : "bg-sky-500/10 text-[#0C4A6E] border-sky-300/80"
           }`}>
-            <span className="flex h-2.5 w-2.5 relative shrink-0">
+            <span className="flex h-2 w-2 relative shrink-0">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                 cfg.pengumuman.tipe === "peringatan" ? "bg-amber-400" : cfg.pengumuman.tipe === "sukses" ? "bg-emerald-400" : "bg-sky-400"
               }`} />
-              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${
                 cfg.pengumuman.tipe === "peringatan" ? "bg-amber-500" : cfg.pengumuman.tipe === "sukses" ? "bg-emerald-500" : "bg-sky-500"
               }`} />
             </span>
-            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs">
-              <span className={`font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-full inline-block w-fit ${
+            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-[11px] sm:text-xs">
+              <span className={`font-bold uppercase tracking-wider text-[9px] px-2 py-0.2 rounded-full inline-block w-fit ${
                 cfg.pengumuman.tipe === "peringatan"
                   ? "bg-amber-200/90 text-amber-900"
                   : cfg.pengumuman.tipe === "sukses"
@@ -1832,19 +1832,19 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
               }`}>
                 {cfg.pengumuman.tipe === "peringatan" ? "Penting" : cfg.pengumuman.tipe === "sukses" ? "Kabar Terkini" : "Pengumuman"}
               </span>
-              <span className="font-medium text-slate-800">{cfg.pengumuman.pesan}</span>
+              <span className="font-medium text-slate-800 truncate">{cfg.pengumuman.pesan}</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Main Content Area - Split Clean Card (Opsi 2) */}
-      <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-4 sm:py-8">
-        <div className="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-3xl border border-[#E2E8F0] shadow-[0_20px_60px_-15px_rgba(15,23,42,0.10)] overflow-hidden flex flex-col lg:flex-row">
+      <main className="relative z-10 flex-1 flex items-center justify-center px-3 sm:px-6 py-1 sm:py-2 min-h-0">
+        <div className="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-[#E2E8F0] shadow-[0_15px_45px_-12px_rgba(15,23,42,0.12)] overflow-hidden flex flex-col lg:flex-row my-auto max-h-full">
 
           {/* SISI KIRI: CAROUSEL FOTOGRAFI & INFORMASI PONDOK */}
           <div
-            className="lg:w-7/12 relative flex flex-col justify-between p-5 sm:p-8 lg:p-10 text-white overflow-hidden min-h-[250px] sm:min-h-[320px] lg:min-h-[580px]"
+            className="lg:w-7/12 relative flex flex-col justify-between p-4 sm:p-6 lg:p-7 text-white overflow-hidden min-h-[220px] sm:min-h-[280px] lg:min-h-0"
             onMouseEnter={() => setIsAutoPlay(false)}
             onMouseLeave={() => setIsAutoPlay(true)}
           >
@@ -1863,41 +1863,41 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
 
             {/* Slide Header: Badge Kategori & Quick Info */}
             <div className="relative z-10 flex items-center justify-between gap-2">
-              <span className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] tracking-wider uppercase font-bold px-2.5 sm:px-3 py-1 rounded-full border backdrop-blur-md ${slideAktif.badgeColor}`}>
-                <Award size={12} /> {slideAktif.kategori}
+              <span className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] tracking-wider uppercase font-bold px-2.5 py-0.5 rounded-full border backdrop-blur-md ${slideAktif.badgeColor}`}>
+                <Award size={11} /> {slideAktif.kategori}
               </span>
               <button
                 type="button"
                 onClick={() => { setInfoModalTab("profil"); setShowInfoModal(true); }}
-                className="text-[10px] sm:text-[11px] font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-2.5 sm:px-3 py-1 rounded-full transition-all"
+                className="text-[10px] sm:text-[11px] font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-2.5 py-0.5 rounded-full transition-all"
               >
                 Tentang Ma'had →
               </button>
             </div>
 
             {/* Slide Center Content: Headline & Deskripsi */}
-            <div className="relative z-10 my-auto py-3 sm:py-6">
-              <div className="inline-block px-2.5 py-0.5 rounded-md bg-white/15 backdrop-blur-sm text-[10px] sm:text-[11px] font-semibold text-emerald-200 uppercase tracking-widest mb-1.5 sm:mb-2.5">
+            <div className="relative z-10 my-auto py-1 sm:py-2.5">
+              <div className="inline-block px-2 py-0.5 rounded-md bg-white/15 backdrop-blur-sm text-[9px] sm:text-[10px] font-semibold text-emerald-200 uppercase tracking-widest mb-1 sm:mb-1.5">
                 {slideAktif.tag}
               </div>
               <h2
-                className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white leading-tight mb-1.5 sm:mb-3 drop-shadow-sm tracking-tight"
+                className="text-lg sm:text-xl lg:text-2xl font-extrabold text-white leading-tight mb-1 sm:mb-1.5 drop-shadow-sm tracking-tight"
                 style={{ fontFamily: "'Fraunces', serif" }}
               >
                 {slideAktif.judul}
               </h2>
-              <p className="text-xs sm:text-sm lg:text-base text-white/90 font-medium mb-2 sm:mb-4 leading-snug line-clamp-1 sm:line-clamp-none">
+              <p className="text-xs sm:text-sm text-white/90 font-medium mb-1 sm:mb-2 leading-snug line-clamp-1">
                 {slideAktif.subjudul}
               </p>
-              <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-lg mb-3 sm:mb-6 line-clamp-2 sm:line-clamp-none">
+              <p className="text-xs text-white/80 leading-relaxed max-w-lg mb-2 sm:mb-3 line-clamp-2">
                 {slideAktif.deskripsi}
               </p>
 
               {/* Poin-Poin Keunggulan (Ditampilkan pada layar sm ke atas) */}
-              <div className="hidden sm:grid sm:grid-cols-3 gap-2.5 pt-2 border-t border-white/15">
+              <div className="hidden sm:grid sm:grid-cols-3 gap-2 pt-1.5 border-t border-white/15">
                 {slideAktif.poin.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs text-white/90">
-                    <CheckCircle2 size={14} className="text-emerald-300 shrink-0" />
+                  <div key={idx} className="flex items-center gap-1.5 text-[11px] text-white/90">
+                    <CheckCircle2 size={13} className="text-emerald-300 shrink-0" />
                     <span className="truncate">{item}</span>
                   </div>
                 ))}
@@ -1905,27 +1905,27 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
             </div>
 
             {/* Slide Bottom Controls: Stats & Dots */}
-            <div className="relative z-10 pt-2 sm:pt-4 flex items-center justify-between gap-3 border-t border-white/10">
+            <div className="relative z-10 pt-1.5 sm:pt-2.5 flex items-center justify-between gap-3 border-t border-white/10">
               {/* Stat Badges (Tampil di sm ke atas) */}
-              <div className="hidden sm:flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-3">
                 {slideAktif.stats.map((s, idx) => (
-                  <div key={idx} className="border-r border-white/15 pr-4 last:border-none last:pr-0">
+                  <div key={idx} className="border-r border-white/15 pr-3 last:border-none last:pr-0">
                     <p className="text-xs font-bold text-white leading-none">{s.val}</p>
-                    <p className="text-[10px] text-white/70 mt-0.5 uppercase tracking-wider">{s.label}</p>
+                    <p className="text-[9px] text-white/70 mt-0.5 uppercase tracking-wider">{s.label}</p>
                   </div>
                 ))}
               </div>
 
               {/* Slider Pagination & Arrow Buttons */}
-              <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2">
+                <div className="flex items-center gap-1">
                   {SLIDES.map((_, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => setCurrentSlide(idx)}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
-                        currentSlide === idx ? "w-5 sm:w-6 bg-white shadow-sm" : "w-1.5 bg-white/40 hover:bg-white/70"
+                        currentSlide === idx ? "w-5 bg-white shadow-xs" : "w-1.5 bg-white/40 hover:bg-white/70"
                       }`}
                       aria-label={`Pindah ke slide ${idx + 1}`}
                     />
@@ -1935,18 +1935,18 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
                   <button
                     type="button"
                     onClick={prevSlide}
-                    className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all border border-white/20"
+                    className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all border border-white/20"
                     aria-label="Slide sebelumnya"
                   >
-                    <ChevronLeft size={16} />
+                    <ChevronLeft size={14} />
                   </button>
                   <button
                     type="button"
                     onClick={nextSlide}
-                    className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all border border-white/20"
+                    className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all border border-white/20"
                     aria-label="Slide berikutnya"
                   >
-                    <ChevronRight size={16} />
+                    <ChevronRight size={14} />
                   </button>
                 </div>
               </div>
@@ -1954,20 +1954,20 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
           </div>
 
           {/* SISI KANAN: FORM LOGIN BERSIH & MINIMALIS */}
-          <div className="lg:w-5/12 p-6 sm:p-10 flex flex-col justify-between bg-white relative">
+          <div className="lg:w-5/12 p-4 sm:p-6 lg:p-7 flex flex-col justify-between bg-white relative overflow-y-auto">
             <div>
               {/* Brand Header */}
-              <div className="mb-6">
-                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-full mb-3">
-                  <ShieldCheck size={13} className="text-emerald-600" /> Portal Akses Resmi
+              <div className="mb-3 sm:mb-4">
+                <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full mb-1 sm:mb-1.5">
+                  <ShieldCheck size={12} className="text-emerald-600" /> Portal Akses Resmi
                 </div>
                 <h3
-                  className="text-2xl sm:text-3xl font-extrabold text-[#0C4A6E] tracking-tight"
+                  className="text-xl sm:text-2xl font-extrabold text-[#0C4A6E] tracking-tight leading-tight"
                   style={{ fontFamily: "'Fraunces', serif" }}
                 >
                   {step === "login" ? "Selamat Datang!" : "Atur Sandi Baru"}
                 </h3>
-                <p className="text-xs sm:text-sm text-[#64748B] mt-1.5">
+                <p className="text-xs text-[#64748B] mt-0.5">
                   {step === "login"
                     ? "Silakan masuk dengan akun terdaftar untuk mengakses sistem."
                     : "Masukkan data akun Anda untuk memperbarui kata sandi."}
@@ -1978,28 +1978,28 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
               {step === "login" && (
                 <div>
                   {/* Role Switcher Tabs */}
-                  <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-5 border border-[#E2E8F0]">
+                  <div className="bg-[#F1F5F9] p-0.5 rounded-xl flex gap-1 mb-3 sm:mb-4 border border-[#E2E8F0]">
                     <button
                       type="button"
                       onClick={() => setActiveTabRole("guru")}
-                      className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                      className={`flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-all ${
                         activeTabRole === "guru"
-                          ? "bg-white text-[#0C4A6E] shadow-sm font-bold border border-slate-200/60"
+                          ? "bg-white text-[#0C4A6E] shadow-xs font-bold border border-slate-200/60"
                           : "text-[#64748B] hover:text-[#0C4A6E]"
                       }`}
                     >
-                      <GraduationCap size={15} /> Guru / Asatidz
+                      <GraduationCap size={14} /> Guru / Asatidz
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveTabRole("wali")}
-                      className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                      className={`flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-all ${
                         activeTabRole === "wali"
-                          ? "bg-white text-[#0C4A6E] shadow-sm font-bold border border-slate-200/60"
+                          ? "bg-white text-[#0C4A6E] shadow-xs font-bold border border-slate-200/60"
                           : "text-[#64748B] hover:text-[#0C4A6E]"
                       }`}
                     >
-                      <Users size={15} /> Wali Santri
+                      <Users size={14} /> Wali Santri
                     </button>
                   </div>
 
@@ -2010,19 +2010,19 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
                     }}
                   >
                     {/* Username Input */}
-                    <div className="mb-4">
-                      <label className="text-xs font-semibold text-[#1E293B] mb-1.5 block">
+                    <div className="mb-2.5 sm:mb-3">
+                      <label className="text-xs font-semibold text-[#1E293B] mb-1 block">
                         Username / Akun
                       </label>
                       <div className="relative">
-                        <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" />
+                        <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" />
                         <input
                           value={username}
                           onChange={(e) => {
                             setUsername(e.target.value);
                             setError("");
                           }}
-                          className="w-full h-11 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl pl-10 pr-3.5 text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7] transition-all"
+                          className="w-full h-9 sm:h-10 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl pl-9 pr-3 text-xs sm:text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7] transition-all"
                           placeholder={
                             activeTabRole === "guru"
                               ? "Contoh: fahmi / nadia / admin"
@@ -2034,41 +2034,41 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
                     </div>
 
                     {/* Password Input */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-1.5">
+                    <div className="mb-2.5 sm:mb-3">
+                      <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-semibold text-[#1E293B]">Kata Sandi</label>
                         <button
                           type="button"
                           onClick={bukaLupaPassword}
-                          className="text-[11px] text-[#0284C7] hover:text-[#0369A1] font-semibold transition-colors"
+                          className="text-[10px] sm:text-[11px] text-[#0284C7] hover:text-[#0369A1] font-semibold transition-colors"
                         >
                           Lupa kata sandi?
                         </button>
                       </div>
                       <div className="relative">
-                        <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" />
+                        <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" />
                         <input
                           type={showPw ? "text" : "password"}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full h-11 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl pl-10 pr-10 text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7] transition-all"
+                          className="w-full h-9 sm:h-10 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl pl-9 pr-9 text-xs sm:text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7] transition-all"
                           placeholder="Masukkan kata sandi"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPw((v) => !v)}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A] transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A] transition-colors"
                           aria-label={showPw ? "Sembunyikan sandi" : "Tampilkan sandi"}
                         >
-                          {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                         </button>
                       </div>
                     </div>
 
                     {/* Error Notice */}
                     {error && (
-                      <div className="mb-4 p-3 rounded-xl bg-[#FEF2F2] border border-[#FCA5A5] text-xs font-medium text-[#991B1B] flex items-center gap-2 animate-slide-up">
-                        <AlertTriangle size={15} className="shrink-0 text-[#DC2626]" />
+                      <div className="mb-2.5 p-2 rounded-xl bg-[#FEF2F2] border border-[#FCA5A5] text-xs font-medium text-[#991B1B] flex items-center gap-1.5 animate-slide-up">
+                        <AlertTriangle size={14} className="shrink-0 text-[#DC2626]" />
                         <span>{error}</span>
                       </div>
                     )}
@@ -2077,11 +2077,11 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
                     <button
                       type="submit"
                       disabled={loginBusy}
-                      className="w-full h-11 bg-gradient-to-r from-[#0C4A6E] via-[#0284C7] to-[#0D9488] hover:from-[#082F49] hover:to-[#0F766E] text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
+                      className="w-full h-9 sm:h-10 bg-gradient-to-r from-[#0C4A6E] via-[#0284C7] to-[#0D9488] hover:from-[#082F49] hover:to-[#0F766E] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-xs hover:shadow transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
                     >
                       {loginBusy ? (
                         <>
-                          <Loader2 size={16} className="animate-spin" />
+                          <Loader2 size={15} className="animate-spin" />
                           <span>Memeriksa Akun...</span>
                         </>
                       ) : (
@@ -2098,28 +2098,28 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
                   <button
                     type="button"
                     onClick={() => setStep("login")}
-                    className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#0C4A6E] font-semibold mb-4 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] text-[#64748B] hover:text-[#0C4A6E] font-semibold mb-2.5 transition-colors"
                   >
                     ← Kembali ke Halaman Masuk
                   </button>
 
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F0F9FF] border border-[#BAE6FD] mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0284C7] to-[#0C4A6E] text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-sm">
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F0F9FF] border border-[#BAE6FD] mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0284C7] to-[#0C4A6E] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-xs">
                       {selectedUser?.nama ? selectedUser.nama.split(" ").map((w) => w[0]).slice(0, 2).join("") : "?"}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-[#0F172A] truncate">{selectedUser?.nama}</p>
-                      <p className="text-xs text-[#0284C7] font-medium">Perbarui kata sandi</p>
+                      <p className="text-xs font-bold text-[#0F172A] truncate">{selectedUser?.nama}</p>
+                      <p className="text-[10px] text-[#0284C7] font-medium">Perbarui kata sandi</p>
                     </div>
                   </div>
 
                   {resetDone ? (
-                    <div className="text-center py-4">
-                      <div className="w-12 h-12 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] flex items-center justify-center mx-auto mb-3">
-                        <Check size={24} />
+                    <div className="text-center py-2">
+                      <div className="w-10 h-10 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] flex items-center justify-center mx-auto mb-2">
+                        <Check size={20} />
                       </div>
-                      <p className="text-sm font-bold text-[#065F46] mb-1">Kata sandi berhasil diperbarui!</p>
-                      <p className="text-xs text-[#64748B] mb-4">Silakan masuk menggunakan kata sandi baru Anda.</p>
+                      <p className="text-xs font-bold text-[#065F46] mb-0.5">Kata sandi berhasil diperbarui!</p>
+                      <p className="text-[11px] text-[#64748B] mb-3">Silakan masuk menggunakan kata sandi baru Anda.</p>
                       <button
                         type="button"
                         onClick={() => {
@@ -2127,39 +2127,39 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
                           setPassword("");
                           setError("");
                         }}
-                        className="w-full h-10 bg-[#0C4A6E] hover:bg-[#082F49] text-white text-sm font-bold rounded-xl active:scale-95 transition-all shadow-sm"
+                        className="w-full h-9 bg-[#0C4A6E] hover:bg-[#082F49] text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-xs"
                       >
                         Masuk Sekarang
                       </button>
                     </div>
                   ) : (
                     <div>
-                      <div className="mb-3">
-                        <label className="text-xs font-semibold text-[#1E293B] mb-1 block">Kata Sandi Baru</label>
+                      <div className="mb-2">
+                        <label className="text-[11px] font-semibold text-[#1E293B] mb-1 block">Kata Sandi Baru</label>
                         <input
                           type="password"
                           value={newPw1}
                           onChange={(e) => setNewPw1(e.target.value)}
-                          className="w-full h-10 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7]"
+                          className="w-full h-9 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl px-3 text-xs text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7]"
                           placeholder="Minimal 4 karakter"
                         />
                       </div>
-                      <div className="mb-3">
-                        <label className="text-xs font-semibold text-[#1E293B] mb-1 block">Konfirmasi Kata Sandi Baru</label>
+                      <div className="mb-2">
+                        <label className="text-[11px] font-semibold text-[#1E293B] mb-1 block">Konfirmasi Kata Sandi Baru</label>
                         <input
                           type="password"
                           value={newPw2}
                           onChange={(e) => setNewPw2(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && simpanPasswordBaru()}
-                          className="w-full h-10 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7]"
+                          className="w-full h-9 border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white rounded-xl px-3 text-xs text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 focus:border-[#0284C7]"
                           placeholder="Ulangi kata sandi baru"
                         />
                       </div>
-                      {resetError && <p className="text-xs text-[#DC2626] font-medium mb-3">{resetError}</p>}
+                      {resetError && <p className="text-[11px] text-[#DC2626] font-medium mb-2">{resetError}</p>}
                       <button
                         type="button"
                         onClick={simpanPasswordBaru}
-                        className="w-full h-10 bg-[#0C4A6E] hover:bg-[#082F49] text-white text-sm font-bold rounded-xl transition-all shadow-sm active:scale-95"
+                        className="w-full h-9 bg-[#0C4A6E] hover:bg-[#082F49] text-white text-xs font-bold rounded-xl transition-all shadow-xs active:scale-95"
                       >
                         Simpan Kata Sandi Baru
                       </button>
@@ -2170,14 +2170,14 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
             </div>
 
             {/* Bottom Support Link */}
-            <div className="mt-6 pt-4 border-t border-[#F1F5F9] text-center">
-              <p className="text-xs text-[#64748B]">
+            <div className="mt-3 pt-2.5 border-t border-[#F1F5F9] text-center">
+              <p className="text-[11px] text-[#64748B]">
                 Butuh bantuan akun atau informasi pendaftaran?
               </p>
               <button
                 type="button"
                 onClick={() => { setInfoModalTab("kontak"); setShowInfoModal(true); }}
-                className="text-xs text-[#0284C7] hover:text-[#0369A1] font-bold mt-1 inline-flex items-center gap-1"
+                className="text-[11px] text-[#0284C7] hover:text-[#0369A1] font-bold mt-0.5 inline-flex items-center gap-1"
               >
                 Hubungi Sekretariat Pondok →
               </button>
@@ -2187,7 +2187,7 @@ function Login({ users, onLogin, onResetPassword, namaAplikasi, fontIsi, loginCo
       </main>
 
       {/* Footer Minimalis */}
-      <footer className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-[#64748B] gap-2">
+      <footer className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 py-1.5 sm:py-2.5 flex flex-col sm:flex-row items-center justify-between text-[10px] sm:text-xs text-[#64748B] gap-1 shrink-0">
         <p>© 2026 {namaAplikasi || "Ma'had Mudaiyatul Anwar"}. Seluruh hak cipta dilindungi.</p>
         <p className="italic font-medium text-[#0C4A6E]" style={{ fontFamily: "'Fraunces', serif" }}>
           "Berilmu · Berakhlak · Berdaya"
