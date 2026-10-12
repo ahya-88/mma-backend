@@ -133,22 +133,22 @@ function buatTemplateImporCSV() {
   const headers = [
     "nama", "nis", "nisn", "kelas", "jenisKelamin", "nik",
     "tempatLahir", "tanggalLahir", "alamat", "asrama",
-    "namaWali", "hpWali", "nikAyah", "nikIbu", "angkatan", "tahunMasuk", "status"
+    "namaWali", "hpWali", "namaAyah", "nikAyah", "namaIbu", "nikIbu", "angkatan", "tahunMasuk", "status"
   ];
   const contohBaris1 = [
     "Ahmad Ridwan", "1001", "0012345678", "7A", "L", "3201012345670001",
     "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri",
-    "Bpk. Ridwan", "081234567890", "3201011122330001", "3201014455660002", "1", "2018", "Aktif"
+    "Bpk. Ridwan", "081234567890", "H. Ridwan Abdullah", "3201011122330001", "Hj. Siti Aminah", "3201014455660002", "1", "2018", "Aktif"
   ];
   const contohBaris2 = [
     "Siti Fatimah", "1002", "0087654321", "7B", "P", "3202022345670002",
     "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah",
-    "Ibu Fatimah", "081987654321", "3202021122330003", "3202024455660004", "1", "2018", "Aktif"
+    "Ibu Fatimah", "081987654321", "Bpk. Ahmad Fauzi", "3202021122330003", "Ibu Fatimah Zahra", "3202024455660004", "1", "2018", "Aktif"
   ];
   const contohBaris3 = [
     "Muhammad Farhan", "1003", "0091122334", "8A", "L", "3203032345670003",
     "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi",
-    "Bpk. Hendra Gunawan", "082133445566", "3203031122330005", "3203034455660006", "2", "2019", "Alumni"
+    "Bpk. Hendra Gunawan", "082133445566", "Hendra Gunawan", "3203031122330005", "Dewi Sartika", "3203034455660006", "2", "2019", "Alumni"
   ];
 
   const toCSVRow = (arr) => arr.map((item) => `"${String(item).replace(/"/g, '""')}"`).join(",");
@@ -159,24 +159,24 @@ function buatTemplateImporExcelBuffer() {
   const headers = [
     "nama", "nis", "nisn", "kelas", "jenisKelamin", "nik",
     "tempatLahir", "tanggalLahir", "alamat", "asrama",
-    "namaWali", "hpWali", "nikAyah", "nikIbu", "angkatan", "tahunMasuk", "status"
+    "namaWali", "hpWali", "namaAyah", "nikAyah", "namaIbu", "nikIbu", "angkatan", "tahunMasuk", "status"
   ];
   const data = [
     headers,
     [
       "Ahmad Ridwan", "1001", "0012345678", "7A", "L", "3201012345670001",
       "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri",
-      "Bpk. Ridwan", "081234567890", "3201011122330001", "3201014455660002", "1", "2018", "Aktif"
+      "Bpk. Ridwan", "081234567890", "H. Ridwan Abdullah", "3201011122330001", "Hj. Siti Aminah", "3201014455660002", "1", "2018", "Aktif"
     ],
     [
       "Siti Fatimah", "1002", "0087654321", "7B", "P", "3202022345670002",
       "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah",
-      "Ibu Fatimah", "081987654321", "3202021122330003", "3202024455660004", "1", "2018", "Aktif"
+      "Ibu Fatimah", "081987654321", "Bpk. Ahmad Fauzi", "3202021122330003", "Ibu Fatimah Zahra", "3202024455660004", "1", "2018", "Aktif"
     ],
     [
       "Muhammad Farhan", "1003", "0091122334", "8A", "L", "3203032345670003",
       "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi",
-      "Bpk. Hendra Gunawan", "082133445566", "3203031122330005", "3203034455660006", "2", "2019", "Alumni"
+      "Bpk. Hendra Gunawan", "082133445566", "Hendra Gunawan", "3203031122330005", "Dewi Sartika", "3203034455660006", "2", "2019", "Alumni"
     ]
   ];
 
@@ -196,7 +196,9 @@ function buatTemplateImporExcelBuffer() {
     { wch: 22 }, // asrama
     { wch: 24 }, // namaWali
     { wch: 18 }, // hpWali
+    { wch: 24 }, // namaAyah
     { wch: 20 }, // nikAyah
+    { wch: 24 }, // namaIbu
     { wch: 20 }, // nikIbu
     { wch: 10 }, // angkatan
     { wch: 12 }, // tahunMasuk
@@ -350,11 +352,11 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
       const rawKelas = (baris.kelas || baris["KELAS"] || "").trim();
       const kelas = rawKelas || (angkatan ? `Angkatan ${angkatan}` : "Belum Ditentukan");
 
-      const nikSantri = sanitizeNIK(baris.nik || baris["NIK"] || baris["NIK SANTRI"]);
-      const namaAyah = (baris.namaAyah || baris["NAMA AYAH"] || "").trim() || null;
-      const nikAyah = sanitizeNIK(baris.nikAyah || baris["NIK AYAH"]);
-      const namaIbu = (baris.namaIbu || baris["NAMA IBU"] || "").trim() || null;
-      const nikIbu = sanitizeNIK(baris.nikIbu || baris["NIK IBU"]);
+      const nikSantri = sanitizeNIK(baris.nik || baris["NIK"] || baris["NIK SANTRI"] || baris["nikSantri"]);
+      const namaAyah = (baris.namaAyah || baris["NAMA AYAH"] || baris["Nama Ayah"] || baris["nama_ayah"] || baris["NAMA AYAH KANDUNG"] || baris.ayah || "").trim() || null;
+      const nikAyah = sanitizeNIK(baris.nikAyah || baris["NIK AYAH"] || baris["NIK Ayah"] || baris["nik_ayah"]);
+      const namaIbu = (baris.namaIbu || baris["NAMA IBU"] || baris["Nama Ibu"] || baris["nama_ibu"] || baris["NAMA IBU KANDUNG"] || baris.ibu || "").trim() || null;
+      const nikIbu = sanitizeNIK(baris.nikIbu || baris["NIK IBU"] || baris["NIK Ibu"] || baris["nik_ibu"]);
       const alamat = (baris.alamat || baris["ALAMAT"] || "").trim() || null;
 
       let jk = (baris.jenisKelamin || baris["JK"] || baris["JENIS KELAMIN"] || "").trim().toUpperCase();

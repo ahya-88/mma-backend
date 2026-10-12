@@ -65,7 +65,28 @@ test("FASE 2: Pembuatan Berkas Template CSV Impor Santri", () => {
   const csv = impor.buatTemplateImporCSV();
   assert.ok(csv.includes("nama,nis,nisn,kelas,jenisKelamin"), "Header memuat kolom dasar santri");
   assert.ok(csv.includes("namaWali,hpWali"), "Header memuat kolom wali santri");
+  assert.ok(csv.includes("namaAyah,nikAyah,namaIbu,nikIbu"), "Header memuat kolom nama & NIK ayah serta ibu");
   assert.ok(csv.includes("Ahmad Ridwan"), "Memuat contoh baris data santri 1");
+  assert.ok(csv.includes("H. Ridwan Abdullah"), "Memuat contoh nama ayah");
+  assert.ok(csv.includes("Hj. Siti Aminah"), "Memuat contoh nama ibu");
+});
+
+test("FASE 2: Pembuatan Berkas Template Excel (.xlsx) Impor Santri", () => {
+  const XLSX = require("xlsx");
+  const buffer = impor.buatTemplateImporExcelBuffer();
+  assert.ok(Buffer.isBuffer(buffer), "Template Excel harus berupa Buffer");
+  assert.ok(buffer.length > 0);
+
+  const wb = XLSX.read(buffer, { type: "buffer" });
+  assert.ok(wb.SheetNames.includes("Data Santri"), "Memiliki sheet 'Data Santri'");
+  const sheet = wb.Sheets["Data Santri"];
+  const rows = XLSX.utils.sheet_to_json(sheet);
+  assert.ok(rows.length >= 3, "Memuat minimal 3 baris contoh");
+  assert.equal(rows[0].nama, "Ahmad Ridwan");
+  assert.equal(rows[0].namaAyah, "H. Ridwan Abdullah");
+  assert.equal(rows[0].namaIbu, "Hj. Siti Aminah");
+  assert.equal(rows[0].nikAyah, "3201011122330001");
+  assert.equal(rows[0].nikIbu, "3201014455660002");
 });
 
 test("FASE 2: Dry-run Impor Excel memvalidasi baris kosong dan duplikat NIS/NISN", async () => {

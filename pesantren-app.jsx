@@ -13868,8 +13868,8 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         else if (["nik", "niksantri", "nik_santri", "noktp", "ktp"].includes(h)) key = "nik";
         else if (["nikayah", "nik_ayah"].includes(h)) key = "nikAyah";
         else if (["nikibu", "nik_ibu"].includes(h)) key = "nikIbu";
-        else if (["namaayah", "nama_ayah", "ayah"].includes(h)) key = "namaAyah";
-        else if (["namaibu", "nama_ibu", "ibu"].includes(h)) key = "namaIbu";
+        else if (["namaayah", "nama_ayah", "ayah", "namaayahkandung", "ayahkandung"].includes(h)) key = "namaAyah";
+        else if (["namaibu", "nama_ibu", "ibu", "namaibukandung", "ibukandung"].includes(h)) key = "namaIbu";
         else if (["angkatan"].includes(h)) key = "angkatan";
         else if (["tahunmasuk", "ppsbtahun", "tahun_masuk"].includes(h)) key = "tahunMasuk";
         else if (["status", "statussantri", "status_santri"].includes(h)) key = "statusSantri";
@@ -13967,20 +13967,20 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       const headers = [
         "nama", "nis", "nisn", "kelas", "jenisKelamin", "nik",
         "tempatLahir", "tanggalLahir", "alamat", "asrama",
-        "namaWali", "hpWali", "nikAyah", "nikIbu", "angkatan", "tahunMasuk", "status"
+        "namaWali", "hpWali", "namaAyah", "nikAyah", "namaIbu", "nikIbu", "angkatan", "tahunMasuk", "status"
       ];
       const data = [
         headers,
-        ["Ahmad Ridwan", "1001", "0012345678", "7A", "L", "3201012345670001", "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri", "Bpk. Ridwan", "081234567890", "3201011122330001", "3201014455660002", "1", "2018", "Aktif"],
-        ["Siti Fatimah", "1002", "0087654321", "7B", "P", "3202022345670002", "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah", "Ibu Fatimah", "081987654321", "3202021122330003", "3202024455660004", "1", "2018", "Aktif"],
-        ["Muhammad Farhan", "1003", "0091122334", "8A", "L", "3203032345670003", "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi", "Bpk. Hendra Gunawan", "082133445566", "3203031122330005", "3203034455660006", "2", "2019", "Alumni"]
+        ["Ahmad Ridwan", "1001", "0012345678", "7A", "L", "3201012345670001", "Jakarta", "2012-05-15", "Jl. Pondok Pesantren No. 1, RT 01/RW 02", "Asrama Sunan Giri", "Bpk. Ridwan", "081234567890", "H. Ridwan Abdullah", "3201011122330001", "Hj. Siti Aminah", "3201014455660002", "1", "2018", "Aktif"],
+        ["Siti Fatimah", "1002", "0087654321", "7B", "P", "3202022345670002", "Surabaya", "2012-08-20", "Jl. Pesantren No. 5, Surabaya", "Asrama Khadijah", "Ibu Fatimah", "081987654321", "Bpk. Ahmad Fauzi", "3202021122330003", "Ibu Fatimah Zahra", "3202024455660004", "1", "2018", "Aktif"],
+        ["Muhammad Farhan", "1003", "0091122334", "8A", "L", "3203032345670003", "Bandung", "2011-11-10", "Jl. Al-Falah No. 17, Bandung", "Asrama Imam Nawawi", "Bpk. Hendra Gunawan", "082133445566", "Hendra Gunawan", "3203031122330005", "Dewi Sartika", "3203034455660006", "2", "2019", "Alumni"]
       ];
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(data);
       ws["!cols"] = [
         { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 14 }, { wch: 20 },
         { wch: 18 }, { wch: 15 }, { wch: 38 }, { wch: 22 }, { wch: 24 }, { wch: 18 },
-        { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
+        { wch: 24 }, { wch: 20 }, { wch: 24 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
       ];
       XLSX.utils.book_append_sheet(wb, ws, "Data Santri");
       XLSX.writeFile(wb, "Template_Impor_Santri_MMA.xlsx");
@@ -14003,10 +14003,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (_) {
-      const fallbackCsv = "\uFEFFnama,nis,nisn,kelas,jenisKelamin,nik,tempatLahir,tanggalLahir,alamat,asrama,namaWali,hpWali,nikAyah,nikIbu,angkatan,tahunMasuk,status\r\n" +
-        '"Ahmad Ridwan","1001","0012345678","7A","L","3201012345670001","Jakarta","2012-05-15","Jl. Pondok Pesantren No. 1, RT 01/RW 02","Asrama Sunan Giri","Bpk. Ridwan","081234567890","3201011122330001","3201014455660002","1","2018","Aktif"\r\n' +
-        '"Siti Fatimah","1002","0087654321","7B","P","3202022345670002","Surabaya","2012-08-20","Jl. Pesantren No. 5, Surabaya","Asrama Khadijah","Ibu Fatimah","081987654321","3202021122330003","3202024455660004","1","2018","Aktif"\r\n' +
-        '"Muhammad Farhan","1003","0091122334","8A","L","3203032345670003","Bandung","2011-11-10","Jl. Al-Falah No. 17, Bandung","Asrama Imam Nawawi","Bpk. Hendra Gunawan","082133445566","3203031122330005","3203034455660006","2","2019","Alumni"\r\n';
+      const fallbackCsv = "\uFEFFnama,nis,nisn,kelas,jenisKelamin,nik,tempatLahir,tanggalLahir,alamat,asrama,namaWali,hpWali,namaAyah,nikAyah,namaIbu,nikIbu,angkatan,tahunMasuk,status\r\n" +
+        '"Ahmad Ridwan","1001","0012345678","7A","L","3201012345670001","Jakarta","2012-05-15","Jl. Pondok Pesantren No. 1, RT 01/RW 02","Asrama Sunan Giri","Bpk. Ridwan","081234567890","H. Ridwan Abdullah","3201011122330001","Hj. Siti Aminah","3201014455660002","1","2018","Aktif"\r\n' +
+        '"Siti Fatimah","1002","0087654321","7B","P","3202022345670002","Surabaya","2012-08-20","Jl. Pesantren No. 5, Surabaya","Asrama Khadijah","Ibu Fatimah","081987654321","Bpk. Ahmad Fauzi","3202021122330003","Ibu Fatimah Zahra","3202024455660004","1","2018","Aktif"\r\n' +
+        '"Muhammad Farhan","1003","0091122334","8A","L","3203032345670003","Bandung","2011-11-10","Jl. Al-Falah No. 17, Bandung","Asrama Imam Nawawi","Bpk. Hendra Gunawan","082133445566","Hendra Gunawan","3203031122330005","Dewi Sartika","3203034455660006","2","2019","Alumni"\r\n';
       const blob = new Blob([fallbackCsv], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -17024,6 +17024,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                                   <th className="p-2">Kelas</th>
                                   <th className="p-2">L/P</th>
                                   <th className="p-2">Asrama</th>
+                                  <th className="p-2">Ayah / Ibu</th>
                                   <th className="p-2">Wali</th>
                                   <th className="p-2">HP Wali</th>
                                 </tr>
@@ -17036,6 +17037,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                                     <td className="p-2 text-[#5B7C93]">{r.kelas || "—"}</td>
                                     <td className="p-2 text-[#5B7C93]">{r.jenisKelamin || "—"}</td>
                                     <td className="p-2 text-[#5B7C93]">{r.asrama || "—"}</td>
+                                    <td className="p-2 text-[#5B7C93]">{r.namaAyah || r.namaIbu ? `${r.namaAyah || "—"} / ${r.namaIbu || "—"}` : "—"}</td>
                                     <td className="p-2 text-[#5B7C93]">{r.namaWali || "—"}</td>
                                     <td className="p-2 text-[#5B7C93]">{r.hpWali || "—"}</td>
                                   </tr>
