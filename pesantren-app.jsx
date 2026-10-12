@@ -11440,6 +11440,1251 @@ function SuratKeluarContent({ surat, jenis, bagian, kepanitiaan, kop }) {
   );
 }
 
+// =========================================================================
+// MODUL PUSAT DATA DELEGASI LOMBA & ADVOKASI BANTUAN (SEKRETARIAT MMA)
+// =========================================================================
+function DelegasiBantuanManagement({ backendToken, backendOnline, data, setData, onPrint }) {
+  const [subTab, setSubTab] = useState("seleksi"); // 'seleksi' | 'agenda'
+  const [preset, setPreset] = useState("lomba"); // 'lomba', 'pip', 'baznas', 'guru', 'kustom'
+  const [subjekTipe, setSubjekTipe] = useState("santri"); // 'santri' | 'guru'
+
+  // Filter States
+  const [filterKelas, setFilterKelas] = useState("Semua");
+  const [filterUsiaMaks, setFilterUsiaMaks] = useState("15");
+  const [filterUsiaMin, setFilterUsiaMin] = useState("");
+  const [patokanTanggal, setPatokanTanggal] = useState("");
+  const [filterHafalanMin, setFilterHafalanMin] = useState("1");
+  const [filterStatusYatim, setFilterStatusYatim] = useState("Semua");
+  const [hanyaNikValid, setHanyaNikValid] = useState(true);
+  const [hanyaAdaFoto, setHanyaAdaFoto] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatusGuru, setFilterStatusGuru] = useState("Semua");
+
+  // Selection States
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [pesertaCabangMap, setPesertaCabangMap] = useState({});
+  const [pesertaPeranMap, setPesertaPeranMap] = useState({});
+  const [pendampingGuruIds, setPendampingGuruIds] = useState([]);
+
+  // Data Loading & Results
+  const [loading, setLoading] = useState(false);
+  const [santriList, setSantriList] = useState([]);
+  const [guruList, setGuruList] = useState([]);
+  const [eventList, setEventList] = useState([]);
+  const [loadingEvent, setLoadingEvent] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  // Modal States
+  const [modalEventOpen, setModalEventOpen] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    namaEvent: "",
+    penyelenggara: "",
+    kategori: "Lomba",
+    tanggalPelaksanaan: "",
+    tahunAjaran: "2026/2027",
+    status: "Diajukan",
+    keterangan: "",
+  });
+  const [savingEvent, setSavingEvent] = useState(false);
+  const [modalCetakOpen, setModalCetakOpen] = useState(false);
+  const [cetakTipe, setCetakTipe] = useState("surat-tugas"); // 'surat-tugas' | 'biodata'
+  const [detailEventModal, setDetailEventModal] = useState(null);
+
+  // Helper Hitung Usia Lokal
+  const hitungUsiaLokal = (tglLahir, tglPatokan) => {
+    if (!tglLahir) return { tahun: null, bulan: null, label: "-" };
+    let bDate = null;
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(tglLahir)) bDate = new Date(tglLahir);
+    else if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(tglLahir)) {
+      const parts = tglLahir.split(/[-/]/);
+      bDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    } else bDate = new Date(tglLahir);
+    if (isNaN(bDate.getTime())) return { tahun: null, bulan: null, label: "-" };
+    const rDate = tglPatokan ? new Date(tglPatokan) : new Date();
+    if (isNaN(rDate.getTime())) return { tahun: null, bulan: null, label: "-" };
+    let y = rDate.getFullYear() - bDate.getFullYear();
+    let m = rDate.getMonth() - bDate.getMonth();
+    if (rDate.getDate() < bDate.getDate()) m--;
+    if (m < 0) { y--; m += 12; }
+    return { tahun: Math.max(0, y), bulan: Math.max(0, m), label: `${y} thn ${m} bln` };
+  };
+
+  // Muat Data Seleksi dari Backend (atau data lokal sebagai fallback)
+  const muatDataSeleksi = async () => {
+    setLoading(true);
+    setErr("");
+    try {
+      if (backendToken) {
+        if (subjekTipe === "santri") {
+          const params = new URLSearchParams({
+            kelas: filterKelas,
+            usiaMaks: filterUsiaMaks,
+            usiaMin: filterUsiaMin,
+            patokanTanggal,
+            hafalanMin: filterHafalanMin,
+            statusYatim: filterStatusYatim,
+            hanyaNikValid: String(hanyaNikValid),
+            hanyaAdaFoto: String(hanyaAdaFoto),
+            q: searchQuery,
+          });
+          const res = await backendApi(`/sekretariat/delegasi-bantuan/santri?${params.toString()}`, {
+            token: backendToken,
+          });
+          if (res && res.data) {
+            setSantriList(res.data);
+          }
+        } else {
+          const params = new URLSearchParams({
+            statusKepegawaian: filterStatusGuru,
+            hanyaNikValid: String(hanyaNikValid),
+            q: searchQuery,
+          });
+          const res = await backendApi(`/sekretariat/delegasi-bantuan/guru?${params.toString()}`, {
+            token: backendToken,
+          });
+          if (res && res.data) {
+            setGuruList(res.data);
+          }
+        }
+      } else {
+        // Fallback offline menggunakan data lokal
+        if (subjekTipe === "santri") {
+          const local = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif").map((s) => {
+            const u = hitungUsiaLokal(s.tanggalLahir, patokanTanggal);
+            const isValid = s.nik && /^\d{16}$/.test(String(s.nik).trim());
+            return {
+              ...s,
+              usiaTahun: u.tahun,
+              usiaBulan: u.bulan,
+              usiaLabel: u.label,
+              isNikValid: isValid,
+              totalJuzHafalan: (data.hafalan || []).filter((h) => h.santriId === s.id).length,
+            };
+          });
+          setSantriList(local);
+        } else {
+          const localG = (data.guru || []).map((g) => {
+            const u = hitungUsiaLokal(g.tanggalLahir);
+            return {
+              ...g,
+              usiaTahun: u.tahun,
+              usiaLabel: u.label,
+              isNikValid: g.nik && /^\d{16}$/.test(String(g.nik).trim()),
+            };
+          });
+          setGuruList(localG);
+        }
+      }
+    } catch (e) {
+      setErr(e.message || "Gagal memuat data seleksi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Muat Daftar Agenda / Event
+  const muatAgendaEvents = async () => {
+    if (!backendToken) return;
+    setLoadingEvent(true);
+    try {
+      const res = await backendApi("/sekretariat/delegasi-bantuan/events", { token: backendToken });
+      if (Array.isArray(res)) {
+        setEventList(res);
+      }
+    } catch (e) {
+      console.error("Gagal memuat agenda event:", e);
+    } finally {
+      setLoadingEvent(false);
+    }
+  };
+
+  useEffect(() => {
+    if (subTab === "seleksi") {
+      muatDataSeleksi();
+    } else {
+      muatAgendaEvents();
+    }
+  }, [subTab, subjekTipe, filterKelas, filterUsiaMaks, filterUsiaMin, filterHafalanMin, filterStatusYatim, hanyaNikValid, hanyaAdaFoto, filterStatusGuru]);
+
+  // Handler Ganti Preset Pintar
+  const terapkanPreset = (p) => {
+    setPreset(p);
+    setSelectedIds([]);
+    if (p === "lomba") {
+      setSubjekTipe("santri");
+      setFilterKelas("Semua");
+      setFilterUsiaMaks("15");
+      setFilterUsiaMin("");
+      setFilterHafalanMin("1");
+      setFilterStatusYatim("Semua");
+      setHanyaNikValid(true);
+      setHanyaAdaFoto(false);
+    } else if (p === "pip") {
+      setSubjekTipe("santri");
+      setFilterKelas("Semua");
+      setFilterUsiaMaks("");
+      setFilterUsiaMin("");
+      setFilterHafalanMin("");
+      setFilterStatusYatim("Semua");
+      setHanyaNikValid(true);
+      setHanyaAdaFoto(false);
+    } else if (p === "baznas") {
+      setSubjekTipe("santri");
+      setFilterKelas("Semua");
+      setFilterUsiaMaks("");
+      setFilterUsiaMin("");
+      setFilterHafalanMin("");
+      setFilterStatusYatim("Yatim");
+      setHanyaNikValid(false);
+      setHanyaAdaFoto(false);
+    } else if (p === "guru") {
+      setSubjekTipe("guru");
+      setFilterStatusGuru("Semua");
+      setHanyaNikValid(true);
+    } else if (p === "kustom") {
+      // Bebaskan filter
+      setFilterUsiaMaks("");
+      setFilterHafalanMin("");
+      setHanyaNikValid(false);
+    }
+  };
+
+  // Checkbox Selection
+  const activeRows = subjekTipe === "santri" ? santriList : guruList;
+  const togglePilihSemua = () => {
+    if (selectedIds.length === activeRows.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(activeRows.map((r) => r.id));
+    }
+  };
+
+  const togglePilihSatu = (id) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter((x) => x !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  // Dapatkan Baris Data Terpilih
+  const selectedRows = activeRows.filter((r) => selectedIds.includes(r.id)).map((r) => ({
+    ...r,
+    bidangCabang: pesertaCabangMap[r.id] || (subjekTipe === "santri" ? "Tahfidz Al-Qur'an" : "Official / Pendamping"),
+    peran: pesertaPeranMap[r.id] || "Peserta",
+  }));
+
+  // Ekspor Excel (Format Panitia Lomba / PIP / BAZNAS / Guru)
+  const handleEksporExcel = async (formatTipe) => {
+    if (!selectedRows.length) {
+      alert("Silakan pilih minimal satu santri atau asatidz terlebih dahulu.");
+      return;
+    }
+    setMsg("Menyiapkan dokumen Excel...");
+    try {
+      if (backendToken) {
+        const response = await fetch("/api/sekretariat/delegasi-bantuan/ekspor-excel", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${backendToken}`,
+          },
+          body: JSON.stringify({
+            formatTipe,
+            dataRows: selectedRows,
+            meta: { judulSheet: formatTipe.toUpperCase() },
+          }),
+        });
+        if (!response.ok) throw new Error("Gagal mengunduh file excel dari server.");
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Delegasi_MMA_${formatTipe.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        // Fallback lokal SheetJS di frontend
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(selectedRows.map((r, i) => ({
+          No: i + 1,
+          Nama: r.nama,
+          Kelas: r.kelas || r.statusKepegawaian || "-",
+          NISN: r.nisn || "-",
+          NIK: r.nik || "-",
+          Usia: r.usiaLabel || "-",
+          Cabang: r.bidangCabang || "-",
+        })));
+        XLSX.utils.book_append_sheet(wb, ws, "Delegasi");
+        XLSX.writeFile(wb, `Delegasi_MMA_${formatTipe}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      }
+      setMsg(`Berhasil mengekspor ${selectedRows.length} data dengan format ${formatTipe.toUpperCase()}.`);
+    } catch (e) {
+      setErr(e.message || "Gagal mengekspor Excel.");
+    }
+  };
+
+  // Simpan Agenda Event Lomba / Bantuan
+  const handleSimpanEvent = async (e) => {
+    e?.preventDefault();
+    if (!selectedRows.length) {
+      alert("Pilih minimal satu peserta untuk dimasukkan ke agenda ini.");
+      return;
+    }
+    setSavingEvent(true);
+    setErr("");
+    try {
+      const pesertaPayload = selectedRows.map((r) => ({
+        tipeSubjek: subjekTipe,
+        subjekId: r.id,
+        peran: r.peran || "Peserta",
+        bidangCabang: r.bidangCabang || "",
+      }));
+
+      // Tambahkan guru pendamping jika ada
+      for (const gId of pendampingGuruIds) {
+        pesertaPayload.push({
+          tipeSubjek: "guru",
+          subjekId: gId,
+          peran: "Pendamping / Official",
+          bidangCabang: "Official Kontingen",
+        });
+      }
+
+      await backendApi("/sekretariat/delegasi-bantuan/events", {
+        method: "POST",
+        token: backendToken,
+        body: {
+          ...eventForm,
+          pesertaList: pesertaPayload,
+        },
+      });
+
+      setMsg(`Agenda "${eventForm.namaEvent}" berhasil disimpan ke arsip resmi pondok.`);
+      setModalEventOpen(false);
+      muatAgendaEvents();
+    } catch (e) {
+      setErr(e.message || "Gagal menyimpan agenda event.");
+    } finally {
+      setSavingEvent(false);
+    }
+  };
+
+  // Hapus Agenda Event
+  const handleHapusEvent = async (eventId, nama) => {
+    if (!window.confirm(`Hapus agenda event "${nama}" dari arsip?`)) return;
+    try {
+      await backendApi(`/sekretariat/delegasi-bantuan/events/${eventId}`, {
+        method: "DELETE",
+        token: backendToken,
+      });
+      setMsg(`Agenda "${nama}" berhasil dihapus.`);
+      muatAgendaEvents();
+    } catch (e) {
+      setErr(e.message || "Gagal menghapus event.");
+    }
+  };
+
+  // Lihat Detail Event
+  const bukaDetailEvent = async (eventId) => {
+    try {
+      const detail = await backendApi(`/sekretariat/delegasi-bantuan/events/${eventId}`, {
+        token: backendToken,
+      });
+      setDetailEventModal(detail);
+    } catch (e) {
+      alert("Gagal memuat rincian event: " + e.message);
+    }
+  };
+
+  // Trigger Print Dokumen
+  const triggerCetakDokumen = (tipe) => {
+    if (!selectedRows.length) {
+      alert("Pilih minimal satu santri/asatidz untuk dicetak berkasnya.");
+      return;
+    }
+    setCetakTipe(tipe);
+    setModalCetakOpen(true);
+  };
+
+  const eksekusiPrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* HEADER UTAMA MODUL */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#CFE3F0] shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#0C4A6E] to-[#0284C7] text-white flex items-center justify-center shadow-md">
+            <Award size={20} />
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">
+              Pusat Data Delegasi Lomba & Advokasi Bantuan
+            </h2>
+            <p className="text-xs text-[#64748B]">
+              Seleksi cepat santri & asatidz untuk kebutuhan perlombaan, bantuan PIP, BAZNAS, dan beasiswa.
+            </p>
+          </div>
+        </div>
+
+        {/* TAB SUBMODE NAV */}
+        <div className="flex items-center gap-1.5 p-1 bg-[#F1F5F9] rounded-xl border border-[#E2E8F0] text-xs font-semibold">
+          <button
+            onClick={() => setSubTab("seleksi")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              subTab === "seleksi" ? "bg-white text-[#0C4A6E] shadow-sm font-bold" : "text-[#64748B] hover:text-[#0F172A]"
+            }`}
+          >
+            🎯 Seleksi & Ekspor Cepat
+          </button>
+          <button
+            onClick={() => setSubTab("agenda")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              subTab === "agenda" ? "bg-white text-[#0C4A6E] shadow-sm font-bold" : "text-[#64748B] hover:text-[#0F172A]"
+            }`}
+          >
+            📅 Arsip Agenda Lomba & Bantuan ({eventList.length})
+          </button>
+        </div>
+      </div>
+
+      {msg && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center justify-between">
+          <span>{msg}</span>
+          <button onClick={() => setMsg("")} className="text-emerald-600 hover:text-emerald-900"><X size={14} /></button>
+        </div>
+      )}
+
+      {err && (
+        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center justify-between">
+          <span>{err}</span>
+          <button onClick={() => setErr("")} className="text-rose-600 hover:text-rose-900"><X size={14} /></button>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUBTAB 1: SELEKSI & EKSPOR CEPAT                                          */}
+      {/* ========================================================================= */}
+      {subTab === "seleksi" && (
+        <div className="space-y-4">
+          {/* BAR PRESET 1-KLIK */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] space-y-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#0C4A6E] block">
+              ⚡ 1-Click Preset Kebutuhan Instan:
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+              <button
+                onClick={() => terapkanPreset("lomba")}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  preset === "lomba"
+                    ? "bg-[#EAF4FB] border-[#0284C7] shadow-sm text-[#0C4A6E] font-bold"
+                    : "bg-[#F8FAFC] border-[#E2E8F0] hover:bg-white text-[#475569]"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold mb-0.5">
+                  <Award size={14} className="text-amber-500" />
+                  <span>Delegasi Lomba</span>
+                </div>
+                <p className="text-[10px] text-[#64748B] line-clamp-1">Filter usia & juz tahfidz</p>
+              </button>
+
+              <button
+                onClick={() => terapkanPreset("pip")}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  preset === "pip"
+                    ? "bg-[#EAF4FB] border-[#0284C7] shadow-sm text-[#0C4A6E] font-bold"
+                    : "bg-[#F8FAFC] border-[#E2E8F0] hover:bg-white text-[#475569]"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold mb-0.5">
+                  <Landmark size={14} className="text-emerald-600" />
+                  <span>PIP / Kemenag</span>
+                </div>
+                <p className="text-[10px] text-[#64748B] line-clamp-1">Format EMIS & rekening</p>
+              </button>
+
+              <button
+                onClick={() => terapkanPreset("baznas")}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  preset === "baznas"
+                    ? "bg-[#EAF4FB] border-[#0284C7] shadow-sm text-[#0C4A6E] font-bold"
+                    : "bg-[#F8FAFC] border-[#E2E8F0] hover:bg-white text-[#475569]"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold mb-0.5">
+                  <Users size={14} className="text-indigo-600" />
+                  <span>BAZNAS & Dhuafa</span>
+                </div>
+                <p className="text-[10px] text-[#64748B] line-clamp-1">Kategori Yatim & ekonomi</p>
+              </button>
+
+              <button
+                onClick={() => terapkanPreset("guru")}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  preset === "guru"
+                    ? "bg-[#EAF4FB] border-[#0284C7] shadow-sm text-[#0C4A6E] font-bold"
+                    : "bg-[#F8FAFC] border-[#E2E8F0] hover:bg-white text-[#475569]"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold mb-0.5">
+                  <GraduationCap size={14} className="text-sky-600" />
+                  <span>Bantuan Asatidz</span>
+                </div>
+                <p className="text-[10px] text-[#64748B] line-clamp-1">BSU, NUPTK & sertifikasi</p>
+              </button>
+
+              <button
+                onClick={() => terapkanPreset("kustom")}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  preset === "kustom"
+                    ? "bg-[#EAF4FB] border-[#0284C7] shadow-sm text-[#0C4A6E] font-bold"
+                    : "bg-[#F8FAFC] border-[#E2E8F0] hover:bg-white text-[#475569]"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold mb-0.5">
+                  <Filter size={14} className="text-slate-600" />
+                  <span>Filter Kustom</span>
+                </div>
+                <p className="text-[10px] text-[#64748B] line-clamp-1">Bebas pilih kriteria</p>
+              </button>
+            </div>
+          </div>
+
+          {/* FILTER BAR CERDAS */}
+          <ArchCard
+            title="Kriteria Seleksi & Filter Cerdas"
+            eyebrow="Tentukan parameter usia, prestasi hafalan, atau status sosioekonomi"
+            icon={Filter}
+            tone="brand"
+          >
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Target Subjek</label>
+                  <select
+                    value={subjekTipe}
+                    onChange={(e) => setSubjekTipe(e.target.value)}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-bold text-[#0C4A6E]"
+                  >
+                    <option value="santri">Santri Pondok</option>
+                    <option value="guru">Ustadz / Asatidz</option>
+                  </select>
+                </div>
+
+                {subjekTipe === "santri" ? (
+                  <>
+                    <div>
+                      <label className="font-semibold text-[#475569] block mb-1">Kelas Rombel</label>
+                      <select
+                        value={filterKelas}
+                        onChange={(e) => setFilterKelas(e.target.value)}
+                        className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                      >
+                        <option value="Semua">Semua Kelas</option>
+                        {(data.kelas || []).map((k) => (
+                          <option key={k} value={k}>{k}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-[#475569] block mb-1">Usia Maksimal</label>
+                      <input
+                        type="number"
+                        placeholder="mis. 15"
+                        value={filterUsiaMaks}
+                        onChange={(e) => setFilterUsiaMaks(e.target.value)}
+                        className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-[#475569] block mb-1">Min. Hafalan (Juz)</label>
+                      <select
+                        value={filterHafalanMin}
+                        onChange={(e) => setFilterHafalanMin(e.target.value)}
+                        className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                      >
+                        <option value="">Semua Capaian</option>
+                        <option value="1">Minimal 1 Juz</option>
+                        <option value="3">Minimal 3 Juz</option>
+                        <option value="5">Minimal 5 Juz</option>
+                        <option value="10">Minimal 10 Juz</option>
+                        <option value="20">Minimal 20 Juz</option>
+                        <option value="30">Khatam 30 Juz</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-[#475569] block mb-1">Status Orang Tua</label>
+                      <select
+                        value={filterStatusYatim}
+                        onChange={(e) => setFilterStatusYatim(e.target.value)}
+                        className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                      >
+                        <option value="Semua">Semua Status</option>
+                        <option value="Lengkap">Orang Tua Lengkap</option>
+                        <option value="Yatim">Yatim (Ayah Wafat)</option>
+                        <option value="Piatu">Piatu (Ibu Wafat)</option>
+                        <option value="Yatim Piatu">Yatim Piatu</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-[#475569] block mb-1">Patokan Tanggal Lomba</label>
+                      <input
+                        type="date"
+                        value={patokanTanggal}
+                        onChange={(e) => setPatokanTanggal(e.target.value)}
+                        className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1 bg-white text-xs"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <label className="font-semibold text-[#475569] block mb-1">Status Kepegawaian</label>
+                    <select
+                      value={filterStatusGuru}
+                      onChange={(e) => setFilterStatusGuru(e.target.value)}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                    >
+                      <option value="Semua">Semua Status</option>
+                      <option value="Tetap">Guru Tetap</option>
+                      <option value="Pengabdian">Pengabdian</option>
+                      <option value="Honorer">Honorer</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* BAR CHECKBOX & SEARCH */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E2E8F0]">
+                <div className="flex flex-wrap items-center gap-4">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hanyaNikValid}
+                      onChange={(e) => setHanyaNikValid(e.target.checked)}
+                      className="rounded border-[#CFE3F0] text-[#0C4A6E]"
+                    />
+                    <span className="font-semibold text-[#0F172A]">Hanya NIK Valid (16 Digit)</span>
+                  </label>
+
+                  {subjekTipe === "santri" && (
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hanyaAdaFoto}
+                        onChange={(e) => setHanyaAdaFoto(e.target.checked)}
+                        className="rounded border-[#CFE3F0] text-[#0C4A6E]"
+                      />
+                      <span className="font-semibold text-[#0F172A]">Hanya yang Memiliki Foto</span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-2.5 top-2.5 text-[#94A3B8]" />
+                    <input
+                      type="text"
+                      placeholder="Cari nama, NISN, NIK..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && muatDataSeleksi()}
+                      className="pl-8 pr-3 py-1.5 border border-[#CFE3F0] rounded-xl text-xs bg-white w-48 sm:w-64"
+                    />
+                  </div>
+                  <button
+                    onClick={muatDataSeleksi}
+                    className="btn-gradient px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1"
+                  >
+                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Terapkan
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ArchCard>
+
+          {/* TABEL HASIL SELEKSI & AKSI CEPAT */}
+          <ArchCard
+            title={`Hasil Seleksi: ${activeRows.length} ${subjekTipe === "santri" ? "Santri" : "Asatidz"} Ditemukan`}
+            eyebrow={`${selectedIds.length} Data Dipilih untuk Tindakan Kolektif`}
+            icon={Users}
+            tone="brand"
+          >
+            <div className="space-y-3">
+              {/* HEADER AKSI SELEKSI */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#E2E8F0] text-xs">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={togglePilihSemua}
+                    className="px-3 py-1 rounded-xl border border-[#CFE3F0] bg-white text-[#0C4A6E] font-bold hover:bg-[#F8FAFC]"
+                  >
+                    {selectedIds.length === activeRows.length && activeRows.length > 0 ? "Batal Pilih Semua" : "Pilih Semua Data"}
+                  </button>
+                  <span className="text-[#64748B]">
+                    Terpilih: <b>{selectedIds.length}</b> dari {activeRows.length}
+                  </span>
+                </div>
+
+                {/* TOMBOL AKSI KOLEKTIF */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    onClick={() => handleEksporExcel("lomba")}
+                    title="Unduh Excel format kontingen & panitia perlombaan"
+                    className="px-2.5 py-1.5 bg-[#EAF4FB] hover:bg-[#DCEDF7] text-[#0C4A6E] rounded-xl font-bold flex items-center gap-1 border border-[#CFE3F0]"
+                  >
+                    <Download size={13} /> Excel Lomba
+                  </button>
+
+                  <button
+                    onClick={() => handleEksporExcel(subjekTipe === "guru" ? "guru" : "pip")}
+                    title="Unduh Excel format PIP / Kemenag / BSU"
+                    className="px-2.5 py-1.5 bg-[#EAF4FB] hover:bg-[#DCEDF7] text-[#0C4A6E] rounded-xl font-bold flex items-center gap-1 border border-[#CFE3F0]"
+                  >
+                    <Landmark size={13} /> Excel {subjekTipe === "guru" ? "BSU" : "PIP"}
+                  </button>
+
+                  <button
+                    onClick={() => handleEksporExcel("baznas")}
+                    title="Unduh Excel format BAZNAS / Dhuafa"
+                    className="px-2.5 py-1.5 bg-[#EAF4FB] hover:bg-[#DCEDF7] text-[#0C4A6E] rounded-xl font-bold flex items-center gap-1 border border-[#CFE3F0]"
+                  >
+                    <Users size={13} /> Excel BAZNAS
+                  </button>
+
+                  <button
+                    onClick={() => triggerCetakDokumen("surat-tugas")}
+                    className="px-3 py-1.5 btn-gradient text-white rounded-xl font-bold flex items-center gap-1 shadow-sm"
+                  >
+                    <Printer size={13} /> Surat Tugas Resmi
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setEventForm({
+                        namaEvent: "",
+                        penyelenggara: "",
+                        kategori: preset === "lomba" ? "Lomba" : "Bantuan",
+                        tanggalPelaksanaan: new Date().toISOString().slice(0, 10),
+                        tahunAjaran: "2026/2027",
+                        status: "Diajukan",
+                        keterangan: "",
+                      });
+                      setModalEventOpen(true);
+                    }}
+                    className="px-3 py-1.5 bg-[#0C4A6E] hover:bg-[#07334d] text-white rounded-xl font-bold flex items-center gap-1 shadow-sm"
+                  >
+                    <Award size={13} /> Simpan ke Agenda
+                  </button>
+                </div>
+              </div>
+
+              {/* TABEL DATA HASIL FILTER */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                      <th className="py-2.5 px-3 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.length === activeRows.length && activeRows.length > 0}
+                          onChange={togglePilihSemua}
+                          className="rounded border-[#CFE3F0] text-[#0C4A6E]"
+                        />
+                      </th>
+                      <th className="py-2.5 px-3">Nama & Identitas</th>
+                      <th className="py-2.5 px-3">Kelas / Jabatan</th>
+                      <th className="py-2.5 px-3">Usia & TTL</th>
+                      {subjekTipe === "santri" && <th className="py-2.5 px-3">Tahfidz</th>}
+                      <th className="py-2.5 px-3">Status NIK</th>
+                      {subjekTipe === "santri" && <th className="py-2.5 px-3">Status Ortu</th>}
+                      <th className="py-2.5 px-3">Cabang / Catatan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F1F5F9]">
+                    {!activeRows.length ? (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-[#94A3B8]">
+                          Tidak ada data yang cocok dengan kriteria filter saat ini.
+                        </td>
+                      </tr>
+                    ) : (
+                      activeRows.map((r) => {
+                        const isSelected = selectedIds.includes(r.id);
+                        return (
+                          <tr
+                            key={r.id}
+                            className={`hover:bg-[#F8FAFC] transition-colors ${
+                              isSelected ? "bg-[#F0F7FD]" : ""
+                            }`}
+                          >
+                            <td className="py-2.5 px-3 text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => togglePilihSatu(r.id)}
+                                className="rounded border-[#CFE3F0] text-[#0C4A6E]"
+                              />
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-2.5">
+                                {r.foto ? (
+                                  <img
+                                    src={r.foto}
+                                    alt={r.nama}
+                                    className="w-8 h-8 rounded-full object-cover border border-[#CFE3F0]"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-[#EAF4FB] text-[#0C4A6E] flex items-center justify-center font-bold text-xs shrink-0">
+                                    {(r.nama || "U").charAt(0)}
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-bold text-[#0F172A]">{r.nama}</p>
+                                  <p className="text-[10px] text-[#64748B] font-mono">
+                                    {r.nisn ? `NISN: ${r.nisn}` : (r.nip ? `NIP: ${r.nip}` : (r.nis ? `NIS: ${r.nis}` : ""))}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="font-semibold text-[#0C4A6E] font-mono">
+                                {r.kelas || r.statusKepegawaian || "-"}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="font-semibold text-[#0F172A] block">{r.usiaLabel || "-"}</span>
+                              <span className="text-[10px] text-[#64748B] block truncate max-w-[120px]">
+                                {r.tempatLahir ? `${r.tempatLahir}, ` : ""}{r.tanggalLahir || "-"}
+                              </span>
+                            </td>
+                            {subjekTipe === "santri" && (
+                              <td className="py-2.5 px-3">
+                                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  {r.totalJuzHafalan || 0} Juz
+                                </span>
+                              </td>
+                            )}
+                            <td className="py-2.5 px-3">
+                              {r.isNikValid ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                  <Check size={10} /> 16 Digit
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200" title={r.nik || "Kosong"}>
+                                  <AlertCircle size={10} /> Belum Valid
+                                </span>
+                              )}
+                              <span className="block text-[10px] font-mono text-[#64748B] mt-0.5">
+                                {r.nik ? `${String(r.nik).slice(0, 6)}...` : "-"}
+                              </span>
+                            </td>
+                            {subjekTipe === "santri" && (
+                              <td className="py-2.5 px-3">
+                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  (r.statusYatim || "").toLowerCase().includes("yatim")
+                                    ? "bg-purple-100 text-purple-800"
+                                    : "bg-slate-100 text-slate-700"
+                                }`}>
+                                  {r.statusYatim || "Lengkap"}
+                                </span>
+                              </td>
+                            )}
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="text"
+                                placeholder={subjekTipe === "santri" ? "mis. Tahfidz 5 Juz" : "mis. Official"}
+                                value={pesertaCabangMap[r.id] || ""}
+                                onChange={(e) => {
+                                  setPesertaCabangMap({ ...pesertaCabangMap, [r.id]: e.target.value });
+                                }}
+                                className="w-full border border-[#CFE3F0] rounded-lg px-2 py-1 text-[11px] bg-white"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </ArchCard>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUBTAB 2: ARSIP AGENDA LOMBA & BANTUAN                                    */}
+      {/* ========================================================================= */}
+      {subTab === "agenda" && (
+        <ArchCard
+          title="Arsip Riwayat Agenda Perlombaan & Bantuan Pondok"
+          eyebrow="Rekam jejak partisipasi lomba, prestasi, dan program bantuan yang telah diajukan"
+          icon={Archive}
+          tone="gold"
+        >
+          <div className="space-y-3">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                    <th className="py-2.5 px-3">Kategori</th>
+                    <th className="py-2.5 px-3">Nama Agenda / Event</th>
+                    <th className="py-2.5 px-3">Penyelenggara</th>
+                    <th className="py-2.5 px-3">Pelaksanaan</th>
+                    <th className="py-2.5 px-3">Total Peserta</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F1F5F9]">
+                  {!eventList.length ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-[#94A3B8]">
+                        Belum ada arsip agenda lomba atau bantuan yang disimpan.
+                      </td>
+                    </tr>
+                  ) : (
+                    eventList.map((ev) => (
+                      <tr key={ev.id} className="hover:bg-[#F8FAFC]">
+                        <td className="py-2.5 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            ev.kategori === "Lomba" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
+                          }`}>
+                            {ev.kategori}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <p className="font-bold text-[#0F172A]">{ev.namaEvent}</p>
+                          {ev.keterangan && <p className="text-[10px] text-[#64748B] truncate max-w-[200px]">{ev.keterangan}</p>}
+                        </td>
+                        <td className="py-2.5 px-3 font-semibold text-[#475569]">{ev.penyelenggara}</td>
+                        <td className="py-2.5 px-3 text-[#64748B]">{ev.tanggalPelaksanaan || "-"}</td>
+                        <td className="py-2.5 px-3 font-bold text-[#0C4A6E]">
+                          {ev.totalPeserta} Peserta ({ev.totalSantri || 0} Santri, {ev.totalGuru || 0} Guru)
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF4FB] text-[#0C4A6E]">
+                            {ev.status || "Aktif"}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => bukaDetailEvent(ev.id)}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#F1F5F9] text-[#0C4A6E] hover:bg-[#E2E8F0]"
+                            >
+                              Lihat Rincian
+                            </button>
+                            <button
+                              onClick={() => handleHapusEvent(ev.id, ev.namaEvent)}
+                              className="p-1 rounded-lg text-rose-600 hover:bg-rose-50"
+                              title="Hapus"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ArchCard>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL SIMPAN AGENDA EVENT KE ARSIP RESMI                                  */}
+      {/* ========================================================================= */}
+      {modalEventOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-[#CFE3F0] animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAF4FB] mb-3">
+              <div>
+                <h3 className="font-bold text-sm text-[#0F172A]">Simpan Agenda Lomba / Bantuan</h3>
+                <p className="text-[11px] text-[#64748B]">
+                  Menyimpan {selectedRows.length} peserta terpilih ke dalam arsip event pondok
+                </p>
+              </div>
+              <button onClick={() => setModalEventOpen(false)} className="text-[#94A3B8] hover:text-[#0F172A]"><X size={16} /></button>
+            </div>
+
+            <form onSubmit={handleSimpanEvent} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Kategori Agenda</label>
+                  <select
+                    value={eventForm.kategori}
+                    onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                  >
+                    <option value="Lomba">Perlombaan / Musabaqoh</option>
+                    <option value="Bantuan">Program Bantuan / Beasiswa</option>
+                    <option value="Lainnya">Kegiatan Lainnya</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Tahun Ajaran</label>
+                  <input
+                    type="text"
+                    value={eventForm.tahunAjaran}
+                    onChange={(e) => setEventForm({ ...eventForm, tahunAjaran: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Nama Agenda / Event</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="mis. MTQ Kabupaten Ciamis 2026 / Bantuan PIP Tahap 1"
+                  value={eventForm.namaEvent}
+                  onChange={(e) => setEventForm({ ...eventForm, namaEvent: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-semibold text-[#0C4A6E]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Penyelenggara / Instansi</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="mis. LPTQ Jawa Barat / Kemenag"
+                    value={eventForm.penyelenggara}
+                    onChange={(e) => setEventForm({ ...eventForm, penyelenggara: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Tanggal Pelaksanaan</label>
+                  <input
+                    type="date"
+                    value={eventForm.tanggalPelaksanaan}
+                    onChange={(e) => setEventForm({ ...eventForm, tanggalPelaksanaan: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                  />
+                </div>
+              </div>
+
+              {eventForm.kategori === "Lomba" && (
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Pilih Ustadz Pendamping (Official)</label>
+                  <select
+                    multiple
+                    value={pendampingGuruIds}
+                    onChange={(e) => {
+                      const vals = Array.from(e.target.selectedOptions, (op) => op.value);
+                      setPendampingGuruIds(vals);
+                    }}
+                    className="w-full border border-[#CFE3F0] rounded-xl p-2 bg-white text-xs h-20"
+                  >
+                    {(data.guru || []).map((g) => (
+                      <option key={g.id} value={g.id}>{g.nama} ({g.departemen})</option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-[#64748B] mt-0.5">Tahan tombol Ctrl (Windows) untuk memilih lebih dari satu ustadz.</p>
+                </div>
+              )}
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Catatan / Keterangan Tambahan</label>
+                <textarea
+                  rows={2}
+                  placeholder="mis. Berkas fisik diserahkan paling lambat 15 November 2026."
+                  value={eventForm.keterangan}
+                  onChange={(e) => setEventForm({ ...eventForm, keterangan: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-1.5 bg-white font-medium"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#EAF4FB] flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalEventOpen(false)}
+                  className="px-3 py-1.5 rounded-xl text-xs text-[#64748B]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEvent}
+                  className="btn-gradient px-4 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1"
+                >
+                  {savingEvent && <Loader2 size={13} className="animate-spin" />} Simpan Agenda
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL DETAIL PESERTA EVENT                                                */}
+      {/* ========================================================================= */}
+      {detailEventModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-5 shadow-2xl border border-[#CFE3F0] max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAF4FB] mb-3 shrink-0">
+              <div>
+                <h3 className="font-bold text-sm text-[#0F172A]">{detailEventModal.namaEvent}</h3>
+                <p className="text-[11px] text-[#64748B]">
+                  Penyelenggara: {detailEventModal.penyelenggara} · Kategori: {detailEventModal.kategori}
+                </p>
+              </div>
+              <button onClick={() => setDetailEventModal(null)} className="text-[#94A3B8] hover:text-[#0F172A]"><X size={16} /></button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 pr-1 text-xs space-y-2">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] border-b border-[#E2E8F0]">
+                    <th className="py-2 px-3">No</th>
+                    <th className="py-2 px-3">Nama</th>
+                    <th className="py-2 px-3">Tipe</th>
+                    <th className="py-2 px-3">Peran / Cabang</th>
+                    <th className="py-2 px-3">Kontak / NIK</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F1F5F9]">
+                  {(detailEventModal.peserta || []).map((p, idx) => (
+                    <tr key={p.id}>
+                      <td className="py-2 px-3">{idx + 1}</td>
+                      <td className="py-2 px-3 font-bold text-[#0F172A]">{p.namaSubjek}</td>
+                      <td className="py-2 px-3 capitalize">{p.tipeSubjek}</td>
+                      <td className="py-2 px-3">{p.bidangCabang || p.peran}</td>
+                      <td className="py-2 px-3 font-mono text-[10px]">{p.nik || p.noHp || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="pt-3 border-t border-[#EAF4FB] flex justify-end shrink-0">
+              <button
+                onClick={() => setDetailEventModal(null)}
+                className="btn-gradient px-4 py-1.5 rounded-xl text-xs font-semibold"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL CETAK SURAT TUGAS / BERKAS RESMI (PRINT VIEW)                       */}
+      {/* ========================================================================= */}
+      {modalCetakOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-[#CFE3F0] max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200 mb-4 shrink-0">
+              <div className="flex items-center gap-2">
+                <Printer size={18} className="text-[#0C4A6E]" />
+                <h3 className="font-bold text-sm text-[#0F172A]">Pratinjau Surat Tugas & Mandat Kontingen</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={eksekusiPrint}
+                  className="btn-gradient text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md"
+                >
+                  <Printer size={14} /> Cetak / Simpan PDF
+                </button>
+                <button onClick={() => setModalCetakOpen(false)} className="text-[#94A3B8] hover:text-[#0F172A] p-1"><X size={16} /></button>
+              </div>
+            </div>
+
+            {/* DOKUMEN CETAK RESMI BERKOP */}
+            <div className="overflow-y-auto flex-1 p-6 border border-gray-200 rounded-xl bg-white text-black font-serif print:border-none print:p-0">
+              {/* KOP RESMI MMA */}
+              <div className="border-b-2 border-black pb-3 mb-4 text-center">
+                <h2 className="text-lg font-bold tracking-wide uppercase">
+                  MA'HAD MUDAIYATUL ANWAR LI TAHFIDHIL QUR'AN
+                </h2>
+                <p className="text-xs tracking-wider uppercase font-semibold text-gray-700">
+                  YAYASAN MUDAIYATUL ANWAR · LEMBAGA PENDIDIKAN DAN PENGAJARAN AL-QUR'AN
+                </p>
+                <p className="text-[11px] text-gray-600 mt-0.5">
+                  Jl. Pesantren No. 12, Jawa Barat · Email: sekretariat@mudaiyatulanwar.ponpes.id
+                </p>
+              </div>
+
+              {/* JUDUL SURAT */}
+              <div className="text-center mb-5">
+                <h3 className="font-bold text-base uppercase tracking-wider underline">
+                  SURAT TUGAS & MANDAT KONTINGEN
+                </h3>
+                <p className="text-xs font-mono mt-0.5">
+                  Nomor: 014/MMA/ST-LOMBA/XI/{new Date().getFullYear()}
+                </p>
+              </div>
+
+              <div className="text-xs leading-relaxed space-y-3 font-sans">
+                <p>
+                  Yang bertanda tangan di bawah ini, Pimpinan Ma'had Mudaiyatul Anwar Li Tahfidhil Qur'an, dengan ini memberikan tugas dan mandat resmi kepada nama-nama santri dan ustadz pembimbing berikut:
+                </p>
+
+                <table className="w-full text-xs border border-black border-collapse text-left my-3 font-sans">
+                  <thead>
+                    <tr className="bg-gray-100 border-b border-black font-bold">
+                      <th className="border border-black p-1.5 w-8 text-center">No</th>
+                      <th className="border border-black p-1.5">Nama Lengkap</th>
+                      <th className="border border-black p-1.5">Kelas / Jabatan</th>
+                      <th className="border border-black p-1.5">NISN / NIK</th>
+                      <th className="border border-black p-1.5">Peran / Cabang</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedRows.map((r, idx) => (
+                      <tr key={r.id} className="border-b border-black">
+                        <td className="border border-black p-1.5 text-center">{idx + 1}</td>
+                        <td className="border border-black p-1.5 font-bold">{r.nama}</td>
+                        <td className="border border-black p-1.5">{r.kelas || r.statusKepegawaian || "-"}</td>
+                        <td className="border border-black p-1.5 font-mono">{r.nisn || r.nik || "-"}</td>
+                        <td className="border border-black p-1.5">{r.bidangCabang || r.peran}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <p>
+                  Untuk mengikuti serta mewakili Ma'had Mudaiyatul Anwar dalam kegiatan perlombaan / program resmi, serta menjaga akhlakul karimah dan nama baik pesantren selama kegiatan berlangsung.
+                </p>
+                <p>
+                  Demikian surat tugas ini dibuat untuk dapat dipergunakan sebagaimana mestinya dengan penuh rasa amanah dan tanggung jawab.
+                </p>
+              </div>
+
+              {/* TANDA TANGAN RESMI */}
+              <div className="mt-8 pt-4 grid grid-cols-2 text-xs text-center font-serif">
+                <div></div>
+                <div>
+                  <p className="text-gray-600">Ciamis, {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
+                  <p className="font-bold text-gray-900">Pimpinan Ma'had Mudaiyatul Anwar</p>
+                  <div className="h-16" />
+                  <p className="font-bold underline text-black">Ust. Abdul Basit, S.H.I., M.Pd.</p>
+                  <p className="text-[11px] text-gray-600">Pimpinan Pondok Pesantren</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- DEPARTEMEN GURU (Pengasuhan/Pengajaran/LPTQ/Sekretariat Pondok) ----------
 
 const SCOPE_TABS = {
@@ -11468,6 +12713,7 @@ const SCOPE_TABS = {
   sekretariat: [
     { key: "santri", label: "Data Santri", icon: User },
     { key: "guru-pendidik", label: "Data Guru (Pendidik)", icon: GraduationCap },
+    { key: "delegasi-bantuan", label: "Delegasi Lomba & Bantuan", icon: Award },
     { key: "daftar-ulang", label: "Kenaikan & Daftar Ulang", icon: RefreshCw },
     { key: "alumni", label: "Data Alumni", icon: UserCheck },
     { key: "wali", label: "Data Wali", icon: Users },
@@ -17101,6 +18347,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 
       {tab === "guru-pendidik" && (
         <GuruPendidikManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
+      )}
+
+      {tab === "delegasi-bantuan" && (
+        <DelegasiBantuanManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} onPrint={onPrint} />
       )}
 
       {(tab === "mapel-kbm" || tab === "jadwal-kbm") && (

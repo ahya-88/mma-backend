@@ -7,6 +7,15 @@ const asyncHandler = require("../asyncHandler");
 const {
   semuaMasterGuru, getMasterGuru, tambahMasterGuru, ubahMasterGuru, hapusMasterGuru,
 } = require("../guruService");
+const {
+  ambilDataSeleksiSantri,
+  ambilDataSeleksiGuru,
+  ambilDaftarEvent,
+  ambilDetailEvent,
+  simpanEventDelegasi,
+  hapusEventDelegasi,
+  buatBufferExcelDelegasi,
+} = require("../delegasiBantuanService");
 
 // Helper konversi tanggal Masehi -> Hijriyah untuk penomoran surat otomatis
 const romawiBulan = (idx) => ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][idx];
@@ -569,6 +578,88 @@ router.delete("/guru-pendidik/:id", asyncHandler(async (req, res) => {
     targetType: "MasterGuru", targetId: req.params.id, ip: req.ip,
   });
   res.json(hasil);
+}));
+
+// ==================== MODUL DELEGASI LOMBA & ADVOKASI BANTUAN ====================
+
+// 19. GET /api/sekretariat/delegasi-bantuan/santri - Seleksi Santri dengan filter cerdas
+router.get("/delegasi-bantuan/santri", asyncHandler(async (req, res) => {
+  const data = await ambilDataSeleksiSantri(req.query);
+  res.json({ total: data.length, data });
+}));
+
+// 20. GET /api/sekretariat/delegasi-bantuan/guru - Seleksi Asatidz/Guru
+router.get("/delegasi-bantuan/guru", asyncHandler(async (req, res) => {
+  const data = await ambilDataSeleksiGuru(req.query);
+  res.json({ total: data.length, data });
+}));
+
+// 21. GET /api/sekretariat/delegasi-bantuan/events - Daftar Event/Agenda
+router.get("/delegasi-bantuan/events", asyncHandler(async (req, res) => {
+  const events = await ambilDaftarEvent();
+  res.json(events);
+}));
+
+// 22. GET /api/sekretariat/delegasi-bantuan/events/:id - Detail Event beserta Peserta
+router.get("/delegasi-bantuan/events/:id", asyncHandler(async (req, res) => {
+  const event = await ambilDetailEvent(req.params.id);
+  if (!event) return res.status(404).json({ error: "Event tidak ditemukan." });
+  res.json(event);
+}));
+
+// 23. POST /api/sekretariat/delegasi-bantuan/events - Buat atau Ubah Event
+router.post("/delegasi-bantuan/events", asyncHandler(async (req, res) => {
+  const aktorNama = req.user?.nama || "Staf Sekretariat";
+  const hasil = await simpanEventDelegasi(req.body, aktorNama);
+  await recordSensitiveAudit({
+    actorId: req.user?.id,
+    actorRole: req.user?.role,
+    action: req.body?.id ? "sekretariat.event_delegasi_updated" : "sekretariat.event_delegasi_created",
+    targetType: "EventDelegasiBantuan",
+    targetId: hasil.id,
+    ip: req.ip,
+    sesudah: { namaEvent: req.body.namaEvent, kategori: req.body.kategori },
+  });
+  res.status(req.body?.id ? 200 : 210).json(hasil);
+}));
+
+// 24. DELETE /api/sekretariat/delegasi-bantuan/events/:id - Hapus Event
+router.delete("/delegasi-bantuan/events/:id", asyncHandler(async (req, res) => {
+  const hasil = await hapusEventDelegasi(req.params.id);
+  await recordSensitiveAudit({
+    actorId: req.user?.id,
+    actorRole: req.user?.role,
+    action: "sekretariat.event_delegasi_deleted",
+    targetType: "EventDelegasiBantuan",
+    targetId: req.params.id,
+    ip: req.ip,
+  });
+  res.json(hasil);
+}));
+
+// 25. POST /api/sekretariat/delegasi-bantuan/ekspor-excel - Unduh Excel Terformat
+router.post("/delegasi-bantuan/ekspor-excel", asyncHandler(async (req, res) => {
+  const { formatTipe, dataRows, meta } = req.body;
+  if (!Array.isArray(dataRows) || !dataRows.length) {
+    return res.status(400).json({ error: "Data baris untuk diekspor kosong." });
+  }
+
+  const buffer = buatBufferExcelDelegasi({ formatTipe, dataRows, meta: meta || {} });
+
+  await recordSensitiveAudit({
+    actorId: req.user?.id,
+    actorRole: req.user?.role,
+    action: "sekretariat.delegasi_bantuan_exported_excel",
+    targetType: "ExcelExport",
+    targetId: formatTipe || "umum",
+    ip: req.ip,
+    sesudah: { formatTipe, jumlahBaris: dataRows.length },
+  });
+
+  const filename = `Delegasi_Bantuan_${formatTipe || "Data"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.send(buffer);
 }));
 
 module.exports = router;

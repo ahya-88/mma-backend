@@ -913,5 +913,51 @@ CREATE INDEX IF NOT EXISTS idx_jadwalkbm_hari_jam ON "JadwalKBM" ("hari", "jamKe
 CREATE INDEX IF NOT EXISTS idx_jadwalkbm_kelas ON "JadwalKBM" ("kelas");
 CREATE INDEX IF NOT EXISTS idx_jadwalkbm_guru ON "JadwalKBM" ("namaGuru");
 
+-- ==================== EKSTENSI DELEGASI LOMBA & ADVOKASI BANTUAN ====================
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "noKk" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "statusYatim" TEXT DEFAULT 'Lengkap';
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "pekerjaanAyah" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "pekerjaanIbu" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "penghasilanOrtuRange" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "noKip" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "noKks" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "namaBankBantuan" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "noRekeningBantuan" TEXT;
+ALTER TABLE "Santri" ADD COLUMN IF NOT EXISTS "atasNamaRekeningBantuan" TEXT;
+
+ALTER TABLE "MasterGuru" ADD COLUMN IF NOT EXISTS "noKk" TEXT;
+ALTER TABLE "MasterGuru" ADD COLUMN IF NOT EXISTS "namaBankBantuan" TEXT;
+ALTER TABLE "MasterGuru" ADD COLUMN IF NOT EXISTS "noRekeningBantuan" TEXT;
+ALTER TABLE "MasterGuru" ADD COLUMN IF NOT EXISTS "atasNamaRekeningBantuan" TEXT;
+ALTER TABLE "MasterGuru" ADD COLUMN IF NOT EXISTS "statusSertifikasi" TEXT DEFAULT 'Belum';
+
+CREATE TABLE IF NOT EXISTS "EventDelegasiBantuan" (
+  "id" TEXT PRIMARY KEY,
+  "kategori" TEXT NOT NULL CHECK ("kategori" IN ('Lomba', 'Bantuan', 'Lainnya')),
+  "namaEvent" TEXT NOT NULL,
+  "penyelenggara" TEXT NOT NULL,
+  "tanggalPelaksanaan" TEXT,
+  "tahunAjaran" TEXT NOT NULL DEFAULT '2026/2027',
+  "status" TEXT NOT NULL DEFAULT 'Draft',
+  "keterangan" TEXT,
+  "suratTugasId" TEXT,
+  "dibuatOleh" TEXT NOT NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+CREATE INDEX IF NOT EXISTS idx_event_delegasi_kategori ON "EventDelegasiBantuan" ("kategori");
+
+CREATE TABLE IF NOT EXISTS "PesertaDelegasiBantuan" (
+  "id" TEXT PRIMARY KEY,
+  "eventId" TEXT NOT NULL REFERENCES "EventDelegasiBantuan"("id") ON DELETE CASCADE,
+  "tipeSubjek" TEXT NOT NULL CHECK ("tipeSubjek" IN ('santri', 'guru')),
+  "subjekId" TEXT NOT NULL,
+  "peran" TEXT NOT NULL DEFAULT 'Peserta',
+  "bidangCabang" TEXT,
+  "nominalBantuan" BIGINT DEFAULT 0,
+  "prestasiHasil" TEXT,
+  "catatan" TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_peserta_delegasi_event ON "PesertaDelegasiBantuan" ("eventId");
+CREATE INDEX IF NOT EXISTS idx_peserta_delegasi_subjek ON "PesertaDelegasiBantuan" ("subjekId");
 
 
