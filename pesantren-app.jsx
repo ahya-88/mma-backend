@@ -12737,6 +12737,7 @@ const SCOPE_TABS = {
 function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToken, backendOnline }) {
   const tabs = SCOPE_TABS[scope];
   const [tab, setTab] = useState(tabs[0].key);
+  const [kelasFilter, setKelasFilter] = useState("Semua");
   const isSantriAktif = (s) => {
     const st = String(s?.statusSantri || "Aktif").trim().toLowerCase();
     return st === "aktif" || !st;
