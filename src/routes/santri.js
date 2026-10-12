@@ -264,6 +264,20 @@ router.post("/", requireAuth, asyncHandler(async (req, res) => {
   const limitVal = limitJajanHarian ? Number(limitJajanHarian) : null;
   const stambukVal = (noStambuk || nis || "").trim() || null;
 
+  let finalWaliId = waliId || null;
+  let createdWali = null;
+  if (!finalWaliId && body.waliBaru && body.waliBaru.nama) {
+    const { buatWali } = require("../adminService");
+    createdWali = await buatWali({
+      nama: body.waliBaru.nama,
+      hp: body.waliBaru.hp || body.noDarurat || "",
+      username: body.waliBaru.username,
+      password: body.waliBaru.password || "Santri123!",
+      actingUserId: req.user.id,
+    });
+    finalWaliId = createdWali.id;
+  }
+
   await withTransaction(async (client) => {
     if (stambukVal) {
       const adaNis = await client.query('SELECT "id" FROM "Santri" WHERE "nis" = $1 OR "noStambuk" = $1', [stambukVal]);
@@ -272,7 +286,7 @@ router.post("/", requireAuth, asyncHandler(async (req, res) => {
 
     const cols = ['"id"', '"nama"', '"kelas"', '"nis"', '"noStambuk"', '"nisn"', '"waliId"', '"limitJajanHarian"', '"saldo"'];
     const vals = ['$1', '$2', '$3', '$4', '$5', '$6', '$7', '$8', '0'];
-    const params = [id, nama.trim(), kelas ? kelas.trim() : null, stambukVal, stambukVal, nisn ? nisn.trim() : null, waliId || null, limitVal];
+    const params = [id, nama.trim(), kelas ? kelas.trim() : null, stambukVal, stambukVal, nisn ? nisn.trim() : null, finalWaliId, limitVal];
 
     for (const field of SANTRI_BIODATA_FIELDS) {
       if (field === "noStambuk") continue;
@@ -290,7 +304,44 @@ router.post("/", requireAuth, asyncHandler(async (req, res) => {
   });
 
   const newSantri = await getSantriRow(id);
-  res.status(201).json(await toPublicSantri(newSantri));
+  const respData = await toPublicSantri(newSantri);
+  if (createdWali) respData._waliBaru = createdWali;
+  res.status(201).json(respData);
+}));
+
+// POST /api/santri/:id/buat-wali - Buat akun wali langsung dari profil santri
+router.post("/:id/buat-wali", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedSantriManager(req)) {
+    return res.status(403).json({ error: "Hanya Sekretariat atau Superadmin yang dapat membuat akun wali." });
+  }
+
+  const santriId = req.params.id;
+  const santri = await getSantriRow(santriId);
+  if (!santri) throw new CashlessError(404, "Data santri tidak ditemukan.");
+
+  const { nama, hp, username, password } = req.body || {};
+  const namaWaliFinal = (nama || santri.namaAyah || santri.namaIbu || `Wali ${santri.nama}`).trim();
+  const hpFinal = (hp || santri.noDarurat || "").trim();
+  const defaultUsername = `wali.${santri.noStambuk || santri.nis || santri.id.slice(0, 8)}`.toLowerCase().replace(/[^a-z0-9._]/g, "");
+  const usernameFinal = (username ? String(username).trim() : defaultUsername).toLowerCase().replace(/[^a-z0-9._]/g, "");
+  const passwordFinal = (password ? String(password).trim() : "Santri123!");
+
+  const { buatWali } = require("../adminService");
+  const createdWali = await buatWali({
+    nama: namaWaliFinal,
+    hp: hpFinal,
+    username: usernameFinal,
+    password: passwordFinal,
+    santriId,
+    actingUserId: req.user.id,
+  });
+
+  const updatedSantri = await getSantriRow(santriId);
+  res.status(201).json({
+    ok: true,
+    wali: createdWali,
+    santri: await toPublicSantri(updatedSantri),
+  });
 }));
 
 // PUT /api/santri/:id - Update santri
@@ -358,8 +409,21 @@ router.post("/upsert", requireAuth, asyncHandler(async (req, res) => {
   const stambukVal = (body.noStambuk || body.nis || "").trim() || null;
   const nis = stambukVal;
   const nisn = body.nisn ? String(body.nisn).trim() : null;
-  const waliId = body.waliId ? String(body.waliId).trim() : null;
+  let waliId = body.waliId ? String(body.waliId).trim() : null;
   const limitVal = body.limitJajanHarian !== undefined && body.limitJajanHarian !== null ? Number(body.limitJajanHarian) : null;
+
+  let createdWaliObj = null;
+  if (!waliId && body.waliBaru && body.waliBaru.nama) {
+    const { buatWali } = require("../adminService");
+    createdWaliObj = await buatWali({
+      nama: String(body.waliBaru.nama).trim(),
+      hp: (body.waliBaru.hp || body.noDarurat || "").trim(),
+      username: body.waliBaru.username,
+      password: body.waliBaru.password || "Santri123!",
+      actingUserId: req.user.id,
+    });
+    waliId = createdWaliObj.id;
+  }
 
   await withTransaction(async (client) => {
     if (nis) {
@@ -408,7 +472,11 @@ router.post("/upsert", requireAuth, asyncHandler(async (req, res) => {
   });
 
   const updated = await getSantriRow(santriId);
-  res.json(await toPublicSantri(updated));
+  const result = await toPublicSantri(updated);
+  if (createdWaliObj) {
+    result._waliBaru = createdWaliObj;
+  }
+  res.json(result);
 }));
 
 // DELETE /api/santri/:id

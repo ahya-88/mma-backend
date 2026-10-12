@@ -145,8 +145,8 @@ router.post("/wali", requireAuth, asyncHandler(async (req, res) => {
   if (!isAuthorizedAdminOrSekretariat(req)) {
     return res.status(403).json({ error: "Hanya Superadmin atau Sekretariat yang dapat menambah akun wali." });
   }
-  const { nama, hp, username, password } = req.body || {};
-  res.status(201).json(await buatWali({ nama, hp, username, password, actingUserId: req.user.id }));
+  const { nama, hp, username, password, santriId, santriIds } = req.body || {};
+  res.status(201).json(await buatWali({ nama, hp, username, password, santriId, santriIds, actingUserId: req.user.id }));
 }));
 
 router.delete("/wali/:id", requireAuth, asyncHandler(async (req, res) => {

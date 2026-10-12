@@ -13743,11 +13743,36 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const [showSantriForm, setShowSantriForm] = useState(false);
   const [editingSantriId, setEditingSantriId] = useState(null);
   const [detailSantriId, setDetailSantriId] = useState(null);
-  const kosongSantriForm = { nama: "", kelas: data.kelas[0] || "", waliId: data.wali[0]?.id || "", nis: "", noStambuk: "", nik: "", nikAyah: "", nikIbu: "", angkatan: "", tahunMasuk: "", statusSantri: "Aktif", nisn: "", jenisKelamin: "Laki-laki", tempatLahir: "", tanggalLahir: "", alamat: "", asrama: "", golDarah: "", noDarurat: "", catatanKesehatan: "", halaqoh: "", foto: "", limitJajanHarian: "", namaAyah: "", namaIbu: "", asalSekolah: "", programPilihan: "", citaCita: "", pendidikanSD: "", tahunSD: "", pendidikanSMP: "", tahunSMP: "", pendidikanSMA: "", tahunSMA: "" };
+  const kosongSantriForm = { nama: "", kelas: data.kelas[0] || "", waliId: "", nis: "", noStambuk: "", nik: "", nikAyah: "", nikIbu: "", angkatan: "", tahunMasuk: "", statusSantri: "Aktif", nisn: "", jenisKelamin: "Laki-laki", tempatLahir: "", tanggalLahir: "", alamat: "", asrama: "", golDarah: "", noDarurat: "", catatanKesehatan: "", halaqoh: "", foto: "", limitJajanHarian: "", namaAyah: "", namaIbu: "", asalSekolah: "", programPilihan: "", citaCita: "", pendidikanSD: "", tahunSD: "", pendidikanSMP: "", tahunSMP: "", pendidikanSMA: "", tahunSMA: "" };
   const [santriForm, setSantriForm] = useState(kosongSantriForm);
-  const bukaTambahSantri = () => { setSantriForm(kosongSantriForm); setEditingSantriId(null); setShowSantriForm(true); };
-  const bukaEditSantri = (s) => { setSantriForm({ ...kosongSantriForm, ...s, noStambuk: s.noStambuk || s.nis || "", nis: s.noStambuk || s.nis || "" }); setEditingSantriId(s.id); setShowSantriForm(true); };
-  const batalFormSantri = () => { setShowSantriForm(false); setEditingSantriId(null); setSantriForm(kosongSantriForm); };
+  const [buatWaliBaruSantri, setBuatWaliBaruSantri] = useState(false);
+  const [waliBaruForm, setWaliBaruForm] = useState({ nama: "", hp: "", username: "", password: "Santri123!" });
+  const [modalBuatWaliSantri, setModalBuatWaliSantri] = useState(null);
+  const [modalBuatWaliData, setModalBuatWaliData] = useState({ nama: "", hp: "", username: "", password: "Santri123!" });
+  const [modalBuatWaliBusy, setModalBuatWaliBusy] = useState(false);
+  const [modalBuatWaliError, setModalBuatWaliError] = useState("");
+
+  const bukaTambahSantri = () => {
+    setSantriForm(kosongSantriForm);
+    setEditingSantriId(null);
+    setBuatWaliBaruSantri(false);
+    setWaliBaruForm({ nama: "", hp: "", username: "", password: "Santri123!" });
+    setShowSantriForm(true);
+  };
+  const bukaEditSantri = (s) => {
+    setSantriForm({ ...kosongSantriForm, ...s, noStambuk: s.noStambuk || s.nis || "", nis: s.noStambuk || s.nis || "" });
+    setEditingSantriId(s.id);
+    setBuatWaliBaruSantri(false);
+    setWaliBaruForm({ nama: "", hp: "", username: "", password: "Santri123!" });
+    setShowSantriForm(true);
+  };
+  const batalFormSantri = () => {
+    setShowSantriForm(false);
+    setEditingSantriId(null);
+    setBuatWaliBaruSantri(false);
+    setWaliBaruForm({ nama: "", hp: "", username: "", password: "Santri123!" });
+    setSantriForm(kosongSantriForm);
+  };
   const pilihFoto = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -13756,7 +13781,10 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     reader.readAsDataURL(file);
   };
   const simpanSantri = async () => {
-    if (!santriForm.nama || !santriForm.kelas || !santriForm.waliId) return;
+    if (!santriForm.nama || !santriForm.kelas) {
+      setSantriSaveError("Nama lengkap dan Kelas santri wajib diisi.");
+      return;
+    }
     setSantriSaveError("");
     if (!backendToken) { setSantriSaveError("Tidak terhubung ke server. Coba logout lalu login ulang."); return; }
     const id = editingSantriId || uid();
@@ -13766,10 +13794,18 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       : (existing?.riwayatKelas?.length ? existing.riwayatKelas : [{ kelas: santriForm.kelas, tanggal: todayStr() }]);
     const stambukVal = santriForm.noStambuk || santriForm.nis || "";
     const payload = {
-      id, nama: santriForm.nama, kelas: santriForm.kelas, nis: stambukVal, noStambuk: stambukVal, nik: santriForm.nik, nisn: santriForm.nisn, waliId: santriForm.waliId,
+      id, nama: santriForm.nama, kelas: santriForm.kelas, nis: stambukVal, noStambuk: stambukVal, nik: santriForm.nik, nisn: santriForm.nisn, waliId: santriForm.waliId || null,
       riwayatKelas,
       ...SANTRI_BIODATA_KEYS.reduce((acc, k) => { acc[k] = santriForm[k] || ""; return acc; }, {}),
     };
+    if (buatWaliBaruSantri && !santriForm.waliId) {
+      payload.waliBaru = {
+        nama: (waliBaruForm.nama || santriForm.namaAyah || santriForm.namaIbu || `Wali ${santriForm.nama}`).trim(),
+        hp: (waliBaruForm.hp || santriForm.noDarurat || "").trim(),
+        username: (waliBaruForm.username || `wali.${stambukVal || santriForm.nama.toLowerCase().replace(/[^a-z0-9]/g, "")}`).trim(),
+        password: waliBaruForm.password || "Santri123!",
+      };
+    }
     try {
       const saved = await backendApi("/santri/upsert", { method: "POST", token: backendToken, body: payload });
       setData((d) => {
@@ -13778,12 +13814,76 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         const merged = { ...(existing || {}), ...santriForm, ...saved };
         const ada = d.santri.some((s) => s.id === id);
         const nextSantri = ada ? d.santri.map((s) => (s.id === id ? merged : s)) : [...d.santri, merged];
-        try { localStorage.setItem("mma_cached_santri", JSON.stringify(nextSantri)); } catch {}
-        return { ...d, santri: nextSantri };
+        const nextWali = saved._waliBaru
+          ? [saved._waliBaru, ...(d.wali || []).filter((w) => w.id !== saved._waliBaru.id)]
+          : (d.wali || []);
+        try {
+          localStorage.setItem("mma_cached_santri", JSON.stringify(nextSantri));
+          if (saved._waliBaru) localStorage.setItem("mma_cached_wali", JSON.stringify(nextWali));
+        } catch {}
+        return { ...d, santri: nextSantri, wali: nextWali };
       });
       batalFormSantri();
       if (typeof muatSantriBiodata === "function") muatSantriBiodata();
     } catch (e) { setSantriSaveError(e.message); }
+  };
+
+  const bukaModalBuatWaliSantri = (santri) => {
+    if (!santri) return;
+    const defaultNama = (santri.namaAyah || santri.namaIbu || `Wali ${santri.nama}`).trim();
+    const defaultHp = (santri.noDarurat || "").trim();
+    const stambuk = santri.noStambuk || santri.nis || santri.id.slice(0, 6);
+    const defaultUsername = `wali.${stambuk}`.toLowerCase().replace(/[^a-z0-9._]/g, "");
+    setModalBuatWaliData({
+      nama: defaultNama,
+      hp: defaultHp,
+      username: defaultUsername,
+      password: "Santri123!",
+    });
+    setModalBuatWaliError("");
+    setModalBuatWaliSantri(santri);
+  };
+
+  const simpanModalBuatWaliSantri = async () => {
+    if (!modalBuatWaliSantri) return;
+    setModalBuatWaliError("");
+    if (!modalBuatWaliData.nama.trim()) {
+      setModalBuatWaliError("Nama wali santri wajib diisi.");
+      return;
+    }
+    if (!modalBuatWaliData.username.trim() || !modalBuatWaliData.password) {
+      setModalBuatWaliError("Username dan kata sandi wajib diisi.");
+      return;
+    }
+    if (!backendToken) {
+      setModalBuatWaliError("Tidak terhubung ke server. Silakan login ulang.");
+      return;
+    }
+    setModalBuatWaliBusy(true);
+    try {
+      const res = await backendApi(`/santri/${modalBuatWaliSantri.id}/buat-wali`, {
+        method: "POST",
+        token: backendToken,
+        body: modalBuatWaliData,
+      });
+      if (res && res.wali) {
+        setData((d) => {
+          const nextWali = [res.wali, ...(d.wali || []).filter((w) => w.id !== res.wali.id)];
+          const nextSantri = (d.santri || []).map((s) => (s.id === modalBuatWaliSantri.id ? { ...s, waliId: res.wali.id } : s));
+          try {
+            localStorage.setItem("mma_cached_wali", JSON.stringify(nextWali));
+            localStorage.setItem("mma_cached_santri", JSON.stringify(nextSantri));
+          } catch {}
+          return { ...d, wali: nextWali, santri: nextSantri };
+        });
+        setDetailSantriData((prev) => (prev ? { ...prev, waliId: res.wali.id } : null));
+        setModalBuatWaliSantri(null);
+      }
+    } catch (e) {
+      setModalBuatWaliError(e.message || "Gagal membuat akun wali santri.");
+    } finally {
+      setModalBuatWaliBusy(false);
+    }
   };
   const delSantri = async (id) => {
     setSantriSaveError("");
@@ -14364,7 +14464,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const tahunLulusTersedia = ["Semua", ...Array.from(new Set(gabunganAlumni.map((a) => a.tahunLulus))).sort().reverse()];
   const alumniTampil = filterTahunLulus === "Semua" ? gabunganAlumni : gabunganAlumni.filter((a) => a.tahunLulus === filterTahunLulus);
 
-  const [waliForm, setWaliForm] = useState({ nama: "", hp: "", username: "", password: "" });
+  const [waliForm, setWaliForm] = useState({ nama: "", hp: "", username: "", password: "", santriId: "" });
   const [editingWaliId, setEditingWaliId] = useState(null);
   const [waliFormError, setWaliFormError] = useState("");
   const [waliSuccessMsg, setWaliSuccessMsg] = useState("");
@@ -14426,18 +14526,23 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             hp: waliForm.hp.trim(),
             username: waliForm.username.trim(),
             password: waliForm.password,
+            santriId: waliForm.santriId || undefined,
           },
         });
         setData((d) => {
           const nextWali = [createdWali, ...d.wali.filter((w) => w.id !== createdWali.id)];
+          const nextSantri = waliForm.santriId
+            ? d.santri.map((s) => (s.id === waliForm.santriId ? { ...s, waliId: createdWali.id } : s))
+            : d.santri;
           try {
             localStorage.setItem("mma_cached_wali", JSON.stringify(nextWali));
+            if (waliForm.santriId) localStorage.setItem("mma_cached_santri", JSON.stringify(nextSantri));
           } catch {}
-          return { ...d, wali: nextWali };
+          return { ...d, wali: nextWali, santri: nextSantri };
         });
         setWaliSuccessMsg(`Akun wali "${createdWali.nama}" berhasil didaftarkan.`);
       }
-      setWaliForm({ nama: "", hp: "", username: "", password: "" });
+      setWaliForm({ nama: "", hp: "", username: "", password: "", santriId: "" });
       setEditingWaliId(null);
       if (typeof muatSantriBiodata === "function") muatSantriBiodata();
     } catch (err) {
@@ -14448,14 +14553,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
 
   const bukaEditWali = (w) => {
-    setWaliForm({ nama: w.nama, hp: w.hp, username: w.username, password: "" });
+    setWaliForm({ nama: w.nama, hp: w.hp, username: w.username, password: "", santriId: "" });
     setEditingWaliId(w.id);
     setWaliFormError("");
     setWaliSuccessMsg("");
   };
 
   const batalEditWali = () => {
-    setWaliForm({ nama: "", hp: "", username: "", password: "" });
+    setWaliForm({ nama: "", hp: "", username: "", password: "", santriId: "" });
     setEditingWaliId(null);
     setWaliFormError("");
     setWaliSuccessMsg("");

@@ -158,7 +158,7 @@ async function editPasswordWali({ id, password, actingUserId }) {
   });
 }
 
-async function buatWali({ nama, hp, username, password, actingUserId }) {
+async function buatWali({ nama, hp, username, password, santriId, santriIds, actingUserId }) {
   const { PASSWORD_MIN_LENGTH } = require("./passwordPolicy");
   const cleanNama = String(nama || "").trim();
   const cleanHp = hp ? String(hp).trim() : "";
@@ -187,13 +187,25 @@ async function buatWali({ nama, hp, username, password, actingUserId }) {
       [newId, cleanNama, cleanHp, cleanUsername, hash, nowUtc]
     );
 
+    const targets = [];
+    if (santriId) targets.push(santriId);
+    if (Array.isArray(santriIds)) targets.push(...santriIds);
+    const uniqueTargets = Array.from(new Set(targets.filter(Boolean)));
+    if (uniqueTargets.length > 0) {
+      await query('UPDATE "Santri" SET "waliId" = $1 WHERE "id" = ANY($2::text[])', [newId, uniqueTargets]);
+    }
+
     await catatAuditAdmin({
       aktorId: actingUserId,
       aksi: "admin.wali_created",
       targetId: newId,
       targetTipe: "Wali",
-      detail: { nama: cleanNama, username: cleanUsername, hp: cleanHp },
+      detail: { nama: cleanNama, username: cleanUsername, hp: cleanHp, santriTerkait: uniqueTargets },
     });
+
+    const santriList = uniqueTargets.length > 0
+      ? await queryAll('SELECT "id", "nama", "kelas", "nis" FROM "Santri" WHERE "id" = ANY($1::text[])', [uniqueTargets])
+      : [];
 
     return {
       id: newId,
@@ -202,7 +214,7 @@ async function buatWali({ nama, hp, username, password, actingUserId }) {
       username: cleanUsername,
       statusAkun: "Belum Aktivasi",
       createdAt: nowUtc,
-      santriList: [],
+      santriList,
     };
   });
 }
