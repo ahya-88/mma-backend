@@ -11715,8 +11715,12 @@ function DelegasiBantuanManagement({ backendToken, backendOnline, data, setData,
           Kelas: r.kelas || r.statusKepegawaian || "-",
           NISN: r.nisn || "-",
           NIK: r.nik || "-",
+          "Nama Ayah": r.namaAyah || r.waliNama || "-",
+          "Nama Ibu": r.namaIbu || "-",
+          "Nama Wali": r.waliNama || r.namaAyah || "-",
           Usia: r.usiaLabel || "-",
           Cabang: r.bidangCabang || "-",
+          "Kontak / No HP": r.waliHp || r.noHp || "-",
         })));
         XLSX.utils.book_append_sheet(wb, ws, "Delegasi");
         XLSX.writeFile(wb, `Delegasi_MMA_${formatTipe}_${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -12295,6 +12299,12 @@ function DelegasiBantuanManagement({ backendToken, backendOnline, data, setData,
                                 }`}>
                                   {r.statusYatim || "Lengkap"}
                                 </span>
+                                {(r.namaAyah || r.namaIbu) && (
+                                  <div className="text-[10px] text-[#64748B] mt-0.5 leading-tight">
+                                    <span className="block truncate max-w-[130px]" title={r.namaAyah || "-"}>Ayah: {r.namaAyah || "-"}</span>
+                                    <span className="block truncate max-w-[130px]" title={r.namaIbu || "-"}>Ibu: {r.namaIbu || "-"}</span>
+                                  </div>
+                                )}
                               </td>
                             )}
                             <td className="py-2.5 px-3">

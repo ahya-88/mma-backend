@@ -64,6 +64,8 @@ test("DELEGASI & BANTUAN: CRUD Event Delegasi dan Generator Excel", async () => 
       kelas: "7A",
       nisn: "0012345678",
       nik: "3207010101010001",
+      namaAyah: "H. Abdullah",
+      namaIbu: "Hj. Aminah",
       tempatLahir: "Ciamis",
       tanggalLahir: "2013-01-01",
       usiaLabel: "13 thn 0 bln",
@@ -79,6 +81,14 @@ test("DELEGASI & BANTUAN: CRUD Event Delegasi dan Generator Excel", async () => 
   });
   assert.ok(Buffer.isBuffer(excelBuffer));
   assert.ok(excelBuffer.length > 0);
+
+  // Verifikasi kolom Nama Ayah dan Nama Ibu ada di dalam sheet
+  const XLSX = require("xlsx");
+  const wb = XLSX.read(excelBuffer, { type: "buffer" });
+  const sheet = wb.Sheets["MTQ_2026"];
+  const rows = XLSX.utils.sheet_to_json(sheet);
+  assert.equal(rows[0]["Nama Ayah"], "H. Abdullah");
+  assert.equal(rows[0]["Nama Ibu"], "Hj. Aminah");
 
   // Hapus event uji coba
   const delRes = await hapusEventDelegasi(evRes.id);
