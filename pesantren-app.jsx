@@ -4595,6 +4595,10 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
   const [tahunAjaran, setTahunAjaran] = useState("2026/2027");
   const [semester, setSemester] = useState("Ganjil");
 
+  // State Daftar Kelas & Informasi Lokasi/Wali Dinamis mengikuti Master Kelas
+  const [daftarKelas, setDaftarKelas] = useState(() => (data?.kelas && data.kelas.length) ? data.kelas : KELAS_KBM_LIST);
+  const [kelasInfoMap, setKelasInfoMap] = useState(() => data?.kelasInfo || {});
+
   const [scheduleData, setScheduleData] = useState({
     slots: [],
     totalSlot: 0,
@@ -4609,6 +4613,16 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
   const [resetBusy, setResetBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+
+  // Sinkronisasi data kelas & kelasInfo bila prop data dari parent berubah
+  useEffect(() => {
+    if (data?.kelas && data.kelas.length) {
+      setDaftarKelas(data.kelas);
+    }
+    if (data?.kelasInfo && Object.keys(data.kelasInfo).length) {
+      setKelasInfoMap((prev) => ({ ...prev, ...data.kelasInfo }));
+    }
+  }, [data?.kelas, data?.kelasInfo]);
 
   // Modal State
   const [editModal, setEditModal] = useState(false);
@@ -4632,10 +4646,11 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
     setLoading(true);
     setErr("");
     try {
-      const [jadwalRes, guruRes, mapelRes] = await Promise.all([
+      const [jadwalRes, guruRes, mapelRes, kelasRes] = await Promise.all([
         backendApi(`/pengajaran/jadwal-kbm?tahunAjaran=${encodeURIComponent(tahunAjaran)}&semester=${encodeURIComponent(semester)}`, { token: backendToken }),
         backendApi("/pengajaran/guru-pendidik", { token: backendToken }).catch(() => []),
         backendApi("/pengajaran/mapel", { token: backendToken }).catch(() => []),
+        backendApi("/pengajaran/kelas", { token: backendToken }).catch(() => []),
       ]);
 
       if (jadwalRes && Array.isArray(jadwalRes.slots)) {
@@ -4645,6 +4660,27 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
       setListGuru(gList);
       if (!selectedGuru && gList.length) setSelectedGuru(gList[0].nama);
       setListMapel(Array.isArray(mapelRes) ? mapelRes : []);
+
+      if (Array.isArray(kelasRes) && kelasRes.length) {
+        const kList = kelasRes.map((r) => r.nama);
+        const info = {};
+        kelasRes.forEach((r) => {
+          info[r.nama] = {
+            waliKelasId: r.waliKelasId || null,
+            lokasiKelas: r.lokasiKelas || "",
+            namaWaliKelas: r.namaWaliKelas || "",
+          };
+        });
+        setDaftarKelas(kList);
+        setKelasInfoMap((prev) => ({ ...prev, ...info }));
+        if (typeof setData === "function") {
+          setData((d) => ({
+            ...d,
+            kelas: kList,
+            kelasInfo: { ...(d?.kelasInfo || {}), ...info },
+          }));
+        }
+      }
     } catch (e) {
       setErr(e.message || "Gagal memuat jadwal KBM.");
     } finally {
@@ -4655,6 +4691,26 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
   useEffect(() => {
     muatJadwal();
   }, [backendToken, tahunAjaran, semester]);
+
+  // Daftar Kelas 100% dinamis mengikuti Master Kelas
+  const allKelases = (daftarKelas && daftarKelas.length > 0)
+    ? daftarKelas
+    : ((data?.kelas && data.kelas.length > 0) ? data.kelas : KELAS_KBM_LIST);
+
+  // Pastikan selectedKelas valid jika daftar kelas berubah
+  useEffect(() => {
+    if (allKelases.length && !allKelases.includes(selectedKelas)) {
+      setSelectedKelas(allKelases[0]);
+    }
+  }, [allKelases, selectedKelas]);
+
+  // Helper Lokasi & Wali Kelas Dinamis dari Master Kelas
+  const getLokasiKelas = (k, slot) => {
+    return kelasInfoMap[k]?.lokasiKelas || data?.kelasInfo?.[k]?.lokasiKelas || slot?.lokasiKelas || slot?.ruangan || "-";
+  };
+  const getWaliKelas = (k, slot) => {
+    return kelasInfoMap[k]?.namaWaliKelas || data?.kelasInfo?.[k]?.namaWaliKelas || slot?.namaWaliKelas || "-";
+  };
 
   // Helper Pencarian Slot
   const findSlot = (h, jk, k) => {
@@ -4687,7 +4743,7 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
 
   const bukaEditSlot = (h, jk, k) => {
     const existing = findSlot(h, jk, k);
-    const kelasObj = (data.kelasInfo || {})[k] || {};
+    const defLoc = kelasInfoMap[k]?.lokasiKelas || data?.kelasInfo?.[k]?.lokasiKelas || "";
     setSlotForm({
       hari: h,
       jamKe: jk,
@@ -4696,7 +4752,7 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
       namaMapel: existing?.namaMapel || "",
       kodeGuru: existing?.kodeGuru || "",
       namaGuru: existing?.namaGuru || "",
-      ruangan: existing?.ruangan || existing?.lokasiKelas || kelasObj.lokasiKelas || "",
+      ruangan: existing?.ruangan || existing?.lokasiKelas || defLoc,
     });
     setEditModal(true);
   };
@@ -4787,8 +4843,6 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
     }
     window.print();
   };
-
-  const allKelases = Array.from(new Set([...KELAS_KBM_LIST, ...(data.kelas || [])]));
 
   return (
     <div className="space-y-5">
@@ -4983,8 +5037,9 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                         const s2 = findSlot(selectedHari, 2, k);
                         const s3 = findSlot(selectedHari, 3, k);
                         const s4 = findSlot(selectedHari, 4, k);
-                        const lokasi = s1?.lokasiKelas || s1?.ruangan || (data.kelasInfo || {})[k]?.lokasiKelas || "-";
-                        const wali = s1?.namaWaliKelas || "-";
+                        const anySlot = s1 || s2 || s3 || s4;
+                        const lokasi = getLokasiKelas(k, anySlot);
+                        const wali = getWaliKelas(k, anySlot);
 
                         const renderSlotCell = (slot, jamKe) => {
                           if (!slot || (!slot.namaMapel && !slot.namaGuru)) {
@@ -5096,8 +5151,8 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
               {/* CARD RINGKASAN KELAS */}
               {(() => {
                 const sampleSlot = (scheduleData.slots || []).find((s) => s.kelas === selectedKelas);
-                const lokasi = sampleSlot?.lokasiKelas || sampleSlot?.ruangan || (data.kelasInfo || {})[selectedKelas]?.lokasiKelas || "-";
-                const wali = sampleSlot?.namaWaliKelas || "-";
+                const lokasi = getLokasiKelas(selectedKelas, sampleSlot);
+                const wali = getWaliKelas(selectedKelas, sampleSlot);
                 const slotsKelas = (scheduleData.slots || []).filter((s) => s.kelas === selectedKelas);
 
                 return (
@@ -5391,7 +5446,8 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                         const s2 = findSlot(selectedHari, 2, k);
                         const s3 = findSlot(selectedHari, 3, k);
                         const s4 = findSlot(selectedHari, 4, k);
-                        const lokasi = s1?.lokasiKelas || s1?.ruangan || (data.kelasInfo || {})[k]?.lokasiKelas || "-";
+                        const anySlot = s1 || s2 || s3 || s4;
+                        const lokasi = getLokasiKelas(k, anySlot);
 
                         const renderMatriksSlot = (s) => {
                           if (!s || !s.namaGuru) return <span className="text-[#94A3B8] italic">-</span>;
@@ -5472,7 +5528,7 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                       cetakSubMode === "semua" ? "btn-gradient text-white" : "bg-[#F1F5F9] text-[#475569]"
                     }`}
                   >
-                    Buku Seluruh Kelas (15 Kelas)
+                    Buku Seluruh Kelas ({allKelases.length} Kelas)
                   </button>
                   <button
                     onClick={() => setCetakSubMode("guru")}
@@ -5520,8 +5576,8 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                   <div>
                     {(() => {
                       const sampleSlot = (scheduleData.slots || []).find((s) => s.kelas === selectedKelas);
-                      const lokasi = sampleSlot?.lokasiKelas || sampleSlot?.ruangan || (data.kelasInfo || {})[selectedKelas]?.lokasiKelas || "-";
-                      const wali = sampleSlot?.namaWaliKelas || "-";
+                      const lokasi = getLokasiKelas(selectedKelas, sampleSlot);
+                      const wali = getWaliKelas(selectedKelas, sampleSlot);
 
                       return (
                         <>
@@ -5584,8 +5640,8 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                   <div className="space-y-8">
                     {allKelases.map((k) => {
                       const sampleSlot = (scheduleData.slots || []).find((s) => s.kelas === k);
-                      const lokasi = sampleSlot?.lokasiKelas || sampleSlot?.ruangan || (data.kelasInfo || {})[k]?.lokasiKelas || "-";
-                      const wali = sampleSlot?.namaWaliKelas || "-";
+                      const lokasi = getLokasiKelas(k, sampleSlot);
+                      const wali = getWaliKelas(k, sampleSlot);
 
                       return (
                         <div key={k} className="page-break-after pb-4 border-b border-gray-300">
@@ -5757,7 +5813,15 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                   <label className="font-semibold text-[#475569] block mb-1">Kelas Rombel</label>
                   <select
                     value={slotForm.kelas}
-                    onChange={(e) => setSlotForm({ ...slotForm, kelas: e.target.value })}
+                    onChange={(e) => {
+                      const newK = e.target.value;
+                      const defLoc = kelasInfoMap[newK]?.lokasiKelas || data?.kelasInfo?.[newK]?.lokasiKelas || "";
+                      setSlotForm((prev) => ({
+                        ...prev,
+                        kelas: newK,
+                        ruangan: prev.ruangan || defLoc,
+                      }));
+                    }}
                     className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-bold text-[#0C4A6E]"
                   >
                     {allKelases.map((k) => <option key={k} value={k}>{k}</option>)}
@@ -6491,9 +6555,6 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
 
   const adminMenus = [
     { id: "ringkasan", label: "Ringkasan & Metrik", icon: TrendingUp, badge: "KPI" },
-    { id: "guruPendidik", label: "Data Guru (Pendidik)", icon: GraduationCap, badge: "Sekretariat" },
-    { id: "jadwalKbm", label: "Jadwal KBM Anti-Bentrok", icon: CalendarCheck, badge: "Anti-Bentrok" },
-    { id: "mapel", label: "Mata Pelajaran", icon: BookOpen, badge: "Kurikulum" },
     { id: "akun", label: "Akun Staf & Hak Akses", icon: ShieldCheck, badge: `${(guruList || []).length}` },
     { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${(data?.unitUsaha || []).length}` },
     { id: "tahun", label: "Kalender Akademik", icon: CalendarCheck },
@@ -6805,17 +6866,6 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
             </div>
           )}
 
-          {adminTab === "guruPendidik" && (
-            <GuruPendidikManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
-          )}
-
-          {(adminTab === "jadwalKbm" || adminTab === "mapelKbm") && (
-            <JadwalKBMAntiBentrok backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
-          )}
-
-          {adminTab === "mapel" && (
-            <MasterMapelManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
-          )}
 
           {adminTab === "akun" && (
             <>
@@ -16615,8 +16665,14 @@ function GuruDashboard({ guru, data, setData, onPrint, backendToken, backendOnli
         if (Array.isArray(kelasRows) && kelasRows.length) {
           const list = kelasRows.map((r) => r.nama);
           const info = {};
-          kelasRows.forEach((r) => { info[r.nama] = { waliKelasId: r.waliKelasId || null }; });
-          updated.kelas = Array.from(new Set([...list, ...(d.kelas || [])]));
+          kelasRows.forEach((r) => {
+            info[r.nama] = {
+              waliKelasId: r.waliKelasId || null,
+              lokasiKelas: r.lokasiKelas || "",
+              namaWaliKelas: r.namaWaliKelas || "",
+            };
+          });
+          updated.kelas = list;
           updated.kelasInfo = { ...d.kelasInfo, ...info };
         }
         return updated;
