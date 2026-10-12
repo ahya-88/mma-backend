@@ -3491,6 +3491,1272 @@ const GRADIENT_PRESETS = [
   },
 ];
 
+// ==================== PENGELOLAAN GURU PENDIDIK (NON-STAF) ====================
+
+function GuruPendidikManagement({ backendToken, backendOnline, data, setData }) {
+  const [listGuru, setListGuru] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterKepegawaian, setFilterKepegawaian] = useState("Semua");
+  const [filterStatus, setFilterStatus] = useState("Semua");
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingGuru, setEditingGuru] = useState(null);
+  const [detailGuru, setDetailGuru] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [formBusy, setFormBusy] = useState(false);
+  const [actionMsg, setActionMsg] = useState("");
+  const [actionErr, setActionErr] = useState("");
+
+  const defaultForm = {
+    nama: "",
+    nip: "",
+    nuptk: "",
+    nik: "",
+    gelarDepan: "",
+    gelarBelakang: "",
+    jenisKelamin: "L",
+    tempatLahir: "",
+    tanggalLahir: "",
+    noHp: "",
+    email: "",
+    alamat: "",
+    pendidikanTerakhir: "S1",
+    jurusanPendidikan: "",
+    almamater: "",
+    statusKepegawaian: "Tetap",
+    statusAktif: "Aktif",
+    tanggalMulaiTugas: "",
+  };
+  const [form, setForm] = useState(defaultForm);
+
+  const muatData = async () => {
+    if (!backendToken) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await backendApi("/pengajaran/guru-pendidik", { token: backendToken });
+      setListGuru(Array.isArray(res) ? res : []);
+    } catch (e) {
+      setError(e.message || "Gagal memuat data guru pendidik.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    muatData();
+  }, [backendToken]);
+
+  const bukaTambah = () => {
+    setEditingGuru(null);
+    setForm(defaultForm);
+    setActionMsg("");
+    setActionErr("");
+    setModalOpen(true);
+  };
+
+  const bukaEdit = (g) => {
+    setEditingGuru(g);
+    setForm({
+      nama: g.nama || "",
+      nip: g.nip || "",
+      nuptk: g.nuptk || "",
+      nik: g.nik || "",
+      gelarDepan: g.gelarDepan || "",
+      gelarBelakang: g.gelarBelakang || "",
+      jenisKelamin: g.jenisKelamin || "L",
+      tempatLahir: g.tempatLahir || "",
+      tanggalLahir: g.tanggalLahir || "",
+      noHp: g.noHp || "",
+      email: g.email || "",
+      alamat: g.alamat || "",
+      pendidikanTerakhir: g.pendidikanTerakhir || "S1",
+      jurusanPendidikan: g.jurusanPendidikan || "",
+      almamater: g.almamater || "",
+      statusKepegawaian: g.statusKepegawaian || "Tetap",
+      statusAktif: g.statusAktif || "Aktif",
+      tanggalMulaiTugas: g.tanggalMulaiTugas || "",
+    });
+    setActionMsg("");
+    setActionErr("");
+    setModalOpen(true);
+  };
+
+  const bukaDetail = async (g) => {
+    setDetailLoading(true);
+    setDetailGuru(g);
+    try {
+      const res = await backendApi(`/pengajaran/guru-pendidik/${g.id}`, { token: backendToken });
+      setDetailGuru(res);
+    } catch (_) {
+      // fallback
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const simpanForm = async (e) => {
+    e?.preventDefault();
+    if (!form.nama.trim()) {
+      setActionErr("Nama lengkap guru wajib diisi.");
+      return;
+    }
+    setFormBusy(true);
+    setActionErr("");
+    setActionMsg("");
+    try {
+      if (editingGuru) {
+        await backendApi(`/pengajaran/guru-pendidik/${editingGuru.id}`, {
+          method: "PUT",
+          token: backendToken,
+          body: form,
+        });
+        setActionMsg(`Data guru ${form.nama} berhasil diperbarui.`);
+      } else {
+        await backendApi("/pengajaran/guru-pendidik", {
+          method: "POST",
+          token: backendToken,
+          body: form,
+        });
+        setActionMsg(`Guru pendidik baru ${form.nama} berhasil ditambahkan.`);
+      }
+      setModalOpen(false);
+      muatData();
+    } catch (e) {
+      setActionErr(e.message || "Gagal menyimpan data guru.");
+    } finally {
+      setFormBusy(false);
+    }
+  };
+
+  const hapusGuru = async (g) => {
+    if (!window.confirm(`Yakin ingin menghapus data guru ${g.nama}? Seluruh riwayat penugasan mengajar dan jadwal KBM terkait akan ikut terhapus.`)) {
+      return;
+    }
+    try {
+      await backendApi(`/pengajaran/guru-pendidik/${g.id}`, {
+        method: "DELETE",
+        token: backendToken,
+      });
+      muatData();
+    } catch (e) {
+      alert(e.message || "Gagal menghapus data guru.");
+    }
+  };
+
+  const filtered = listGuru.filter((g) => {
+    const matchQ = !searchQuery.trim() ||
+      g.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (g.nip || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (g.noHp || "").includes(searchQuery);
+    const matchKep = filterKepegawaian === "Semua" || g.statusKepegawaian === filterKepegawaian;
+    const matchSts = filterStatus === "Semua" || g.statusAktif === filterStatus;
+    return matchQ && matchKep && matchSts;
+  });
+
+  const totalGuru = listGuru.length;
+  const totalTetap = listGuru.filter((g) => g.statusKepegawaian === "Tetap").length;
+  const totalHonorer = listGuru.filter((g) => g.statusKepegawaian === "Honorer" || g.statusKepegawaian === "Pengabdian").length;
+  const totalAktif = listGuru.filter((g) => g.statusAktif === "Aktif").length;
+
+  return (
+    <div className="space-y-5">
+      {/* KPI STATISTIK */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <StatCard icon={GraduationCap} label="Total Guru Pendidik" value={totalGuru} />
+        <StatCard icon={ShieldCheck} label="Guru Tetap" value={totalTetap} />
+        <StatCard icon={Award} label="Honorer / Pengabdian" value={totalHonorer} />
+        <StatCard icon={UserCheck} label="Status Aktif Mengajar" value={totalAktif} />
+      </div>
+
+      {actionMsg && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center justify-between">
+          <span>{actionMsg}</span>
+          <button onClick={() => setActionMsg("")} className="text-emerald-600 hover:text-emerald-900"><X size={14} /></button>
+        </div>
+      )}
+
+      {/* CARD DAFTAR GURU PENDIDIK */}
+      <ArchCard
+        title="Data Guru Pendidik (Asatidz Non-Staf)"
+        eyebrow="Tenaga Pengajar Kurikulum & Pembina"
+        icon={GraduationCap}
+        tone="emerald"
+      >
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center gap-2 flex-1">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA3B3]" />
+              <input
+                type="text"
+                placeholder="Cari nama guru, NIP, no HP..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs border border-[#CFE3F0] rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+              />
+            </div>
+            <select
+              value={filterKepegawaian}
+              onChange={(e) => setFilterKepegawaian(e.target.value)}
+              className="text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white focus:outline-none"
+            >
+              <option value="Semua">Semua Kepegawaian</option>
+              <option value="Tetap">Tetap</option>
+              <option value="Honorer">Honorer</option>
+              <option value="Pengabdian">Pengabdian</option>
+              <option value="Tamu">Tamu</option>
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white focus:outline-none"
+            >
+              <option value="Semua">Semua Status</option>
+              <option value="Aktif">Aktif</option>
+              <option value="Cuti">Cuti</option>
+              <option value="Nonaktif">Nonaktif</option>
+            </select>
+          </div>
+
+          <button
+            onClick={bukaTambah}
+            className="flex items-center justify-center gap-1.5 btn-gradient text-xs font-semibold px-4 py-2.5 rounded-xl hover:shadow-md transition-all shrink-0"
+          >
+            <Plus size={15} /> Tambah Guru Pendidik
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="py-12 text-center text-xs text-[#5B7C93] flex flex-col items-center gap-2">
+            <Loader2 size={24} className="animate-spin text-[#0C4A6E]" />
+            Memuat data guru pendidik...
+          </div>
+        ) : error ? (
+          <div className="py-8 text-center text-xs text-rose-600 bg-rose-50 rounded-xl p-4 border border-rose-200">
+            {error}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="py-12 text-center text-xs text-[#5B7C93] bg-[#F8FAFC] border border-dashed border-[#CFE3F0] rounded-2xl p-6">
+            <GraduationCap size={36} className="mx-auto mb-2 text-[#8FA3B3] opacity-60" />
+            <p className="font-semibold text-sm text-[#17242E] mb-1">Belum Ada Data Guru Pendidik</p>
+            <p className="max-w-md mx-auto mb-4 text-[#5B7C93]">
+              Daftarkan guru pengajar mata pelajaran dan ustadz pembina santri. Guru non-staf tidak memerlukan akun login manajemen kantor.
+            </p>
+            <button onClick={bukaTambah} className="btn-gradient text-xs px-4 py-2 rounded-xl">
+              Tambah Guru Pertama
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-[#EAF4FB] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider">
+                  <th className="py-2.5 px-3">Guru Pendidik</th>
+                  <th className="py-2.5 px-3">NIP / JK</th>
+                  <th className="py-2.5 px-3">Kontak WhatsApp</th>
+                  <th className="py-2.5 px-3">Pendidikan / Asal</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Penugasan KBM</th>
+                  <th className="py-2.5 px-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F1F5F9]">
+                {filtered.map((g) => {
+                  const namaLengkap = `${g.gelarDepan ? g.gelarDepan + " " : ""}${g.nama}${g.gelarBelakang ? ", " + g.gelarBelakang : ""}`;
+                  return (
+                    <tr key={g.id} className="hover:bg-[#F8FAFC] transition-colors">
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0C4A6E] to-[#0284C7] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                            {g.nama.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-[#0F172A]">{namaLengkap}</p>
+                            {g.nuptk && <p className="text-[10px] text-[#64748B]">NUPTK: {g.nuptk}</p>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-[#475569]">
+                        <p className="font-mono text-[11px]">{g.nip || "-"}</p>
+                        <span className={`inline-block text-[10px] px-1.5 py-0.2 rounded font-semibold ${g.jenisKelamin === "P" ? "bg-pink-100 text-pink-700" : "bg-blue-100 text-blue-700"}`}>
+                          {g.jenisKelamin === "P" ? "Perempuan" : "Laki-laki"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        {g.noHp ? (
+                          <a
+                            href={`https://wa.me/${g.noHp.replace(/\D/g, "")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-[#0284C7] hover:underline font-mono text-xs"
+                          >
+                            <Phone size={12} /> {g.noHp}
+                          </a>
+                        ) : (
+                          <span className="text-[#94A3B8]">-</span>
+                        )}
+                        {g.email && <p className="text-[10px] text-[#64748B] truncate max-w-[130px]">{g.email}</p>}
+                      </td>
+                      <td className="py-3 px-3 text-[#475569]">
+                        <p className="font-medium text-xs">{g.pendidikanTerakhir || "-"} {g.jurusanPendidikan ? `· ${g.jurusanPendidikan}` : ""}</p>
+                        <p className="text-[10px] text-[#64748B] truncate max-w-[150px]">{g.almamater || "-"}</p>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex flex-col gap-0.5 items-start">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                            g.statusKepegawaian === "Tetap" ? "bg-emerald-100 text-emerald-800" :
+                            g.statusKepegawaian === "Honorer" ? "bg-amber-100 text-amber-800" : "bg-purple-100 text-purple-800"
+                          }`}>
+                            {g.statusKepegawaian}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+                            g.statusAktif === "Aktif" ? "text-emerald-600" : "text-rose-600"
+                          }`}>
+                            ● {g.statusAktif}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex flex-wrap gap-1">
+                          <span className="text-[10px] bg-[#EAF4FB] text-[#0C4A6E] font-medium px-2 py-0.5 rounded-md">
+                            {g.totalPenugasan || 0} Mapel
+                          </span>
+                          <span className="text-[10px] bg-[#F1F5F9] text-[#475569] font-medium px-2 py-0.5 rounded-md">
+                            {g.totalKelasAjar || 0} Kelas
+                          </span>
+                          {Number(g.totalWaliKelas) > 0 && (
+                            <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-md">
+                              Wali Kelas
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => bukaDetail(g)}
+                            title="Detail & Jadwal KBM"
+                            className="p-1.5 rounded-lg bg-[#EAF4FB] text-[#0C4A6E] hover:bg-[#DCEEFB] transition-colors"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            onClick={() => bukaEdit(g)}
+                            title="Ubah Profil Guru"
+                            className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => hapusGuru(g)}
+                            title="Hapus Data Guru"
+                            className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </ArchCard>
+
+      {/* MODAL FORM TAMBAH / EDIT GURU */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-[#CFE3F0] my-8 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAF4FB] mb-4">
+              <div>
+                <p className="text-[10px] font-bold text-[#0C4A6E] uppercase tracking-wider">Form Tenaga Pendidik</p>
+                <h3 className="text-base font-bold text-[#0F172A]">
+                  {editingGuru ? "Ubah Data Guru Pendidik" : "Tambah Guru Pendidik Baru"}
+                </h3>
+              </div>
+              <button onClick={() => setModalOpen(false)} className="text-[#64748B] hover:text-[#0F172A]">
+                <X size={20} />
+              </button>
+            </div>
+
+            {actionErr && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl mb-4">
+                {actionErr}
+              </div>
+            )}
+
+            <form onSubmit={simpanForm} className="space-y-4 overflow-y-auto flex-1 pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Gelar Depan</label>
+                  <input
+                    type="text"
+                    placeholder="mis. Ust. / Dr."
+                    value={form.gelarDepan}
+                    onChange={(e) => setForm({ ...form, gelarDepan: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Nama Lengkap <span className="text-rose-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nama lengkap tanpa gelar"
+                    value={form.nama}
+                    onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Gelar Belakang</label>
+                  <input
+                    type="text"
+                    placeholder="mis. S.Pd.I, M.Ag"
+                    value={form.gelarBelakang}
+                    onChange={(e) => setForm({ ...form, gelarBelakang: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">NIP / Nomor Induk Guru</label>
+                  <input
+                    type="text"
+                    placeholder="mis. NIG-2026001"
+                    value={form.nip}
+                    onChange={(e) => setForm({ ...form, nip: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Jenis Kelamin</label>
+                  <select
+                    value={form.jenisKelamin}
+                    onChange={(e) => setForm({ ...form, jenisKelamin: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  >
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">No. WhatsApp / HP</label>
+                  <input
+                    type="text"
+                    placeholder="mis. 08123456789"
+                    value={form.noHp}
+                    onChange={(e) => setForm({ ...form, noHp: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Email</label>
+                  <input
+                    type="email"
+                    placeholder="mis. ustadz@gmail.com"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Pendidikan Terakhir</label>
+                  <select
+                    value={form.pendidikanTerakhir}
+                    onChange={(e) => setForm({ ...form, pendidikanTerakhir: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  >
+                    <option value="S1">S1 / Sarjana</option>
+                    <option value="S2">S2 / Magister</option>
+                    <option value="S3">S3 / Doktoral</option>
+                    <option value="D3">Diploma (D3)</option>
+                    <option value="Ma'had Aly">Ma'had Aly</option>
+                    <option value="Pesantren Salaf">Pesantren Salaf</option>
+                    <option value="MA/SMA">MA / SMA</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Jurusan / Bidang Studi</label>
+                  <input
+                    type="text"
+                    placeholder="mis. Pendidikan Bahasa Arab"
+                    value={form.jurusanPendidikan}
+                    onChange={(e) => setForm({ ...form, jurusanPendidikan: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Almamater / Kampus</label>
+                  <input
+                    type="text"
+                    placeholder="mis. UIN / Univ. Al-Azhar"
+                    value={form.almamater}
+                    onChange={(e) => setForm({ ...form, almamater: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Status Kepegawaian</label>
+                  <select
+                    value={form.statusKepegawaian}
+                    onChange={(e) => setForm({ ...form, statusKepegawaian: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-medium"
+                  >
+                    <option value="Tetap">Tetap</option>
+                    <option value="Honorer">Honorer</option>
+                    <option value="Pengabdian">Pengabdian</option>
+                    <option value="Tamu">Tamu</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Status Aktif</label>
+                  <select
+                    value={form.statusAktif}
+                    onChange={(e) => setForm({ ...form, statusAktif: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  >
+                    <option value="Aktif">Aktif</option>
+                    <option value="Cuti">Cuti</option>
+                    <option value="Nonaktif">Nonaktif</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#475569] block mb-1">Tanggal Mulai Tugas</label>
+                  <input
+                    type="date"
+                    value={form.tanggalMulaiTugas}
+                    onChange={(e) => setForm({ ...form, tanggalMulaiTugas: e.target.value })}
+                    className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-[#475569] block mb-1">Alamat Tempat Tinggal</label>
+                <textarea
+                  rows={2}
+                  placeholder="Alamat domisili saat ini"
+                  value={form.alamat}
+                  onChange={(e) => setForm({ ...form, alamat: e.target.value })}
+                  className="w-full text-xs border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#EAF4FB] flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={formBusy}
+                  className="btn-gradient px-5 py-2 rounded-xl text-xs font-semibold shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {formBusy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                  {editingGuru ? "Simpan Perubahan" : "Tambahkan Guru"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETAIL GURU & JADWAL PENUGASAN */}
+      {detailGuru && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-[#CFE3F0] max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAF4FB] mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0C4A6E] to-[#0284C7] text-white flex items-center justify-center font-bold text-sm">
+                  {detailGuru.nama.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#0F172A]">
+                    {detailGuru.gelarDepan ? detailGuru.gelarDepan + " " : ""}{detailGuru.nama}{detailGuru.gelarBelakang ? ", " + detailGuru.gelarBelakang : ""}
+                  </h3>
+                  <p className="text-xs text-[#64748B]">NIP: {detailGuru.nip || "-"} · Status: {detailGuru.statusKepegawaian} ({detailGuru.statusAktif})</p>
+                </div>
+              </div>
+              <button onClick={() => setDetailGuru(null)} className="text-[#64748B] hover:text-[#0F172A]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto flex-1 pr-1 text-xs">
+              {detailLoading ? (
+                <div className="py-8 text-center text-[#64748B] flex items-center justify-center gap-2">
+                  <Loader2 size={16} className="animate-spin text-[#0C4A6E]" /> Memuat rincian penugasan...
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">
+                    <div><span className="text-[#64748B]">No. WhatsApp:</span> <p className="font-semibold text-[#0F172A]">{detailGuru.noHp || "-"}</p></div>
+                    <div><span className="text-[#64748B]">Pendidikan:</span> <p className="font-semibold text-[#0F172A]">{detailGuru.pendidikanTerakhir || "-"} ({detailGuru.jurusanPendidikan || "-"})</p></div>
+                    <div><span className="text-[#64748B]">Almamater:</span> <p className="font-semibold text-[#0F172A]">{detailGuru.almamater || "-"}</p></div>
+                    <div><span className="text-[#64748B]">Jenis Kelamin:</span> <p className="font-semibold text-[#0F172A]">{detailGuru.jenisKelamin === "P" ? "Perempuan" : "Laki-laki"}</p></div>
+                    <div><span className="text-[#64748B]">Mulai Tugas:</span> <p className="font-semibold text-[#0F172A]">{detailGuru.tanggalMulaiTugas || "-"}</p></div>
+                    <div><span className="text-[#64748B]">Alamat:</span> <p className="font-semibold text-[#0F172A] truncate">{detailGuru.alamat || "-"}</p></div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-bold text-sm text-[#0F172A] mb-2 flex items-center gap-1.5">
+                      <BookOpen size={16} className="text-[#0C4A6E]" /> SK Penugasan Mengajar ({detailGuru.penugasan?.length || 0})
+                    </h4>
+                    {!detailGuru.penugasan?.length ? (
+                      <p className="text-[#94A3B8] italic p-3 bg-slate-50 rounded-lg">Belum ada penugasan mata pelajaran untuk guru ini.</p>
+                    ) : (
+                      <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+                        <table className="w-full text-left">
+                          <thead className="bg-[#F1F5F9] text-[#475569] font-semibold text-[10px] uppercase">
+                            <tr>
+                              <th className="py-2 px-3">Mata Pelajaran</th>
+                              <th className="py-2 px-3">Kelas Ajar</th>
+                              <th className="py-2 px-3">Tahun / Semester</th>
+                              <th className="py-2 px-3">Beban Jam</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#F1F5F9]">
+                            {detailGuru.penugasan.map((p) => (
+                              <tr key={p.id}>
+                                <td className="py-2 px-3 font-medium text-[#0F172A]">
+                                  {p.namaMapel} <span className="text-[10px] text-[#64748B]">({p.kodeMapel})</span>
+                                </td>
+                                <td className="py-2 px-3 font-semibold text-[#0C4A6E]">{p.kelas}</td>
+                                <td className="py-2 px-3 text-[#475569]">{p.tahunAjaran} ({p.semester})</td>
+                                <td className="py-2 px-3 font-mono">{p.bebanJamMingguan} JTM/minggu</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {detailGuru.waliKelas && detailGuru.waliKelas.length > 0 && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900">
+                      <p className="font-bold mb-1">Amanah Wali Kelas</p>
+                      <p>Guru ini ditugaskan sebagai Wali Kelas untuk rombel: <strong>{detailGuru.waliKelas.map((w) => w.nama).join(", ")}</strong></p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-[#EAF4FB] flex justify-end">
+              <button onClick={() => setDetailGuru(null)} className="btn-gradient px-4 py-2 rounded-xl text-xs font-semibold">
+                Tutup Rincian
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==================== MASTER MAPEL, PENUGASAN & JADWAL KBM ====================
+
+function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
+  const [subTab, setSubTab] = useState("mapel"); // 'mapel', 'penugasan', 'jadwal'
+  const [listMapel, setListMapel] = useState([]);
+  const [listPenugasan, setListPenugasan] = useState([]);
+  const [listJadwal, setListJadwal] = useState([]);
+  const [listGuru, setListGuru] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  // Mapel Form
+  const [mapelModal, setMapelModal] = useState(false);
+  const [editingMapel, setEditingMapel] = useState(null);
+  const [mapelForm, setMapelForm] = useState({ kodeMapel: "", nama: "", kategori: "Diniyah", kkm: 75, tingkat: "Semua" });
+
+  // Penugasan Form
+  const [penugasanForm, setPenugasanForm] = useState({
+    guruId: "",
+    mapelId: "",
+    kelas: (data.kelas && data.kelas[0]) || "",
+    tahunAjaran: "2026/2027",
+    semester: "Ganjil",
+    bebanJamMingguan: 2,
+  });
+
+  // Jadwal Form
+  const [jadwalForm, setJadwalForm] = useState({
+    penugasanId: "",
+    hari: "Senin",
+    jamMulai: "07:30",
+    jamSelesai: "09:00",
+    ruangan: "",
+  });
+  const [jadwalFilterKelas, setJadwalFilterKelas] = useState("Semua");
+  const [jadwalFilterHari, setJadwalFilterHari] = useState("Semua");
+
+  const muatSemua = async () => {
+    if (!backendToken) return;
+    setLoading(true);
+    setErr("");
+    try {
+      const [mRes, pRes, jRes, gRes] = await Promise.all([
+        backendApi("/pengajaran/mapel", { token: backendToken }).catch(() => []),
+        backendApi("/pengajaran/penugasan", { token: backendToken }).catch(() => []),
+        backendApi("/pengajaran/jadwal", { token: backendToken }).catch(() => []),
+        backendApi("/pengajaran/guru-pendidik", { token: backendToken }).catch(() => []),
+      ]);
+      setListMapel(Array.isArray(mRes) ? mRes : []);
+      setListPenugasan(Array.isArray(pRes) ? pRes : []);
+      setListJadwal(Array.isArray(jRes) ? jRes : []);
+      setListGuru(Array.isArray(gRes) ? gRes : []);
+      if (!penugasanForm.guruId && gRes && gRes.length) {
+        setPenugasanForm((f) => ({ ...f, guruId: gRes[0].id }));
+      }
+      if (!penugasanForm.mapelId && mRes && mRes.length) {
+        setPenugasanForm((f) => ({ ...f, mapelId: mRes[0].id }));
+      }
+    } catch (e) {
+      setErr(e.message || "Gagal memuat data akademik.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    muatSemua();
+  }, [backendToken]);
+
+  // Handler Mapel
+  const simpanMapel = async (e) => {
+    e?.preventDefault();
+    if (!mapelForm.kodeMapel.trim() || !mapelForm.nama.trim()) {
+      setErr("Kode dan nama mata pelajaran wajib diisi.");
+      return;
+    }
+    setErr("");
+    try {
+      if (editingMapel) {
+        await backendApi(`/pengajaran/mapel/${editingMapel.id}`, { method: "PUT", token: backendToken, body: mapelForm });
+        setMsg(`Mata pelajaran ${mapelForm.nama} berhasil diperbarui.`);
+      } else {
+        await backendApi("/pengajaran/mapel", { method: "POST", token: backendToken, body: mapelForm });
+        setMsg(`Mata pelajaran ${mapelForm.nama} berhasil ditambahkan.`);
+      }
+      setMapelModal(false);
+      muatSemua();
+    } catch (e) {
+      setErr(e.message || "Gagal menyimpan mata pelajaran.");
+    }
+  };
+
+  const hapusMapel = async (m) => {
+    if (!window.confirm(`Hapus mata pelajaran ${m.nama}? Penugasan terkait akan terhapus.`)) return;
+    try {
+      await backendApi(`/pengajaran/mapel/${m.id}`, { method: "DELETE", token: backendToken });
+      muatSemua();
+    } catch (e) {
+      alert(e.message || "Gagal menghapus mata pelajaran.");
+    }
+  };
+
+  // Handler Penugasan
+  const simpanPenugasan = async (e) => {
+    e?.preventDefault();
+    if (!penugasanForm.guruId || !penugasanForm.mapelId || !penugasanForm.kelas) {
+      setErr("Guru, mata pelajaran, dan kelas wajib dipilih.");
+      return;
+    }
+    setErr("");
+    try {
+      await backendApi("/pengajaran/penugasan", { method: "POST", token: backendToken, body: penugasanForm });
+      setMsg("SK Penugasan mengajar berhasil disimpan.");
+      muatSemua();
+    } catch (e) {
+      setErr(e.message || "Gagal menyimpan penugasan guru.");
+    }
+  };
+
+  const hapusPenugasan = async (p) => {
+    if (!window.confirm("Hapus SK penugasan ini?")) return;
+    try {
+      await backendApi(`/pengajaran/penugasan/${p.id}`, { method: "DELETE", token: backendToken });
+      muatSemua();
+    } catch (e) {
+      alert(e.message || "Gagal menghapus penugasan.");
+    }
+  };
+
+  // Handler Jadwal
+  const simpanJadwal = async (e) => {
+    e?.preventDefault();
+    if (!jadwalForm.penugasanId) {
+      setErr("Pilih penugasan mengajar terlebih dahulu.");
+      return;
+    }
+    setErr("");
+    try {
+      await backendApi("/pengajaran/jadwal", { method: "POST", token: backendToken, body: jadwalForm });
+      setMsg("Jadwal KBM berhasil ditambahkan tanpa tabrakan.");
+      muatSemua();
+    } catch (e) {
+      setErr(e.message || "Gagal menambahkan jadwal pelajaran.");
+    }
+  };
+
+  const hapusJadwal = async (j) => {
+    if (!window.confirm("Hapus jadwal pelajaran ini?")) return;
+    try {
+      await backendApi(`/pengajaran/jadwal/${j.id}`, { method: "DELETE", token: backendToken });
+      muatSemua();
+    } catch (e) {
+      alert(e.message || "Gagal menghapus jadwal.");
+    }
+  };
+
+  const jadwalFiltered = listJadwal.filter((j) => {
+    const matchK = jadwalFilterKelas === "Semua" || j.kelas === jadwalFilterKelas;
+    const matchH = jadwalFilterHari === "Semua" || j.hari === jadwalFilterHari;
+    return matchK && matchH;
+  });
+
+  return (
+    <div className="space-y-5">
+      {/* SUB-TAB NAVIGATOR */}
+      <div className="flex items-center gap-2 border-b border-[#EAF4FB] pb-3 overflow-x-auto">
+        <button
+          onClick={() => setSubTab("mapel")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            subTab === "mapel" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
+          }`}
+        >
+          <BookOpen size={15} /> 1. Master Mata Pelajaran ({listMapel.length})
+        </button>
+        <button
+          onClick={() => setSubTab("penugasan")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            subTab === "penugasan" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
+          }`}
+        >
+          <GraduationCap size={15} /> 2. SK Penugasan Guru ({listPenugasan.length})
+        </button>
+        <button
+          onClick={() => setSubTab("jadwal")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            subTab === "jadwal" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
+          }`}
+        >
+          <CalendarCheck size={15} /> 3. Jadwal KBM Harian ({listJadwal.length})
+        </button>
+      </div>
+
+      {msg && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center justify-between">
+          <span>{msg}</span>
+          <button onClick={() => setMsg("")} className="text-emerald-600 hover:text-emerald-900"><X size={14} /></button>
+        </div>
+      )}
+
+      {err && (
+        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center justify-between">
+          <span>{err}</span>
+          <button onClick={() => setErr("")} className="text-rose-600 hover:text-rose-900"><X size={14} /></button>
+        </div>
+      )}
+
+      {/* ================= SUB-TAB 1: MASTER MAPEL ================= */}
+      {subTab === "mapel" && (
+        <ArchCard title="Master Mata Pelajaran" eyebrow="Kurikulum Diniyah, Tahfidz & Umum" icon={BookOpen} tone="brand">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs text-[#5B7C93]">Kelola mata pelajaran standar pondok yang diampu oleh asatidz.</p>
+            <button
+              onClick={() => {
+                setEditingMapel(null);
+                setMapelForm({ kodeMapel: "", nama: "", kategori: "Diniyah", kkm: 75, tingkat: "Semua" });
+                setMapelModal(true);
+              }}
+              className="btn-gradient text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5"
+            >
+              <Plus size={14} /> Tambah Mapel
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                <tr>
+                  <th className="py-2.5 px-3">Kode</th>
+                  <th className="py-2.5 px-3">Nama Mata Pelajaran</th>
+                  <th className="py-2.5 px-3">Kategori</th>
+                  <th className="py-2.5 px-3">KKM Minimal</th>
+                  <th className="py-2.5 px-3">Total Pengajar</th>
+                  <th className="py-2.5 px-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F1F5F9]">
+                {listMapel.map((m) => (
+                  <tr key={m.id} className="hover:bg-[#F8FAFC]">
+                    <td className="py-2.5 px-3 font-mono font-bold text-[#0C4A6E]">{m.kodeMapel}</td>
+                    <td className="py-2.5 px-3 font-semibold text-[#0F172A]">{m.nama}</td>
+                    <td className="py-2.5 px-3">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                        m.kategori === "Diniyah" ? "bg-amber-100 text-amber-800" :
+                        m.kategori === "Tahfidz" ? "bg-emerald-100 text-emerald-800" : "bg-sky-100 text-sky-800"
+                      }`}>
+                        {m.kategori}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 font-mono">{m.kkm}</td>
+                    <td className="py-2.5 px-3 text-[#475569]">{m.totalPengajar || 0} Pengajar</td>
+                    <td className="py-2.5 px-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingMapel(m);
+                            setMapelForm({ kodeMapel: m.kodeMapel, nama: m.nama, kategori: m.kategori, kkm: m.kkm, tingkat: m.tingkat || "Semua" });
+                            setMapelModal(true);
+                          }}
+                          className="p-1 text-emerald-700 hover:bg-emerald-50 rounded"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={() => hapusMapel(m)} className="p-1 text-rose-700 hover:bg-rose-50 rounded">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ArchCard>
+      )}
+
+      {/* ================= SUB-TAB 2: SK PENUGASAN ================= */}
+      {subTab === "penugasan" && (
+        <div className="space-y-4">
+          <ArchCard title="Tugaskan Guru ke Kelas (SK Pengajar)" eyebrow="Penugasan Mata Pelajaran" icon={GraduationCap} tone="gold">
+            <form onSubmit={simpanPenugasan} className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 items-end text-xs">
+              <div className="sm:col-span-2">
+                <label className="font-semibold text-[#475569] block mb-1">Guru Pendidik</label>
+                <select
+                  value={penugasanForm.guruId}
+                  onChange={(e) => setPenugasanForm({ ...penugasanForm, guruId: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-2 bg-white"
+                >
+                  <option value="">Pilih Guru Pendidik</option>
+                  {listGuru.map((g) => (
+                    <option key={g.id} value={g.id}>{g.gelarDepan ? g.gelarDepan + " " : ""}{g.nama} ({g.nip || "Non-NIP"})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Mata Pelajaran</label>
+                <select
+                  value={penugasanForm.mapelId}
+                  onChange={(e) => setPenugasanForm({ ...penugasanForm, mapelId: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-2 bg-white"
+                >
+                  <option value="">Pilih Mapel</option>
+                  {listMapel.map((m) => (
+                    <option key={m.id} value={m.id}>{m.nama} ({m.kodeMapel})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Kelas / Rombel</label>
+                <select
+                  value={penugasanForm.kelas}
+                  onChange={(e) => setPenugasanForm({ ...penugasanForm, kelas: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-2 bg-white"
+                >
+                  {(data.kelas || []).map((k) => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Beban (JTM)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={penugasanForm.bebanJamMingguan}
+                  onChange={(e) => setPenugasanForm({ ...penugasanForm, bebanJamMingguan: Number(e.target.value) })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-2 bg-white font-mono"
+                />
+              </div>
+
+              <div>
+                <button type="submit" className="w-full btn-gradient py-2 rounded-xl font-semibold flex items-center justify-center gap-1">
+                  <Plus size={14} /> Simpan SK
+                </button>
+              </div>
+            </form>
+          </ArchCard>
+
+          <ArchCard title="Daftar SK Penugasan Mengajar Aktif" eyebrow={`${listPenugasan.length} Penugasan`} icon={Award}>
+            {!listPenugasan.length ? (
+              <p className="text-xs text-[#94A3B8] italic p-4 text-center">Belum ada penugasan mengajar yang dibuat.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                    <tr>
+                      <th className="py-2.5 px-3">Guru Pendidik</th>
+                      <th className="py-2.5 px-3">Mata Pelajaran</th>
+                      <th className="py-2.5 px-3">Kelas Ajar</th>
+                      <th className="py-2.5 px-3">Tahun / Semester</th>
+                      <th className="py-2.5 px-3">Beban JTM</th>
+                      <th className="py-2.5 px-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F1F5F9]">
+                    {listPenugasan.map((p) => (
+                      <tr key={p.id} className="hover:bg-[#F8FAFC]">
+                        <td className="py-2.5 px-3 font-semibold text-[#0F172A]">{p.namaGuru}</td>
+                        <td className="py-2.5 px-3">{p.namaMapel} <span className="text-[10px] text-[#64748B]">({p.kodeMapel})</span></td>
+                        <td className="py-2.5 px-3 font-bold text-[#0C4A6E]">{p.kelas}</td>
+                        <td className="py-2.5 px-3 text-[#475569]">{p.tahunAjaran} ({p.semester})</td>
+                        <td className="py-2.5 px-3 font-mono">{p.bebanJamMingguan} Jam/minggu</td>
+                        <td className="py-2.5 px-3 text-right">
+                          <button onClick={() => hapusPenugasan(p)} className="p-1 text-rose-700 hover:bg-rose-50 rounded">
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ArchCard>
+        </div>
+      )}
+
+      {/* ================= SUB-TAB 3: JADWAL KBM ================= */}
+      {subTab === "jadwal" && (
+        <div className="space-y-4">
+          <ArchCard title="Tambah Jadwal Pelajaran (KBM)" eyebrow="Sistem Cek Anti-Bentrok Otomatis" icon={Clock} tone="emerald">
+            <form onSubmit={simpanJadwal} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 items-end text-xs">
+              <div className="sm:col-span-2">
+                <label className="font-semibold text-[#475569] block mb-1">Penugasan (Kelas · Mapel · Guru)</label>
+                <select
+                  value={jadwalForm.penugasanId}
+                  onChange={(e) => setJadwalForm({ ...jadwalForm, penugasanId: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-2 bg-white"
+                >
+                  <option value="">Pilih Penugasan Mengajar</option>
+                  {listPenugasan.map((p) => (
+                    <option key={p.id} value={p.id}>[{p.kelas}] {p.namaMapel} - {p.namaGuru}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Hari</label>
+                <select
+                  value={jadwalForm.hari}
+                  onChange={(e) => setJadwalForm({ ...jadwalForm, hari: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-2 bg-white font-medium"
+                >
+                  {["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"].map((h) => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Jam (Mulai - Selesai)</label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="time"
+                    value={jadwalForm.jamMulai}
+                    onChange={(e) => setJadwalForm({ ...jadwalForm, jamMulai: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2 py-1.5 bg-white text-xs"
+                  />
+                  <span>-</span>
+                  <input
+                    type="time"
+                    value={jadwalForm.jamSelesai}
+                    onChange={(e) => setJadwalForm({ ...jadwalForm, jamSelesai: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2 py-1.5 bg-white text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <button type="submit" className="w-full btn-gradient py-2 rounded-xl font-semibold flex items-center justify-center gap-1">
+                  <Plus size={14} /> Simpan Jadwal
+                </button>
+              </div>
+            </form>
+          </ArchCard>
+
+          <ArchCard title="Jadwal Pelajaran KBM Harian" eyebrow={`${jadwalFiltered.length} Sesi Terjadwal`} icon={CalendarCheck}>
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-[#64748B] font-medium">Filter Kelas:</span>
+                <select
+                  value={jadwalFilterKelas}
+                  onChange={(e) => setJadwalFilterKelas(e.target.value)}
+                  className="border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white text-xs"
+                >
+                  <option value="Semua">Semua Kelas</option>
+                  {(data.kelas || []).map((k) => <option key={k} value={k}>{k}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-[#64748B] font-medium">Filter Hari:</span>
+                <select
+                  value={jadwalFilterHari}
+                  onChange={(e) => setJadwalFilterHari(e.target.value)}
+                  className="border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white text-xs"
+                >
+                  <option value="Semua">Semua Hari</option>
+                  {["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"].map((h) => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {!jadwalFiltered.length ? (
+              <p className="text-xs text-[#94A3B8] italic p-4 text-center">Belum ada jadwal yang sesuai filter.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                    <tr>
+                      <th className="py-2.5 px-3">Hari & Jam</th>
+                      <th className="py-2.5 px-3">Kelas</th>
+                      <th className="py-2.5 px-3">Mata Pelajaran</th>
+                      <th className="py-2.5 px-3">Guru Pendidik</th>
+                      <th className="py-2.5 px-3">Ruangan</th>
+                      <th className="py-2.5 px-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F1F5F9]">
+                    {jadwalFiltered.map((j) => (
+                      <tr key={j.id} className="hover:bg-[#F8FAFC]">
+                        <td className="py-2.5 px-3">
+                          <span className="font-bold text-[#0C4A6E]">{j.hari}</span>
+                          <p className="font-mono text-[11px] text-[#475569]">{j.jamMulai} - {j.jamSelesai}</p>
+                        </td>
+                        <td className="py-2.5 px-3 font-bold text-emerald-800">{j.kelas}</td>
+                        <td className="py-2.5 px-3 font-semibold text-[#0F172A]">{j.namaMapel}</td>
+                        <td className="py-2.5 px-3">{j.namaGuru}</td>
+                        <td className="py-2.5 px-3 text-[#64748B]">{j.ruangan || "Kelas Utama"}</td>
+                        <td className="py-2.5 px-3 text-right">
+                          <button onClick={() => hapusJadwal(j)} className="p-1 text-rose-700 hover:bg-rose-50 rounded">
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ArchCard>
+        </div>
+      )}
+
+      {/* MODAL TAMBAH/EDIT MAPEL */}
+      {mapelModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-[#CFE3F0]">
+            <h3 className="font-bold text-sm text-[#0F172A] mb-3">
+              {editingMapel ? "Ubah Mata Pelajaran" : "Tambah Mata Pelajaran Baru"}
+            </h3>
+            <form onSubmit={simpanMapel} className="space-y-3 text-xs">
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Kode Mapel (Singkatan Unik)</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="mis. ARAB, FQH, IND"
+                  value={mapelForm.kodeMapel}
+                  onChange={(e) => setMapelForm({ ...mapelForm, kodeMapel: e.target.value.toUpperCase() })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-mono uppercase"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Nama Mata Pelajaran</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="mis. Bahasa Arab, Fiqih"
+                  value={mapelForm.nama}
+                  onChange={(e) => setMapelForm({ ...mapelForm, nama: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-medium"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Kategori</label>
+                  <select
+                    value={mapelForm.kategori}
+                    onChange={(e) => setMapelForm({ ...mapelForm, kategori: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                  >
+                    <option value="Diniyah">Diniyah</option>
+                    <option value="Tahfidz">Tahfidz</option>
+                    <option value="Umum">Umum</option>
+                    <option value="Muatan Lokal">Muatan Lokal</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">KKM Kelulusan</label>
+                  <input
+                    type="number"
+                    min="50"
+                    max="100"
+                    value={mapelForm.kkm}
+                    onChange={(e) => setMapelForm({ ...mapelForm, kkm: Number(e.target.value) })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-mono"
+                  />
+                </div>
+              </div>
+              <div className="pt-3 border-t border-[#EAF4FB] flex justify-end gap-2">
+                <button type="button" onClick={() => setMapelModal(false)} className="px-3 py-1.5 rounded-xl text-xs text-[#64748B]">
+                  Batal
+                </button>
+                <button type="submit" className="btn-gradient px-4 py-1.5 rounded-xl text-xs font-semibold">
+                  Simpan Mapel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
   const deptKeys = Object.keys(DEPT_META);
   const [adminTab, setAdminTab] = useState("ringkasan");
@@ -4057,7 +5323,9 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
 
   const adminMenus = [
     { id: "ringkasan", label: "Ringkasan & Metrik", icon: TrendingUp, badge: "KPI" },
-    { id: "akun", label: "Kelola Akun Guru", icon: ShieldCheck, badge: `${(guruList || []).length}` },
+    { id: "guruPendidik", label: "Data Guru (Pendidik)", icon: GraduationCap, badge: "Baru" },
+    { id: "mapelKbm", label: "Mapel & Jadwal KBM", icon: BookOpen, badge: "KBM" },
+    { id: "akun", label: "Akun Staf & Hak Akses", icon: ShieldCheck, badge: `${(guruList || []).length}` },
     { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${(data?.unitUsaha || []).length}` },
     { id: "tahun", label: "Kalender Akademik", icon: CalendarCheck },
     { id: "tampilan", label: "Pengaturan Tampilan", icon: ImageIcon },
@@ -4366,6 +5634,14 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
                 </div>
               </div>
             </div>
+          )}
+
+          {adminTab === "guruPendidik" && (
+            <GuruPendidikManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
+          )}
+
+          {adminTab === "mapelKbm" && (
+            <MapelKbmManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
           )}
 
           {adminTab === "akun" && (
@@ -8423,6 +9699,8 @@ const SCOPE_TABS = {
   ],
   pengajaran: [
     { key: "kelas", label: "Kelas", icon: School },
+    { key: "guru-pendidik", label: "Guru Pendidik", icon: GraduationCap },
+    { key: "mapel-kbm", label: "Mapel & Jadwal KBM", icon: BookOpen },
     { key: "prestasi", label: "Prestasi", icon: Award },
     { key: "nilai", label: "Riwayat Akademik", icon: GraduationCap },
     { key: "raport-akademik", label: "Rapor Akademik", icon: FileText },
@@ -14026,6 +15304,14 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         </ArchCard>
       )}
 
+      {tab === "guru-pendidik" && (
+        <GuruPendidikManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
+      )}
+
+      {tab === "mapel-kbm" && (
+        <MapelKbmManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
+      )}
+
       {tab === "halaqoh" && (
         <ArchCard title="Halaqoh Tahfidz" eyebrow={`${(data.halaqoh || []).length} Halaqoh Aktif`} icon={BookOpen} tone="gold">
           <div className="flex flex-wrap gap-2 mb-5">
@@ -14895,7 +16181,7 @@ export default function App() {
     let waliAwal = [];
     let guruAwal = [];
     try {
-      const MMA_CACHE_EPOCH = "v_clean_20261011_unit_tx";
+      const MMA_CACHE_EPOCH = "v_clean_20261012_guru_pendidik";
       const currentEpoch = localStorage.getItem("mma_cache_epoch");
       if (currentEpoch !== MMA_CACHE_EPOCH) {
         localStorage.removeItem("mma_cached_santri");
