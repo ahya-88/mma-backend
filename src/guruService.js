@@ -79,7 +79,7 @@ async function tambahMasterGuru(data = {}) {
     nip, nuptk, nik, nama, gelarDepan, gelarBelakang, jenisKelamin = "L",
     tempatLahir, tanggalLahir, noHp, email, alamat, pendidikanTerakhir,
     jurusanPendidikan, almamater, statusKepegawaian = "Tetap", statusAktif = "Aktif",
-    tanggalMulaiTugas, foto, akunId,
+    tanggalMulaiTugas, foto, akunId, kodeGuru, keterangan,
   } = data;
 
   if (!nama || !nama.trim()) throw new CashlessError(400, "Nama guru wajib diisi.");
@@ -98,12 +98,12 @@ async function tambahMasterGuru(data = {}) {
       "id", "nip", "nuptk", "nik", "nama", "gelarDepan", "gelarBelakang",
       "jenisKelamin", "tempatLahir", "tanggalLahir", "noHp", "email", "alamat",
       "pendidikanTerakhir", "jurusanPendidikan", "almamater", "statusKepegawaian",
-      "statusAktif", "tanggalMulaiTugas", "foto", "akunId"
+      "statusAktif", "tanggalMulaiTugas", "foto", "akunId", "kodeGuru", "keterangan"
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7,
       $8, $9, $10, $11, $12, $13,
       $14, $15, $16, $17,
-      $18, $19, $20, $21
+      $18, $19, $20, $21, $22, $23
     )
   `, [
     id, cleanNip, nuptk ? nuptk.trim() : null, nik ? nik.trim() : null,
@@ -113,6 +113,7 @@ async function tambahMasterGuru(data = {}) {
     pendidikanTerakhir || null, jurusanPendidikan || null, almamater || null,
     statusKepegawaian || "Tetap", statusAktif || "Aktif", tanggalMulaiTugas || null,
     foto || null, akunId || null,
+    kodeGuru ? kodeGuru.trim() : null, keterangan ? keterangan.trim() : null,
   ]);
 
   return getMasterGuru(id);
@@ -126,7 +127,7 @@ async function ubahMasterGuru(id, data = {}) {
     nip, nuptk, nik, nama, gelarDepan, gelarBelakang, jenisKelamin,
     tempatLahir, tanggalLahir, noHp, email, alamat, pendidikanTerakhir,
     jurusanPendidikan, almamater, statusKepegawaian, statusAktif,
-    tanggalMulaiTugas, foto, akunId,
+    tanggalMulaiTugas, foto, akunId, kodeGuru, keterangan,
   } = data;
 
   const newNama = nama !== undefined ? (nama ? nama.trim() : existing.nama) : existing.nama;
@@ -152,8 +153,9 @@ async function ubahMasterGuru(id, data = {}) {
       "jenisKelamin" = $7, "tempatLahir" = $8, "tanggalLahir" = $9, "noHp" = $10, "email" = $11,
       "alamat" = $12, "pendidikanTerakhir" = $13, "jurusanPendidikan" = $14, "almamater" = $15,
       "statusKepegawaian" = $16, "statusAktif" = $17, "tanggalMulaiTugas" = $18, "foto" = $19,
-      "akunId" = $20, "updatedAt" = to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-    WHERE "id" = $21
+      "akunId" = $20, "kodeGuru" = $21, "keterangan" = $22,
+      "updatedAt" = to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    WHERE "id" = $23
   `, [
     newNip,
     nuptk !== undefined ? (nuptk ? nuptk.trim() : null) : existing.nuptk,
@@ -175,6 +177,8 @@ async function ubahMasterGuru(id, data = {}) {
     tanggalMulaiTugas !== undefined ? tanggalMulaiTugas : existing.tanggalMulaiTugas,
     foto !== undefined ? foto : existing.foto,
     akunId !== undefined ? (akunId || null) : existing.akunId,
+    kodeGuru !== undefined ? (kodeGuru ? kodeGuru.trim() : null) : existing.kodeGuru,
+    keterangan !== undefined ? (keterangan ? keterangan.trim() : null) : existing.keterangan,
     id,
   ]);
 

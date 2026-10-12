@@ -2,8 +2,11 @@ const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
 const { query, queryOne, queryAll, withTransaction } = require("../db");
-const { requireAuth, requireSekretariat } = require("../auth");
+const { requireAuth, requireSekretariat, recordSensitiveAudit } = require("../auth");
 const asyncHandler = require("../asyncHandler");
+const {
+  semuaMasterGuru, getMasterGuru, tambahMasterGuru, ubahMasterGuru, hapusMasterGuru,
+} = require("../guruService");
 
 // Helper konversi tanggal Masehi -> Hijriyah untuk penomoran surat otomatis
 const romawiBulan = (idx) => ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][idx];
@@ -530,6 +533,42 @@ router.delete("/pimpinan/:id", asyncHandler(async (req, res) => {
   await query('DELETE FROM "MasterPimpinan" WHERE "id" = $1', [id]);
   const list = await queryAll('SELECT * FROM "MasterPimpinan" ORDER BY "nama" ASC');
   res.json({ message: "Pimpinan berhasil dihapus.", pimpinanList: list });
+}));
+
+// 18. Master Guru Pendidik (Non-Staf) - Dikelola oleh Sekretariat
+router.get("/guru-pendidik", asyncHandler(async (req, res) => {
+  res.json(await semuaMasterGuru(req.query));
+}));
+
+router.get("/guru-pendidik/:id", asyncHandler(async (req, res) => {
+  res.json(await getMasterGuru(req.params.id));
+}));
+
+router.post("/guru-pendidik", asyncHandler(async (req, res) => {
+  const hasil = await tambahMasterGuru(req.body);
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "sekretariat.guru_pendidik_created",
+    targetType: "MasterGuru", targetId: hasil.id, ip: req.ip, sesudah: { nama: hasil.nama, nip: hasil.nip },
+  });
+  res.status(201).json(hasil);
+}));
+
+router.put("/guru-pendidik/:id", asyncHandler(async (req, res) => {
+  const hasil = await ubahMasterGuru(req.params.id, req.body);
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "sekretariat.guru_pendidik_updated",
+    targetType: "MasterGuru", targetId: req.params.id, ip: req.ip, sesudah: { nama: hasil.nama, nip: hasil.nip },
+  });
+  res.json(hasil);
+}));
+
+router.delete("/guru-pendidik/:id", asyncHandler(async (req, res) => {
+  const hasil = await hapusMasterGuru(req.params.id);
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "sekretariat.guru_pendidik_deleted",
+    targetType: "MasterGuru", targetId: req.params.id, ip: req.ip,
+  });
+  res.json(hasil);
 }));
 
 module.exports = router;

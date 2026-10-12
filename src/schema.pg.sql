@@ -887,4 +887,31 @@ CREATE TABLE IF NOT EXISTS "JadwalPelajaran" (
 
 CREATE INDEX IF NOT EXISTS idx_jadwal_hari ON "JadwalPelajaran" ("hari");
 
+-- ==================== EKSTENSI KOLOM KELAS & GURU ====================
+ALTER TABLE "MasterKelas" ADD COLUMN IF NOT EXISTS "lokasiKelas" TEXT;
+ALTER TABLE "MasterGuru" ADD COLUMN IF NOT EXISTS "kodeGuru" TEXT;
+ALTER TABLE "MasterGuru" ADD COLUMN IF NOT EXISTS "keterangan" TEXT;
+
+-- ==================== JADWAL KBM MINGGUAN (GRID ANTI-BENTROK) ====================
+CREATE TABLE IF NOT EXISTS "JadwalKBM" (
+  "id" TEXT PRIMARY KEY,
+  "hari" TEXT NOT NULL,
+  "jamKe" INTEGER NOT NULL,
+  "kelas" TEXT NOT NULL,
+  "kodeMapel" TEXT,
+  "namaMapel" TEXT,
+  "kodeGuru" TEXT,
+  "namaGuru" TEXT,
+  "tahunAjaran" TEXT NOT NULL DEFAULT '2026/2027',
+  "semester" TEXT NOT NULL DEFAULT 'Ganjil',
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  CONSTRAINT uq_jadwal_kbm_slot UNIQUE ("hari", "jamKe", "kelas", "tahunAjaran", "semester")
+);
+
+CREATE INDEX IF NOT EXISTS idx_jadwalkbm_hari_jam ON "JadwalKBM" ("hari", "jamKe");
+CREATE INDEX IF NOT EXISTS idx_jadwalkbm_kelas ON "JadwalKBM" ("kelas");
+CREATE INDEX IF NOT EXISTS idx_jadwalkbm_guru ON "JadwalKBM" ("namaGuru");
+
+
 

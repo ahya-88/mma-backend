@@ -384,6 +384,12 @@ function requireSekretariat(req, res, next) {
   res.status(403).json({ error: "Hanya staf Sekretariat yang berwenang mengakses endpoint ini." });
 }
 
+function requireSekretariatOrPengajaran(req, res, next) {
+  if (isSuperAdmin(req.user)
+    || (req.user?.role === "guru" && (req.user.departemen === "sekretariat" || req.user.departemen === "pengajaran"))) return next();
+  res.status(403).json({ error: "Hanya staf Sekretariat, Pengajaran, atau Superadmin yang berwenang." });
+}
+
 function requirePasswordResetAuthority(req, res, next) {
   if (isSuperAdmin(req.user)
     || (req.user?.role === "guru" && req.user.departemen === "sekretariat")) return next();
@@ -399,6 +405,7 @@ module.exports = {
   login, refreshTokens, logout, changePassword, setup2FA, verify2FA,
   requireAuth, authorizeAccess, requireBMT, requireAdminUnitUsaha, requireUnitUsaha, requireWali,
   requirePengasuhan, requirePengajaran, requireLPTQ, requireAdministrasi, requireSekretariat,
+  requireSekretariatOrPengajaran,
   requirePasswordResetAuthority, requireAdmin, requireAnyStaff, isSuperAdmin, jenisAkunEfektif,
   requireDashboardAdmin, recordLoginAudit, recordSensitiveAudit, JWT_SECRET,
 };

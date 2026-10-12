@@ -4178,11 +4178,12 @@ function GuruPendidikManagement({ backendToken, backendOnline, data, setData }) 
 
 // ==================== MASTER MAPEL, PENUGASAN & JADWAL KBM ====================
 
-function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
-  const [subTab, setSubTab] = useState("mapel"); // 'mapel', 'penugasan', 'jadwal'
+// ==================== MASTER MAPEL & SK PENUGASAN GURU ====================
+
+function MasterMapelManagement({ backendToken, backendOnline, data, setData }) {
+  const [subTab, setSubTab] = useState("mapel"); // 'mapel', 'penugasan'
   const [listMapel, setListMapel] = useState([]);
   const [listPenugasan, setListPenugasan] = useState([]);
-  const [listJadwal, setListJadwal] = useState([]);
   const [listGuru, setListGuru] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
@@ -4197,37 +4198,24 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
   const [penugasanForm, setPenugasanForm] = useState({
     guruId: "",
     mapelId: "",
-    kelas: (data.kelas && data.kelas[0]) || "",
+    kelas: (data.kelas && data.kelas[0]) || "7A",
     tahunAjaran: "2026/2027",
     semester: "Ganjil",
     bebanJamMingguan: 2,
   });
-
-  // Jadwal Form
-  const [jadwalForm, setJadwalForm] = useState({
-    penugasanId: "",
-    hari: "Senin",
-    jamMulai: "07:30",
-    jamSelesai: "09:00",
-    ruangan: "",
-  });
-  const [jadwalFilterKelas, setJadwalFilterKelas] = useState("Semua");
-  const [jadwalFilterHari, setJadwalFilterHari] = useState("Semua");
 
   const muatSemua = async () => {
     if (!backendToken) return;
     setLoading(true);
     setErr("");
     try {
-      const [mRes, pRes, jRes, gRes] = await Promise.all([
+      const [mRes, pRes, gRes] = await Promise.all([
         backendApi("/pengajaran/mapel", { token: backendToken }).catch(() => []),
         backendApi("/pengajaran/penugasan", { token: backendToken }).catch(() => []),
-        backendApi("/pengajaran/jadwal", { token: backendToken }).catch(() => []),
         backendApi("/pengajaran/guru-pendidik", { token: backendToken }).catch(() => []),
       ]);
       setListMapel(Array.isArray(mRes) ? mRes : []);
       setListPenugasan(Array.isArray(pRes) ? pRes : []);
-      setListJadwal(Array.isArray(jRes) ? jRes : []);
       setListGuru(Array.isArray(gRes) ? gRes : []);
       if (!penugasanForm.guruId && gRes && gRes.length) {
         setPenugasanForm((f) => ({ ...f, guruId: gRes[0].id }));
@@ -4246,7 +4234,6 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
     muatSemua();
   }, [backendToken]);
 
-  // Handler Mapel
   const simpanMapel = async (e) => {
     e?.preventDefault();
     if (!mapelForm.kodeMapel.trim() || !mapelForm.nama.trim()) {
@@ -4279,7 +4266,6 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
     }
   };
 
-  // Handler Penugasan
   const simpanPenugasan = async (e) => {
     e?.preventDefault();
     if (!penugasanForm.guruId || !penugasanForm.mapelId || !penugasanForm.kelas) {
@@ -4306,39 +4292,6 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
     }
   };
 
-  // Handler Jadwal
-  const simpanJadwal = async (e) => {
-    e?.preventDefault();
-    if (!jadwalForm.penugasanId) {
-      setErr("Pilih penugasan mengajar terlebih dahulu.");
-      return;
-    }
-    setErr("");
-    try {
-      await backendApi("/pengajaran/jadwal", { method: "POST", token: backendToken, body: jadwalForm });
-      setMsg("Jadwal KBM berhasil ditambahkan tanpa tabrakan.");
-      muatSemua();
-    } catch (e) {
-      setErr(e.message || "Gagal menambahkan jadwal pelajaran.");
-    }
-  };
-
-  const hapusJadwal = async (j) => {
-    if (!window.confirm("Hapus jadwal pelajaran ini?")) return;
-    try {
-      await backendApi(`/pengajaran/jadwal/${j.id}`, { method: "DELETE", token: backendToken });
-      muatSemua();
-    } catch (e) {
-      alert(e.message || "Gagal menghapus jadwal.");
-    }
-  };
-
-  const jadwalFiltered = listJadwal.filter((j) => {
-    const matchK = jadwalFilterKelas === "Semua" || j.kelas === jadwalFilterKelas;
-    const matchH = jadwalFilterHari === "Semua" || j.hari === jadwalFilterHari;
-    return matchK && matchH;
-  });
-
   return (
     <div className="space-y-5">
       {/* SUB-TAB NAVIGATOR */}
@@ -4359,14 +4312,6 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
         >
           <GraduationCap size={15} /> 2. SK Penugasan Guru ({listPenugasan.length})
         </button>
-        <button
-          onClick={() => setSubTab("jadwal")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            subTab === "jadwal" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
-          }`}
-        >
-          <CalendarCheck size={15} /> 3. Jadwal KBM Harian ({listJadwal.length})
-        </button>
       </div>
 
       {msg && (
@@ -4385,9 +4330,9 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
 
       {/* ================= SUB-TAB 1: MASTER MAPEL ================= */}
       {subTab === "mapel" && (
-        <ArchCard title="Master Mata Pelajaran" eyebrow="Kurikulum Diniyah, Tahfidz & Umum" icon={BookOpen} tone="brand">
+        <ArchCard title="Master Mata Pelajaran" eyebrow="Kurikulum Diniyah, Tahfidz & Umum MMA" icon={BookOpen} tone="brand">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs text-[#5B7C93]">Kelola mata pelajaran standar pondok yang diampu oleh asatidz.</p>
+            <p className="text-xs text-[#5B7C93]">Daftar mata pelajaran resmi Ma'had Mudaiyatul Anwar beserta bobot dan KKM.</p>
             <button
               onClick={() => {
                 setEditingMapel(null);
@@ -4452,10 +4397,10 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
         </ArchCard>
       )}
 
-      {/* ================= SUB-TAB 2: SK PENUGASAN ================= */}
+      {/* ================= SUB-TAB 2: SK PENUGASAN GURU ================= */}
       {subTab === "penugasan" && (
         <div className="space-y-4">
-          <ArchCard title="Tugaskan Guru ke Kelas (SK Pengajar)" eyebrow="Penugasan Mata Pelajaran" icon={GraduationCap} tone="gold">
+          <ArchCard title="Tugaskan Guru ke Kelas (SK Pengajar)" eyebrow="Penugasan Mata Pelajaran & Jam Tatap Muka" icon={GraduationCap} tone="gold">
             <form onSubmit={simpanPenugasan} className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 items-end text-xs">
               <div className="sm:col-span-2">
                 <label className="font-semibold text-[#475569] block mb-1">Guru Pendidik</label>
@@ -4466,7 +4411,7 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
                 >
                   <option value="">Pilih Guru Pendidik</option>
                   {listGuru.map((g) => (
-                    <option key={g.id} value={g.id}>{g.gelarDepan ? g.gelarDepan + " " : ""}{g.nama} ({g.nip || "Non-NIP"})</option>
+                    <option key={g.id} value={g.id}>[{g.kodeGuru || "G"}] {g.gelarDepan ? g.gelarDepan + " " : ""}{g.nama} ({g.nip || "Non-NIP"})</option>
                   ))}
                 </select>
               </div>
@@ -4480,7 +4425,7 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
                 >
                   <option value="">Pilih Mapel</option>
                   {listMapel.map((m) => (
-                    <option key={m.id} value={m.id}>{m.nama} ({m.kodeMapel})</option>
+                    <option key={m.id} value={m.id}>[{m.kodeMapel}] {m.nama}</option>
                   ))}
                 </select>
               </div>
@@ -4557,134 +4502,6 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
         </div>
       )}
 
-      {/* ================= SUB-TAB 3: JADWAL KBM ================= */}
-      {subTab === "jadwal" && (
-        <div className="space-y-4">
-          <ArchCard title="Tambah Jadwal Pelajaran (KBM)" eyebrow="Sistem Cek Anti-Bentrok Otomatis" icon={Clock} tone="emerald">
-            <form onSubmit={simpanJadwal} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 items-end text-xs">
-              <div className="sm:col-span-2">
-                <label className="font-semibold text-[#475569] block mb-1">Penugasan (Kelas · Mapel · Guru)</label>
-                <select
-                  value={jadwalForm.penugasanId}
-                  onChange={(e) => setJadwalForm({ ...jadwalForm, penugasanId: e.target.value })}
-                  className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-2 bg-white"
-                >
-                  <option value="">Pilih Penugasan Mengajar</option>
-                  {listPenugasan.map((p) => (
-                    <option key={p.id} value={p.id}>[{p.kelas}] {p.namaMapel} - {p.namaGuru}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="font-semibold text-[#475569] block mb-1">Hari</label>
-                <select
-                  value={jadwalForm.hari}
-                  onChange={(e) => setJadwalForm({ ...jadwalForm, hari: e.target.value })}
-                  className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-2 bg-white font-medium"
-                >
-                  {["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"].map((h) => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="font-semibold text-[#475569] block mb-1">Jam (Mulai - Selesai)</label>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="time"
-                    value={jadwalForm.jamMulai}
-                    onChange={(e) => setJadwalForm({ ...jadwalForm, jamMulai: e.target.value })}
-                    className="w-full border border-[#CFE3F0] rounded-xl px-2 py-1.5 bg-white text-xs"
-                  />
-                  <span>-</span>
-                  <input
-                    type="time"
-                    value={jadwalForm.jamSelesai}
-                    onChange={(e) => setJadwalForm({ ...jadwalForm, jamSelesai: e.target.value })}
-                    className="w-full border border-[#CFE3F0] rounded-xl px-2 py-1.5 bg-white text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <button type="submit" className="w-full btn-gradient py-2 rounded-xl font-semibold flex items-center justify-center gap-1">
-                  <Plus size={14} /> Simpan Jadwal
-                </button>
-              </div>
-            </form>
-          </ArchCard>
-
-          <ArchCard title="Jadwal Pelajaran KBM Harian" eyebrow={`${jadwalFiltered.length} Sesi Terjadwal`} icon={CalendarCheck}>
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-[#64748B] font-medium">Filter Kelas:</span>
-                <select
-                  value={jadwalFilterKelas}
-                  onChange={(e) => setJadwalFilterKelas(e.target.value)}
-                  className="border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white text-xs"
-                >
-                  <option value="Semua">Semua Kelas</option>
-                  {(data.kelas || []).map((k) => <option key={k} value={k}>{k}</option>)}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-[#64748B] font-medium">Filter Hari:</span>
-                <select
-                  value={jadwalFilterHari}
-                  onChange={(e) => setJadwalFilterHari(e.target.value)}
-                  className="border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white text-xs"
-                >
-                  <option value="Semua">Semua Hari</option>
-                  {["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"].map((h) => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {!jadwalFiltered.length ? (
-              <p className="text-xs text-[#94A3B8] italic p-4 text-center">Belum ada jadwal yang sesuai filter.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
-                    <tr>
-                      <th className="py-2.5 px-3">Hari & Jam</th>
-                      <th className="py-2.5 px-3">Kelas</th>
-                      <th className="py-2.5 px-3">Mata Pelajaran</th>
-                      <th className="py-2.5 px-3">Guru Pendidik</th>
-                      <th className="py-2.5 px-3">Ruangan</th>
-                      <th className="py-2.5 px-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F1F5F9]">
-                    {jadwalFiltered.map((j) => (
-                      <tr key={j.id} className="hover:bg-[#F8FAFC]">
-                        <td className="py-2.5 px-3">
-                          <span className="font-bold text-[#0C4A6E]">{j.hari}</span>
-                          <p className="font-mono text-[11px] text-[#475569]">{j.jamMulai} - {j.jamSelesai}</p>
-                        </td>
-                        <td className="py-2.5 px-3 font-bold text-emerald-800">{j.kelas}</td>
-                        <td className="py-2.5 px-3 font-semibold text-[#0F172A]">{j.namaMapel}</td>
-                        <td className="py-2.5 px-3">{j.namaGuru}</td>
-                        <td className="py-2.5 px-3 text-[#64748B]">{j.ruangan || "Kelas Utama"}</td>
-                        <td className="py-2.5 px-3 text-right">
-                          <button onClick={() => hapusJadwal(j)} className="p-1 text-rose-700 hover:bg-rose-50 rounded">
-                            <Trash2 size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </ArchCard>
-        </div>
-      )}
-
       {/* MODAL TAMBAH/EDIT MAPEL */}
       {mapelModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -4694,11 +4511,11 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
             </h3>
             <form onSubmit={simpanMapel} className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-[#475569] block mb-1">Kode Mapel (Singkatan Unik)</label>
+                <label className="font-semibold text-[#475569] block mb-1">Kode Mapel (Singkatan Unik, mis. M01 / ARAB)</label>
                 <input
                   type="text"
                   required
-                  placeholder="mis. ARAB, FQH, IND"
+                  placeholder="mis. M01 atau ARAB"
                   value={mapelForm.kodeMapel}
                   onChange={(e) => setMapelForm({ ...mapelForm, kodeMapel: e.target.value.toUpperCase() })}
                   className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-mono uppercase"
@@ -4709,7 +4526,7 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
                 <input
                   type="text"
                   required
-                  placeholder="mis. Bahasa Arab, Fiqih"
+                  placeholder="mis. Tahfidz Al-Qur'an, Fiqih Ibadah"
                   value={mapelForm.nama}
                   onChange={(e) => setMapelForm({ ...mapelForm, nama: e.target.value })}
                   className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-medium"
@@ -4755,6 +4572,1357 @@ function MapelKbmManagement({ backendToken, backendOnline, data, setData }) {
       )}
     </div>
   );
+}
+
+// ==================== JADWAL KBM ANTI-BENTROK MMA (5 MODE TAMPILAN) ====================
+
+const HARI_KBM_LIST = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const JAM_KBM_DEFINISI = [
+  { jamKe: 1, label: "Jam 1", waktu: "08.00 - 08.35", durasi: "35 Menit" },
+  { jamKe: 2, label: "Jam 2", waktu: "08.35 - 09.10", durasi: "35 Menit" },
+  { jamKe: "istirahat", label: "Istirahat", waktu: "09.10 - 09.40", durasi: "30 Menit" },
+  { jamKe: 3, label: "Jam 3", waktu: "09.40 - 10.15", durasi: "35 Menit" },
+  { jamKe: 4, label: "Jam 4", waktu: "10.15 - 10.50", durasi: "35 Menit" },
+];
+const KELAS_KBM_LIST = ["7A", "7B", "7C", "7D", "8A", "8B", "8C", "8D", "9A", "9B", "9C", "10", "11", "12", "Aksel"];
+
+function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPrint }) {
+  const [mode, setMode] = useState("grid"); // 'grid', 'kelas', 'guru', 'matriks', 'cetak'
+  const [selectedHari, setSelectedHari] = useState("Senin");
+  const [selectedKelas, setSelectedKelas] = useState("7A");
+  const [selectedGuru, setSelectedGuru] = useState("");
+  const [selectedJamKe, setSelectedJamKe] = useState(1);
+  const [tahunAjaran, setTahunAjaran] = useState("2026/2027");
+  const [semester, setSemester] = useState("Ganjil");
+
+  const [scheduleData, setScheduleData] = useState({
+    slots: [],
+    totalSlot: 0,
+    totalBentrok: 0,
+    bentrokList: [],
+    errorMap: {},
+  });
+  const [listGuru, setListGuru] = useState([]);
+  const [listMapel, setListMapel] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  // Modal State
+  const [editModal, setEditModal] = useState(false);
+  const [conflictModal, setConflictModal] = useState(false);
+  const [slotForm, setSlotForm] = useState({
+    hari: "Senin",
+    jamKe: 1,
+    kelas: "7A",
+    kodeMapel: "",
+    namaMapel: "",
+    kodeGuru: "",
+    namaGuru: "",
+    ruangan: "",
+  });
+
+  // Cetak Sub-Mode
+  const [cetakSubMode, setCetakSubMode] = useState("kelas"); // 'kelas', 'semua', 'guru'
+
+  const muatJadwal = async () => {
+    if (!backendToken) return;
+    setLoading(true);
+    setErr("");
+    try {
+      const [jadwalRes, guruRes, mapelRes] = await Promise.all([
+        backendApi(`/pengajaran/jadwal-kbm?tahunAjaran=${encodeURIComponent(tahunAjaran)}&semester=${encodeURIComponent(semester)}`, { token: backendToken }),
+        backendApi("/pengajaran/guru-pendidik", { token: backendToken }).catch(() => []),
+        backendApi("/pengajaran/mapel", { token: backendToken }).catch(() => []),
+      ]);
+
+      if (jadwalRes && Array.isArray(jadwalRes.slots)) {
+        setScheduleData(jadwalRes);
+      }
+      const gList = Array.isArray(guruRes) ? guruRes : [];
+      setListGuru(gList);
+      if (!selectedGuru && gList.length) setSelectedGuru(gList[0].nama);
+      setListMapel(Array.isArray(mapelRes) ? mapelRes : []);
+    } catch (e) {
+      setErr(e.message || "Gagal memuat jadwal KBM.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    muatJadwal();
+  }, [backendToken, tahunAjaran, semester]);
+
+  // Helper Pencarian Slot
+  const findSlot = (h, jk, k) => {
+    return (scheduleData.slots || []).find(
+      (s) => s.hari === h && Number(s.jamKe) === Number(jk) && s.kelas === k
+    );
+  };
+
+  // Helper Cek Bentrok Calon Guru di Slot Modal
+  const deteksiBentrokCalon = (h, jk, k, guruName, guruCode) => {
+    if (!guruName || guruName === "HALAQOH TAHFIDZ" || guruName === "PROGRAM UNGGULAN") return null;
+    const match = (scheduleData.slots || []).find(
+      (s) =>
+        s.hari === h &&
+        Number(s.jamKe) === Number(jk) &&
+        s.kelas !== k &&
+        ((s.kodeGuru && guruCode && s.kodeGuru === guruCode) ||
+          (s.namaGuru && s.namaGuru.toLowerCase() === guruName.toLowerCase()))
+    );
+    return match || null;
+  };
+
+  const calonBentrok = deteksiBentrokCalon(
+    slotForm.hari,
+    slotForm.jamKe,
+    slotForm.kelas,
+    slotForm.namaGuru,
+    slotForm.kodeGuru
+  );
+
+  const bukaEditSlot = (h, jk, k) => {
+    const existing = findSlot(h, jk, k);
+    const kelasObj = (data.kelasInfo || {})[k] || {};
+    setSlotForm({
+      hari: h,
+      jamKe: jk,
+      kelas: k,
+      kodeMapel: existing?.kodeMapel || "",
+      namaMapel: existing?.namaMapel || "",
+      kodeGuru: existing?.kodeGuru || "",
+      namaGuru: existing?.namaGuru || "",
+      ruangan: existing?.ruangan || existing?.lokasiKelas || kelasObj.lokasiKelas || "",
+    });
+    setEditModal(true);
+  };
+
+  const simpanSlot = async (e) => {
+    e?.preventDefault();
+    setSaving(true);
+    setErr("");
+    setMsg("");
+    try {
+      await backendApi("/pengajaran/jadwal-kbm/slot", {
+        method: "POST",
+        token: backendToken,
+        body: {
+          ...slotForm,
+          tahunAjaran,
+          semester,
+        },
+      });
+      setMsg(`Slot KBM ${slotForm.hari} Jam ${slotForm.jamKe} Kelas ${slotForm.kelas} berhasil disimpan.`);
+      setEditModal(false);
+      muatJadwal();
+    } catch (e) {
+      setErr(e.message || "Gagal menyimpan slot jadwal.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const kosongkanSlot = async () => {
+    if (!window.confirm(`Kosongkan slot ${slotForm.hari} Jam ${slotForm.jamKe} Kelas ${slotForm.kelas}?`)) return;
+    setSaving(true);
+    setErr("");
+    try {
+      await backendApi("/pengajaran/jadwal-kbm/hapus-slot", {
+        method: "POST",
+        token: backendToken,
+        body: {
+          hari: slotForm.hari,
+          jamKe: slotForm.jamKe,
+          kelas: slotForm.kelas,
+          tahunAjaran,
+          semester,
+        },
+      });
+      setMsg(`Slot KBM Kelas ${slotForm.kelas} berhasil dikosongkan.`);
+      setEditModal(false);
+      muatJadwal();
+    } catch (e) {
+      setErr(e.message || "Gagal mengosongkan slot.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetMMA = async () => {
+    if (!window.confirm("Muat jadwal baku resmi MMA (360 Slot KBM dari spreadsheet resmi pondok)? Seluruh jadwal semester ini akan disinkronkan ke jadwal baku.")) {
+      return;
+    }
+    setResetBusy(true);
+    setErr("");
+    try {
+      const res = await backendApi("/pengajaran/jadwal-kbm/reset-default-mma", {
+        method: "POST",
+        token: backendToken,
+      });
+      if (res && Array.isArray(res.slots)) {
+        setScheduleData(res);
+      }
+      setMsg("Jadwal baku resmi MMA (360 Slot) berhasil dimuat sempurna dengan 0 bentrok!");
+      muatJadwal();
+    } catch (e) {
+      setErr(e.message || "Gagal memuat jadwal baku MMA.");
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
+  const triggerCetak = () => {
+    if (onPrint) {
+      const printEl = document.getElementById("mma-kbm-print-view");
+      if (printEl) {
+        onPrint(
+          <div dangerouslySetInnerHTML={{ __html: printEl.innerHTML }} />
+        );
+        return;
+      }
+    }
+    window.print();
+  };
+
+  const allKelases = Array.from(new Set([...KELAS_KBM_LIST, ...(data.kelas || [])]));
+
+  return (
+    <div className="space-y-5">
+      {/* HEADER NAVIGATOR 5 MODE TAMPILAN */}
+      <div className="bg-white border border-[#CFE3F0] p-3 rounded-2xl shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+            <button
+              onClick={() => setMode("grid")}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                mode === "grid" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
+              }`}
+            >
+              <CalendarCheck size={14} /> 1. Grid Input Mingguan
+            </button>
+            <button
+              onClick={() => setMode("kelas")}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                mode === "kelas" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
+              }`}
+            >
+              <School size={14} /> 2. Jadwal per Kelas
+            </button>
+            <button
+              onClick={() => setMode("guru")}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                mode === "guru" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
+              }`}
+            >
+              <GraduationCap size={14} /> 3. Jadwal per Guru
+            </button>
+            <button
+              onClick={() => setMode("matriks")}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                mode === "matriks" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
+              }`}
+            >
+              <Clock size={14} /> 4. Matriks Pengajar per Jam
+            </button>
+            <button
+              onClick={() => setMode("cetak")}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                mode === "cetak" ? "btn-gradient text-white shadow-md" : "text-[#475569] hover:bg-[#F1F5F9]"
+              }`}
+            >
+              <Printer size={14} /> 5. Cetak Siap Pakai
+            </button>
+          </div>
+
+          {/* INDIKATOR STATUS BENTROK */}
+          <div className="flex items-center gap-2 shrink-0">
+            {scheduleData.totalBentrok === 0 ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm">
+                <CheckCircle2 size={14} className="text-emerald-600" /> 0 Bentrok (Jadwal Aman)
+              </span>
+            ) : (
+              <button
+                onClick={() => setConflictModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse hover:bg-rose-200 shadow-sm"
+              >
+                <AlertTriangle size={14} className="text-rose-600" /> {scheduleData.totalBentrok} Bentrok Terdeteksi!
+              </button>
+            )}
+
+            <button
+              onClick={handleResetMMA}
+              disabled={resetBusy}
+              title="Kembalikan/sinkronkan ke 360 slot baku jadwal KBM MMA dari file resmi"
+              className="px-3 py-1.5 bg-[#EAF4FB] hover:bg-[#DCEDF7] text-[#0C4A6E] rounded-xl text-xs font-bold flex items-center gap-1.5 border border-[#CFE3F0] transition-colors"
+            >
+              <RefreshCw size={13} className={resetBusy ? "animate-spin" : ""} />
+              Muat Jadwal Baku MMA
+            </button>
+          </div>
+        </div>
+
+        {/* TAHUN AJARAN & SEMESTER CONTROLS */}
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-[#F1F5F9] text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#64748B] font-medium">Tahun Ajaran:</span>
+            <select
+              value={tahunAjaran}
+              onChange={(e) => setTahunAjaran(e.target.value)}
+              className="border border-[#CFE3F0] rounded-xl px-2.5 py-1 bg-white font-semibold text-[#0F172A]"
+            >
+              <option value="2026/2027">2026/2027</option>
+              <option value="2025/2026">2025/2026</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#64748B] font-medium">Semester:</span>
+            <select
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+              className="border border-[#CFE3F0] rounded-xl px-2.5 py-1 bg-white font-semibold text-[#0F172A]"
+            >
+              <option value="Ganjil">Ganjil</option>
+              <option value="Genap">Genap</option>
+            </select>
+          </div>
+          <span className="text-[#94A3B8]">·</span>
+          <span className="text-[#64748B]">Total Slot: <b className="text-[#0F172A]">{scheduleData.totalSlot || 0}</b> Terjadwal</span>
+          <span className="text-[#94A3B8]">·</span>
+          <span className="text-[#64748B]">Durasi KBM: <b className="text-[#0F172A]">4 Jam / Hari @ 35 Menit</b> (Istirahat 30 Menit)</span>
+        </div>
+      </div>
+
+      {msg && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center justify-between">
+          <span className="flex items-center gap-2"><CheckCircle2 size={15} /> {msg}</span>
+          <button onClick={() => setMsg("")} className="text-emerald-600 hover:text-emerald-900"><X size={14} /></button>
+        </div>
+      )}
+
+      {err && (
+        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center justify-between">
+          <span className="flex items-center gap-2"><AlertCircle size={15} /> {err}</span>
+          <button onClick={() => setErr("")} className="text-rose-600 hover:text-rose-900"><X size={14} /></button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="py-16 text-center text-xs text-[#5B7C93] flex flex-col items-center gap-2 bg-white rounded-2xl border border-[#CFE3F0]">
+          <Loader2 size={28} className="animate-spin text-[#0C4A6E]" />
+          Memuat jadwal kegiatan belajar mengajar...
+        </div>
+      ) : (
+        <>
+          {/* ========================================================================= */}
+          {/* MODE 1: GRID INPUT MINGGUAN (ANTI-BENTROK LIVE)                           */}
+          {/* ========================================================================= */}
+          {mode === "grid" && (
+            <div className="space-y-4">
+              {/* TAB HARI */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {HARI_KBM_LIST.map((h) => {
+                  const slotsHari = (scheduleData.slots || []).filter((s) => s.hari === h);
+                  const bentrokHari = slotsHari.filter((s) => s.status === "BENTROK").length;
+                  return (
+                    <button
+                      key={h}
+                      onClick={() => setSelectedHari(h)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        selectedHari === h
+                          ? "btn-gradient text-white shadow-md"
+                          : "bg-white border border-[#CFE3F0] text-[#475569] hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <span>{h}</span>
+                      {bentrokHari > 0 ? (
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      ) : (
+                        <span className="text-[10px] opacity-75 font-normal">({slotsHari.length})</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* GRID TABLE: KELAS x JAM 1-4 */}
+              <ArchCard
+                title={`Grid Jadwal KBM Hari ${selectedHari}`}
+                eyebrow={`Sistem Cek Tabrakan Guru Real-Time · Tahun Ajaran ${tahunAjaran} (${semester})`}
+                icon={CalendarCheck}
+                tone="brand"
+              >
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                        <th className="py-3 px-3 w-[220px]">Kelas & Lokasi Ruang</th>
+                        <th className="py-3 px-3 min-w-[170px]">
+                          Jam 1 <span className="block text-[9px] font-normal lowercase text-[#64748B]">08.00 - 08.35 (35m)</span>
+                        </th>
+                        <th className="py-3 px-3 min-w-[170px]">
+                          Jam 2 <span className="block text-[9px] font-normal lowercase text-[#64748B]">08.35 - 09.10 (35m)</span>
+                        </th>
+                        <th className="py-3 px-2 w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]">
+                          Istirahat <span className="block text-[9px] font-normal lowercase text-[#94A3B8]">09.10 - 09.40</span>
+                        </th>
+                        <th className="py-3 px-3 min-w-[170px]">
+                          Jam 3 <span className="block text-[9px] font-normal lowercase text-[#64748B]">09.40 - 10.15 (35m)</span>
+                        </th>
+                        <th className="py-3 px-3 min-w-[170px]">
+                          Jam 4 <span className="block text-[9px] font-normal lowercase text-[#64748B]">10.15 - 10.50 (35m)</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F1F5F9]">
+                      {allKelases.map((k) => {
+                        const s1 = findSlot(selectedHari, 1, k);
+                        const s2 = findSlot(selectedHari, 2, k);
+                        const s3 = findSlot(selectedHari, 3, k);
+                        const s4 = findSlot(selectedHari, 4, k);
+                        const lokasi = s1?.lokasiKelas || s1?.ruangan || (data.kelasInfo || {})[k]?.lokasiKelas || "-";
+                        const wali = s1?.namaWaliKelas || "-";
+
+                        const renderSlotCell = (slot, jamKe) => {
+                          if (!slot || (!slot.namaMapel && !slot.namaGuru)) {
+                            return (
+                              <button
+                                onClick={() => bukaEditSlot(selectedHari, jamKe, k)}
+                                className="w-full text-center py-3 border border-dashed border-[#CFE3F0] rounded-xl text-[#94A3B8] hover:border-[#0C4A6E] hover:bg-[#F0F7FD] hover:text-[#0C4A6E] transition-all text-[11px]"
+                              >
+                                + Isi Slot
+                              </button>
+                            );
+                          }
+
+                          const isBentrok = slot.status === "BENTROK";
+
+                          return (
+                            <div
+                              onClick={() => bukaEditSlot(selectedHari, jamKe, k)}
+                              className={`p-2.5 rounded-xl cursor-pointer transition-all border ${
+                                isBentrok
+                                  ? "bg-rose-50 border-rose-400 text-rose-900 shadow-sm hover:bg-rose-100"
+                                  : "bg-white border-[#CFE3F0] hover:border-[#0C4A6E] hover:shadow-md text-[#0F172A]"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-1 mb-1">
+                                <p className="font-bold text-xs truncate leading-tight" title={slot.namaMapel}>
+                                  {slot.namaMapel || "Tanpa Mapel"}
+                                </p>
+                                {slot.kodeMapel && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.2 bg-[#F1F5F9] rounded text-[#475569] shrink-0 font-semibold">
+                                    {slot.kodeMapel}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-[#0C4A6E] font-medium">
+                                <span className="font-semibold truncate">{slot.namaGuru || "-"}</span>
+                                {slot.kodeGuru && (
+                                  <span className="text-[9px] font-mono font-bold text-[#0284C7] shrink-0">
+                                    ({slot.kodeGuru})
+                                  </span>
+                                )}
+                              </div>
+                              {isBentrok && (
+                                <div className="mt-1.5 pt-1 border-t border-rose-200 text-[10px] text-rose-700 font-semibold flex items-center gap-1">
+                                  <AlertTriangle size={11} className="shrink-0" />
+                                  <span className="truncate">{slot.keteranganError}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        };
+
+                        return (
+                          <tr key={k} className="hover:bg-[#F8FAFC]">
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-[#0C4A6E] w-10 shrink-0 font-mono">{k}</span>
+                                <div className="overflow-hidden">
+                                  <span className="inline-block text-[10px] bg-[#EAF4FB] text-[#0C4A6E] px-2 py-0.5 rounded-md font-semibold truncate max-w-[150px]">
+                                    {lokasi}
+                                  </span>
+                                  {wali && wali !== "-" && (
+                                    <p className="text-[10px] text-[#64748B] truncate mt-0.5">Wali: {wali}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-2">{renderSlotCell(s1, 1)}</td>
+                            <td className="py-2.5 px-2">{renderSlotCell(s2, 2)}</td>
+                            <td className="py-2.5 px-1 bg-[#F8FAFC]/50 text-center">
+                              <span className="text-[9px] text-[#94A3B8] font-bold block transform -rotate-90">
+                                ISTIRAHAT
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2">{renderSlotCell(s3, 3)}</td>
+                            <td className="py-2.5 px-2">{renderSlotCell(s4, 4)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </ArchCard>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODE 2: JADWAL PER KELAS (ROMBEL VIEW)                                    */}
+          {/* ========================================================================= */}
+          {mode === "kelas" && (
+            <div className="space-y-4">
+              {/* SELECTOR KELAS */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                {allKelases.map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setSelectedKelas(k)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      selectedKelas === k
+                        ? "btn-gradient text-white shadow-md"
+                        : "bg-white border border-[#CFE3F0] text-[#475569] hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+
+              {/* CARD RINGKASAN KELAS */}
+              {(() => {
+                const sampleSlot = (scheduleData.slots || []).find((s) => s.kelas === selectedKelas);
+                const lokasi = sampleSlot?.lokasiKelas || sampleSlot?.ruangan || (data.kelasInfo || {})[selectedKelas]?.lokasiKelas || "-";
+                const wali = sampleSlot?.namaWaliKelas || "-";
+                const slotsKelas = (scheduleData.slots || []).filter((s) => s.kelas === selectedKelas);
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] shadow-sm">
+                      <p className="text-[10px] text-[#64748B] uppercase font-bold tracking-wider">Kelas / Rombel</p>
+                      <p className="text-xl font-bold text-[#0C4A6E] mt-0.5">{selectedKelas}</p>
+                    </div>
+                    <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] shadow-sm">
+                      <p className="text-[10px] text-[#64748B] uppercase font-bold tracking-wider">Lokasi Ruang Belajar</p>
+                      <p className="text-sm font-bold text-[#0F172A] mt-1">{lokasi}</p>
+                    </div>
+                    <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] shadow-sm">
+                      <p className="text-[10px] text-[#64748B] uppercase font-bold tracking-wider">Wali Kelas</p>
+                      <p className="text-sm font-bold text-[#0F172A] mt-1">{wali}</p>
+                    </div>
+                    <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] shadow-sm">
+                      <p className="text-[10px] text-[#64748B] uppercase font-bold tracking-wider">Beban Belajar Mingguan</p>
+                      <p className="text-sm font-bold text-emerald-700 mt-1">{slotsKelas.length} Jam Pelajaran (JTM)</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* TABEL JADWAL KELAS MINGGUAN */}
+              <ArchCard
+                title={`Jadwal Pelajaran Kelas ${selectedKelas}`}
+                eyebrow={`Tahun Ajaran ${tahunAjaran} · Semester ${semester}`}
+                icon={School}
+                tone="gold"
+              >
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                        <th className="py-3 px-3 w-[120px]">Hari</th>
+                        <th className="py-3 px-3">Jam 1 (08.00 - 08.35)</th>
+                        <th className="py-3 px-3">Jam 2 (08.35 - 09.10)</th>
+                        <th className="py-3 px-2 w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]">Istirahat</th>
+                        <th className="py-3 px-3">Jam 3 (09.40 - 10.15)</th>
+                        <th className="py-3 px-3">Jam 4 (10.15 - 10.50)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F1F5F9]">
+                      {HARI_KBM_LIST.map((h) => {
+                        const s1 = findSlot(h, 1, selectedKelas);
+                        const s2 = findSlot(h, 2, selectedKelas);
+                        const s3 = findSlot(h, 3, selectedKelas);
+                        const s4 = findSlot(h, 4, selectedKelas);
+
+                        const renderCell = (slot, jk) => {
+                          if (!slot || (!slot.namaMapel && !slot.namaGuru)) {
+                            return <span className="text-[#94A3B8] italic text-[11px]">- Kosong -</span>;
+                          }
+                          return (
+                            <div
+                              onClick={() => bukaEditSlot(h, jk, selectedKelas)}
+                              className="cursor-pointer hover:bg-sky-50/50 p-1 rounded-lg"
+                            >
+                              <p className="font-bold text-[#0F172A]">{slot.namaMapel}</p>
+                              <p className="text-[11px] text-[#0C4A6E]">{slot.namaGuru} {slot.kodeGuru ? `(${slot.kodeGuru})` : ""}</p>
+                              {slot.ruangan && <p className="text-[10px] text-[#64748B]">Ruang: {slot.ruangan}</p>}
+                            </div>
+                          );
+                        };
+
+                        return (
+                          <tr key={h} className="hover:bg-[#F8FAFC]">
+                            <td className="py-3 px-3 font-bold text-[#0C4A6E]">{h}</td>
+                            <td className="py-3 px-3">{renderCell(s1, 1)}</td>
+                            <td className="py-3 px-3">{renderCell(s2, 2)}</td>
+                            <td className="py-3 px-1 text-center bg-[#F8FAFC]/50 text-[10px] text-[#94A3B8] font-semibold">
+                              09.10-09.40
+                            </td>
+                            <td className="py-3 px-3">{renderCell(s3, 3)}</td>
+                            <td className="py-3 px-3">{renderCell(s4, 4)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </ArchCard>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODE 3: JADWAL PER GURU (ASATIDZ VIEW)                                     */}
+          {/* ========================================================================= */}
+          {mode === "guru" && (
+            <div className="space-y-4">
+              {/* SELECTOR GURU */}
+              <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] flex flex-wrap items-center gap-3">
+                <span className="text-xs font-semibold text-[#475569]">Pilih Ustadz / Guru Pengajar:</span>
+                <select
+                  value={selectedGuru}
+                  onChange={(e) => setSelectedGuru(e.target.value)}
+                  className="flex-1 min-w-[240px] border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white font-semibold text-[#0F172A]"
+                >
+                  <option value="">-- Pilih Guru Pendidik --</option>
+                  {listGuru.map((g) => (
+                    <option key={g.id} value={g.nama}>
+                      [{g.kodeGuru || "G"}] {g.nama} ({g.statusKepegawaian || "Tetap"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* CARD RINGKASAN GURU */}
+              {(() => {
+                const slotsGuru = (scheduleData.slots || []).filter(
+                  (s) => s.namaGuru && selectedGuru && s.namaGuru.toLowerCase() === selectedGuru.toLowerCase()
+                );
+                const rombelList = Array.from(new Set(slotsGuru.map((s) => s.kelas)));
+                const guruObj = listGuru.find((g) => g.nama === selectedGuru) || {};
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] shadow-sm">
+                      <p className="text-[10px] text-[#64748B] uppercase font-bold tracking-wider">Nama Guru Pendidik</p>
+                      <p className="text-base font-bold text-[#0C4A6E] mt-0.5 truncate">{selectedGuru || "-"}</p>
+                      {guruObj.kodeGuru && <span className="text-[10px] text-[#0284C7] font-mono font-bold">Kode: {guruObj.kodeGuru}</span>}
+                    </div>
+                    <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] shadow-sm">
+                      <p className="text-[10px] text-[#64748B] uppercase font-bold tracking-wider">Total Beban Mengajar</p>
+                      <p className="text-xl font-bold text-emerald-700 mt-0.5">{slotsGuru.length} Jam / Minggu</p>
+                    </div>
+                    <div className="bg-white p-3.5 rounded-2xl border border-[#CFE3F0] shadow-sm col-span-2">
+                      <p className="text-[10px] text-[#64748B] uppercase font-bold tracking-wider">Kelas yang Diampu ({rombelList.length} Rombel)</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {rombelList.length ? (
+                          rombelList.map((r) => (
+                            <span key={r} className="px-2 py-0.5 bg-[#EAF4FB] text-[#0C4A6E] rounded-md text-xs font-bold font-mono">
+                              {r}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-[#94A3B8] italic">Belum ada kelas terjadwal</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* TABEL JADWAL MENGAJAR GURU */}
+              <ArchCard
+                title={`Jadwal Mengajar: ${selectedGuru || "Pilih Guru"}`}
+                eyebrow="Tabel Hari & Jam Mengajar per Minggu"
+                icon={GraduationCap}
+                tone="emerald"
+              >
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                        <th className="py-3 px-3 w-[120px]">Hari</th>
+                        <th className="py-3 px-3">Jam 1 (08.00 - 08.35)</th>
+                        <th className="py-3 px-3">Jam 2 (08.35 - 09.10)</th>
+                        <th className="py-3 px-2 w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]">Istirahat</th>
+                        <th className="py-3 px-3">Jam 3 (09.40 - 10.15)</th>
+                        <th className="py-3 px-3">Jam 4 (10.15 - 10.50)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F1F5F9]">
+                      {HARI_KBM_LIST.map((h) => {
+                        const renderGuruCell = (jk) => {
+                          const slots = (scheduleData.slots || []).filter(
+                            (s) =>
+                              s.hari === h &&
+                              Number(s.jamKe) === Number(jk) &&
+                              s.namaGuru &&
+                              selectedGuru &&
+                              s.namaGuru.toLowerCase() === selectedGuru.toLowerCase()
+                          );
+
+                          if (!slots.length) {
+                            return <span className="text-[#94A3B8] italic text-[11px]">- Off / Bebas Tugas -</span>;
+                          }
+
+                          if (slots.length > 1) {
+                            return (
+                              <div className="p-2 bg-rose-50 border border-rose-300 rounded-xl text-rose-800">
+                                <p className="font-bold text-xs flex items-center gap-1">
+                                  <AlertTriangle size={12} /> BENTROK ({slots.length} Kelas)
+                                </p>
+                                {slots.map((s) => (
+                                  <p key={s.id} className="text-[11px]">
+                                    Kelas <b>{s.kelas}</b> · {s.namaMapel}
+                                  </p>
+                                ))}
+                              </div>
+                            );
+                          }
+
+                          const s = slots[0];
+                          return (
+                            <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 shadow-sm">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="font-bold text-xs px-1.5 py-0.2 bg-emerald-700 text-white rounded">
+                                  {s.kelas}
+                                </span>
+                                <span className="text-[10px] text-emerald-700 font-mono font-semibold">{s.kodeMapel}</span>
+                              </div>
+                              <p className="font-semibold text-xs mt-1">{s.namaMapel}</p>
+                              {s.lokasiKelas && <p className="text-[10px] text-[#5B7C93] truncate">Ruang: {s.lokasiKelas}</p>}
+                            </div>
+                          );
+                        };
+
+                        return (
+                          <tr key={h} className="hover:bg-[#F8FAFC]">
+                            <td className="py-3 px-3 font-bold text-[#0C4A6E]">{h}</td>
+                            <td className="py-3 px-3">{renderGuruCell(1)}</td>
+                            <td className="py-3 px-3">{renderGuruCell(2)}</td>
+                            <td className="py-3 px-1 text-center bg-[#F8FAFC]/50 text-[10px] text-[#94A3B8] font-semibold">
+                              09.10-09.40
+                            </td>
+                            <td className="py-3 px-3">{renderGuruCell(3)}</td>
+                            <td className="py-3 px-3">{renderGuruCell(4)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </ArchCard>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODE 4: MATRIKS PENGAJAR PER JAM (MONITORING KBM)                         */}
+          {/* ========================================================================= */}
+          {mode === "matriks" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#CFE3F0]">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#475569]">Pilih Hari:</span>
+                  <div className="flex items-center gap-1">
+                    {HARI_KBM_LIST.map((h) => (
+                      <button
+                        key={h}
+                        onClick={() => setSelectedHari(h)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          selectedHari === h ? "btn-gradient text-white shadow-sm" : "bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0]"
+                        }`}
+                      >
+                        {h}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#475569]">Fokus Jam Ke:</span>
+                  {[1, 2, 3, 4].map((jk) => (
+                    <button
+                      key={jk}
+                      onClick={() => setSelectedJamKe(jk)}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                        selectedJamKe === jk ? "bg-[#0C4A6E] text-white" : "bg-[#F1F5F9] text-[#475569]"
+                      }`}
+                    >
+                      Jam {jk}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* MATRIKS KELAS VS JAM PADA HARI TERPILIH */}
+              <ArchCard
+                title={`Matriks Seluruh Ruang Kelas — Hari ${selectedHari}`}
+                eyebrow="Monitoring Penugasan Asatidz di Seluruh Ruangan Pondok"
+                icon={Clock}
+                tone="brand"
+              >
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
+                        <th className="py-2.5 px-3">Kelas & Ruang</th>
+                        <th className="py-2.5 px-3">Jam 1 (08.00-08.35)</th>
+                        <th className="py-2.5 px-3">Jam 2 (08.35-09.10)</th>
+                        <th className="py-2.5 px-3">Jam 3 (09.40-10.15)</th>
+                        <th className="py-2.5 px-3">Jam 4 (10.15-10.50)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F1F5F9]">
+                      {allKelases.map((k) => {
+                        const s1 = findSlot(selectedHari, 1, k);
+                        const s2 = findSlot(selectedHari, 2, k);
+                        const s3 = findSlot(selectedHari, 3, k);
+                        const s4 = findSlot(selectedHari, 4, k);
+                        const lokasi = s1?.lokasiKelas || s1?.ruangan || (data.kelasInfo || {})[k]?.lokasiKelas || "-";
+
+                        const renderMatriksSlot = (s) => {
+                          if (!s || !s.namaGuru) return <span className="text-[#94A3B8] italic">-</span>;
+                          return (
+                            <div>
+                              <p className="font-bold text-[#0F172A] truncate">{s.namaGuru}</p>
+                              <p className="text-[10px] text-[#64748B] truncate">{s.namaMapel} ({s.kodeMapel || "-"})</p>
+                            </div>
+                          );
+                        };
+
+                        return (
+                          <tr key={k} className="hover:bg-[#F8FAFC]">
+                            <td className="py-2.5 px-3">
+                              <span className="font-bold text-[#0C4A6E] font-mono">{k}</span>
+                              <span className="block text-[10px] text-[#64748B] truncate max-w-[130px]">{lokasi}</span>
+                            </td>
+                            <td className="py-2.5 px-3">{renderMatriksSlot(s1)}</td>
+                            <td className="py-2.5 px-3">{renderMatriksSlot(s2)}</td>
+                            <td className="py-2.5 px-3">{renderMatriksSlot(s3)}</td>
+                            <td className="py-2.5 px-3">{renderMatriksSlot(s4)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </ArchCard>
+
+              {/* ASATIDZ STANDBY PADA JAM TERPILIH */}
+              {(() => {
+                const slotsJam = (scheduleData.slots || []).filter(
+                  (s) => s.hari === selectedHari && Number(s.jamKe) === Number(selectedJamKe)
+                );
+                const guruBertugasNames = new Set(slotsJam.map((s) => (s.namaGuru || "").toLowerCase()));
+                const standbyGuru = listGuru.filter((g) => !guruBertugasNames.has((g.nama || "").toLowerCase()));
+
+                return (
+                  <ArchCard
+                    title={`Asatidz Bebas Tugas / Standby — ${selectedHari} Jam Ke-${selectedJamKe}`}
+                    eyebrow={`${standbyGuru.length} Asatidz Siaga (Dapat menggantikan guru piket / izin)`}
+                    icon={CheckCircle2}
+                    tone="gold"
+                  >
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 text-xs">
+                      {standbyGuru.map((g) => (
+                        <div key={g.id} className="p-2.5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] hover:bg-white hover:shadow-sm">
+                          <p className="font-semibold text-[#0F172A] truncate">{g.nama}</p>
+                          <p className="text-[10px] text-[#64748B]">{g.kodeGuru || "G"} · {g.statusKepegawaian || "Tetap"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </ArchCard>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODE 5: CETAK SIAP PAKAI (PDF / PRINT-READY)                              */}
+          {/* ========================================================================= */}
+          {mode === "cetak" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#CFE3F0]">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#475569]">Format Cetak:</span>
+                  <button
+                    onClick={() => setCetakSubMode("kelas")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                      cetakSubMode === "kelas" ? "btn-gradient text-white" : "bg-[#F1F5F9] text-[#475569]"
+                    }`}
+                  >
+                    Per Kelas ({selectedKelas})
+                  </button>
+                  <button
+                    onClick={() => setCetakSubMode("semua")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                      cetakSubMode === "semua" ? "btn-gradient text-white" : "bg-[#F1F5F9] text-[#475569]"
+                    }`}
+                  >
+                    Buku Seluruh Kelas (15 Kelas)
+                  </button>
+                  <button
+                    onClick={() => setCetakSubMode("guru")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                      cetakSubMode === "guru" ? "btn-gradient text-white" : "bg-[#F1F5F9] text-[#475569]"
+                    }`}
+                  >
+                    Jadwal Personal Guru
+                  </button>
+                </div>
+
+                <button
+                  onClick={triggerCetak}
+                  className="btn-gradient text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md"
+                >
+                  <Printer size={15} /> Cetak Dokumen / Simpan PDF
+                </button>
+              </div>
+
+              {/* TAMPILAN PRATINJAU DOKUMEN CETAK RESMI MMA */}
+              <div id="mma-kbm-print-view" className="bg-white p-6 sm:p-8 rounded-2xl border border-[#CFE3F0] shadow-md text-black print:p-0 print:border-none print:shadow-none">
+                {/* KOP RESMI PONDOK */}
+                <div className="border-b-2 border-black pb-3 mb-5 text-center">
+                  <h2 className="text-lg sm:text-xl font-bold tracking-wide uppercase font-serif">
+                    MA'HAD MUDAIYATUL ANWAR LI TAHFIDHIL QUR'AN
+                  </h2>
+                  <p className="text-xs tracking-wider uppercase font-semibold text-gray-700">
+                    YAYASAN MUDAIYATUL ANWAR · LEMBAGA PENDIDIKAN DAN PENGAJARAN AL-QUR'AN
+                  </p>
+                  <p className="text-[11px] text-gray-600 mt-0.5">
+                    Jl. Pesantren No. 12, Jawa Barat · Email: info@mudaiyatulanwar.ponpes.id
+                  </p>
+                  <div className="mt-2 pt-1 border-t border-gray-400">
+                    <h3 className="font-bold text-sm sm:text-base uppercase tracking-wider text-black">
+                      JADWAL KEGIATAN BELAJAR MENGAJAR (KBM)
+                    </h3>
+                    <p className="text-xs font-semibold text-gray-700">
+                      TAHUN AJARAN {tahunAjaran} — SEMESTER {semester.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* KONTEN BERDASARKAN SUBMODE */}
+                {cetakSubMode === "kelas" && (
+                  <div>
+                    {(() => {
+                      const sampleSlot = (scheduleData.slots || []).find((s) => s.kelas === selectedKelas);
+                      const lokasi = sampleSlot?.lokasiKelas || sampleSlot?.ruangan || (data.kelasInfo || {})[selectedKelas]?.lokasiKelas || "-";
+                      const wali = sampleSlot?.namaWaliKelas || "-";
+
+                      return (
+                        <>
+                          <div className="grid grid-cols-2 text-xs mb-3 font-semibold">
+                            <div>
+                              <p>KELAS / ROMBEL: <span className="font-bold text-sm font-mono">{selectedKelas}</span></p>
+                              <p>LOKASI RUANG: <span>{lokasi}</span></p>
+                            </div>
+                            <div className="text-right">
+                              <p>WALI KELAS: <span>{wali}</span></p>
+                              <p>BEBAN BELAJAR: <span>24 Jam Pelajaran / Minggu</span></p>
+                            </div>
+                          </div>
+
+                          <table className="w-full text-xs border border-black border-collapse text-center">
+                            <thead>
+                              <tr className="bg-gray-100 border-b border-black font-bold">
+                                <th className="border border-black p-2 w-20">HARI</th>
+                                <th className="border border-black p-2">JAM 1<br /><span className="text-[10px] font-normal">08.00-08.35</span></th>
+                                <th className="border border-black p-2">JAM 2<br /><span className="text-[10px] font-normal">08.35-09.10</span></th>
+                                <th className="border border-black p-2 w-16 bg-gray-200">ISTIRAHAT<br /><span className="text-[9px] font-normal">09.10-09.40</span></th>
+                                <th className="border border-black p-2">JAM 3<br /><span className="text-[10px] font-normal">09.40-10.15</span></th>
+                                <th className="border border-black p-2">JAM 4<br /><span className="text-[10px] font-normal">10.15-10.50</span></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {HARI_KBM_LIST.map((h) => {
+                                const s1 = findSlot(h, 1, selectedKelas);
+                                const s2 = findSlot(h, 2, selectedKelas);
+                                const s3 = findSlot(h, 3, selectedKelas);
+                                const s4 = findSlot(h, 4, selectedKelas);
+
+                                const renderPrintCell = (s) => (
+                                  <div className="p-1.5 leading-tight">
+                                    <p className="font-bold">{s?.namaMapel || "-"}</p>
+                                    <p className="text-[10px] text-gray-700">{s?.namaGuru || ""}</p>
+                                  </div>
+                                );
+
+                                return (
+                                  <tr key={h} className="border-b border-black">
+                                    <td className="border border-black p-2 font-bold bg-gray-50">{h}</td>
+                                    <td className="border border-black p-1">{renderPrintCell(s1)}</td>
+                                    <td className="border border-black p-1">{renderPrintCell(s2)}</td>
+                                    <td className="border border-black p-1 bg-gray-100 text-[10px] font-bold text-gray-600">DHUHA & REHAT</td>
+                                    <td className="border border-black p-1">{renderPrintCell(s3)}</td>
+                                    <td className="border border-black p-1">{renderPrintCell(s4)}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {cetakSubMode === "semua" && (
+                  <div className="space-y-8">
+                    {allKelases.map((k) => {
+                      const sampleSlot = (scheduleData.slots || []).find((s) => s.kelas === k);
+                      const lokasi = sampleSlot?.lokasiKelas || sampleSlot?.ruangan || (data.kelasInfo || {})[k]?.lokasiKelas || "-";
+                      const wali = sampleSlot?.namaWaliKelas || "-";
+
+                      return (
+                        <div key={k} className="page-break-after pb-4 border-b border-gray-300">
+                          <div className="flex justify-between items-center text-xs mb-2 font-bold">
+                            <span>KELAS: {k} ({lokasi})</span>
+                            <span>WALI KELAS: {wali}</span>
+                          </div>
+                          <table className="w-full text-[11px] border border-black border-collapse text-center">
+                            <thead>
+                              <tr className="bg-gray-100 border-b border-black font-bold">
+                                <th className="border border-black p-1 w-16">HARI</th>
+                                <th className="border border-black p-1">JAM 1</th>
+                                <th className="border border-black p-1">JAM 2</th>
+                                <th className="border border-black p-1 w-14 bg-gray-200">REHAT</th>
+                                <th className="border border-black p-1">JAM 3</th>
+                                <th className="border border-black p-1">JAM 4</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {HARI_KBM_LIST.map((h) => {
+                                const s1 = findSlot(h, 1, k);
+                                const s2 = findSlot(h, 2, k);
+                                const s3 = findSlot(h, 3, k);
+                                const s4 = findSlot(h, 4, k);
+
+                                return (
+                                  <tr key={h} className="border-b border-black">
+                                    <td className="border border-black p-1 font-bold">{h}</td>
+                                    <td className="border border-black p-1 leading-none">{s1?.namaMapel || "-"} <br /><span className="text-[9px] text-gray-600">{s1?.namaGuru || ""}</span></td>
+                                    <td className="border border-black p-1 leading-none">{s2?.namaMapel || "-"} <br /><span className="text-[9px] text-gray-600">{s2?.namaGuru || ""}</span></td>
+                                    <td className="border border-black p-1 bg-gray-100 text-[9px]">30m</td>
+                                    <td className="border border-black p-1 leading-none">{s3?.namaMapel || "-"} <br /><span className="text-[9px] text-gray-600">{s3?.namaGuru || ""}</span></td>
+                                    <td className="border border-black p-1 leading-none">{s4?.namaMapel || "-"} <br /><span className="text-[9px] text-gray-600">{s4?.namaGuru || ""}</span></td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {cetakSubMode === "guru" && (
+                  <div>
+                    <div className="flex justify-between items-center text-xs mb-3 font-semibold">
+                      <div>
+                        <p>NAMA ASATIDZ: <span className="font-bold text-sm">{selectedGuru || "-"}</span></p>
+                      </div>
+                      <div className="text-right">
+                        <p>TAHUN AJARAN: <span>{tahunAjaran} ({semester})</span></p>
+                      </div>
+                    </div>
+
+                    <table className="w-full text-xs border border-black border-collapse text-center">
+                      <thead>
+                        <tr className="bg-gray-100 border-b border-black font-bold">
+                          <th className="border border-black p-2 w-20">HARI</th>
+                          <th className="border border-black p-2">JAM 1 (08.00-08.35)</th>
+                          <th className="border border-black p-2">JAM 2 (08.35-09.10)</th>
+                          <th className="border border-black p-2 w-16 bg-gray-200">ISTIRAHAT</th>
+                          <th className="border border-black p-2">JAM 3 (09.40-10.15)</th>
+                          <th className="border border-black p-2">JAM 4 (10.15-10.50)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {HARI_KBM_LIST.map((h) => {
+                          const getGuruSlot = (jk) => {
+                            const sl = (scheduleData.slots || []).find(
+                              (s) =>
+                                s.hari === h &&
+                                Number(s.jamKe) === Number(jk) &&
+                                s.namaGuru &&
+                                selectedGuru &&
+                                s.namaGuru.toLowerCase() === selectedGuru.toLowerCase()
+                            );
+                            if (!sl) return <span className="text-gray-400 italic">-</span>;
+                            return (
+                              <div className="p-1 leading-tight">
+                                <p className="font-bold text-black">[{sl.kelas}] {sl.namaMapel}</p>
+                                <p className="text-[10px] text-gray-600">{sl.lokasiKelas || ""}</p>
+                              </div>
+                            );
+                          };
+
+                          return (
+                            <tr key={h} className="border-b border-black">
+                              <td className="border border-black p-2 font-bold bg-gray-50">{h}</td>
+                              <td className="border border-black p-1">{getGuruSlot(1)}</td>
+                              <td className="border border-black p-1">{getGuruSlot(2)}</td>
+                              <td className="border border-black p-1 bg-gray-100 text-[10px] font-bold">REHAT</td>
+                              <td className="border border-black p-1">{getGuruSlot(3)}</td>
+                              <td className="border border-black p-1">{getGuruSlot(4)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* TANDA TANGAN RESMI PIMPINAN PONDOK & KEPALA PENGAJARAN */}
+                <div className="mt-8 pt-4 grid grid-cols-2 text-xs text-center font-serif">
+                  <div>
+                    <p className="text-gray-600">Mengetahui,</p>
+                    <p className="font-bold text-gray-900">Kepala Bagian Pengajaran & KBM</p>
+                    <div className="h-16" />
+                    <p className="font-bold underline text-black">Ust. Ahmad Fauzi, S.Pd.I</p>
+                    <p className="text-[11px] text-gray-600">NIP. 198504122010011002</p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-600">Ciamis, {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
+                    <p className="font-bold text-gray-900">Pimpinan Ma'had Mudaiyatul Anwar</p>
+                    <div className="h-16" />
+                    <p className="font-bold underline text-black">Ust. Abdul Basit, S.H.I., M.Pd.</p>
+                    <p className="text-[11px] text-gray-600">Pimpinan Pondok Pesantren</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL EDIT / TAMBAH SLOT KBM DENGAN LIVE CONFLICT CHECK                   */}
+      {/* ========================================================================= */}
+      {editModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-[#CFE3F0] animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAF4FB] mb-3">
+              <div>
+                <h3 className="font-bold text-sm text-[#0F172A]">Edit Slot Jadwal KBM</h3>
+                <p className="text-[11px] text-[#64748B]">
+                  Hari <b>{slotForm.hari}</b> · Jam Ke-<b>{slotForm.jamKe}</b> · Kelas <b>{slotForm.kelas}</b>
+                </p>
+              </div>
+              <button onClick={() => setEditModal(false)} className="text-[#94A3B8] hover:text-[#0F172A]"><X size={16} /></button>
+            </div>
+
+            <form onSubmit={simpanSlot} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Hari</label>
+                  <select
+                    value={slotForm.hari}
+                    onChange={(e) => setSlotForm({ ...slotForm, hari: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                  >
+                    {HARI_KBM_LIST.map((h) => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Jam Ke</label>
+                  <select
+                    value={slotForm.jamKe}
+                    onChange={(e) => setSlotForm({ ...slotForm, jamKe: Number(e.target.value) })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
+                  >
+                    <option value={1}>Jam 1 (08.00-08.35)</option>
+                    <option value={2}>Jam 2 (08.35-09.10)</option>
+                    <option value={3}>Jam 3 (09.40-10.15)</option>
+                    <option value={4}>Jam 4 (10.15-10.50)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-[#475569] block mb-1">Kelas Rombel</label>
+                  <select
+                    value={slotForm.kelas}
+                    onChange={(e) => setSlotForm({ ...slotForm, kelas: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-bold text-[#0C4A6E]"
+                  >
+                    {allKelases.map((k) => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Mata Pelajaran (Mapel)</label>
+                <select
+                  value={slotForm.namaMapel}
+                  onChange={(e) => {
+                    const selectedNama = e.target.value;
+                    const mapelObj = listMapel.find((m) => m.nama === selectedNama);
+                    setSlotForm({
+                      ...slotForm,
+                      namaMapel: selectedNama,
+                      kodeMapel: mapelObj?.kodeMapel || slotForm.kodeMapel,
+                    });
+                  }}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-medium"
+                >
+                  <option value="">-- Pilih Mata Pelajaran --</option>
+                  {listMapel.map((m) => (
+                    <option key={m.id} value={m.nama}>
+                      [{m.kodeMapel}] {m.nama} ({m.kategori})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Guru Pendidik (Pengajar)</label>
+                <select
+                  value={slotForm.namaGuru}
+                  onChange={(e) => {
+                    const selectedNama = e.target.value;
+                    const guruObj = listGuru.find((g) => g.nama === selectedNama);
+                    setSlotForm({
+                      ...slotForm,
+                      namaGuru: selectedNama,
+                      kodeGuru: guruObj?.kodeGuru || (selectedNama === "HALAQOH TAHFIDZ" ? "HALAQOH" : selectedNama === "PROGRAM UNGGULAN" ? "UNGGULAN" : ""),
+                    });
+                  }}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white font-semibold text-[#0F172A]"
+                >
+                  <option value="">-- Pilih Guru / Asatidz --</option>
+                  <option value="HALAQOH TAHFIDZ">HALAQOH TAHFIDZ</option>
+                  <option value="PROGRAM UNGGULAN">PROGRAM UNGGULAN</option>
+                  {listGuru.map((g) => (
+                    <option key={g.id} value={g.nama}>
+                      [{g.kodeGuru || "G"}] {g.nama} ({g.statusKepegawaian || "Tetap"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#475569] block mb-1">Lokasi Ruangan / Saung</label>
+                <input
+                  type="text"
+                  placeholder="mis. Maqdis Lt 3, Muholla Darussalam, Saung Al Fatihah"
+                  value={slotForm.ruangan}
+                  onChange={(e) => setSlotForm({ ...slotForm, ruangan: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 bg-white"
+                />
+              </div>
+
+              {/* LIVE CONFLICT WARNING */}
+              {calonBentrok && (
+                <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs animate-shake">
+                  <div className="flex items-center gap-1.5 font-bold mb-1">
+                    <AlertTriangle size={15} className="text-rose-600 shrink-0" />
+                    <span>PERINGATAN TABRAKAN JADWAL (BENTROK)!</span>
+                  </div>
+                  <p>
+                    Ustadz <b>{calonBentrok.namaGuru}</b> sudah memiliki jadwal mengajar di <b>Kelas {calonBentrok.kelas}</b> pada{" "}
+                    <b>{slotForm.hari} Jam Ke-{slotForm.jamKe}</b> ({calonBentrok.namaMapel}).
+                  </p>
+                  <p className="mt-1 text-[11px] text-rose-700">
+                    Menyimpan slot ini akan memicu status bentrok pada sistem. Silakan pilih guru lain atau jadwal ulang jam KBM.
+                  </p>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-[#EAF4FB] flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={kosongkanSlot}
+                  disabled={saving}
+                  className="px-3 py-2 rounded-xl text-xs text-rose-700 hover:bg-rose-50 border border-rose-200 font-semibold"
+                >
+                  Kosongkan Slot
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditModal(false)}
+                    className="px-3 py-2 rounded-xl text-xs text-[#64748B]"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="btn-gradient px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1"
+                  >
+                    {saving && <Loader2 size={13} className="animate-spin" />}
+                    Simpan Perubahan
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL RINCIAN BENTROK JADWAL KBM                                          */}
+      {/* ========================================================================= */}
+      {conflictModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-rose-200">
+            <div className="flex items-center justify-between pb-3 border-b border-rose-100 mb-3">
+              <div className="flex items-center gap-2 text-rose-800">
+                <AlertTriangle size={18} />
+                <h3 className="font-bold text-sm">Daftar Jadwal KBM Bentrok ({scheduleData.totalBentrok})</h3>
+              </div>
+              <button onClick={() => setConflictModal(false)} className="text-[#94A3B8] hover:text-[#0F172A]"><X size={16} /></button>
+            </div>
+
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto text-xs pr-1">
+              {!(scheduleData.bentrokList || []).length ? (
+                <p className="text-center py-6 text-[#64748B]">Tidak ada bentrok jadwal yang ditemukan.</p>
+              ) : (
+                (scheduleData.bentrokList || []).map((b, idx) => (
+                  <div key={idx} className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-900">
+                    <p className="font-bold text-xs">{b.guru}</p>
+                    <p className="text-[11px] text-rose-800 mt-0.5">{b.pesan}</p>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <span className="text-[10px] bg-rose-200 text-rose-900 font-bold px-2 py-0.5 rounded">
+                        {b.hari} · Jam Ke-{b.jamKe}
+                      </span>
+                      <span className="text-[10px] text-rose-700">Kelas: {b.kelasList.join(", ")}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-rose-100 flex justify-end mt-4">
+              <button onClick={() => setConflictModal(false)} className="btn-gradient px-4 py-2 rounded-xl text-xs font-semibold">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Backward Compatibility Wrapper
+function MapelKbmManagement(props) {
+  return <JadwalKBMAntiBentrok {...props} />;
 }
 
 function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
@@ -5323,8 +6491,9 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
 
   const adminMenus = [
     { id: "ringkasan", label: "Ringkasan & Metrik", icon: TrendingUp, badge: "KPI" },
-    { id: "guruPendidik", label: "Data Guru (Pendidik)", icon: GraduationCap, badge: "Baru" },
-    { id: "mapelKbm", label: "Mapel & Jadwal KBM", icon: BookOpen, badge: "KBM" },
+    { id: "guruPendidik", label: "Data Guru (Pendidik)", icon: GraduationCap, badge: "Sekretariat" },
+    { id: "jadwalKbm", label: "Jadwal KBM Anti-Bentrok", icon: CalendarCheck, badge: "Anti-Bentrok" },
+    { id: "mapel", label: "Mata Pelajaran", icon: BookOpen, badge: "Kurikulum" },
     { id: "akun", label: "Akun Staf & Hak Akses", icon: ShieldCheck, badge: `${(guruList || []).length}` },
     { id: "unit", label: "Bagian Unit Usaha", icon: Package, badge: `${(data?.unitUsaha || []).length}` },
     { id: "tahun", label: "Kalender Akademik", icon: CalendarCheck },
@@ -5640,8 +6809,12 @@ function KewenanganPanel({ data, setData, backendToken, backendOnline }) {
             <GuruPendidikManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
           )}
 
-          {adminTab === "mapelKbm" && (
-            <MapelKbmManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
+          {(adminTab === "jadwalKbm" || adminTab === "mapelKbm") && (
+            <JadwalKBMAntiBentrok backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
+          )}
+
+          {adminTab === "mapel" && (
+            <MasterMapelManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
           )}
 
           {adminTab === "akun" && (
@@ -9698,9 +10871,9 @@ const SCOPE_TABS = {
     { key: "raport-mental", label: "Rapor Mental", icon: FileText },
   ],
   pengajaran: [
-    { key: "kelas", label: "Kelas", icon: School },
-    { key: "guru-pendidik", label: "Guru Pendidik", icon: GraduationCap },
-    { key: "mapel-kbm", label: "Mapel & Jadwal KBM", icon: BookOpen },
+    { key: "jadwal-kbm", label: "Jadwal KBM Anti-Bentrok", icon: CalendarCheck },
+    { key: "mapel", label: "Mata Pelajaran", icon: BookOpen },
+    { key: "kelas", label: "Kelas & Lokasi", icon: School },
     { key: "prestasi", label: "Prestasi", icon: Award },
     { key: "nilai", label: "Riwayat Akademik", icon: GraduationCap },
     { key: "raport-akademik", label: "Rapor Akademik", icon: FileText },
@@ -9713,6 +10886,7 @@ const SCOPE_TABS = {
   ],
   sekretariat: [
     { key: "santri", label: "Data Santri", icon: User },
+    { key: "guru-pendidik", label: "Data Guru (Pendidik)", icon: GraduationCap },
     { key: "daftar-ulang", label: "Kenaikan & Daftar Ulang", icon: RefreshCw },
     { key: "alumni", label: "Data Alumni", icon: UserCheck },
     { key: "wali", label: "Data Wali", icon: Users },
@@ -12214,7 +13388,13 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         if (Array.isArray(rows) && rows.length) {
           const list = rows.map((r) => r.nama);
           const info = {};
-          rows.forEach((r) => { info[r.nama] = { waliKelasId: r.waliKelasId || null }; });
+          rows.forEach((r) => {
+            info[r.nama] = {
+              waliKelasId: r.waliKelasId || null,
+              lokasiKelas: r.lokasiKelas || "",
+              namaWaliKelas: r.namaWaliKelas || "",
+            };
+          });
           setData((d) => ({ ...d, kelas: list, kelasInfo: { ...d.kelasInfo, ...info } }));
         }
       })
@@ -12255,10 +13435,32 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
 
   const setWaliKelas = async (k, guruId) => {
-    setData((d) => ({ ...d, kelasInfo: { ...d.kelasInfo, [k]: { ...d.kelasInfo[k], waliKelasId: guruId || null } } }));
+    setData((d) => ({ ...d, kelasInfo: { ...d.kelasInfo, [k]: { ...(d.kelasInfo?.[k] || {}), waliKelasId: guruId || null } } }));
     if (backendToken) {
       try {
         await backendApi(`/pengajaran/kelas/${encodeURIComponent(k)}/wali`, { method: "PUT", token: backendToken, body: { waliKelasId: guruId || null } });
+        muatKelas();
+      } catch (e) {
+        setPengasuhanError(e.message);
+      }
+    }
+  };
+
+  const setLokasiKelas = async (k, lokasi) => {
+    setData((d) => ({
+      ...d,
+      kelasInfo: {
+        ...d.kelasInfo,
+        [k]: { ...(d.kelasInfo?.[k] || {}), lokasiKelas: lokasi || "" },
+      },
+    }));
+    if (backendToken) {
+      try {
+        await backendApi(`/pengajaran/kelas/${encodeURIComponent(k)}/lokasi`, {
+          method: "PUT",
+          token: backendToken,
+          body: { lokasiKelas: lokasi || null },
+        });
         muatKelas();
       } catch (e) {
         setPengasuhanError(e.message);
@@ -15291,12 +16493,24 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                     </>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#5B7C93]">
-                  <span>Wali kelas:</span>
-                  <select value={data.kelasInfo?.[k]?.waliKelasId || ""} onChange={(e) => setWaliKelas(k, e.target.value)} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-xs">
-                    <option value="">Belum ditentukan</option>
-                    {data.guru.filter((g) => g.departemen === "pengajaran").map((g) => <option key={g.id} value={g.id}>{g.nama}</option>)}
-                  </select>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[#5B7C93]">
+                  <div className="flex items-center gap-1.5">
+                    <span>Wali kelas:</span>
+                    <select value={data.kelasInfo?.[k]?.waliKelasId || ""} onChange={(e) => setWaliKelas(k, e.target.value)} className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-xs">
+                      <option value="">Belum ditentukan</option>
+                      {data.guru.filter((g) => g.departemen === "pengajaran").map((g) => <option key={g.id} value={g.id}>{g.nama}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span>Lokasi Ruang:</span>
+                    <input
+                      type="text"
+                      placeholder="mis. Maqdis Lt 3, Saung Al Fatihah"
+                      defaultValue={data.kelasInfo?.[k]?.lokasiKelas || ""}
+                      onBlur={(e) => setLokasiKelas(k, e.target.value)}
+                      className="border border-[#CFE3F0] bg-white/70 backdrop-blur-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-2 py-1 text-xs min-w-[150px]"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
@@ -15308,8 +16522,12 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
         <GuruPendidikManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
       )}
 
-      {tab === "mapel-kbm" && (
-        <MapelKbmManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
+      {(tab === "mapel-kbm" || tab === "jadwal-kbm") && (
+        <JadwalKBMAntiBentrok backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} onPrint={onPrint} />
+      )}
+
+      {tab === "mapel" && (
+        <MasterMapelManagement backendToken={backendToken} backendOnline={backendOnline} data={data} setData={setData} />
       )}
 
       {tab === "halaqoh" && (
@@ -16181,7 +17399,7 @@ export default function App() {
     let waliAwal = [];
     let guruAwal = [];
     try {
-      const MMA_CACHE_EPOCH = "v_clean_20261012_guru_pendidik";
+      const MMA_CACHE_EPOCH = "v_clean_20261012_jadwal_kbm_mma";
       const currentEpoch = localStorage.getItem("mma_cache_epoch");
       if (currentEpoch !== MMA_CACHE_EPOCH) {
         localStorage.removeItem("mma_cached_santri");

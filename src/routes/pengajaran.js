@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireAuth, requirePengajaran, requireAnyStaff, recordSensitiveAudit } = require("../auth");
+const { requireAuth, requirePengajaran, requireSekretariatOrPengajaran, requireAnyStaff, recordSensitiveAudit } = require("../auth");
 const { validateBody } = require("../validator");
 const {
   semuaKelas, tambahKelas, ubahKelas, hapusKelas,
@@ -13,6 +13,9 @@ const {
   semuaPenugasanGuru, tambahPenugasanGuru, hapusPenugasanGuru,
   semuaJadwalPelajaran, tambahJadwalPelajaran, ubahJadwalPelajaran, hapusJadwalPelajaran,
 } = require("../guruService");
+const {
+  ambilSemuaJadwalKBM, simpanSlotJadwalKBM, simpanBatchJadwalKBM, hapusSlotJadwalKBM,
+} = require("../jadwalKbmService");
 
 const router = express.Router();
 const asyncHandler = require("../asyncHandler");
@@ -26,21 +29,21 @@ router.get("/kelas", requireAnyStaff, asyncHandler(async (req, res) => {
 router.post("/kelas", requirePengajaran, validateBody({
   nama: { required: true, type: "string", label: "nama" },
 }), asyncHandler(async (req, res) => {
-  const { nama, waliKelasId, tingkat } = req.body || {};
-  const hasil = await tambahKelas({ nama, waliKelasId, tingkat });
+  const { nama, waliKelasId, tingkat, lokasiKelas } = req.body || {};
+  const hasil = await tambahKelas({ nama, waliKelasId, tingkat, lokasiKelas });
   await recordSensitiveAudit({
     actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.kelas_created",
-    targetType: "MasterKelas", targetId: hasil.id, ip: req.ip, sesudah: { nama, waliKelasId, tingkat },
+    targetType: "MasterKelas", targetId: hasil.id, ip: req.ip, sesudah: { nama, waliKelasId, tingkat, lokasiKelas },
   });
   res.status(201).json(hasil);
 }));
 
 router.put("/kelas/:id", requirePengajaran, asyncHandler(async (req, res) => {
-  const { nama, waliKelasId, tingkat } = req.body || {};
-  const hasil = await ubahKelas(req.params.id, { nama, waliKelasId, tingkat });
+  const { nama, waliKelasId, tingkat, lokasiKelas } = req.body || {};
+  const hasil = await ubahKelas(req.params.id, { nama, waliKelasId, tingkat, lokasiKelas });
   await recordSensitiveAudit({
     actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.kelas_updated",
-    targetType: "MasterKelas", targetId: req.params.id, ip: req.ip, sesudah: { nama, waliKelasId, tingkat },
+    targetType: "MasterKelas", targetId: req.params.id, ip: req.ip, sesudah: { nama, waliKelasId, tingkat, lokasiKelas },
   });
   res.json(hasil);
 }));
@@ -51,6 +54,16 @@ router.put("/kelas/:id/wali", requirePengajaran, asyncHandler(async (req, res) =
   await recordSensitiveAudit({
     actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.kelas_wali_assigned",
     targetType: "MasterKelas", targetId: req.params.id, ip: req.ip, sesudah: { waliKelasId },
+  });
+  res.json(hasil);
+}));
+
+router.put("/kelas/:id/lokasi", requirePengajaran, asyncHandler(async (req, res) => {
+  const { lokasiKelas } = req.body || {};
+  const hasil = await ubahKelas(req.params.id, { lokasiKelas });
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.kelas_lokasi_assigned",
+    targetType: "MasterKelas", targetId: req.params.id, ip: req.ip, sesudah: { lokasiKelas },
   });
   res.json(hasil);
 }));
@@ -188,30 +201,30 @@ router.get("/guru-pendidik/:id", requireAnyStaff, asyncHandler(async (req, res) 
   res.json(await getMasterGuru(req.params.id));
 }));
 
-router.post("/guru-pendidik", requirePengajaran, validateBody({
+router.post("/guru-pendidik", requireSekretariatOrPengajaran, validateBody({
   nama: { required: true, type: "string", label: "nama" },
 }), asyncHandler(async (req, res) => {
   const hasil = await tambahMasterGuru(req.body);
   await recordSensitiveAudit({
-    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.guru_pendidik_created",
+    actorId: req.user.id, actorRole: req.user.role, action: "guru_pendidik_created",
     targetType: "MasterGuru", targetId: hasil.id, ip: req.ip, sesudah: { nama: hasil.nama, nip: hasil.nip },
   });
   res.status(201).json(hasil);
 }));
 
-router.put("/guru-pendidik/:id", requirePengajaran, asyncHandler(async (req, res) => {
+router.put("/guru-pendidik/:id", requireSekretariatOrPengajaran, asyncHandler(async (req, res) => {
   const hasil = await ubahMasterGuru(req.params.id, req.body);
   await recordSensitiveAudit({
-    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.guru_pendidik_updated",
+    actorId: req.user.id, actorRole: req.user.role, action: "guru_pendidik_updated",
     targetType: "MasterGuru", targetId: req.params.id, ip: req.ip, sesudah: { nama: hasil.nama, nip: hasil.nip },
   });
   res.json(hasil);
 }));
 
-router.delete("/guru-pendidik/:id", requirePengajaran, asyncHandler(async (req, res) => {
+router.delete("/guru-pendidik/:id", requireSekretariatOrPengajaran, asyncHandler(async (req, res) => {
   const hasil = await hapusMasterGuru(req.params.id);
   await recordSensitiveAudit({
-    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.guru_pendidik_deleted",
+    actorId: req.user.id, actorRole: req.user.role, action: "guru_pendidik_deleted",
     targetType: "MasterGuru", targetId: req.params.id, ip: req.ip,
   });
   res.json(hasil);
@@ -317,6 +330,54 @@ router.delete("/jadwal/:id", requirePengajaran, asyncHandler(async (req, res) =>
   await recordSensitiveAudit({
     actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.jadwal_deleted",
     targetType: "JadwalPelajaran", targetId: req.params.id, ip: req.ip,
+  });
+  res.json(hasil);
+}));
+
+// ==================== JADWAL KBM MINGGUAN (GRID ANTI-BENTROK) ====================
+router.get("/jadwal-kbm", requireAnyStaff, asyncHandler(async (req, res) => {
+  res.json(await ambilSemuaJadwalKBM(req.query));
+}));
+
+router.post("/jadwal-kbm/slot", requirePengajaran, validateBody({
+  hari: { required: true, type: "string", label: "hari" },
+  jamKe: { required: true, label: "jamKe" },
+  kelas: { required: true, type: "string", label: "kelas" },
+}), asyncHandler(async (req, res) => {
+  const hasil = await simpanSlotJadwalKBM(req.body);
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.jadwal_kbm_slot_saved",
+    targetType: "JadwalKBM", targetId: `${req.body.hari}_${req.body.jamKe}_${req.body.kelas}`, ip: req.ip, sesudah: req.body,
+  });
+  res.json(hasil);
+}));
+
+router.post("/jadwal-kbm/batch", requirePengajaran, asyncHandler(async (req, res) => {
+  const { slots, tahunAjaran, semester } = req.body || {};
+  const hasil = await simpanBatchJadwalKBM(slots, { tahunAjaran, semester });
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.jadwal_kbm_batch_saved",
+    targetType: "JadwalKBM", targetId: "batch", ip: req.ip, sesudah: { count: (slots || []).length },
+  });
+  res.json(hasil);
+}));
+
+router.post("/jadwal-kbm/hapus-slot", requirePengajaran, asyncHandler(async (req, res) => {
+  const hasil = await hapusSlotJadwalKBM(req.body);
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.jadwal_kbm_slot_deleted",
+    targetType: "JadwalKBM", targetId: `${req.body.hari}_${req.body.jamKe}_${req.body.kelas}`, ip: req.ip, sesudah: req.body,
+  });
+  res.json(hasil);
+}));
+
+router.post("/jadwal-kbm/reset-default-mma", requirePengajaran, asyncHandler(async (req, res) => {
+  const { seedJadwalBakuMMA } = require("../../scripts/seed-mma-schedule");
+  await seedJadwalBakuMMA();
+  const hasil = await ambilSemuaJadwalKBM();
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.jadwal_kbm_reset_default_mma",
+    targetType: "JadwalKBM", targetId: "all", ip: req.ip,
   });
   res.json(hasil);
 }));

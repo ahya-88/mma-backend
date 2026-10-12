@@ -17,26 +17,27 @@ async function semuaKelas() {
   `);
 }
 
-async function tambahKelas({ nama, waliKelasId, tingkat }) {
+async function tambahKelas({ nama, waliKelasId, tingkat, lokasiKelas }) {
   if (!nama || !nama.trim()) throw new CashlessError(400, "Nama kelas wajib diisi.");
   const trimmedNama = nama.trim();
   const existing = await queryOne('SELECT * FROM "MasterKelas" WHERE "nama" = $1', [trimmedNama]);
   if (existing) throw new CashlessError(400, `Kelas "${trimmedNama}" sudah ada.`);
   const id = uid();
   await query(
-    `INSERT INTO "MasterKelas" ("id", "nama", "waliKelasId", "tingkat") VALUES ($1, $2, $3, $4)`,
-    [id, trimmedNama, waliKelasId || null, tingkat || null],
+    `INSERT INTO "MasterKelas" ("id", "nama", "waliKelasId", "tingkat", "lokasiKelas") VALUES ($1, $2, $3, $4, $5)`,
+    [id, trimmedNama, waliKelasId || null, tingkat || null, lokasiKelas || null],
   );
   return queryOne('SELECT * FROM "MasterKelas" WHERE "id" = $1', [id]);
 }
 
-async function ubahKelas(id, { nama, waliKelasId, tingkat }) {
+async function ubahKelas(id, { nama, waliKelasId, tingkat, lokasiKelas }) {
   const existing = await queryOne('SELECT * FROM "MasterKelas" WHERE "id" = $1 OR "nama" = $1', [id]);
   if (!existing) throw new CashlessError(404, "Kelas tidak ditemukan.");
   const realId = existing.id;
   const newNama = nama !== undefined && nama.trim() ? nama.trim() : existing.nama;
   const newWali = waliKelasId !== undefined ? (waliKelasId || null) : existing.waliKelasId;
   const newTingkat = tingkat !== undefined ? (tingkat || null) : existing.tingkat;
+  const newLokasi = lokasiKelas !== undefined ? (lokasiKelas || null) : existing.lokasiKelas;
 
   if (newNama !== existing.nama) {
     const duplicate = await queryOne('SELECT * FROM "MasterKelas" WHERE "nama" = $1 AND "id" != $2', [newNama, realId]);
@@ -44,8 +45,8 @@ async function ubahKelas(id, { nama, waliKelasId, tingkat }) {
   }
 
   await query(
-    `UPDATE "MasterKelas" SET "nama" = $1, "waliKelasId" = $2, "tingkat" = $3 WHERE "id" = $4`,
-    [newNama, newWali, newTingkat, realId],
+    `UPDATE "MasterKelas" SET "nama" = $1, "waliKelasId" = $2, "tingkat" = $3, "lokasiKelas" = $4 WHERE "id" = $5`,
+    [newNama, newWali, newTingkat, newLokasi, realId],
   );
 
   if (newNama !== existing.nama) {
