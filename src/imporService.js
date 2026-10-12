@@ -460,6 +460,7 @@ async function eksekusiImporBatch({ namaBatch, rows, aktorId, aktorNama }) {
         if (field in baris && baris[field] !== undefined && baris[field] !== null && String(baris[field]).trim() !== "") {
           let val = String(baris[field]).trim();
           if (field === "tanggalLahir") val = normalisasiTanggal(val);
+          if (field === "statusSantri") val = normalizeStatusSantri(val, nama);
           if (field === "jenisKelamin") {
             const up = val.toUpperCase();
             if (up.startsWith("L") || up.includes("LAKI")) val = "L";

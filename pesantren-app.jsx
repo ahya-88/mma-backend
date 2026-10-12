@@ -11550,7 +11550,7 @@ function DelegasiBantuanManagement({ backendToken, backendOnline, data, setData,
       } else {
         // Fallback offline menggunakan data lokal
         if (subjekTipe === "santri") {
-          const local = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif").map((s) => {
+          const local = (data.santri || []).filter((s) => String(s?.statusSantri || "Aktif").trim().toLowerCase() === "aktif").map((s) => {
             const u = hitungUsiaLokal(s.tanggalLahir, patokanTanggal);
             const isValid = s.nik && /^\d{16}$/.test(String(s.nik).trim());
             return {
@@ -12737,8 +12737,15 @@ const SCOPE_TABS = {
 function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToken, backendOnline }) {
   const tabs = SCOPE_TABS[scope];
   const [tab, setTab] = useState(tabs[0].key);
-  const [kelasFilter, setKelasFilter] = useState("Semua");
-  const santriAktifList = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif");
+  const isSantriAktif = (s) => {
+    const st = String(s?.statusSantri || "Aktif").trim().toLowerCase();
+    return st === "aktif" || !st;
+  };
+  const isSantriAlumni = (s) => {
+    const st = String(s?.statusSantri || "").trim().toLowerCase();
+    return st === "alumni";
+  };
+  const santriAktifList = (data.santri || []).filter(isSantriAktif);
   const santriTampil = kelasFilter === "Semua" ? santriAktifList : santriAktifList.filter((s) => s.kelas === kelasFilter);
   const namaSantri = (id) => data.santri.find((s) => s.id === id)?.nama || "(santri dihapus)";
   const tahunAjaranAktifDept = data.tahunAjaran.find((t) => t.aktif) || data.tahunAjaran[0];
@@ -13892,6 +13899,13 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 
         if (key === "tanggalLahir") rawVal = normalisasiTgl(rawVal);
         else if (key === "jenisKelamin") rawVal = normalisasiJK(rawVal);
+        else if (key === "statusSantri") {
+          const sLow = String(rawVal || "").trim().toLowerCase();
+          if (sLow.includes("alumni") || sLow.includes("lulus") || sLow.includes("tamat")) rawVal = "Alumni";
+          else if (sLow.includes("keluar") || sLow.includes("pindah") || sLow.includes("mutasi")) rawVal = "Keluar";
+          else if (sLow.includes("wafat") || sLow.includes("alm") || sLow.includes("meninggal")) rawVal = "Wafat";
+          else rawVal = "Aktif";
+        }
 
         rowObj[key] = String(rawVal);
         if (key === "nis") rowObj.noStambuk = String(rawVal);
@@ -14145,7 +14159,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   };
 
   const eksporSantriAktifCSV = () => {
-    const aktif = (data.santri || []).filter((s) => (s.statusSantri || "Aktif") === "Aktif");
+    const aktif = (data.santri || []).filter(isSantriAktif);
     const headers = [
       "No", "Nama", "No Stambuk (NIS)", "NIK", "NISN", "Kelas", "Angkatan", "Tahun Masuk",
       "Kamar / Asrama", "Jenis Kelamin", "Nama Wali", "No HP Wali", "Nama Ayah", "NIK Ayah",
@@ -14328,8 +14342,26 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     batalFormAlumni();
   };
   const delAlumni = (id) => setData((d) => ({ ...d, alumni: d.alumni.filter((a) => a.id !== id) }));
-  const tahunLulusTersedia = ["Semua", ...Array.from(new Set(data.alumni.map((a) => a.tahunLulus))).sort().reverse()];
-  const alumniTampil = filterTahunLulus === "Semua" ? data.alumni : data.alumni.filter((a) => a.tahunLulus === filterTahunLulus);
+  const santriAlumniRows = (data.santri || [])
+    .filter(isSantriAlumni)
+    .map((s) => ({
+      id: s.id,
+      nama: s.nama,
+      nis: s.noStambuk || s.nis || "-",
+      kelasTerakhir: s.kelas || "-",
+      tahunLulus: s.alumniTahunLulus || s.tahunMasuk || (s.angkatan ? `Angkatan ${s.angkatan}` : "-"),
+      statusSaatIni: s.alumniStatusSaatIni || "Melanjutkan Pendidikan",
+      instansiTujuan: s.alumniInstansiTujuan || "-",
+      noHp: s.alumniNoHp || s.noDarurat || "-",
+      alamat: s.alamat || "-",
+      keterangan: s.catatanKesehatan || "",
+    }));
+  const gabunganAlumni = [
+    ...(data.alumni || []),
+    ...santriAlumniRows.filter((sa) => !(data.alumni || []).some((a) => a.id === sa.id || (a.nis && a.nis !== "-" && a.nis === sa.nis))),
+  ];
+  const tahunLulusTersedia = ["Semua", ...Array.from(new Set(gabunganAlumni.map((a) => a.tahunLulus))).sort().reverse()];
+  const alumniTampil = filterTahunLulus === "Semua" ? gabunganAlumni : gabunganAlumni.filter((a) => a.tahunLulus === filterTahunLulus);
 
   const [waliForm, setWaliForm] = useState({ nama: "", hp: "", username: "", password: "" });
   const [editingWaliId, setEditingWaliId] = useState(null);
@@ -16393,7 +16425,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 <GraduationCap size={15} />
                 <span className="text-xs font-semibold">Data Alumni</span>
               </div>
-              <p className="text-xl font-bold text-[#17242E]">{(data.alumni || []).length}</p>
+              <p className="text-xl font-bold text-[#17242E]">{gabunganAlumni.length}</p>
               <p className="text-[10px] text-[#5B7C93]">Santri telah lulus</p>
             </div>
           </div>
@@ -17625,7 +17657,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
       })()}
 
       {tab === "alumni" && (
-        <ArchCard title="Data Alumni" eyebrow={`${data.alumni.length} Alumni Tercatat`} icon={UserCheck}>
+        <ArchCard title="Data Alumni" eyebrow={`${gabunganAlumni.length} Alumni Tercatat`} icon={UserCheck}>
           <button onClick={() => (showAlumniForm ? batalFormAlumni() : bukaTambahAlumni())} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  mb-4">
             <Plus size={15} />{showAlumniForm ? "Tutup Form" : "Tambah Alumni Manual"}
           </button>

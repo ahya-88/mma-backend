@@ -31,7 +31,7 @@ router.get("/tahun-aktif", requireAuth, asyncHandler(async (req, res) => {
   }
 
   const [totalSantri, terdaftar] = await Promise.all([
-    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE COALESCE("statusSantri", \'Aktif\') = \'Aktif\''),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "is_deleted" = FALSE AND LOWER(COALESCE("statusSantri", \'Aktif\')) = \'aktif\''),
     queryOne('SELECT COUNT(DISTINCT "santriId") AS "total" FROM "PendaftaranUlang" WHERE "tahunAjaranId" = $1', [tahunAktif.id]),
   ]);
 

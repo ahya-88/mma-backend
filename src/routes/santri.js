@@ -21,10 +21,10 @@ function isAuthorizedSantriManager(req) {
 router.get("/statistik", requireAuth, asyncHandler(async (req, res) => {
   const [totalRow, aktifRow, alumniRow, rombelRows, asramaRows] = await Promise.all([
     queryOne('SELECT COUNT(*) AS "total" FROM "Santri"'),
-    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "is_deleted" = FALSE AND COALESCE("statusSantri", \'Aktif\') = \'Aktif\''),
-    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "statusSantri" = \'Alumni\''),
-    queryAll('SELECT COALESCE("kelas", \'Belum ada\') AS "kelas", COUNT(*) AS "jumlah" FROM "Santri" WHERE "is_deleted" = FALSE AND COALESCE("statusSantri", \'Aktif\') = \'Aktif\' GROUP BY "kelas" ORDER BY "kelas"'),
-    queryAll('SELECT COALESCE("asrama", \'Belum ada\') AS "asrama", COUNT(*) AS "jumlah" FROM "Santri" WHERE "is_deleted" = FALSE AND COALESCE("statusSantri", \'Aktif\') = \'Aktif\' GROUP BY "asrama" ORDER BY "asrama"'),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "is_deleted" = FALSE AND LOWER(COALESCE("statusSantri", \'Aktif\')) = \'aktif\''),
+    queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "is_deleted" = FALSE AND LOWER("statusSantri") = \'alumni\''),
+    queryAll('SELECT COALESCE("kelas", \'Belum ada\') AS "kelas", COUNT(*) AS "jumlah" FROM "Santri" WHERE "is_deleted" = FALSE AND LOWER(COALESCE("statusSantri", \'Aktif\')) = \'aktif\' GROUP BY "kelas" ORDER BY "kelas"'),
+    queryAll('SELECT COALESCE("asrama", \'Belum ada\') AS "asrama", COUNT(*) AS "jumlah" FROM "Santri" WHERE "is_deleted" = FALSE AND LOWER(COALESCE("statusSantri", \'Aktif\')) = \'aktif\' GROUP BY "asrama" ORDER BY "asrama"'),
   ]);
 
   res.json({
@@ -60,8 +60,8 @@ router.get("/", requireAuth, asyncHandler(async (req, res) => {
   }
 
   if (status && status !== "Semua") {
-    params.push(status);
-    whereConditions.push(`COALESCE(s."statusSantri", 'Aktif') = $${params.length}`);
+    params.push(status.toLowerCase());
+    whereConditions.push(`LOWER(COALESCE(s."statusSantri", 'Aktif')) = $${params.length}`);
   }
 
   if (jenisKelamin && jenisKelamin !== "Semua") {
