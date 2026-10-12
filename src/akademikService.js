@@ -8,9 +8,10 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 // ==================== MASTER KELAS (PENGAJARAN) ====================
 async function semuaKelas() {
   return queryAll(`
-    SELECT k.*, g."nama" AS "namaWaliKelas",
+    SELECT k.*, COALESCE(mg."nama", g."nama") AS "namaWaliKelas",
       (SELECT COUNT(*)::int FROM "Santri" s WHERE s."kelas" = k."nama" AND s."is_deleted" = FALSE) AS "jumlahSantri"
     FROM "MasterKelas" k
+    LEFT JOIN "MasterGuru" mg ON k."waliKelasId" = mg."id"
     LEFT JOIN "Guru" g ON k."waliKelasId" = g."id"
     ORDER BY k."nama" ASC
   `);

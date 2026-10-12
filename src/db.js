@@ -115,6 +115,27 @@ async function initializeDatabase() {
     if (Number(yearCount.rows[0].n) === 0) {
       await client.query('INSERT INTO "TahunAjaran" ("id", "tahunMulai", "aktif") VALUES ($1, $2, 1) ON CONFLICT ("tahunMulai") DO NOTHING', [crypto.randomUUID(), 2026]);
     }
+    const mapelCount = await client.query('SELECT COUNT(*) AS "n" FROM "MasterMapel"');
+    if (Number(mapelCount.rows[0].n) === 0) {
+      const defaultMapel = [
+        ["ARAB", "Bahasa Arab", "Diniyah", 75],
+        ["FQH", "Fiqih", "Diniyah", 75],
+        ["AQD", "Aqidah Akhlak", "Diniyah", 75],
+        ["TFZ", "Tahfidz Al-Qur'an", "Tahfidz", 80],
+        ["HDT", "Hadits", "Diniyah", 75],
+        ["SKI", "Tarikh Islam / SKI", "Diniyah", 75],
+        ["IND", "Bahasa Indonesia", "Umum", 75],
+        ["ING", "Bahasa Inggris", "Umum", 75],
+        ["MTK", "Matematika", "Umum", 70],
+        ["IPA", "Ilmu Pengetahuan Alam", "Umum", 70],
+      ];
+      for (const [kode, nama, kat, kkm] of defaultMapel) {
+        await client.query(
+          'INSERT INTO "MasterMapel" ("id", "kodeMapel", "nama", "kategori", "kkm", "aktif") VALUES ($1, $2, $3, $4, $5, TRUE) ON CONFLICT ("kodeMapel") DO NOTHING',
+          [crypto.randomUUID(), kode, nama, kat, kkm]
+        );
+      }
+    }
     await client.query(
       'INSERT INTO "Pengaturan" ("kunci", "nilai") VALUES ($1, $2) ON CONFLICT ("kunci") DO NOTHING',
       ["tampilan", JSON.stringify(TAMPILAN_DEFAULT)],

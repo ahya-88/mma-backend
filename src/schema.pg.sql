@@ -814,3 +814,77 @@ CREATE TABLE IF NOT EXISTS "MasterMateriUbudiyah" (
 );
 CREATE INDEX IF NOT EXISTS idx_materi_ubudiyah_jenis ON "MasterMateriUbudiyah" ("jenis");
 
+-- ==================== DATA INDUK GURU PENDIDIK (NON-STAF) ====================
+CREATE TABLE IF NOT EXISTS "MasterGuru" (
+  "id" TEXT PRIMARY KEY,
+  "nip" TEXT UNIQUE,
+  "nuptk" TEXT,
+  "nik" TEXT,
+  "nama" TEXT NOT NULL,
+  "gelarDepan" TEXT,
+  "gelarBelakang" TEXT,
+  "jenisKelamin" VARCHAR(1) NOT NULL DEFAULT 'L',
+  "tempatLahir" TEXT,
+  "tanggalLahir" TEXT,
+  "noHp" TEXT,
+  "email" TEXT,
+  "alamat" TEXT,
+  "pendidikanTerakhir" TEXT,
+  "jurusanPendidikan" TEXT,
+  "almamater" TEXT,
+  "statusKepegawaian" TEXT DEFAULT 'Tetap',
+  "statusAktif" TEXT DEFAULT 'Aktif',
+  "tanggalMulaiTugas" TEXT,
+  "foto" TEXT,
+  "akunId" TEXT REFERENCES "Guru"("id") ON DELETE SET NULL,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  "updatedAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_guru_status_aktif ON "MasterGuru" ("statusAktif");
+CREATE INDEX IF NOT EXISTS idx_guru_nip ON "MasterGuru" ("nip");
+
+-- ==================== MASTER MATA PELAJARAN (MAPEL) ====================
+CREATE TABLE IF NOT EXISTS "MasterMapel" (
+  "id" TEXT PRIMARY KEY,
+  "kodeMapel" TEXT UNIQUE NOT NULL,
+  "nama" TEXT NOT NULL,
+  "kategori" TEXT NOT NULL DEFAULT 'Diniyah',
+  "tingkat" TEXT,
+  "kkm" INTEGER DEFAULT 75,
+  "aktif" BOOLEAN DEFAULT TRUE,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_mapel_kategori ON "MasterMapel" ("kategori");
+
+-- ==================== PENUGASAN MENGAJAR GURU (GURUMAPEL) ====================
+CREATE TABLE IF NOT EXISTS "GuruMapel" (
+  "id" TEXT PRIMARY KEY,
+  "guruId" TEXT NOT NULL REFERENCES "MasterGuru"("id") ON DELETE CASCADE,
+  "mapelId" TEXT NOT NULL REFERENCES "MasterMapel"("id") ON DELETE CASCADE,
+  "kelas" TEXT NOT NULL,
+  "tahunAjaran" TEXT NOT NULL,
+  "semester" TEXT NOT NULL DEFAULT 'Ganjil',
+  "bebanJamMingguan" INTEGER DEFAULT 2,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  CONSTRAINT uq_penugasan_guru UNIQUE ("guruId", "mapelId", "kelas", "tahunAjaran", "semester")
+);
+
+CREATE INDEX IF NOT EXISTS idx_gurumapel_guru ON "GuruMapel" ("guruId");
+CREATE INDEX IF NOT EXISTS idx_gurumapel_kelas ON "GuruMapel" ("kelas");
+
+-- ==================== JADWAL PELAJARAN (KBM HARIAN) ====================
+CREATE TABLE IF NOT EXISTS "JadwalPelajaran" (
+  "id" TEXT PRIMARY KEY,
+  "penugasanId" TEXT NOT NULL REFERENCES "GuruMapel"("id") ON DELETE CASCADE,
+  "hari" TEXT NOT NULL,
+  "jamMulai" TEXT NOT NULL,
+  "jamSelesai" TEXT NOT NULL,
+  "ruangan" TEXT,
+  "createdAt" TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_jadwal_hari ON "JadwalPelajaran" ("hari");
+
+

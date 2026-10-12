@@ -35,7 +35,11 @@ async function check() {
     "TransaksiUnitUsaha",
     "Cashflow",
     "PengajuanAnggaran",
-    "RincianAnggaran"
+    "RincianAnggaran",
+    "MasterGuru",
+    "MasterMapel",
+    "GuruMapel",
+    "JadwalPelajaran"
   ];
 
   console.log("=== JUMLAH BARIS SAAT INI ===");
