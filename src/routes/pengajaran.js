@@ -15,6 +15,7 @@ const {
 } = require("../guruService");
 const {
   ambilSemuaJadwalKBM, simpanSlotJadwalKBM, simpanBatchJadwalKBM, hapusSlotJadwalKBM,
+  ambilPengaturanJamKBM, simpanPengaturanJamKBM,
 } = require("../jadwalKbmService");
 
 const router = express.Router();
@@ -378,6 +379,20 @@ router.post("/jadwal-kbm/reset-default-mma", requirePengajaran, asyncHandler(asy
   await recordSensitiveAudit({
     actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.jadwal_kbm_reset_default_mma",
     targetType: "JadwalKBM", targetId: "all", ip: req.ip,
+  });
+  res.json(hasil);
+}));
+
+// ==================== PENGATURAN JAM & DURASI KBM ====================
+router.get("/jadwal-kbm/pengaturan-jam", requireAnyStaff, asyncHandler(async (req, res) => {
+  res.json(await ambilPengaturanJamKBM());
+}));
+
+router.put("/jadwal-kbm/pengaturan-jam", requirePengajaran, asyncHandler(async (req, res) => {
+  const hasil = await simpanPengaturanJamKBM(req.body);
+  await recordSensitiveAudit({
+    actorId: req.user.id, actorRole: req.user.role, action: "pengajaran.jadwal_kbm_pengaturan_jam_saved",
+    targetType: "Pengaturan", targetId: "pengaturan_jam_kbm", ip: req.ip, sesudah: req.body,
   });
   res.json(hasil);
 }));

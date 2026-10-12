@@ -4578,12 +4578,68 @@ function MasterMapelManagement({ backendToken, backendOnline, data, setData }) {
 
 const HARI_KBM_LIST = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const JAM_KBM_DEFINISI = [
-  { jamKe: 1, label: "Jam 1", waktu: "08.00 - 08.35", durasi: "35 Menit" },
-  { jamKe: 2, label: "Jam 2", waktu: "08.35 - 09.10", durasi: "35 Menit" },
-  { jamKe: "istirahat", label: "Istirahat", waktu: "09.10 - 09.40", durasi: "30 Menit" },
-  { jamKe: 3, label: "Jam 3", waktu: "09.40 - 10.15", durasi: "35 Menit" },
-  { jamKe: 4, label: "Jam 4", waktu: "10.15 - 10.50", durasi: "35 Menit" },
+  { jamKe: 1, label: "Jam 1", mulai: "08.00", selesai: "08.35", waktu: "08.00 - 08.35", durasi: "35 Menit" },
+  { jamKe: 2, label: "Jam 2", mulai: "08.35", selesai: "09.10", waktu: "08.35 - 09.10", durasi: "35 Menit" },
+  { jamKe: "istirahat", label: "Istirahat", mulai: "09.10", selesai: "09.40", waktu: "09.10 - 09.40", durasi: "30 Menit" },
+  { jamKe: 3, label: "Jam 3", mulai: "09.40", selesai: "10.15", waktu: "09.40 - 10.15", durasi: "35 Menit" },
+  { jamKe: 4, label: "Jam 4", mulai: "10.15", selesai: "10.50", waktu: "10.15 - 10.50", durasi: "35 Menit" },
 ];
+
+function hitungDaftarJamKBM({
+  jumlahJam = 4,
+  durasiMenit = 35,
+  jamMulai = "08:00",
+  adaIstirahat = true,
+  setelahJamKe = 2,
+  durasiIstirahatMenit = 30,
+} = {}) {
+  const list = [];
+  const cleanMulai = (jamMulai || "08:00").replace(".", ":");
+  const [hStr, mStr] = cleanMulai.split(":");
+  let cur = (parseInt(hStr, 10) || 8) * 60 + (parseInt(mStr, 10) || 0);
+
+  const fmt = (mins) => {
+    const h = Math.floor(mins / 60) % 24;
+    const m = mins % 60;
+    return `${String(h).padStart(2, "0")}.${String(m).padStart(2, "0")}`;
+  };
+
+  const durJam = Math.max(15, parseInt(durasiMenit, 10) || 35);
+  const durIst = Math.max(5, parseInt(durasiIstirahatMenit, 10) || 30);
+  const maxJam = Math.min(12, Math.max(1, parseInt(jumlahJam, 10) || 4));
+  const brkAfter = parseInt(setelahJamKe, 10) || 2;
+
+  for (let j = 1; j <= maxJam; j++) {
+    const s = cur;
+    const e = cur + durJam;
+    cur = e;
+    list.push({
+      jamKe: j,
+      label: `Jam ${j}`,
+      mulai: fmt(s),
+      selesai: fmt(e),
+      waktu: `${fmt(s)} - ${fmt(e)}`,
+      durasi: `${durJam} Menit`,
+    });
+
+    if (adaIstirahat && j === brkAfter && j < maxJam) {
+      const bs = cur;
+      const be = cur + durIst;
+      cur = be;
+      list.push({
+        jamKe: "istirahat",
+        label: "Istirahat",
+        mulai: fmt(bs),
+        selesai: fmt(be),
+        waktu: `${fmt(bs)} - ${fmt(be)}`,
+        durasi: `${durIst} Menit`,
+      });
+    }
+  }
+
+  return list;
+}
+
 const KELAS_KBM_LIST = ["7A", "7B", "7C", "7D", "8A", "8B", "8C", "8D", "9A", "9B", "9C", "10", "11", "12", "Aksel"];
 
 function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPrint }) {
@@ -4594,6 +4650,28 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
   const [selectedJamKe, setSelectedJamKe] = useState(1);
   const [tahunAjaran, setTahunAjaran] = useState("2026/2027");
   const [semester, setSemester] = useState("Ganjil");
+
+  // State Pengaturan Jam Pelajaran & Durasi KBM
+  const [pengaturanJam, setPengaturanJam] = useState({
+    jumlahJam: 4,
+    durasiMenit: 35,
+    jamMulai: "08:00",
+    adaIstirahat: true,
+    setelahJamKe: 2,
+    durasiIstirahatMenit: 30,
+    daftarJam: JAM_KBM_DEFINISI,
+  });
+  const [modalJamOpen, setModalJamOpen] = useState(false);
+  const [jamForm, setJamForm] = useState({
+    jumlahJam: 4,
+    durasiMenit: 35,
+    jamMulai: "08:00",
+    adaIstirahat: true,
+    setelahJamKe: 2,
+    durasiIstirahatMenit: 30,
+    daftarJam: JAM_KBM_DEFINISI,
+  });
+  const [savingJam, setSavingJam] = useState(false);
 
   // State Daftar Kelas & Informasi Lokasi/Wali Dinamis mengikuti Master Kelas
   const [daftarKelas, setDaftarKelas] = useState(() => (data?.kelas && data.kelas.length) ? data.kelas : KELAS_KBM_LIST);
@@ -4641,6 +4719,11 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
   // Cetak Sub-Mode
   const [cetakSubMode, setCetakSubMode] = useState("kelas"); // 'kelas', 'semua', 'guru'
 
+  const daftarSlotJam = (pengaturanJam && Array.isArray(pengaturanJam.daftarJam) && pengaturanJam.daftarJam.length > 0)
+    ? pengaturanJam.daftarJam
+    : JAM_KBM_DEFINISI;
+  const slotPelajaranList = daftarSlotJam.filter((j) => typeof j.jamKe === "number");
+
   const muatJadwal = async () => {
     if (!backendToken) return;
     setLoading(true);
@@ -4655,6 +4738,9 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
 
       if (jadwalRes && Array.isArray(jadwalRes.slots)) {
         setScheduleData(jadwalRes);
+      }
+      if (jadwalRes && jadwalRes.pengaturanJam) {
+        setPengaturanJam(jadwalRes.pengaturanJam);
       }
       const gList = Array.isArray(guruRes) ? guruRes : [];
       setListGuru(gList);
@@ -4691,6 +4777,29 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
   useEffect(() => {
     muatJadwal();
   }, [backendToken, tahunAjaran, semester]);
+
+  const handleSimpanPengaturanJam = async (e) => {
+    e?.preventDefault();
+    setSavingJam(true);
+    setErr("");
+    try {
+      const res = await backendApi("/pengajaran/jadwal-kbm/pengaturan-jam", {
+        method: "PUT",
+        token: backendToken,
+        body: jamForm,
+      });
+      if (res) {
+        setPengaturanJam(res);
+      }
+      setMsg("Pengaturan jumlah jam dan durasi KBM berhasil diperbarui.");
+      setModalJamOpen(false);
+      muatJadwal();
+    } catch (e) {
+      setErr(e.message || "Gagal menyimpan pengaturan jam KBM.");
+    } finally {
+      setSavingJam(false);
+    }
+  };
 
   // Daftar Kelas 100% dinamis mengikuti Master Kelas
   const allKelases = (daftarKelas && daftarKelas.length > 0)
@@ -4908,6 +5017,18 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
             )}
 
             <button
+              onClick={() => {
+                setJamForm({ ...pengaturanJam });
+                setModalJamOpen(true);
+              }}
+              title="Atur jumlah jam pelajaran per hari, durasi menit, dan waktu istirahat"
+              className="px-3 py-1.5 bg-[#0C4A6E] hover:bg-[#07334d] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
+            >
+              <Clock size={13} />
+              Atur Jam & Durasi KBM
+            </button>
+
+            <button
               onClick={handleResetMMA}
               disabled={resetBusy}
               title="Kembalikan/sinkronkan ke 360 slot baku jadwal KBM MMA dari file resmi"
@@ -4946,7 +5067,10 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
           <span className="text-[#94A3B8]">·</span>
           <span className="text-[#64748B]">Total Slot: <b className="text-[#0F172A]">{scheduleData.totalSlot || 0}</b> Terjadwal</span>
           <span className="text-[#94A3B8]">·</span>
-          <span className="text-[#64748B]">Durasi KBM: <b className="text-[#0F172A]">4 Jam / Hari @ 35 Menit</b> (Istirahat 30 Menit)</span>
+          <span className="text-[#64748B]">
+            Durasi KBM: <b className="text-[#0F172A]">{slotPelajaranList.length} Jam / Hari @ {pengaturanJam.durasiMenit || 35} Menit</b>
+            {pengaturanJam.adaIstirahat ? ` (Istirahat ${pengaturanJam.durasiIstirahatMenit || 30}m)` : ""}
+          </span>
         </div>
       </div>
 
@@ -5014,30 +5138,25 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                     <thead>
                       <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
                         <th className="py-3 px-3 w-[220px]">Kelas & Lokasi Ruang</th>
-                        <th className="py-3 px-3 min-w-[170px]">
-                          Jam 1 <span className="block text-[9px] font-normal lowercase text-[#64748B]">08.00 - 08.35 (35m)</span>
-                        </th>
-                        <th className="py-3 px-3 min-w-[170px]">
-                          Jam 2 <span className="block text-[9px] font-normal lowercase text-[#64748B]">08.35 - 09.10 (35m)</span>
-                        </th>
-                        <th className="py-3 px-2 w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]">
-                          Istirahat <span className="block text-[9px] font-normal lowercase text-[#94A3B8]">09.10 - 09.40</span>
-                        </th>
-                        <th className="py-3 px-3 min-w-[170px]">
-                          Jam 3 <span className="block text-[9px] font-normal lowercase text-[#64748B]">09.40 - 10.15 (35m)</span>
-                        </th>
-                        <th className="py-3 px-3 min-w-[170px]">
-                          Jam 4 <span className="block text-[9px] font-normal lowercase text-[#64748B]">10.15 - 10.50 (35m)</span>
-                        </th>
+                        {daftarSlotJam.map((j) => {
+                          if (j.jamKe === "istirahat") {
+                            return (
+                              <th key="istirahat" className="py-3 px-2 w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]">
+                                {j.label} <span className="block text-[9px] font-normal lowercase text-[#94A3B8]">{j.waktu || `${j.mulai} - ${j.selesai}`}</span>
+                              </th>
+                            );
+                          }
+                          return (
+                            <th key={j.jamKe} className="py-3 px-3 min-w-[170px]">
+                              {j.label} <span className="block text-[9px] font-normal lowercase text-[#64748B]">{j.waktu || `${j.mulai} - ${j.selesai}`} ({j.durasi})</span>
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F1F5F9]">
                       {allKelases.map((k) => {
-                        const s1 = findSlot(selectedHari, 1, k);
-                        const s2 = findSlot(selectedHari, 2, k);
-                        const s3 = findSlot(selectedHari, 3, k);
-                        const s4 = findSlot(selectedHari, 4, k);
-                        const anySlot = s1 || s2 || s3 || s4;
+                        const anySlot = (scheduleData.slots || []).find((s) => s.hari === selectedHari && s.kelas === k);
                         const lokasi = getLokasiKelas(k, anySlot);
                         const wali = getWaliKelas(k, anySlot);
 
@@ -5107,15 +5226,23 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                                 </div>
                               </div>
                             </td>
-                            <td className="py-2.5 px-2">{renderSlotCell(s1, 1)}</td>
-                            <td className="py-2.5 px-2">{renderSlotCell(s2, 2)}</td>
-                            <td className="py-2.5 px-1 bg-[#F8FAFC]/50 text-center">
-                              <span className="text-[9px] text-[#94A3B8] font-bold block transform -rotate-90">
-                                ISTIRAHAT
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-2">{renderSlotCell(s3, 3)}</td>
-                            <td className="py-2.5 px-2">{renderSlotCell(s4, 4)}</td>
+                            {daftarSlotJam.map((j) => {
+                              if (j.jamKe === "istirahat") {
+                                return (
+                                  <td key="istirahat" className="py-2.5 px-1 bg-[#F8FAFC]/50 text-center">
+                                    <span className="text-[9px] text-[#94A3B8] font-bold block transform -rotate-90">
+                                      ISTIRAHAT
+                                    </span>
+                                  </td>
+                                );
+                              }
+                              const sl = findSlot(selectedHari, j.jamKe, k);
+                              return (
+                                <td key={j.jamKe} className="py-2.5 px-2">
+                                  {renderSlotCell(sl, j.jamKe)}
+                                </td>
+                              );
+                            })}
                           </tr>
                         );
                       })}
@@ -5189,20 +5316,20 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                     <thead>
                       <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
                         <th className="py-3 px-3 w-[120px]">Hari</th>
-                        <th className="py-3 px-3">Jam 1 (08.00 - 08.35)</th>
-                        <th className="py-3 px-3">Jam 2 (08.35 - 09.10)</th>
-                        <th className="py-3 px-2 w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]">Istirahat</th>
-                        <th className="py-3 px-3">Jam 3 (09.40 - 10.15)</th>
-                        <th className="py-3 px-3">Jam 4 (10.15 - 10.50)</th>
+                        {daftarSlotJam.map((j) => (
+                          <th
+                            key={j.jamKe}
+                            className={`py-3 px-3 ${
+                              j.jamKe === "istirahat" ? "w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]" : ""
+                            }`}
+                          >
+                            {j.label} <span className="block text-[9px] font-normal lowercase">{j.waktu || `${j.mulai} - ${j.selesai}`}</span>
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F1F5F9]">
                       {HARI_KBM_LIST.map((h) => {
-                        const s1 = findSlot(h, 1, selectedKelas);
-                        const s2 = findSlot(h, 2, selectedKelas);
-                        const s3 = findSlot(h, 3, selectedKelas);
-                        const s4 = findSlot(h, 4, selectedKelas);
-
                         const renderCell = (slot, jk) => {
                           if (!slot || (!slot.namaMapel && !slot.namaGuru)) {
                             return <span className="text-[#94A3B8] italic text-[11px]">- Kosong -</span>;
@@ -5222,13 +5349,21 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                         return (
                           <tr key={h} className="hover:bg-[#F8FAFC]">
                             <td className="py-3 px-3 font-bold text-[#0C4A6E]">{h}</td>
-                            <td className="py-3 px-3">{renderCell(s1, 1)}</td>
-                            <td className="py-3 px-3">{renderCell(s2, 2)}</td>
-                            <td className="py-3 px-1 text-center bg-[#F8FAFC]/50 text-[10px] text-[#94A3B8] font-semibold">
-                              09.10-09.40
-                            </td>
-                            <td className="py-3 px-3">{renderCell(s3, 3)}</td>
-                            <td className="py-3 px-3">{renderCell(s4, 4)}</td>
+                            {daftarSlotJam.map((j) => {
+                              if (j.jamKe === "istirahat") {
+                                return (
+                                  <td key="istirahat" className="py-3 px-1 text-center bg-[#F8FAFC]/50 text-[10px] text-[#94A3B8] font-semibold">
+                                    {j.waktu || `${j.mulai}-${j.selesai}`}
+                                  </td>
+                                );
+                              }
+                              const sl = findSlot(h, j.jamKe, selectedKelas);
+                              return (
+                                <td key={j.jamKe} className="py-3 px-3">
+                                  {renderCell(sl, j.jamKe)}
+                                </td>
+                              );
+                            })}
                           </tr>
                         );
                       })}
@@ -5310,11 +5445,16 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                     <thead>
                       <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
                         <th className="py-3 px-3 w-[120px]">Hari</th>
-                        <th className="py-3 px-3">Jam 1 (08.00 - 08.35)</th>
-                        <th className="py-3 px-3">Jam 2 (08.35 - 09.10)</th>
-                        <th className="py-3 px-2 w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]">Istirahat</th>
-                        <th className="py-3 px-3">Jam 3 (09.40 - 10.15)</th>
-                        <th className="py-3 px-3">Jam 4 (10.15 - 10.50)</th>
+                        {daftarSlotJam.map((j) => (
+                          <th
+                            key={j.jamKe}
+                            className={`py-3 px-3 ${
+                              j.jamKe === "istirahat" ? "w-[80px] text-center bg-[#F1F5F9]/70 text-[#94A3B8]" : ""
+                            }`}
+                          >
+                            {j.label} <span className="block text-[9px] font-normal lowercase">{j.waktu || `${j.mulai} - ${j.selesai}`}</span>
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F1F5F9]">
@@ -5366,13 +5506,20 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                         return (
                           <tr key={h} className="hover:bg-[#F8FAFC]">
                             <td className="py-3 px-3 font-bold text-[#0C4A6E]">{h}</td>
-                            <td className="py-3 px-3">{renderGuruCell(1)}</td>
-                            <td className="py-3 px-3">{renderGuruCell(2)}</td>
-                            <td className="py-3 px-1 text-center bg-[#F8FAFC]/50 text-[10px] text-[#94A3B8] font-semibold">
-                              09.10-09.40
-                            </td>
-                            <td className="py-3 px-3">{renderGuruCell(3)}</td>
-                            <td className="py-3 px-3">{renderGuruCell(4)}</td>
+                            {daftarSlotJam.map((j) => {
+                              if (j.jamKe === "istirahat") {
+                                return (
+                                  <td key="istirahat" className="py-3 px-1 text-center bg-[#F8FAFC]/50 text-[10px] text-[#94A3B8] font-semibold">
+                                    {j.waktu || `${j.mulai}-${j.selesai}`}
+                                  </td>
+                                );
+                              }
+                              return (
+                                <td key={j.jamKe} className="py-3 px-3">
+                                  {renderGuruCell(j.jamKe)}
+                                </td>
+                              );
+                            })}
                           </tr>
                         );
                       })}
@@ -5408,15 +5555,15 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
 
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-[#475569]">Fokus Jam Ke:</span>
-                  {[1, 2, 3, 4].map((jk) => (
+                  {slotPelajaranList.map((j) => (
                     <button
-                      key={jk}
-                      onClick={() => setSelectedJamKe(jk)}
+                      key={j.jamKe}
+                      onClick={() => setSelectedJamKe(j.jamKe)}
                       className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                        selectedJamKe === jk ? "bg-[#0C4A6E] text-white" : "bg-[#F1F5F9] text-[#475569]"
+                        Number(selectedJamKe) === Number(j.jamKe) ? "bg-[#0C4A6E] text-white" : "bg-[#F1F5F9] text-[#475569]"
                       }`}
                     >
-                      Jam {jk}
+                      {j.label}
                     </button>
                   ))}
                 </div>
@@ -5434,19 +5581,16 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                     <thead>
                       <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] tracking-wider border-b border-[#E2E8F0]">
                         <th className="py-2.5 px-3">Kelas & Ruang</th>
-                        <th className="py-2.5 px-3">Jam 1 (08.00-08.35)</th>
-                        <th className="py-2.5 px-3">Jam 2 (08.35-09.10)</th>
-                        <th className="py-2.5 px-3">Jam 3 (09.40-10.15)</th>
-                        <th className="py-2.5 px-3">Jam 4 (10.15-10.50)</th>
+                        {slotPelajaranList.map((j) => (
+                          <th key={j.jamKe} className="py-2.5 px-3">
+                            {j.label} ({j.waktu || `${j.mulai}-${j.selesai}`})
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F1F5F9]">
                       {allKelases.map((k) => {
-                        const s1 = findSlot(selectedHari, 1, k);
-                        const s2 = findSlot(selectedHari, 2, k);
-                        const s3 = findSlot(selectedHari, 3, k);
-                        const s4 = findSlot(selectedHari, 4, k);
-                        const anySlot = s1 || s2 || s3 || s4;
+                        const anySlot = (scheduleData.slots || []).find((s) => s.hari === selectedHari && s.kelas === k);
                         const lokasi = getLokasiKelas(k, anySlot);
 
                         const renderMatriksSlot = (s) => {
@@ -5465,10 +5609,14 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                               <span className="font-bold text-[#0C4A6E] font-mono">{k}</span>
                               <span className="block text-[10px] text-[#64748B] truncate max-w-[130px]">{lokasi}</span>
                             </td>
-                            <td className="py-2.5 px-3">{renderMatriksSlot(s1)}</td>
-                            <td className="py-2.5 px-3">{renderMatriksSlot(s2)}</td>
-                            <td className="py-2.5 px-3">{renderMatriksSlot(s3)}</td>
-                            <td className="py-2.5 px-3">{renderMatriksSlot(s4)}</td>
+                            {slotPelajaranList.map((j) => {
+                              const sl = findSlot(selectedHari, j.jamKe, k);
+                              return (
+                                <td key={j.jamKe} className="py-2.5 px-3">
+                                  {renderMatriksSlot(sl)}
+                                </td>
+                              );
+                            })}
                           </tr>
                         );
                       })}
@@ -5588,7 +5736,7 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                             </div>
                             <div className="text-right">
                               <p>WALI KELAS: <span>{wali}</span></p>
-                              <p>BEBAN BELAJAR: <span>24 Jam Pelajaran / Minggu</span></p>
+                              <p>BEBAN BELAJAR: <span>{slotPelajaranList.length * HARI_KBM_LIST.length} Jam Pelajaran / Minggu</span></p>
                             </div>
                           </div>
 
@@ -5596,20 +5744,26 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                             <thead>
                               <tr className="bg-gray-100 border-b border-black font-bold">
                                 <th className="border border-black p-2 w-20">HARI</th>
-                                <th className="border border-black p-2">JAM 1<br /><span className="text-[10px] font-normal">08.00-08.35</span></th>
-                                <th className="border border-black p-2">JAM 2<br /><span className="text-[10px] font-normal">08.35-09.10</span></th>
-                                <th className="border border-black p-2 w-16 bg-gray-200">ISTIRAHAT<br /><span className="text-[9px] font-normal">09.10-09.40</span></th>
-                                <th className="border border-black p-2">JAM 3<br /><span className="text-[10px] font-normal">09.40-10.15</span></th>
-                                <th className="border border-black p-2">JAM 4<br /><span className="text-[10px] font-normal">10.15-10.50</span></th>
+                                {daftarSlotJam.map((j) => {
+                                  if (j.jamKe === "istirahat") {
+                                    return (
+                                      <th key="istirahat" className="border border-black p-2 w-16 bg-gray-200">
+                                        {j.label || "ISTIRAHAT"}<br />
+                                        <span className="text-[9px] font-normal">{j.waktu || `${j.mulai}-${j.selesai}`}</span>
+                                      </th>
+                                    );
+                                  }
+                                  return (
+                                    <th key={j.jamKe} className="border border-black p-2">
+                                      {j.label}<br />
+                                      <span className="text-[10px] font-normal">{j.waktu || `${j.mulai}-${j.selesai}`}</span>
+                                    </th>
+                                  );
+                                })}
                               </tr>
                             </thead>
                             <tbody>
                               {HARI_KBM_LIST.map((h) => {
-                                const s1 = findSlot(h, 1, selectedKelas);
-                                const s2 = findSlot(h, 2, selectedKelas);
-                                const s3 = findSlot(h, 3, selectedKelas);
-                                const s4 = findSlot(h, 4, selectedKelas);
-
                                 const renderPrintCell = (s) => (
                                   <div className="p-1.5 leading-tight">
                                     <p className="font-bold">{s?.namaMapel || "-"}</p>
@@ -5620,11 +5774,21 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                                 return (
                                   <tr key={h} className="border-b border-black">
                                     <td className="border border-black p-2 font-bold bg-gray-50">{h}</td>
-                                    <td className="border border-black p-1">{renderPrintCell(s1)}</td>
-                                    <td className="border border-black p-1">{renderPrintCell(s2)}</td>
-                                    <td className="border border-black p-1 bg-gray-100 text-[10px] font-bold text-gray-600">DHUHA & REHAT</td>
-                                    <td className="border border-black p-1">{renderPrintCell(s3)}</td>
-                                    <td className="border border-black p-1">{renderPrintCell(s4)}</td>
+                                    {daftarSlotJam.map((j) => {
+                                      if (j.jamKe === "istirahat") {
+                                        return (
+                                          <td key="istirahat" className="border border-black p-1 bg-gray-100 text-[10px] font-bold text-gray-600">
+                                            {j.label || "REHAT"}
+                                          </td>
+                                        );
+                                      }
+                                      const sl = findSlot(h, j.jamKe, selectedKelas);
+                                      return (
+                                        <td key={j.jamKe} className="border border-black p-1">
+                                          {renderPrintCell(sl)}
+                                        </td>
+                                      );
+                                    })}
                                   </tr>
                                 );
                               })}
@@ -5653,28 +5817,43 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                             <thead>
                               <tr className="bg-gray-100 border-b border-black font-bold">
                                 <th className="border border-black p-1 w-16">HARI</th>
-                                <th className="border border-black p-1">JAM 1</th>
-                                <th className="border border-black p-1">JAM 2</th>
-                                <th className="border border-black p-1 w-14 bg-gray-200">REHAT</th>
-                                <th className="border border-black p-1">JAM 3</th>
-                                <th className="border border-black p-1">JAM 4</th>
+                                {daftarSlotJam.map((j) => {
+                                  if (j.jamKe === "istirahat") {
+                                    return (
+                                      <th key="istirahat" className="border border-black p-1 w-14 bg-gray-200">
+                                        REHAT
+                                      </th>
+                                    );
+                                  }
+                                  return (
+                                    <th key={j.jamKe} className="border border-black p-1">
+                                      {j.label}
+                                    </th>
+                                  );
+                                })}
                               </tr>
                             </thead>
                             <tbody>
                               {HARI_KBM_LIST.map((h) => {
-                                const s1 = findSlot(h, 1, k);
-                                const s2 = findSlot(h, 2, k);
-                                const s3 = findSlot(h, 3, k);
-                                const s4 = findSlot(h, 4, k);
-
                                 return (
                                   <tr key={h} className="border-b border-black">
                                     <td className="border border-black p-1 font-bold">{h}</td>
-                                    <td className="border border-black p-1 leading-none">{s1?.namaMapel || "-"} <br /><span className="text-[9px] text-gray-600">{s1?.namaGuru || ""}</span></td>
-                                    <td className="border border-black p-1 leading-none">{s2?.namaMapel || "-"} <br /><span className="text-[9px] text-gray-600">{s2?.namaGuru || ""}</span></td>
-                                    <td className="border border-black p-1 bg-gray-100 text-[9px]">30m</td>
-                                    <td className="border border-black p-1 leading-none">{s3?.namaMapel || "-"} <br /><span className="text-[9px] text-gray-600">{s3?.namaGuru || ""}</span></td>
-                                    <td className="border border-black p-1 leading-none">{s4?.namaMapel || "-"} <br /><span className="text-[9px] text-gray-600">{s4?.namaGuru || ""}</span></td>
+                                    {daftarSlotJam.map((j) => {
+                                      if (j.jamKe === "istirahat") {
+                                        return (
+                                          <td key="istirahat" className="border border-black p-1 bg-gray-100 text-[9px]">
+                                            {pengaturanJam.durasiIstirahat || 30}m
+                                          </td>
+                                        );
+                                      }
+                                      const sl = findSlot(h, j.jamKe, k);
+                                      return (
+                                        <td key={j.jamKe} className="border border-black p-1 leading-none">
+                                          {sl?.namaMapel || "-"} <br />
+                                          <span className="text-[9px] text-gray-600">{sl?.namaGuru || ""}</span>
+                                        </td>
+                                      );
+                                    })}
                                   </tr>
                                 );
                               })}
@@ -5701,11 +5880,20 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                       <thead>
                         <tr className="bg-gray-100 border-b border-black font-bold">
                           <th className="border border-black p-2 w-20">HARI</th>
-                          <th className="border border-black p-2">JAM 1 (08.00-08.35)</th>
-                          <th className="border border-black p-2">JAM 2 (08.35-09.10)</th>
-                          <th className="border border-black p-2 w-16 bg-gray-200">ISTIRAHAT</th>
-                          <th className="border border-black p-2">JAM 3 (09.40-10.15)</th>
-                          <th className="border border-black p-2">JAM 4 (10.15-10.50)</th>
+                          {daftarSlotJam.map((j) => {
+                            if (j.jamKe === "istirahat") {
+                              return (
+                                <th key="istirahat" className="border border-black p-2 w-16 bg-gray-200">
+                                  ISTIRAHAT
+                                </th>
+                              );
+                            }
+                            return (
+                              <th key={j.jamKe} className="border border-black p-2">
+                                {j.label} ({j.waktu || `${j.mulai}-${j.selesai}`})
+                              </th>
+                            );
+                          })}
                         </tr>
                       </thead>
                       <tbody>
@@ -5731,11 +5919,20 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                           return (
                             <tr key={h} className="border-b border-black">
                               <td className="border border-black p-2 font-bold bg-gray-50">{h}</td>
-                              <td className="border border-black p-1">{getGuruSlot(1)}</td>
-                              <td className="border border-black p-1">{getGuruSlot(2)}</td>
-                              <td className="border border-black p-1 bg-gray-100 text-[10px] font-bold">REHAT</td>
-                              <td className="border border-black p-1">{getGuruSlot(3)}</td>
-                              <td className="border border-black p-1">{getGuruSlot(4)}</td>
+                              {daftarSlotJam.map((j) => {
+                                if (j.jamKe === "istirahat") {
+                                  return (
+                                    <td key="istirahat" className="border border-black p-1 bg-gray-100 text-[10px] font-bold">
+                                      REHAT
+                                    </td>
+                                  );
+                                }
+                                return (
+                                  <td key={j.jamKe} className="border border-black p-1">
+                                    {getGuruSlot(j.jamKe)}
+                                  </td>
+                                );
+                              })}
                             </tr>
                           );
                         })}
@@ -5803,10 +6000,11 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                     onChange={(e) => setSlotForm({ ...slotForm, jamKe: Number(e.target.value) })}
                     className="w-full border border-[#CFE3F0] rounded-xl px-2.5 py-1.5 bg-white font-medium"
                   >
-                    <option value={1}>Jam 1 (08.00-08.35)</option>
-                    <option value={2}>Jam 2 (08.35-09.10)</option>
-                    <option value={3}>Jam 3 (09.40-10.15)</option>
-                    <option value={4}>Jam 4 (10.15-10.50)</option>
+                    {slotPelajaranList.map((j) => (
+                      <option key={j.jamKe} value={j.jamKe}>
+                        {j.label} ({j.waktu || `${j.mulai}-${j.selesai}`})
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -5977,6 +6175,339 @@ function JadwalKBMAntiBentrok({ backendToken, backendOnline, data, setData, onPr
                 Tutup
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL PENGATURAN JAM PELAJARAN & DURASI KBM                               */}
+      {/* ========================================================================= */}
+      {modalJamOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-[#CFE3F0] animate-in fade-in duration-200 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAF4FB] mb-4 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#EAF4FB] text-[#0C4A6E] flex items-center justify-center">
+                  <Clock size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-[#0F172A]">Pengaturan Jam Pelajaran & Durasi KBM</h3>
+                  <p className="text-[11px] text-[#64748B]">
+                    Sesuaikan jumlah jam per hari, durasi tiap jam, jam mulai, dan istirahat pondok.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalJamOpen(false)}
+                className="text-[#94A3B8] hover:text-[#0F172A] p-1.5 rounded-lg hover:bg-[#F1F5F9]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleSimpanPengaturanJam} className="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
+              {/* Box Generator Otomatis */}
+              <div className="p-4 bg-[#F8FAFC] rounded-2xl border border-[#CFE3F0] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[#0C4A6E] text-xs uppercase tracking-wide">
+                    Generator Kalkulasi Otomatis
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const recalculated = hitungDaftarJamKBM(jamForm);
+                      setJamForm((prev) => ({ ...prev, daftarJam: recalculated }));
+                    }}
+                    className="text-[11px] font-semibold text-[#0284C7] hover:text-[#0369a1] flex items-center gap-1"
+                  >
+                    <RefreshCw size={12} /> Hitung Ulang Waktu Slot
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="font-semibold text-[#475569] block mb-1">
+                      Jumlah Jam Pelajaran
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={jamForm.jumlahJam || 4}
+                        onChange={(e) => {
+                          const val = Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1));
+                          const updated = {
+                            ...jamForm,
+                            jumlahJam: val,
+                            setelahJamKe: Math.min(jamForm.setelahJamKe || 2, Math.max(1, val - 1)),
+                          };
+                          updated.daftarJam = hitungDaftarJamKBM(updated);
+                          setJamForm(updated);
+                        }}
+                        className="w-full border border-[#CFE3F0] rounded-xl px-3 py-1.5 bg-white font-bold text-[#0C4A6E]"
+                      />
+                      <span className="text-[#64748B] text-[11px] shrink-0">Jam / Hari</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-[#475569] block mb-1">
+                      Durasi per Jam (Menit)
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="15"
+                        max="120"
+                        step="5"
+                        value={jamForm.durasiMenit || 35}
+                        onChange={(e) => {
+                          const val = Math.max(15, parseInt(e.target.value, 10) || 35);
+                          const updated = { ...jamForm, durasiMenit: val };
+                          updated.daftarJam = hitungDaftarJamKBM(updated);
+                          setJamForm(updated);
+                        }}
+                        className="w-full border border-[#CFE3F0] rounded-xl px-3 py-1.5 bg-white font-bold text-[#0C4A6E]"
+                      />
+                      <span className="text-[#64748B] text-[11px] shrink-0">Menit</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-[#475569] block mb-1">
+                      Jam Mulai KBM
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="08:00"
+                      value={jamForm.jamMulai || "08:00"}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const updated = { ...jamForm, jamMulai: val };
+                        if (/^\d{1,2}[:.]\d{2}$/.test(val)) {
+                          updated.daftarJam = hitungDaftarJamKBM(updated);
+                        }
+                        setJamForm(updated);
+                      }}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-1.5 bg-white font-bold text-[#0C4A6E]"
+                    />
+                  </div>
+                </div>
+
+                {/* Konfigurasi Istirahat */}
+                <div className="pt-2 border-t border-[#E2E8F0] space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!jamForm.adaIstirahat}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        const updated = { ...jamForm, adaIstirahat: checked };
+                        updated.daftarJam = hitungDaftarJamKBM(updated);
+                        setJamForm(updated);
+                      }}
+                      className="rounded border-[#CFE3F0] text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                    />
+                    <span className="font-semibold text-[#0F172A] text-xs">
+                      Sertakan Jam Istirahat / Sholat Dhuha di Antara Jam Pelajaran
+                    </span>
+                  </label>
+
+                  {jamForm.adaIstirahat && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6 pt-1">
+                      <div>
+                        <label className="font-semibold text-[#475569] block mb-1">
+                          Istirahat Setelah Jam Ke
+                        </label>
+                        <select
+                          value={jamForm.setelahJamKe || 2}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10) || 2;
+                            const updated = { ...jamForm, setelahJamKe: val };
+                            updated.daftarJam = hitungDaftarJamKBM(updated);
+                            setJamForm(updated);
+                          }}
+                          className="w-full border border-[#CFE3F0] rounded-xl px-3 py-1.5 bg-white font-medium"
+                        >
+                          {Array.from({ length: Math.max(1, (jamForm.jumlahJam || 4) - 1) }, (_, i) => i + 1).map((n) => (
+                            <option key={n} value={n}>
+                              Setelah Jam Ke-{n}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="font-semibold text-[#475569] block mb-1">
+                          Durasi Istirahat (Menit)
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min="5"
+                            max="90"
+                            step="5"
+                            value={jamForm.durasiIstirahatMenit || 30}
+                            onChange={(e) => {
+                              const val = Math.max(5, parseInt(e.target.value, 10) || 30);
+                              const updated = { ...jamForm, durasiIstirahatMenit: val };
+                              updated.daftarJam = hitungDaftarJamKBM(updated);
+                              setJamForm(updated);
+                            }}
+                            className="w-full border border-[#CFE3F0] rounded-xl px-3 py-1.5 bg-white font-bold text-[#0C4A6E]"
+                          />
+                          <span className="text-[#64748B] text-[11px] shrink-0">Menit</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tabel Rincian Slot Jam Pelajaran */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-[#475569]">
+                    Rincian Slot Jam & Rentang Waktu:
+                  </span>
+                  <span className="text-[11px] text-[#64748B]">
+                    {(jamForm.daftarJam || []).filter((j) => j.jamKe !== "istirahat").length} Jam Pelajaran Aktif
+                  </span>
+                </div>
+
+                <div className="border border-[#CFE3F0] rounded-xl overflow-hidden bg-white">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-[#F8FAFC] text-[#5B7C93] uppercase font-semibold text-[10px] border-b border-[#E2E8F0]">
+                        <th className="py-2 px-3 w-16">Slot</th>
+                        <th className="py-2 px-3">Label</th>
+                        <th className="py-2 px-3 w-28">Mulai</th>
+                        <th className="py-2 px-3 w-28">Selesai</th>
+                        <th className="py-2 px-3">Rentang Tampil</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F1F5F9]">
+                      {(jamForm.daftarJam || []).map((slot, idx) => {
+                        const isIst = slot.jamKe === "istirahat";
+                        return (
+                          <tr key={idx} className={isIst ? "bg-[#F8FAFC]/70 font-semibold" : ""}>
+                            <td className="py-2 px-3">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isIst ? "bg-amber-100 text-amber-800" : "bg-[#EAF4FB] text-[#0C4A6E]"
+                                }`}
+                              >
+                                {isIst ? "REHAT" : `Jam ${slot.jamKe}`}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3">
+                              <input
+                                type="text"
+                                value={slot.label || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const nextList = [...(jamForm.daftarJam || [])];
+                                  nextList[idx] = { ...nextList[idx], label: val };
+                                  setJamForm({ ...jamForm, daftarJam: nextList });
+                                }}
+                                className="w-full border border-transparent hover:border-[#CFE3F0] focus:border-[#0C4A6E] rounded px-1.5 py-0.5 bg-transparent"
+                              />
+                            </td>
+                            <td className="py-2 px-3">
+                              <input
+                                type="text"
+                                value={slot.mulai || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const nextList = [...(jamForm.daftarJam || [])];
+                                  nextList[idx] = {
+                                    ...nextList[idx],
+                                    mulai: val,
+                                    waktu: `${val} - ${nextList[idx].selesai || ""}`,
+                                  };
+                                  setJamForm({ ...jamForm, daftarJam: nextList });
+                                }}
+                                className="w-20 font-mono text-center border border-transparent hover:border-[#CFE3F0] focus:border-[#0C4A6E] rounded px-1.5 py-0.5 bg-transparent"
+                              />
+                            </td>
+                            <td className="py-2 px-3">
+                              <input
+                                type="text"
+                                value={slot.selesai || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const nextList = [...(jamForm.daftarJam || [])];
+                                  nextList[idx] = {
+                                    ...nextList[idx],
+                                    selesai: val,
+                                    waktu: `${nextList[idx].mulai || ""} - ${val}`,
+                                  };
+                                  setJamForm({ ...jamForm, daftarJam: nextList });
+                                }}
+                                className="w-20 font-mono text-center border border-transparent hover:border-[#CFE3F0] focus:border-[#0C4A6E] rounded px-1.5 py-0.5 bg-transparent"
+                              />
+                            </td>
+                            <td className="py-2 px-3 text-[#64748B] text-[11px]">
+                              {slot.waktu || `${slot.mulai}-${slot.selesai}`}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="pt-3 border-t border-[#EAF4FB] flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const def = {
+                      jumlahJam: 4,
+                      durasiMenit: 35,
+                      jamMulai: "08:00",
+                      adaIstirahat: true,
+                      setelahJamKe: 2,
+                      durasiIstirahatMenit: 30,
+                      daftarJam: hitungDaftarJamKBM({
+                        jumlahJam: 4,
+                        durasiMenit: 35,
+                        jamMulai: "08:00",
+                        adaIstirahat: true,
+                        setelahJamKe: 2,
+                        durasiIstirahatMenit: 30,
+                      }),
+                    };
+                    setJamForm(def);
+                  }}
+                  className="px-3 py-2 rounded-xl text-xs text-[#0C4A6E] hover:bg-[#F1F5F9] border border-[#CFE3F0] font-semibold flex items-center gap-1"
+                >
+                  <RefreshCw size={12} /> Reset ke Baku MMA (4 Jam)
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalJamOpen(false)}
+                    className="px-3 py-2 rounded-xl text-xs text-[#64748B] hover:bg-[#F1F5F9]"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingJam}
+                    className="btn-gradient px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md"
+                  >
+                    {savingJam && <Loader2 size={13} className="animate-spin" />}
+                    Simpan Pengaturan Jam KBM
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

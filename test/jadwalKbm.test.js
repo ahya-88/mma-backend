@@ -116,4 +116,86 @@ test("JADWAL KBM: HTTP Endpoint Pengajaran", async () => {
   assert.equal(resGet.status, 200);
   const data = await resGet.json();
   assert.ok(Array.isArray(data.slots));
+  assert.ok(data.pengaturanJam);
+  assert.ok(Array.isArray(data.jamPelajaran));
+});
+
+test("JADWAL KBM: Pengaturan Jumlah Jam & Durasi KBM", async () => {
+  const stafId = `staf_pj_${crypto.randomUUID().slice(0, 8)}`;
+  await query(
+    'INSERT INTO "Guru" ("id", "nama", "username", "password", "departemen", "mustChangePassword", "sessionVersion") VALUES ($1, $2, $3, $4, $5, FALSE, 0)',
+    [stafId, "Ustadz Kurikulum Jam", `pj_jam_${Date.now()}`, "pass123", "pengajaran"]
+  );
+  const token = buatToken({ id: stafId, role: "guru", departemen: "pengajaran", nama: "Ustadz Kurikulum Jam" });
+
+  // 1. Ambil pengaturan jam default
+  const resGet = await fetch(`${baseUrl}/api/pengajaran/jadwal-kbm/pengaturan-jam`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert.equal(resGet.status, 200);
+  const getBody = await resGet.json();
+  assert.equal(typeof getBody.jumlahJam, "number");
+
+  // 2. Simpan pengaturan jam baru (misal 5 jam pelajaran @ 40 menit)
+  const resPut = await fetch(`${baseUrl}/api/pengajaran/jadwal-kbm/pengaturan-jam`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      jumlahJam: 5,
+      durasiMenit: 40,
+      jamMulai: "07:30",
+      adaIstirahat: true,
+      setelahJamKe: 2,
+      durasiIstirahatMenit: 30,
+    }),
+  });
+  assert.equal(resPut.status, 200);
+  const putBody = await resPut.json();
+  assert.equal(putBody.jumlahJam, 5);
+  assert.equal(putBody.durasiMenit, 40);
+  assert.equal(putBody.daftarJam.filter((j) => typeof j.jamKe === "number").length, 5);
+
+  // 3. Simpan slot pada Jam Ke-5 (sebelumnya error 400 jika dibatasi jam 1-4)
+  const resSlot = await fetch(`${baseUrl}/api/pengajaran/jadwal-kbm/slot`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      hari: "Senin",
+      jamKe: 5,
+      kelas: "7A",
+      kodeMapel: "M01",
+      namaMapel: "TAFSIR",
+      kodeGuru: "G01",
+      namaGuru: "Ust. Ahmad",
+      tahunAjaran: "2026/2027",
+      semester: "Ganjil",
+    }),
+  });
+  assert.equal(resSlot.status, 200);
+  const slotBody = await resSlot.json();
+  const slot5 = slotBody.slots.find((s) => s.hari === "Senin" && Number(s.jamKe) === 5 && s.kelas === "7A");
+  assert.ok(slot5);
+  assert.equal(slot5.namaMapel, "TAFSIR");
+
+  // Cleanup slot Jam 5
+  await fetch(`${baseUrl}/api/pengajaran/jadwal-kbm/hapus-slot`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      hari: "Senin",
+      jamKe: 5,
+      kelas: "7A",
+      tahunAjaran: "2026/2027",
+      semester: "Ganjil",
+    }),
+  });
 });
