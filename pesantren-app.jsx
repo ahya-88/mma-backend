@@ -16680,8 +16680,24 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                         {s.asrama || "-"}
                       </td>
                       <td className="py-2.5 px-3">
-                        <p className="text-[#17242E] font-medium truncate max-w-[140px]">{wali?.nama || "-"}</p>
-                        <p className="text-[11px] text-[#5B7C93]">{wali?.hp || s.noDarurat || "-"}</p>
+                        {wali ? (
+                          <>
+                            <p className="text-[#17242E] font-medium truncate max-w-[140px]">{wali.nama}</p>
+                            <p className="text-[11px] text-[#5B7C93]">{wali.hp || s.noDarurat || "-"}</p>
+                          </>
+                        ) : (
+                          <div className="space-y-1">
+                            <p className="text-[11px] text-[#8FB0C7] italic">Belum ada akun</p>
+                            <button
+                              type="button"
+                              onClick={() => bukaModalBuatWaliSantri(s)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#EAF4FB] hover:bg-[#D6EAF6] text-[#0C4A6E] text-[10px] font-semibold border border-[#CFE3F0] transition-colors"
+                              title="Buat akun portal wali santri"
+                            >
+                              <Plus size={10} /> Buat Akun Wali
+                            </button>
+                          </div>
+                        )}
                       </td>
                       <td className="py-2.5 px-3">
                         <p className="font-semibold text-[#0C4A6E]">{rupiah(s.saldo || 0)}</p>
@@ -16760,6 +16776,12 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   </button>
                 </div>
 
+                {santriSaveError && (
+                  <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium">
+                    {santriSaveError}
+                  </div>
+                )}
+
                 <div className="space-y-4 text-xs">
                   <div className="flex items-center gap-3">
                     {santriForm.foto ? (
@@ -16787,8 +16809,17 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                     <select value={santriForm.kelas} onChange={(e) => setSantriForm({ ...santriForm, kelas: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
                       {data.kelas.map((k) => <option key={k} value={k}>{k}</option>)}
                     </select>
-                    <select value={santriForm.waliId} onChange={(e) => setSantriForm({ ...santriForm, waliId: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
-                      {data.wali.map((w) => <option key={w.id} value={w.id}>{w.nama}</option>)}
+                    <select
+                      value={santriForm.waliId || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSantriForm({ ...santriForm, waliId: val });
+                        if (val) setBuatWaliBaruSantri(false);
+                      }}
+                      className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    >
+                      <option value="">-- Belum Ada / Pilih Akun Wali --</option>
+                      {data.wali.map((w) => <option key={w.id} value={w.id}>{w.nama} ({w.username})</option>)}
                     </select>
                     <input placeholder="Kamar / Asrama" value={santriForm.asrama} onChange={(e) => setSantriForm({ ...santriForm, asrama: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
                     <select value={santriForm.halaqoh} onChange={(e) => setSantriForm({ ...santriForm, halaqoh: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30">
@@ -16812,6 +16843,74 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                     <input placeholder="Nama Ibu" value={santriForm.namaIbu || ""} onChange={(e) => setSantriForm({ ...santriForm, namaIbu: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30" />
                     <input placeholder="NIK Ibu (16 Digit)" value={santriForm.nikIbu || ""} onChange={(e) => setSantriForm({ ...santriForm, nikIbu: e.target.value })} className="border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 font-mono" />
                   </div>
+
+                  {!santriForm.waliId && (
+                    <div className="bg-[#F4F9FD] border border-[#CFE3F0] rounded-xl p-3 space-y-2.5 mt-2">
+                      <label className="flex items-center gap-2 cursor-pointer select-none font-semibold text-[#0C4A6E]">
+                        <input
+                          type="checkbox"
+                          checked={buatWaliBaruSantri}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setBuatWaliBaruSantri(checked);
+                            if (checked) {
+                              const stambukVal = santriForm.noStambuk || santriForm.nis || "";
+                              const autoUsername = `wali.${stambukVal || (santriForm.nama || "santri").toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+                              setWaliBaruForm((prev) => ({
+                                nama: prev.nama || santriForm.namaAyah || santriForm.namaIbu || (santriForm.nama ? `Wali ${santriForm.nama}` : ""),
+                                hp: prev.hp || santriForm.noDarurat || "",
+                                username: prev.username || autoUsername,
+                                password: prev.password || "Santri123!",
+                              }));
+                            }
+                          }}
+                          className="rounded border-[#CFE3F0] text-[#0C4A6E] focus:ring-[#0C4A6E]"
+                        />
+                        <span>Buat Akun Portal Wali Santri Sekaligus Saat Pendaftaran</span>
+                      </label>
+                      {buatWaliBaruSantri && (
+                        <div className="grid sm:grid-cols-2 gap-2 pt-1">
+                          <div>
+                            <label className="text-[11px] text-[#5B7C93] block mb-0.5">Nama Akun Wali *</label>
+                            <input
+                              placeholder="Nama Wali (otomatis dari Ayah/Ibu)"
+                              value={waliBaruForm.nama}
+                              onChange={(e) => setWaliBaruForm({ ...waliBaruForm, nama: e.target.value })}
+                              className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-[#5B7C93] block mb-0.5">No. HP / WhatsApp Wali</label>
+                            <input
+                              placeholder="0812..."
+                              value={waliBaruForm.hp}
+                              onChange={(e) => setWaliBaruForm({ ...waliBaruForm, hp: e.target.value })}
+                              className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-[#5B7C93] block mb-0.5">Username Login Wali *</label>
+                            <input
+                              placeholder="Contoh: wali.1001"
+                              value={waliBaruForm.username}
+                              onChange={(e) => setWaliBaruForm({ ...waliBaruForm, username: e.target.value })}
+                              className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-[#5B7C93] block mb-0.5">Kata Sandi Awal *</label>
+                            <input
+                              type="text"
+                              placeholder="Minimal 6 karakter"
+                              value={waliBaruForm.password}
+                              onChange={(e) => setWaliBaruForm({ ...waliBaruForm, password: e.target.value })}
+                              className="w-full border border-[#CFE3F0] bg-white rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <p className="font-semibold uppercase tracking-wide text-[#0C4A6E] pt-2">Kelahiran & Alamat</p>
                   <div className="grid sm:grid-cols-3 gap-2">
@@ -16901,7 +17000,27 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                   <div><span className="text-[#5B7C93]">Ayah Kandung:</span> <p className="font-medium text-[#17242E]">{detailSantriData.namaAyah || "-"} {detailSantriData.nikAyah ? <span className="text-[#5B7C93] font-mono font-normal">(NIK: {detailSantriData.nikAyah})</span> : ""}</p></div>
                   <div><span className="text-[#5B7C93]">Ibu Kandung:</span> <p className="font-medium text-[#17242E]">{detailSantriData.namaIbu || "-"} {detailSantriData.nikIbu ? <span className="text-[#5B7C93] font-mono font-normal">(NIK: {detailSantriData.nikIbu})</span> : ""}</p></div>
                   <div><span className="text-[#5B7C93]">Golongan Darah:</span> <p className="font-medium text-[#17242E]">{detailSantriData.golDarah || "-"}</p></div>
-                  <div><span className="text-[#5B7C93]">Wali Santri:</span> <p className="font-medium text-[#17242E]">{(data.wali || []).find(w => w.id === detailSantriData.waliId)?.nama || "-"}</p></div>
+                  <div>
+                    <span className="text-[#5B7C93]">Akun Wali Santri:</span>
+                    {(data.wali || []).find(w => w.id === detailSantriData.waliId) ? (
+                      <p className="font-medium text-[#17242E]">
+                        {(data.wali || []).find(w => w.id === detailSantriData.waliId)?.nama}{" "}
+                        <span className="text-[11px] font-mono text-[#0C4A6E]">
+                          ({(data.wali || []).find(w => w.id === detailSantriData.waliId)?.username})
+                        </span>
+                      </p>
+                    ) : (
+                      <div className="mt-1">
+                        <button
+                          type="button"
+                          onClick={() => bukaModalBuatWaliSantri(detailSantriData)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0C4A6E] hover:bg-[#093550] text-white text-[11px] font-semibold shadow-sm transition-colors"
+                        >
+                          <Plus size={12} /> Buat Akun Wali untuk Santri Ini
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div><span className="text-[#5B7C93]">Kontak Darurat / HP:</span> <p className="font-medium text-[#17242E]">{detailSantriData.noDarurat || (data.wali || []).find(w => w.id === detailSantriData.waliId)?.hp || "-"}</p></div>
                   <div className="sm:col-span-2"><span className="text-[#5B7C93]">Alamat:</span> <p className="font-medium text-[#17242E]">{detailSantriData.alamat || "-"}</p></div>
                   <div><span className="text-[#5B7C93]">Catatan Kesehatan:</span> <p className="font-medium text-[#17242E]">{detailSantriData.catatanKesehatan || "-"}</p></div>
@@ -16958,6 +17077,95 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 
                 <div className="flex items-center justify-end pt-3 border-t">
                   <button onClick={tutupDetailSantri} className="px-4 py-2 text-xs border border-[#CFE3F0] text-[#45657A] rounded-xl hover:bg-gray-50">Tutup</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Buat Akun Wali Cepat dari Profil / Tabel Santri */}
+          {modalBuatWaliSantri && (
+            <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-[#CFE3F0] shadow-2xl space-y-4">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <div className="flex items-center gap-2">
+                    <Users size={18} className="text-[#0C4A6E]" />
+                    <h3 className="font-semibold text-base text-[#0C4A6E]">Buat Akun Wali Santri</h3>
+                  </div>
+                  <button onClick={() => setModalBuatWaliSantri(null)} className="text-[#5B7C93] hover:text-[#17242E] p-1 rounded-lg">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#F4F9FD] border border-[#CFE3F0] text-xs space-y-0.5">
+                  <p className="text-[#5B7C93]">Santri Terkait:</p>
+                  <p className="font-bold text-[#0C4A6E] text-sm">{modalBuatWaliSantri.nama}</p>
+                  <p className="text-[11px] text-[#45657A]">
+                    Kelas {modalBuatWaliSantri.kelas || "-"} · Stambuk: {modalBuatWaliSantri.noStambuk || modalBuatWaliSantri.nis || "-"}
+                  </p>
+                </div>
+
+                {modalBuatWaliError && (
+                  <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200">{modalBuatWaliError}</p>
+                )}
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="text-[#5B7C93] font-medium block mb-1">Nama Wali Santri *</label>
+                    <input
+                      placeholder="Nama Ayah / Ibu / Wali"
+                      value={modalBuatWaliData.nama}
+                      onChange={(e) => setModalBuatWaliData({ ...modalBuatWaliData, nama: e.target.value })}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[#5B7C93] font-medium block mb-1">No. HP / WhatsApp</label>
+                    <input
+                      placeholder="0812..."
+                      value={modalBuatWaliData.hp}
+                      onChange={(e) => setModalBuatWaliData({ ...modalBuatWaliData, hp: e.target.value })}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[#5B7C93] font-medium block mb-1">Username Login *</label>
+                    <input
+                      placeholder="wali.1001"
+                      value={modalBuatWaliData.username}
+                      onChange={(e) => setModalBuatWaliData({ ...modalBuatWaliData, username: e.target.value })}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[#5B7C93] font-medium block mb-1">Kata Sandi Awal *</label>
+                    <input
+                      type="text"
+                      placeholder="Minimal 6 karakter"
+                      value={modalBuatWaliData.password}
+                      onChange={(e) => setModalBuatWaliData({ ...modalBuatWaliData, password: e.target.value })}
+                      className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setModalBuatWaliSantri(null)}
+                    disabled={modalBuatWaliBusy}
+                    className="px-3.5 py-2 text-xs border border-[#CFE3F0] text-[#45657A] rounded-xl hover:bg-gray-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={simpanModalBuatWaliSantri}
+                    disabled={modalBuatWaliBusy}
+                    className="btn-gradient text-xs px-4 py-2 rounded-xl font-semibold hover:shadow-lg active:scale-95 flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Check size={14} />
+                    {modalBuatWaliBusy ? "Menyimpan..." : "Buat & Tautkan Akun"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -17812,6 +18020,39 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
 
       {tab === "wali" && (
         <ArchCard title="Data Wali Santri" eyebrow={`${data.wali.length} Wali Terdaftar`} icon={Users}>
+          {!editingWaliId && (
+            <div className="mb-2">
+              <select
+                value={waliForm.santriId || ""}
+                disabled={waliBusy}
+                onChange={(e) => {
+                  const sid = e.target.value;
+                  const s = data.santri.find((x) => x.id === sid);
+                  if (s) {
+                    const stambuk = s.noStambuk || s.nis || s.id.slice(0, 6);
+                    setWaliForm((prev) => ({
+                      ...prev,
+                      santriId: sid,
+                      nama: prev.nama || s.namaAyah || s.namaIbu || `Wali ${s.nama}`,
+                      hp: prev.hp || s.noDarurat || "",
+                      username: prev.username || `wali.${stambuk}`.toLowerCase().replace(/[^a-z0-9._]/g, ""),
+                      password: prev.password || "Santri123!",
+                    }));
+                  } else {
+                    setWaliForm((prev) => ({ ...prev, santriId: "" }));
+                  }
+                }}
+                className="w-full border border-[#CFE3F0] bg-[#F4F9FD] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30 focus:border-[#0C4A6E] transition-colors px-3 py-2 text-xs text-[#0C4A6E] font-medium"
+              >
+                <option value="">-- Tautkan ke Santri & Isi Otomatis Data Orang Tua (Opsional) --</option>
+                {santriAktifList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nama} ({s.kelas || "-"}) {s.namaAyah ? `— Ayah: ${s.namaAyah}` : ""} {!s.waliId ? "[Belum ada akun wali]" : "[Sudah ada wali]"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 mb-2">
             <input
               placeholder="Nama wali"
