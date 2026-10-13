@@ -8,7 +8,7 @@ import {
   Image as ImageIcon, ShieldAlert, Clock,
   QrCode, ShoppingCart, Camera, Store, UploadCloud, RefreshCw, Layers, CheckCircle2, AlertCircle,
   Database, HardDrive, ChevronLeft, Filter, ArrowRightLeft, UserX, CheckSquare, Square, Calculator,
-  Phone, MapPin, Sparkles, Sliders, ExternalLink
+  Phone, MapPin, Sparkles, Sliders, ExternalLink, Scissors
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -1017,16 +1017,19 @@ function PrintOverlay({ content, onClose }) {
       const area = document.getElementById("print-area");
       const halaman = Array.from(area.querySelectorAll(".pdf-page"));
       const target = halaman.length ? halaman : [area.firstElementChild || area];
-      const pdf = new jsPDF({ unit: "mm", format: "a4" });
-      const lebarHalaman = 210, tinggiHalaman = 297;
+      const isLandscape = area.querySelector(".is-landscape") !== null || target.some((el) => el.classList?.contains("is-landscape"));
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: isLandscape ? "landscape" : "portrait" });
       for (let i = 0; i < target.length; i++) {
+        const pageIsLandscape = target[i].classList?.contains("is-landscape") || isLandscape;
+        const pWidth = pageIsLandscape ? 297 : 210;
+        const pHeight = pageIsLandscape ? 210 : 297;
         const canvas = await html2canvas(target[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
         const dataUrl = canvas.toDataURL("image/png");
-        let w = lebarHalaman;
+        let w = pWidth;
         let h = (canvas.height * w) / canvas.width;
-        if (h > tinggiHalaman) { h = tinggiHalaman; w = (canvas.width * h) / canvas.height; }
-        const x = (lebarHalaman - w) / 2;
-        if (i > 0) pdf.addPage();
+        if (h > pHeight) { h = pHeight; w = (canvas.width * h) / canvas.height; }
+        const x = (pWidth - w) / 2;
+        if (i > 0) pdf.addPage("a4", pageIsLandscape ? "landscape" : "portrait");
         pdf.addImage(dataUrl, "PNG", x, 0, w, h);
       }
       pdf.save(`dokumen-${Date.now()}.pdf`);
@@ -1039,8 +1042,8 @@ function PrintOverlay({ content, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 print:bg-white print:p-0 print:block" id="print-wrapper">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto print:max-h-none print:shadow-none print:max-w-none" id="print-area">
-        <div className="p-6" style={{ fontFamily: "'Inter', sans-serif" }}>{content}</div>
+      <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[92vh] overflow-y-auto print:max-h-none print:shadow-none print:max-w-none" id="print-area">
+        <div className="p-6 print:p-0" style={{ fontFamily: "'Inter', sans-serif" }}>{content}</div>
       </div>
       <div className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] flex flex-col items-center gap-2 print:hidden z-50">
         {errorUnduh && <p className="text-xs bg-white text-[#96271A] px-3 py-1.5 rounded-lg shadow">{errorUnduh}</p>}
@@ -1354,6 +1357,520 @@ function PengajuanAnggaranContent({ pengajuan, petugas, pimpinan }) {
           <p className="border-t border-[#17242E] pt-1 px-2">{pimpinan?.nama || "........................"}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ---------- LEMBAR CETAK ABSENSI FORMAL (KELAS, ASRAMA, HALAQOH) ----------
+
+function LembarKopAbsen({ subBagian, judul, metaKiri = [], metaKanan = [] }) {
+  return (
+    <div className="border-b-2 border-[#0C4A6E] pb-2 mb-2.5">
+      <div className="flex items-center justify-between gap-4 mb-1.5">
+        <div className="flex items-center gap-3">
+          {LOGO_MARK ? (
+            <img src={LOGO_MARK} alt="Logo" className="w-10 h-10 object-contain shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-[#0C4A6E] text-white flex items-center justify-center font-bold text-xs shrink-0">MMA</div>
+          )}
+          <div>
+            <h2 className="text-[15px] font-bold text-[#0C4A6E] uppercase tracking-wide leading-tight" style={{ fontFamily: "'Fraunces', serif" }}>
+              Ma'had Mudaiyatul Anwar
+            </h2>
+            <p className="text-[9px] text-[#5B7C93] uppercase tracking-widest font-semibold">
+              {subBagian || "Pondok Pesantren"}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <h1 className="text-[11px] font-bold uppercase tracking-wider text-[#0C4A6E] bg-[#EAF4FB] px-3 py-1 rounded border border-[#CFE3F0] inline-block" style={{ fontFamily: "'Fraunces', serif" }}>
+            {judul}
+          </h1>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between text-[10px] text-[#17242E] pt-1 border-t border-[#DCEDF7] gap-y-1">
+        <div className="flex flex-wrap items-center gap-x-4">
+          {metaKiri.map((m, idx) => (
+            <span key={idx}><strong className="text-[#0C4A6E]">{m.label}:</strong> {m.val || "-"}</span>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4">
+          {metaKanan.map((m, idx) => (
+            <span key={idx}><strong className="text-[#0C4A6E]">{m.label}:</strong> {m.val || "-"}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AbsenKelasPrintContent({ daftarKelasData = [], tahunAjaran = "2026/2027", semester = "Ganjil", pekanBulan = "Pekan 1 — Oktober 2026", barisKosong = 3, namaPengajaran = "Ustadzah Nadia" }) {
+  const CHUNK_SIZE = 20;
+  return (
+    <div className="text-[#17242E] space-y-6">
+      {daftarKelasData.map((kls, kIdx) => {
+        const santriList = (kls.santriList || []).slice().sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+        const totalRowsNeeded = santriList.length + Number(barisKosong || 0);
+        const totalPages = Math.max(1, Math.ceil(totalRowsNeeded / CHUNK_SIZE));
+        const pages = [];
+        for (let p = 0; p < totalPages; p++) {
+          const sliceStart = p * CHUNK_SIZE;
+          const sliceSantri = santriList.slice(sliceStart, sliceStart + CHUNK_SIZE);
+          let extraEmpty = 0;
+          if (p === totalPages - 1) {
+            extraEmpty = Math.max(Number(barisKosong || 0), totalPages * CHUNK_SIZE - santriList.length);
+            if (extraEmpty > 8) extraEmpty = 8;
+          }
+          pages.push({ santri: sliceSantri, extraEmpty, pageIdx: p, totalPages, startIndex: sliceStart });
+        }
+
+        return (
+          <React.Fragment key={kls.namaKelas || kIdx}>
+            {pages.map((page) => (
+              <div
+                key={page.pageIdx}
+                className="pdf-page is-landscape bg-white p-5 mx-auto rounded-xl border border-slate-200 print:border-none print:p-0 print:m-0 print:w-full mb-6 print:mb-0"
+                style={{ width: "297mm", minHeight: "205mm", boxSizing: "border-box", pageBreakAfter: "always", breakAfter: "page" }}
+              >
+                <LembarKopAbsen
+                  subBagian="Bagian Pengajaran & Kurikulum (KBM)"
+                  judul="DAFTAR HADIR KELAS (SENIN — SABTU · 4 JP)"
+                  metaKiri={[
+                    { label: "Kelas / Rombel", val: kls.namaKelas },
+                    { label: "Wali Kelas", val: kls.waliKelas || "Belum ditentukan" },
+                    { label: "Ruang / Lokasi", val: kls.lokasi || "Gedung Belajar" },
+                  ]}
+                  metaKanan={[
+                    { label: "Tahun Ajaran", val: tahunAjaran },
+                    { label: "Semester", val: semester },
+                    { label: "Pekan / Bulan", val: pekanBulan },
+                    { label: "Halaman", val: `${page.pageIdx + 1} dari ${page.totalPages}` },
+                  ]}
+                />
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[10px] border-collapse border border-slate-400" style={{ borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr className="bg-slate-100 text-[#0C4A6E]">
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-1 w-7 text-center">No</th>
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-1.5 w-16 text-center">NIS</th>
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-2 text-left min-w-[130px]">Nama Santri</th>
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-1 w-7 text-center">L/P</th>
+                        {["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"].map((hari) => (
+                          <th key={hari} colSpan={4} className="border border-slate-400 py-0.5 text-center bg-slate-200/80 font-bold tracking-wide">{hari}</th>
+                        ))}
+                        <th colSpan={4} className="border border-slate-400 py-0.5 text-center bg-blue-100/70 font-bold">REKAP</th>
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-2 min-w-[80px] text-center">Keterangan</th>
+                      </tr>
+                      <tr className="bg-slate-50 text-[9px] text-[#45657A]">
+                        {["sen", "sel", "rab", "kam", "jum", "sab"].map((h) => (
+                          <React.Fragment key={h}>
+                            <th className="border border-slate-400 py-0.5 w-[17px] text-center font-semibold">1</th>
+                            <th className="border border-slate-400 py-0.5 w-[17px] text-center font-semibold">2</th>
+                            <th className="border border-slate-400 py-0.5 w-[17px] text-center font-semibold">3</th>
+                            <th className="border border-slate-400 py-0.5 w-[17px] text-center font-semibold">4</th>
+                          </React.Fragment>
+                        ))}
+                        <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">H</th>
+                        <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">S</th>
+                        <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">I</th>
+                        <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">A</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {page.santri.map((s, idx) => (
+                        <tr key={s.id || idx} className="hover:bg-slate-50/50">
+                          <td className="border border-slate-300 py-1 text-center font-medium">{page.startIndex + idx + 1}</td>
+                          <td className="border border-slate-300 py-1 text-center text-slate-600 font-mono text-[9px]">{s.nis || "-"}</td>
+                          <td className="border border-slate-300 py-1 px-2 font-semibold text-slate-800 truncate max-w-[150px]">{s.nama}</td>
+                          <td className="border border-slate-300 py-1 text-center text-[9px] text-slate-600">{s.jenisKelamin === "Perempuan" ? "P" : "L"}</td>
+                          {Array.from({ length: 24 }).map((_, cIdx) => (
+                            <td key={cIdx} className="border border-slate-300 py-1 text-center h-[22px]"></td>
+                          ))}
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 px-1 text-[9px] text-slate-500"></td>
+                        </tr>
+                      ))}
+                      {Array.from({ length: page.extraEmpty }).map((_, eIdx) => (
+                        <tr key={`extra-${eIdx}`} className="text-slate-400">
+                          <td className="border border-slate-300 py-1 text-center">{page.startIndex + page.santri.length + eIdx + 1}</td>
+                          <td className="border border-slate-300 py-1 text-center"></td>
+                          <td className="border border-slate-300 py-1 px-2"></td>
+                          <td className="border border-slate-300 py-1 text-center"></td>
+                          {Array.from({ length: 24 }).map((_, cIdx) => (
+                            <td key={cIdx} className="border border-slate-300 py-1 text-center h-[22px]"></td>
+                          ))}
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1"></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-3 flex items-end justify-between text-[10px]">
+                  <div className="text-center w-56">
+                    <p className="text-[#5B7C93] mb-0.5">Mengetahui,</p>
+                    <p className="font-semibold text-[#0C4A6E]">Kepala Bagian Pengajaran</p>
+                    <div className="h-10" />
+                    <p className="font-semibold underline text-[#17242E]">{namaPengajaran || "Ustadzah Nadia"}</p>
+                    <p className="text-[9px] text-[#5B7C93]">NIP: MMA-PGJ-002</p>
+                  </div>
+                  <div className="text-center text-[9px] text-[#5B7C93] max-w-xs leading-relaxed border border-slate-200 bg-slate-50 px-3 py-1.5 rounded">
+                    <span className="font-semibold text-[#0C4A6E]">Petunjuk Guru Pengajar:</span> Beri tanda ceklis (✓) jika hadir, <strong>S</strong> = Sakit, <strong>I</strong> = Izin, <strong>A</strong> = Alpa tanpa keterangan.
+                  </div>
+                  <div className="text-center w-56">
+                    <p className="text-[#5B7C93] mb-0.5">Bogor, .................................... 2026</p>
+                    <p className="font-semibold text-[#0C4A6E]">Wali Kelas {kls.namaKelas}</p>
+                    <div className="h-10" />
+                    <p className="font-semibold underline text-[#17242E]">{kls.waliKelas || "............................................"}</p>
+                    <p className="text-[9px] text-[#5B7C93]">Tanda Tangan & Nama Terang</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+function AbsenAsramaPrintContent({ daftarAsramaData = [], mode = "malam", tahunAjaran = "2026/2027", bulanPekan = "Oktober 2026", barisKosong = 3, namaPengasuhan = "Ustadz Fahmi" }) {
+  const CHUNK_SIZE = 20;
+  const isKebersihan = mode === "kebersihan";
+
+  return (
+    <div className="text-[#17242E] space-y-6">
+      {daftarAsramaData.map((asr, aIdx) => {
+        const santriList = (asr.santriList || []).slice().sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+        const totalRowsNeeded = santriList.length + Number(barisKosong || 0);
+        const totalPages = Math.max(1, Math.ceil(totalRowsNeeded / CHUNK_SIZE));
+        const pages = [];
+        for (let p = 0; p < totalPages; p++) {
+          const sliceStart = p * CHUNK_SIZE;
+          const sliceSantri = santriList.slice(sliceStart, sliceStart + CHUNK_SIZE);
+          let extraEmpty = 0;
+          if (p === totalPages - 1) {
+            extraEmpty = Math.max(Number(barisKosong || 0), totalPages * CHUNK_SIZE - santriList.length);
+            if (extraEmpty > 8) extraEmpty = 8;
+          }
+          pages.push({ santri: sliceSantri, extraEmpty, pageIdx: p, totalPages, startIndex: sliceStart });
+        }
+
+        return (
+          <React.Fragment key={asr.namaAsrama || aIdx}>
+            {pages.map((page) => (
+              <div
+                key={page.pageIdx}
+                className="pdf-page is-landscape bg-white p-5 mx-auto rounded-xl border border-slate-200 print:border-none print:p-0 print:m-0 print:w-full mb-6 print:mb-0"
+                style={{ width: "297mm", minHeight: "205mm", boxSizing: "border-box", pageBreakAfter: "always", breakAfter: "page" }}
+              >
+                <LembarKopAbsen
+                  subBagian={isKebersihan ? "Bagian Pengasuhan Santri — Disiplin & Kebersihan Pribadi" : "Bagian Pengasuhan Santri — Apel Kehadiran Harian"}
+                  judul={isKebersihan ? "LEMBAR PEMERIKSAAN KEBERSIHAN SANTRI (RAMBUT & KUKU BULANAN)" : "DAFTAR HADIR APEL MALAM ASRAMA (SENIN — AHAD)"}
+                  metaKiri={[
+                    { label: "Gedung / Asrama", val: asr.namaAsrama },
+                    { label: "Musyrif Asrama", val: asr.musyrif || "Ustadz Pembina Asrama" },
+                    { label: "Kamar / Blok", val: asr.kamar || "Semua Kamar" },
+                  ]}
+                  metaKanan={[
+                    { label: "Tahun Ajaran", val: tahunAjaran },
+                    { label: isKebersihan ? "Bulan Pemeriksaan" : "Pekan / Bulan", val: bulanPekan },
+                    { label: "Halaman", val: `${page.pageIdx + 1} dari ${page.totalPages}` },
+                  ]}
+                />
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[10px] border-collapse border border-slate-400" style={{ borderCollapse: "collapse" }}>
+                    <thead>
+                      {isKebersihan ? (
+                        <>
+                          <tr className="bg-slate-100 text-[#0C4A6E]">
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-1 w-7 text-center">No</th>
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-1.5 w-16 text-center">NIS</th>
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-2 text-left min-w-[130px]">Nama Santri</th>
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-1.5 w-16 text-center">Kelas</th>
+                            <th colSpan={4} className="border border-slate-400 py-0.5 text-center bg-blue-100/70 font-bold tracking-wide">KERAPIAN RAMBUT</th>
+                            <th colSpan={4} className="border border-slate-400 py-0.5 text-center bg-emerald-100/70 font-bold tracking-wide">KEBERSIHAN KUKU</th>
+                            <th colSpan={4} className="border border-slate-400 py-0.5 text-center bg-amber-100/70 font-bold tracking-wide">KAMAR & LEMARI</th>
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-2 min-w-[110px] text-center">Tindak Lanjut / Sanksi Disiplin</th>
+                          </tr>
+                          <tr className="bg-slate-50 text-[9px] text-[#45657A]">
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 1</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 2</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 3</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 4</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 1</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 2</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 3</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 4</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 1</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 2</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 3</th>
+                            <th className="border border-slate-400 py-0.5 w-[22px] text-center">Pkn 4</th>
+                          </tr>
+                        </>
+                      ) : (
+                        <>
+                          <tr className="bg-slate-100 text-[#0C4A6E]">
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-1 w-7 text-center">No</th>
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-1.5 w-16 text-center">NIS</th>
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-2 text-left min-w-[140px]">Nama Santri</th>
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-1.5 w-16 text-center">Kelas</th>
+                            {["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU", "AHAD"].map((hari) => (
+                              <th key={hari} rowSpan={2} className="border border-slate-400 py-1 px-1 min-w-[26px] text-center bg-slate-200/80 font-bold tracking-wide">{hari}</th>
+                            ))}
+                            <th colSpan={4} className="border border-slate-400 py-0.5 text-center bg-blue-100/70 font-bold">REKAP</th>
+                            <th rowSpan={2} className="border border-slate-400 py-1 px-2 min-w-[100px] text-center">Keterangan / Kesehatan</th>
+                          </tr>
+                          <tr className="bg-slate-50 text-[9px] text-[#45657A]">
+                            <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">H</th>
+                            <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">S</th>
+                            <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">I</th>
+                            <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">A</th>
+                          </tr>
+                        </>
+                      )}
+                    </thead>
+                    <tbody>
+                      {page.santri.map((s, idx) => (
+                        <tr key={s.id || idx} className="hover:bg-slate-50/50">
+                          <td className="border border-slate-300 py-1 text-center font-medium">{page.startIndex + idx + 1}</td>
+                          <td className="border border-slate-300 py-1 text-center text-slate-600 font-mono text-[9px]">{s.nis || "-"}</td>
+                          <td className="border border-slate-300 py-1 px-2 font-semibold text-slate-800 truncate max-w-[160px]">{s.nama}</td>
+                          <td className="border border-slate-300 py-1 text-center text-[9px] text-slate-600">{s.kelas || "-"}</td>
+                          {isKebersihan ? (
+                            <>
+                              {Array.from({ length: 12 }).map((_, cIdx) => (
+                                <td key={cIdx} className="border border-slate-300 py-1 text-center h-[22px]"></td>
+                              ))}
+                              <td className="border border-slate-300 py-1 px-1 text-[9px] text-slate-500"></td>
+                            </>
+                          ) : (
+                            <>
+                              {Array.from({ length: 7 }).map((_, cIdx) => (
+                                <td key={cIdx} className="border border-slate-300 py-1 text-center h-[22px]"></td>
+                              ))}
+                              <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                              <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                              <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                              <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                              <td className="border border-slate-300 py-1 px-1 text-[9px] text-slate-500"></td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                      {Array.from({ length: page.extraEmpty }).map((_, eIdx) => (
+                        <tr key={`extra-${eIdx}`} className="text-slate-400">
+                          <td className="border border-slate-300 py-1 text-center">{page.startIndex + page.santri.length + eIdx + 1}</td>
+                          <td className="border border-slate-300 py-1 text-center"></td>
+                          <td className="border border-slate-300 py-1 px-2"></td>
+                          <td className="border border-slate-300 py-1 text-center"></td>
+                          {isKebersihan ? (
+                            <>
+                              {Array.from({ length: 12 }).map((_, cIdx) => (
+                                <td key={cIdx} className="border border-slate-300 py-1 text-center h-[22px]"></td>
+                              ))}
+                              <td className="border border-slate-300 py-1"></td>
+                            </>
+                          ) : (
+                            <>
+                              {Array.from({ length: 7 }).map((_, cIdx) => (
+                                <td key={cIdx} className="border border-slate-300 py-1 text-center h-[22px]"></td>
+                              ))}
+                              <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                              <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                              <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                              <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                              <td className="border border-slate-300 py-1"></td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-3 flex items-end justify-between text-[10px]">
+                  <div className="text-center w-56">
+                    <p className="text-[#5B7C93] mb-0.5">Mengetahui,</p>
+                    <p className="font-semibold text-[#0C4A6E]">Kepala Bagian Pengasuhan</p>
+                    <div className="h-10" />
+                    <p className="font-semibold underline text-[#17242E]">{namaPengasuhan || "Ustadz Fahmi"}</p>
+                    <p className="text-[9px] text-[#5B7C93]">NIP: MMA-PGS-001</p>
+                  </div>
+                  <div className="text-center text-[9px] text-[#5B7C93] max-w-sm leading-relaxed border border-slate-200 bg-slate-50 px-3 py-1.5 rounded">
+                    {isKebersihan ? (
+                      <>
+                        <span className="font-semibold text-[#0C4A6E]">Kriteria Pemeriksaan:</span><br />
+                        [ <strong>✓</strong> ] Rapi/Bersih Standar &nbsp;|&nbsp; [ <strong>✕</strong> ] Perlu Cukur / Potong Segera &nbsp;|&nbsp; [ <strong>T</strong> ] Tuntas Setelah Sanksi
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-[#0C4A6E]">Kode Status Apel Malam:</span><br />
+                        <strong>H</strong> = Hadir di Kamar &nbsp;|&nbsp; <strong>S</strong> = Sakit (UKS/Kamar) &nbsp;|&nbsp; <strong>I</strong> = Izin Pulang &nbsp;|&nbsp; <strong>A</strong> = Alpa / Terlambat
+                      </>
+                    )}
+                  </div>
+                  <div className="text-center w-56">
+                    <p className="text-[#5B7C93] mb-0.5">Bogor, .................................... 2026</p>
+                    <p className="font-semibold text-[#0C4A6E]">{isKebersihan ? "Musyrif Pemeriksa / Tim Disiplin" : `Musyrif ${asr.namaAsrama}`}</p>
+                    <div className="h-10" />
+                    <p className="font-semibold underline text-[#17242E]">{asr.musyrif || "............................................"}</p>
+                    <p className="text-[9px] text-[#5B7C93]">Tanda Tangan & Nama Terang</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+function AbsenHalaqohPrintContent({ daftarHalaqohData = [], tahunAjaran = "2026/2027", semester = "Ganjil", pekanBulan = "Pekan 1 — Oktober 2026", barisKosong = 3, namaLPTQ = "Ustadz Hilmi" }) {
+  const CHUNK_SIZE = 20;
+
+  return (
+    <div className="text-[#17242E] space-y-6">
+      {daftarHalaqohData.map((hlq, hIdx) => {
+        const santriList = (hlq.santriList || []).slice().sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+        const totalRowsNeeded = santriList.length + Number(barisKosong || 0);
+        const totalPages = Math.max(1, Math.ceil(totalRowsNeeded / CHUNK_SIZE));
+        const pages = [];
+        for (let p = 0; p < totalPages; p++) {
+          const sliceStart = p * CHUNK_SIZE;
+          const sliceSantri = santriList.slice(sliceStart, sliceStart + CHUNK_SIZE);
+          let extraEmpty = 0;
+          if (p === totalPages - 1) {
+            extraEmpty = Math.max(Number(barisKosong || 0), totalPages * CHUNK_SIZE - santriList.length);
+            if (extraEmpty > 8) extraEmpty = 8;
+          }
+          pages.push({ santri: sliceSantri, extraEmpty, pageIdx: p, totalPages, startIndex: sliceStart });
+        }
+
+        return (
+          <React.Fragment key={hlq.namaHalaqoh || hIdx}>
+            {pages.map((page) => (
+              <div
+                key={page.pageIdx}
+                className="pdf-page is-landscape bg-white p-5 mx-auto rounded-xl border border-slate-200 print:border-none print:p-0 print:m-0 print:w-full mb-6 print:mb-0"
+                style={{ width: "297mm", minHeight: "205mm", boxSizing: "border-box", pageBreakAfter: "always", breakAfter: "page" }}
+              >
+                <LembarKopAbsen
+                  subBagian="Lembaga Pengembangan Tilawatil Qur'an (LPTQ) & Tahfidz"
+                  judul="DAFTAR HADIR HALAQOH (SENIN — SABTU · 3 WAKTU NGAJI)"
+                  metaKiri={[
+                    { label: "Nama Halaqoh", val: hlq.namaHalaqoh },
+                    { label: "Pembimbing / Muhaffizh", val: hlq.pembimbing || "Ustadz Pembimbing" },
+                    { label: "Kelompok", val: hlq.kelompok || "Tahfidz Al-Qur'an" },
+                  ]}
+                  metaKanan={[
+                    { label: "Tahun Ajaran", val: tahunAjaran },
+                    { label: "Semester", val: semester },
+                    { label: "Pekan / Bulan", val: pekanBulan },
+                    { label: "Halaman", val: `${page.pageIdx + 1} dari ${page.totalPages}` },
+                  ]}
+                />
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[10px] border-collapse border border-slate-400" style={{ borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr className="bg-slate-100 text-[#0C4A6E]">
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-1 w-7 text-center">No</th>
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-1.5 w-16 text-center">NIS</th>
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-2 text-left min-w-[130px]">Nama Santri</th>
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-1.5 w-16 text-center">Target / Juz</th>
+                        {["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"].map((hari) => (
+                          <th key={hari} colSpan={3} className="border border-slate-400 py-0.5 text-center bg-slate-200/80 font-bold tracking-wide">{hari}</th>
+                        ))}
+                        <th colSpan={4} className="border border-slate-400 py-0.5 text-center bg-blue-100/70 font-bold">REKAP</th>
+                        <th rowSpan={2} className="border border-slate-400 py-1 px-2 min-w-[100px] text-center">Catatan Ziyadah & Muraja'ah</th>
+                      </tr>
+                      <tr className="bg-slate-50 text-[9px] text-[#45657A]">
+                        {["sen", "sel", "rab", "kam", "jum", "sab"].map((h) => (
+                          <React.Fragment key={h}>
+                            <th className="border border-slate-400 py-0.5 w-[20px] text-center font-bold bg-amber-50 text-[#854D0E]" title="Subuh">S</th>
+                            <th className="border border-slate-400 py-0.5 w-[20px] text-center font-bold bg-orange-50 text-[#9A3412]" title="Ashar">A</th>
+                            <th className="border border-slate-400 py-0.5 w-[20px] text-center font-bold bg-indigo-50 text-[#3730A3]" title="Maghrib">M</th>
+                          </React.Fragment>
+                        ))}
+                        <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">H</th>
+                        <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">S</th>
+                        <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">I</th>
+                        <th className="border border-slate-400 py-0.5 w-[18px] text-center font-bold bg-blue-50 text-[#0C4A6E]">A</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {page.santri.map((s, idx) => (
+                        <tr key={s.id || idx} className="hover:bg-slate-50/50">
+                          <td className="border border-slate-300 py-1 text-center font-medium">{page.startIndex + idx + 1}</td>
+                          <td className="border border-slate-300 py-1 text-center text-slate-600 font-mono text-[9px]">{s.nis || "-"}</td>
+                          <td className="border border-slate-300 py-1 px-2 font-semibold text-slate-800 truncate max-w-[150px]">{s.nama}</td>
+                          <td className="border border-slate-300 py-1 text-center text-[9px] text-slate-600 font-medium">{s.targetHafalan || s.hafalanSekarang || "-"}</td>
+                          {Array.from({ length: 18 }).map((_, cIdx) => (
+                            <td key={cIdx} className="border border-slate-300 py-1 text-center h-[22px]"></td>
+                          ))}
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 px-1 text-[9px] text-slate-500"></td>
+                        </tr>
+                      ))}
+                      {Array.from({ length: page.extraEmpty }).map((_, eIdx) => (
+                        <tr key={`extra-${eIdx}`} className="text-slate-400">
+                          <td className="border border-slate-300 py-1 text-center">{page.startIndex + page.santri.length + eIdx + 1}</td>
+                          <td className="border border-slate-300 py-1 text-center"></td>
+                          <td className="border border-slate-300 py-1 px-2"></td>
+                          <td className="border border-slate-300 py-1 text-center"></td>
+                          {Array.from({ length: 18 }).map((_, cIdx) => (
+                            <td key={cIdx} className="border border-slate-300 py-1 text-center h-[22px]"></td>
+                          ))}
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1 text-center bg-blue-50/20"></td>
+                          <td className="border border-slate-300 py-1"></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-3 flex items-end justify-between text-[10px]">
+                  <div className="text-center w-56">
+                    <p className="text-[#5B7C93] mb-0.5">Mengetahui,</p>
+                    <p className="font-semibold text-[#0C4A6E]">Ketua LPTQ Pondok</p>
+                    <div className="h-10" />
+                    <p className="font-semibold underline text-[#17242E]">{namaLPTQ || "Ustadz Hilmi"}</p>
+                    <p className="text-[9px] text-[#5B7C93]">NIP: MMA-LPTQ-001</p>
+                  </div>
+                  <div className="text-center text-[9px] text-[#5B7C93] max-w-sm leading-relaxed border border-slate-200 bg-slate-50 px-3 py-1.5 rounded">
+                    <span className="font-semibold text-[#0C4A6E]">Waktu Ngaji:</span><br />
+                    <strong>S</strong> = Subuh (Setoran Baru/Ziyadah) &nbsp;|&nbsp; <strong>A</strong> = Ashar (Muraja'ah/Talaqqi) &nbsp;|&nbsp; <strong>M</strong> = Maghrib (Tahfidz Malam)
+                  </div>
+                  <div className="text-center w-56">
+                    <p className="text-[#5B7C93] mb-0.5">Bogor, .................................... 2026</p>
+                    <p className="font-semibold text-[#0C4A6E]">Pembimbing {hlq.namaHalaqoh}</p>
+                    <div className="h-10" />
+                    <p className="font-semibold underline text-[#17242E]">{hlq.pembimbing || "............................................"}</p>
+                    <p className="text-[9px] text-[#5B7C93]">Tanda Tangan & Nama Terang</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }
@@ -12761,6 +13278,88 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
   const isSekretariat = scope === "sekretariat";
   const [pengasuhanError, setPengasuhanError] = useState("");
 
+  // ---- Modal & Handler Cetak Absensi (Kelas 4 JP, Asrama Apel/Kebersihan, Halaqoh 3 Waktu) ----
+  const [modalCetakKelas, setModalCetakKelas] = useState(null);
+  const [modalCetakAsrama, setModalCetakAsrama] = useState(null);
+  const [modalCetakHalaqoh, setModalCetakHalaqoh] = useState(null);
+
+  const eksekusiCetakKelas = ({ targetKelas, pekanBulan, barisKosong, semester }) => {
+    if (!onPrint) return;
+    const kelasList = targetKelas === "Semua" ? (data.kelas || []) : [targetKelas];
+    const payload = kelasList.map((k) => {
+      const waliKelasNama = data.guru.find((g) => g.id === data.kelasInfo?.[k]?.waliKelasId)?.nama || "Belum ditentukan";
+      const lokasi = data.kelasInfo?.[k]?.lokasiKelas || "Gedung Belajar";
+      const santriDiKelas = (data.santri || []).filter((s) => s.kelas === k && isSantriAktif(s));
+      return { namaKelas: k, waliKelas: waliKelasNama, lokasi, santriList: santriDiKelas };
+    });
+    const namaPengajaran = data.guru.find((g) => g.departemen === "pengajaran")?.nama || "Ustadzah Nadia";
+    const thn = tahunAjaranAktifDept?.label || "2026/2027";
+    onPrint(
+      <AbsenKelasPrintContent
+        daftarKelasData={payload}
+        tahunAjaran={thn}
+        semester={semester || "Ganjil"}
+        pekanBulan={pekanBulan || ("Pekan 1 — " + todayStr())}
+        barisKosong={Number(barisKosong || 3)}
+        namaPengajaran={namaPengajaran}
+      />
+    );
+    setModalCetakKelas(null);
+  };
+
+  const cetakSatuKelas = (namaKelas) => {
+    eksekusiCetakKelas({ targetKelas: namaKelas, pekanBulan: "Pekan 1 — " + todayStr(), barisKosong: 3, semester: "Ganjil" });
+  };
+
+  const eksekusiCetakAsrama = ({ targetAsrama, mode, bulanPekan, barisKosong }) => {
+    if (!onPrint) return;
+    const asramaList = targetAsrama === "Semua" ? listAsrama.filter((a) => a !== "Semua") : [targetAsrama];
+    const payload = asramaList.map((a) => {
+      const santriDiAsrama = (data.santri || []).filter((s) => s.asrama === a && isSantriAktif(s));
+      return { namaAsrama: a, musyrif: "Musyrif " + a, kamar: "Semua Kamar", santriList: santriDiAsrama };
+    });
+    const namaPengasuhan = data.guru.find((g) => g.departemen === "pengasuhan")?.nama || "Ustadz Fahmi";
+    const thn = tahunAjaranAktifDept?.label || "2026/2027";
+    onPrint(
+      <AbsenAsramaPrintContent
+        daftarAsramaData={payload}
+        mode={mode || "malam"}
+        tahunAjaran={thn}
+        bulanPekan={bulanPekan || ("Pekan 1 — " + todayStr())}
+        barisKosong={Number(barisKosong || 3)}
+        namaPengasuhan={namaPengasuhan}
+      />
+    );
+    setModalCetakAsrama(null);
+  };
+
+  const eksekusiCetakHalaqoh = ({ targetHalaqoh, pekanBulan, barisKosong, semester }) => {
+    if (!onPrint) return;
+    const halaqohList = targetHalaqoh === "Semua" ? (data.halaqoh || []) : [targetHalaqoh];
+    const payload = halaqohList.map((h) => {
+      const pembimbingNama = data.guru.find((g) => g.id === data.halaqohInfo?.[h]?.pembimbingId)?.nama || "Ustadz Pembimbing";
+      const santriDiHalaqoh = (data.santri || []).filter((s) => s.halaqoh === h && isSantriAktif(s));
+      return { namaHalaqoh: h, pembimbing: pembimbingNama, kelompok: "Tahfidz Al-Qur'an", santriList: santriDiHalaqoh };
+    });
+    const namaLPTQ = data.guru.find((g) => g.departemen === "lptq")?.nama || "Ustadz Hilmi";
+    const thn = tahunAjaranAktifDept?.label || "2026/2027";
+    onPrint(
+      <AbsenHalaqohPrintContent
+        daftarHalaqohData={payload}
+        tahunAjaran={thn}
+        semester={semester || "Ganjil"}
+        pekanBulan={pekanBulan || ("Pekan 1 — " + todayStr())}
+        barisKosong={Number(barisKosong || 3)}
+        namaLPTQ={namaLPTQ}
+      />
+    );
+    setModalCetakHalaqoh(null);
+  };
+
+  const cetakSatuHalaqoh = (namaHalaqoh) => {
+    eksekusiCetakHalaqoh({ targetHalaqoh: namaHalaqoh, pekanBulan: "Pekan 1 — " + todayStr(), barisKosong: 3, semester: "Ganjil" });
+  };
+
   // ---- Master Data Santri (backend-backed, khusus scope Sekretariat) — muat biodata lengkap dari
   // server saat tab dibuka. Field finansial (saldo/limit/blokir) tidak ikut dikirim balik oleh
   // server untuk staf non-BMT, jadi digabung (merge) di atas data lokal, bukan menimpanya —
@@ -13773,12 +14372,57 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
     setWaliBaruForm({ nama: "", hp: "", username: "", password: "Santri123!" });
     setSantriForm(kosongSantriForm);
   };
-  const pilihFoto = (e) => {
+
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const [fotoLoading, setFotoLoading] = useState(false);
+
+  const compressImage = (file, maxDim = 800, quality = 0.82) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const pilihFoto = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setSantriForm((f) => ({ ...f, foto: reader.result }));
-    reader.readAsDataURL(file);
+    setFotoLoading(true);
+    try {
+      const optimized = await compressImage(file);
+      setSantriForm((f) => ({ ...f, foto: optimized }));
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => setSantriForm((f) => ({ ...f, foto: reader.result }));
+      reader.readAsDataURL(file);
+    } finally {
+      setFotoLoading(false);
+      e.target.value = "";
+    }
   };
   const simpanSantri = async () => {
     if (!santriForm.nama || !santriForm.kelas) {
@@ -15621,7 +16265,25 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 </select>
               </div>
             </div>
-            <div className="flex items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setModalCetakAsrama({ open: true, mode: "malam", asramaPilihan: asramaFilter === "Semua" ? "Semua" : asramaFilter, bulanPekan: "Pekan 1 — " + todayStr(), barisKosong: 3 })}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-white border border-[#0C4A6E] text-[#0C4A6E] hover:bg-[#EAF4FB] active:scale-95 transition-all shadow-xs"
+                title="Cetak Blangko Absen Apel Malam Asrama (Senin s/d Ahad)"
+              >
+                <Moon size={14} />
+                <span>Cetak Apel Malam</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalCetakAsrama({ open: true, mode: "kebersihan", asramaPilihan: asramaFilter === "Semua" ? "Semua" : asramaFilter, bulanPekan: "Bulan Ini — " + todayStr().slice(3), barisKosong: 3 })}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-white border border-[#7C3AED] text-[#7C3AED] hover:bg-[#F5F3FF] active:scale-95 transition-all shadow-xs"
+                title="Cetak Blangko Pemeriksaan Kebersihan Rambut, Kuku & Kamar"
+              >
+                <Scissors size={14} />
+                <span>Cetak Cek Rambut & Kuku</span>
+              </button>
               <button onClick={tandaiSemuaHadir} disabled={absensiBusyId !== "" || backendOnline !== true || !santriTampilPengasuhan.length}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-[#0C4A6E] text-white hover:bg-[#08334c] active:scale-95 disabled:opacity-50 transition-all shadow-xs">
                 <CheckCircle2 size={14} />
@@ -16783,17 +17445,82 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                 )}
 
                 <div className="space-y-4 text-xs">
-                  <div className="flex items-center gap-3">
-                    {santriForm.foto ? (
-                      <img src={santriForm.foto} alt="Foto santri" className="w-16 h-16 rounded-2xl object-cover border border-[#CFE3F0]" />
-                    ) : (
-                      <div className="w-16 h-16 rounded-2xl bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-lg font-semibold">
-                        {(santriForm.nama || "?").split(" ").map(w => w[0]).slice(0, 2).join("")}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3.5 p-3.5 bg-[#F8FBFE] border border-[#CFE3F0] rounded-2xl">
+                    <div className="relative shrink-0 w-16 h-16">
+                      {santriForm.foto ? (
+                        <img src={santriForm.foto} alt="Foto santri" className="w-16 h-16 rounded-2xl object-cover border-2 border-[#0C4A6E]/30 shadow-xs" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-[#D6EAF6] text-[#0C4A6E] flex items-center justify-center text-lg font-bold border border-[#CFE3F0]">
+                          {(santriForm.nama || "?").split(" ").map(w => w[0]).slice(0, 2).join("")}
+                        </div>
+                      )}
+                      {fotoLoading && (
+                        <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center text-white">
+                          <Loader2 size={18} className="animate-spin" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[11px] font-bold text-[#0C4A6E]">Foto Profil / Pas Foto Santri</span>
+                        {santriForm.foto && <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium">✓ Terpasang</span>}
                       </div>
-                    )}
-                    <div>
-                      <input type="file" accept="image/*" onChange={pilihFoto} className="text-xs text-[#45657A]" />
-                      {santriForm.foto && <button onClick={() => setSantriForm({ ...santriForm, foto: "" })} className="block text-[10px] text-[#B5533C] mt-1 font-medium">Hapus foto</button>}
+
+                      {/* Hidden file inputs: capture='environment' triggers phone's native camera directly */}
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={pilihFoto}
+                        className="hidden"
+                      />
+                      <input
+                        ref={galleryInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={pilihFoto}
+                        className="hidden"
+                      />
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          disabled={fotoLoading}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0C4A6E] text-white text-xs font-semibold hover:bg-[#08334c] active:scale-95 transition-all shadow-xs disabled:opacity-50"
+                          title="Buka kamera bawaan HP untuk memotret santri secara langsung"
+                        >
+                          <Camera size={14} />
+                          <span>Ambil Foto (Kamera HP)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => galleryInputRef.current?.click()}
+                          disabled={fotoLoading}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#CFE3F0] text-[#0C4A6E] text-xs font-medium hover:bg-[#EAF4FB] active:scale-95 transition-all shadow-xs disabled:opacity-50"
+                          title="Pilih foto santri dari galeri atau berkas perangkat"
+                        >
+                          <ImageIcon size={14} />
+                          <span>Pilih dari Galeri</span>
+                        </button>
+
+                        {santriForm.foto && (
+                          <button
+                            type="button"
+                            onClick={() => setSantriForm({ ...santriForm, foto: "" })}
+                            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[#B5533C] hover:bg-red-50 rounded-xl transition-all font-medium"
+                          >
+                            <Trash2 size={13} />
+                            <span>Hapus</span>
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[#5B7C93] mt-1.5">
+                        {fotoLoading ? "Sedang memproses dan mengompres foto..." : "Bisa langsung jepret lewat kamera HP atau ambil dari galeri. Otomatis dikompres agar ringan & pas."}
+                      </p>
                     </div>
                   </div>
 
@@ -18690,6 +19417,15 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               {data.guru.filter((g) => g.departemen === "pengajaran").map((g) => <option key={g.id} value={g.id}>{g.nama}</option>)}
             </select>
             <button onClick={addKelas} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />Tambah</button>
+            <button
+              type="button"
+              onClick={() => setModalCetakKelas({ open: true, kelasPilihan: "Semua", pekanBulan: "Pekan 1 — " + todayStr(), barisKosong: 3, semester: "Ganjil" })}
+              className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-white border border-[#0C4A6E] text-[#0C4A6E] hover:bg-[#EAF4FB] active:scale-95 transition-all shadow-xs"
+              title="Cetak Blangko Absen KBM 4 Jam Pelajaran (Senin s/d Sabtu)"
+            >
+              <Printer size={15} />
+              <span>Cetak Absen KBM (4 JP)</span>
+            </button>
           </div>
           <div className="divide-y divide-[#DCEDF7]">
             {data.kelas.map((k) => (
@@ -18705,6 +19441,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                     <>
                       <span className="text-[#17242E]">{k} <span className="text-[#5B7C93]">· {data.santri.filter((s) => s.kelas === k).length} santri</span></span>
                       <div className="flex items-center gap-1">
+                        <IconBtn tone="ok" onClick={() => cetakSatuKelas(k)} title="Cetak Absen KBM Kelas Ini (4 JP)"><Printer size={15} /></IconBtn>
                         <IconBtn tone="ok" onClick={() => bukaEditKelas(k)} title="Ubah nama"><Pencil size={15} /></IconBtn>
                         <IconBtn onClick={() => delKelas(k)} title="Hapus"><Trash2 size={15} /></IconBtn>
                       </div>
@@ -18761,6 +19498,15 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
               {data.guru.filter((g) => g.departemen === "lptq").map((g) => <option key={g.id} value={g.id}>{g.nama}</option>)}
             </select>
             <button onClick={addHalaqoh} className="flex items-center gap-1 btn-gradient text-sm px-4 py-2 rounded-xl  hover:shadow-lg active:scale-95"><Plus size={15} />Tambah</button>
+            <button
+              type="button"
+              onClick={() => setModalCetakHalaqoh({ open: true, halaqohPilihan: "Semua", pekanBulan: "Pekan 1 — " + todayStr(), barisKosong: 3, semester: "Ganjil" })}
+              className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-white border border-[#0C4A6E] text-[#0C4A6E] hover:bg-[#EAF4FB] active:scale-95 transition-all shadow-xs"
+              title="Cetak Blangko Absen Halaqoh 3 Waktu Ngaji (Subuh, Ashar, Maghrib)"
+            >
+              <Printer size={15} />
+              <span>Cetak Absen Halaqoh (3 Waktu)</span>
+            </button>
           </div>
           <div className="divide-y divide-[#DCEDF7]">
             {(data.halaqoh || []).map((h) => (
@@ -18776,6 +19522,7 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
                     <>
                       <span className="text-[#17242E]">{h} <span className="text-[#5B7C93]">· {data.santri.filter((s) => s.halaqoh === h).length} santri</span></span>
                       <div className="flex items-center gap-1">
+                        <IconBtn tone="ok" onClick={() => cetakSatuHalaqoh(h)} title="Cetak Absen Halaqoh Ini (3 Waktu)"><Printer size={15} /></IconBtn>
                         <IconBtn tone="ok" onClick={() => bukaEditHalaqoh(h)} title="Ubah nama"><Pencil size={15} /></IconBtn>
                         <IconBtn onClick={() => delHalaqoh(h)} title="Hapus"><Trash2 size={15} /></IconBtn>
                       </div>
@@ -18794,6 +19541,253 @@ function DepartmentContent({ scope, data, setData, onPrint, petugas, backendToke
             {!(data.halaqoh || []).length && <EmptyState text="Belum ada halaqoh dibuat." />}
           </div>
         </ArchCard>
+      )}
+
+      {/* Modal Cetak Absen Kelas (4 JP) */}
+      {modalCetakKelas && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 border border-[#CFE3F0] animate-riseIn">
+            <div className="flex items-center justify-between pb-3 border-b border-[#DCEDF7] mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-[#EAF4FB] text-[#0C4A6E] rounded-xl"><School size={18} /></div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#0C4A6E]">Cetak Absen KBM (Kelas)</h3>
+                  <p className="text-[11px] text-[#5B7C93]">Senin s/d Sabtu · 4 Jam Pelajaran / Hari</p>
+                </div>
+              </div>
+              <button onClick={() => setModalCetakKelas(null)} className="p-1 text-[#5B7C93] hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Pilih Kelas / Rombel</label>
+                <select
+                  value={modalCetakKelas.kelasPilihan}
+                  onChange={(e) => setModalCetakKelas({ ...modalCetakKelas, kelasPilihan: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4A6E]/30"
+                >
+                  <option value="Semua">Semua Kelas Sekaligus ({data.kelas.length} Rombel)</option>
+                  {data.kelas.map((k) => <option key={k} value={k}>{k}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Semester</label>
+                  <select
+                    value={modalCetakKelas.semester || "Ganjil"}
+                    onChange={(e) => setModalCetakKelas({ ...modalCetakKelas, semester: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                  >
+                    <option value="Ganjil">Semester Ganjil</option>
+                    <option value="Genap">Semester Genap</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Baris Kosong Tambahan</label>
+                  <select
+                    value={modalCetakKelas.barisKosong || 3}
+                    onChange={(e) => setModalCetakKelas({ ...modalCetakKelas, barisKosong: Number(e.target.value) })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                  >
+                    <option value={0}>0 (Hanya santri)</option>
+                    <option value={3}>+3 Baris Kosong</option>
+                    <option value={5}>+5 Baris Kosong</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Keterangan Periode / Pekan</label>
+                <input
+                  type="text"
+                  value={modalCetakKelas.pekanBulan}
+                  onChange={(e) => setModalCetakKelas({ ...modalCetakKelas, pekanBulan: e.target.value })}
+                  placeholder="mis. Pekan 1 — Oktober 2026"
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => eksekusiCetakKelas({ targetKelas: modalCetakKelas.kelasPilihan, pekanBulan: modalCetakKelas.pekanBulan, barisKosong: modalCetakKelas.barisKosong, semester: modalCetakKelas.semester })}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-[#0C4A6E] text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-[#08334c] active:scale-95 transition-all shadow-sm"
+              >
+                <Printer size={15} />
+                <span>Buka Lembar Siap Cetak</span>
+              </button>
+              <button type="button" onClick={() => setModalCetakKelas(null)} className="px-4 py-2.5 border border-[#CFE3F0] text-[#5B7C93] rounded-xl text-xs hover:bg-slate-50">Batal</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cetak Absen Asrama (Apel Malam / Rambut & Kuku) */}
+      {modalCetakAsrama && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 border border-[#CFE3F0] animate-riseIn">
+            <div className="flex items-center justify-between pb-3 border-b border-[#DCEDF7] mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-[#F3E8FF] text-[#7C3AED] rounded-xl"><Moon size={18} /></div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#0C4A6E]">Cetak Dokumen Absensi Asrama</h3>
+                  <p className="text-[11px] text-[#5B7C93]">Pengasuhan Santri MMA</p>
+                </div>
+              </div>
+              <button onClick={() => setModalCetakAsrama(null)} className="p-1 text-[#5B7C93] hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Jenis Dokumen Yang Dicetak</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalCetakAsrama({ ...modalCetakAsrama, mode: "malam" })}
+                    className={`flex items-center gap-1.5 p-2 rounded-xl border text-left font-medium transition-all ${modalCetakAsrama.mode === "malam" ? "border-[#0C4A6E] bg-[#EAF4FB] text-[#0C4A6E]" : "border-[#CFE3F0] text-[#5B7C93]"}`}
+                  >
+                    <Moon size={14} className="shrink-0" />
+                    <div>
+                      <div className="text-[11px] font-bold">Apel Malam</div>
+                      <div className="text-[9px]">Senin s/d Ahad (7 malam)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalCetakAsrama({ ...modalCetakAsrama, mode: "kebersihan" })}
+                    className={`flex items-center gap-1.5 p-2 rounded-xl border text-left font-medium transition-all ${modalCetakAsrama.mode === "kebersihan" ? "border-[#7C3AED] bg-[#F5F3FF] text-[#7C3AED]" : "border-[#CFE3F0] text-[#5B7C93]"}`}
+                  >
+                    <Scissors size={14} className="shrink-0" />
+                    <div>
+                      <div className="text-[11px] font-bold">Rambut & Kuku</div>
+                      <div className="text-[9px]">Pemeriksaan 4 Pekan/Bulan</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Pilih Asrama</label>
+                <select
+                  value={modalCetakAsrama.asramaPilihan}
+                  onChange={(e) => setModalCetakAsrama({ ...modalCetakAsrama, asramaPilihan: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                >
+                  <option value="Semua">Semua Asrama Sekaligus</option>
+                  {listAsrama.filter((a) => a !== "Semua").map((a) => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Periode / Bulan</label>
+                  <input
+                    type="text"
+                    value={modalCetakAsrama.bulanPekan}
+                    onChange={(e) => setModalCetakAsrama({ ...modalCetakAsrama, bulanPekan: e.target.value })}
+                    placeholder="mis. Oktober 2026"
+                    className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Baris Kosong Tambahan</label>
+                  <select
+                    value={modalCetakAsrama.barisKosong || 3}
+                    onChange={(e) => setModalCetakAsrama({ ...modalCetakAsrama, barisKosong: Number(e.target.value) })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                  >
+                    <option value={0}>0 (Hanya santri)</option>
+                    <option value={3}>+3 Baris Kosong</option>
+                    <option value={5}>+5 Baris Kosong</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => eksekusiCetakAsrama({ targetAsrama: modalCetakAsrama.asramaPilihan, mode: modalCetakAsrama.mode, bulanPekan: modalCetakAsrama.bulanPekan, barisKosong: modalCetakAsrama.barisKosong })}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-[#0C4A6E] text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-[#08334c] active:scale-95 transition-all shadow-sm"
+              >
+                <Printer size={15} />
+                <span>Buka Lembar Siap Cetak</span>
+              </button>
+              <button type="button" onClick={() => setModalCetakAsrama(null)} className="px-4 py-2.5 border border-[#CFE3F0] text-[#5B7C93] rounded-xl text-xs hover:bg-slate-50">Batal</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cetak Absen Halaqoh (3 Waktu) */}
+      {modalCetakHalaqoh && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 border border-[#CFE3F0] animate-riseIn">
+            <div className="flex items-center justify-between pb-3 border-b border-[#DCEDF7] mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-[#FEF3C7] text-[#B45309] rounded-xl"><BookOpen size={18} /></div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#0C4A6E]">Cetak Absen Halaqoh Tahfidz</h3>
+                  <p className="text-[11px] text-[#5B7C93]">Senin s/d Sabtu · 3 Waktu (Subuh, Ashar, Maghrib)</p>
+                </div>
+              </div>
+              <button onClick={() => setModalCetakHalaqoh(null)} className="p-1 text-[#5B7C93] hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Pilih Halaqoh</label>
+                <select
+                  value={modalCetakHalaqoh.halaqohPilihan}
+                  onChange={(e) => setModalCetakHalaqoh({ ...modalCetakHalaqoh, halaqohPilihan: e.target.value })}
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                >
+                  <option value="Semua">Semua Halaqoh Sekaligus ({(data.halaqoh || []).length} Halaqoh)</option>
+                  {(data.halaqoh || []).map((h) => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Semester</label>
+                  <select
+                    value={modalCetakHalaqoh.semester || "Ganjil"}
+                    onChange={(e) => setModalCetakHalaqoh({ ...modalCetakHalaqoh, semester: e.target.value })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                  >
+                    <option value="Ganjil">Semester Ganjil</option>
+                    <option value="Genap">Semester Genap</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Baris Kosong Tambahan</label>
+                  <select
+                    value={modalCetakHalaqoh.barisKosong || 3}
+                    onChange={(e) => setModalCetakHalaqoh({ ...modalCetakHalaqoh, barisKosong: Number(e.target.value) })}
+                    className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                  >
+                    <option value={0}>0 (Hanya santri)</option>
+                    <option value={3}>+3 Baris Kosong</option>
+                    <option value={5}>+5 Baris Kosong</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] text-[#5B7C93] font-semibold block mb-1">Keterangan Periode / Pekan</label>
+                <input
+                  type="text"
+                  value={modalCetakHalaqoh.pekanBulan}
+                  onChange={(e) => setModalCetakHalaqoh({ ...modalCetakHalaqoh, pekanBulan: e.target.value })}
+                  placeholder="mis. Pekan 1 — Oktober 2026"
+                  className="w-full border border-[#CFE3F0] rounded-xl px-3 py-2 text-xs bg-white"
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => eksekusiCetakHalaqoh({ targetHalaqoh: modalCetakHalaqoh.halaqohPilihan, pekanBulan: modalCetakHalaqoh.pekanBulan, barisKosong: modalCetakHalaqoh.barisKosong, semester: modalCetakHalaqoh.semester })}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-[#0C4A6E] text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-[#08334c] active:scale-95 transition-all shadow-sm"
+              >
+                <Printer size={15} />
+                <span>Buka Lembar Siap Cetak</span>
+              </button>
+              <button type="button" onClick={() => setModalCetakHalaqoh(null)} className="px-4 py-2.5 border border-[#CFE3F0] text-[#5B7C93] rounded-xl text-xs hover:bg-slate-50">Batal</button>
+            </div>
+          </div>
+        </div>
       )}
       </div>
     </div>
@@ -19878,7 +20872,8 @@ export default function App() {
         @import url('${googleFontsUrl}');
         ${themeOverrideCSS}
         @media print {
-          @page { size: A4; margin: 14mm 16mm; }
+          @page { size: auto; margin: 8mm 10mm; }
+          .is-landscape { page: landscape; }
           html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
           body * { visibility: hidden !important; }
           #print-wrapper, #print-wrapper * { visibility: visible !important; }
