@@ -86,6 +86,9 @@ router.get("/ringkasan", requireAuth, requireDashboardAdmin, asyncHandler(async 
 
 // ---- Pengelolaan Staf (Guru) ----
 router.get("/guru", requireAuth, asyncHandler(async (req, res) => {
+  if (req.user?.role !== "guru") {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf guru/admin yang berwenang mengakses direktori staf." });
+  }
   res.json(await semuaGuru());
 }));
 
@@ -138,6 +141,9 @@ router.delete(["/guru/:id", "/staf/:id", "/akun/:id"], requireAuth, requireAdmin
 
 // ---- Pengelolaan Wali ----
 router.get("/wali", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedAdminOrSekretariat(req)) {
+    return res.status(403).json({ error: "Akses ditolak. Hanya Sekretariat atau Superadmin yang berwenang mengakses daftar wali santri." });
+  }
   res.json(await daftarWali({ page: req.query.page, limit: req.query.limit, q: req.query.q }));
 }));
 
@@ -237,10 +243,16 @@ router.put("/tampilan", requireAuth, requireAdmin, asyncHandler(async (req, res)
 
 // ---- Kartu & Permintaan & Audit Superadmin ----
 router.get("/kartu", requireAuth, asyncHandler(async (req, res) => {
+  if (req.user?.role !== "guru") {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf yang berwenang mengakses data kartu santri." });
+  }
   res.json(await daftarKartuSuperadmin({ page: req.query.page, limit: req.query.limit, q: req.query.q, kelas: req.query.kelas }));
 }));
 
 router.get("/permintaan", requireAuth, asyncHandler(async (req, res) => {
+  if (req.user?.role !== "guru") {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf yang berwenang mengakses data permintaan." });
+  }
   res.json(await daftarPermintaanSuperadmin({ page: req.query.page, limit: req.query.limit, status: req.query.status, q: req.query.q }));
 }));
 

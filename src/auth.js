@@ -5,8 +5,12 @@ const { query, queryOne, withTransaction } = require("./db");
 const { CashlessError } = require("./cashlessService");
 const { isProduction } = require("./environment");
 
-const JWT_SECRET = (process.env.JWT_SECRET && process.env.JWT_SECRET.trim().length >= 32)
-  ? process.env.JWT_SECRET.trim()
+const rawJwtSecret = process.env.JWT_SECRET && process.env.JWT_SECRET.trim();
+if (isProduction() && (!rawJwtSecret || rawJwtSecret.length < 32 || rawJwtSecret.includes("fallback"))) {
+  throw new Error("FATAL SECURITY ERROR: JWT_SECRET wajib dikonfigurasi di environment production dengan minimal 32 karakter dan tidak boleh menggunakan fallback key.");
+}
+const JWT_SECRET = (rawJwtSecret && rawJwtSecret.length >= 32)
+  ? rawJwtSecret
   : "mma-cashless-secure-production-jwt-secret-96-bytes-fallback-key";
 const JWT_EXPIRES_IN = "15m";
 const JWT_REFRESH_EXPIRES_IN = "7d";

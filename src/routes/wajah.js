@@ -9,6 +9,22 @@ const asyncHandler = require("../asyncHandler");
 const router = express.Router();
 const uid = () => crypto.randomUUID();
 
+function isAuthorizedWajahStaff(req) {
+  if (isSuperAdmin(req.user)) return true;
+  if (req.user?.role === "guru") {
+    return ["sekretariat", "unitusaha", "pengasuhan", "administrasi"].includes(req.user.departemen);
+  }
+  return false;
+}
+
+// Perlindungan Data Pribadi Spesifik (UU PDP No. 27/2022 & Anti-Biometric Spoofing)
+router.use(requireAuth, (req, res, next) => {
+  if (!isAuthorizedWajahStaff(req)) {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf berwenang atau Superadmin yang dapat mengakses sistem biometrik wajah." });
+  }
+  next();
+});
+
 // GET /api/wajah/status
 router.get("/status", requireAuth, asyncHandler(async (req, res) => {
   const [totalSantriRow, adaFotoRow, adaTemplateRow, cameraTemplatesRow, fotoGagalRows] = await Promise.all([

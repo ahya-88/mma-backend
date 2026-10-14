@@ -170,7 +170,7 @@ router.put("/tagihan/:id/bayar", requireAuth, requireAdministrasi, handleBayarTa
 
 // ==================== CASHFLOW / ARUS KAS ====================
 
-router.get("/cashflow", requireAuth, asyncHandler(async (req, res) => {
+router.get("/cashflow", requireAuth, requireAdministrasi, asyncHandler(async (req, res) => {
   const bulan = req.query.bulan;
   const unit = req.query.unit;
 

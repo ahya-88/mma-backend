@@ -17,3 +17,4 @@ id_ed25519*
 backups/
 *.dump
 *.dump.enc
+*.apk

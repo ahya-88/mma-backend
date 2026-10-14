@@ -68,8 +68,8 @@ app.use(cors({
       .map((o) => o.trim())
       .filter(Boolean);
     const allowed = customOrigins.length ? customOrigins : allowedOrigins;
-    // Perbaikan: gunakan regex yang ketat untuk railway.app
-    if (!origin || allowed.includes(origin) || (!customOrigins.length && /localhost|capacitor|ionic/i.test(origin)) || (!customOrigins.length && /^https:\/\/.*\.up\.railway\.app$/i.test(origin))) {
+    // Perbaikan keamanan: batasi subdomain railway hanya milik mma, bukan sembarang aplikasi lain di railway.app
+    if (!origin || allowed.includes(origin) || (!customOrigins.length && /localhost|capacitor|ionic/i.test(origin)) || (!customOrigins.length && /^https:\/\/(?:mma|mma-backend|mma-frontend)(?:-[a-z0-9]+)?\.up\.railway\.app$/i.test(origin))) {
       return callback(null, true);
     }
     return callback(null, false);

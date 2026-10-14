@@ -8,8 +8,19 @@ const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
 
+function isAuthorizedKartuManager(req) {
+  if (isSuperAdmin(req.user)) return true;
+  if (req.user?.role === "guru") {
+    return ["sekretariat", "administrasi", "unitusaha"].includes(req.user.departemen);
+  }
+  return false;
+}
+
 // GET /api/kartu - Status penerbitan kartu seluruh santri
 router.get("/", requireAuth, asyncHandler(async (req, res) => {
+  if (req.user?.role !== "guru") {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf yang berwenang mengakses data kartu santri." });
+  }
   const rows = await queryAll(`
     SELECT "id", "nama", "nis", "kelas", "kartuTerbit", "kartuToken",
       ("pinHash" IS NOT NULL AND "pinHash" != '') AS "punyaPin"
@@ -20,6 +31,9 @@ router.get("/", requireAuth, asyncHandler(async (req, res) => {
 
 // GET /api/kartu/kelola - Alias untuk kompatibilitas modul kelola kartu
 router.get("/kelola", requireAuth, asyncHandler(async (req, res) => {
+  if (req.user?.role !== "guru") {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf yang berwenang mengakses data kartu santri." });
+  }
   const rows = await queryAll(`
     SELECT "id", "nama", "nis", "kelas", "kartuTerbit", "kartuToken",
       ("pinHash" IS NOT NULL AND "pinHash" != '') AS "punyaPin"
@@ -30,6 +44,9 @@ router.get("/kelola", requireAuth, asyncHandler(async (req, res) => {
 
 // POST /api/kartu/terbitkan - Terbitkan kartu baru
 router.post("/terbitkan", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedKartuManager(req)) {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf BMT/Sekretariat/Superadmin yang berwenang menerbitkan kartu." });
+  }
   const { santriId, kartuToken } = req.body || {};
   if (!santriId) throw new CashlessError(400, "santriId wajib diisi.");
 
@@ -52,6 +69,9 @@ router.post("/terbitkan", requireAuth, asyncHandler(async (req, res) => {
 
 // POST /api/kartu/:id/terbitkan - Terbitkan kartu dengan santriId di param URL
 router.post("/:id/terbitkan", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedKartuManager(req)) {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf BMT/Sekretariat/Superadmin yang berwenang menerbitkan kartu." });
+  }
   const santriId = req.params.id;
   const { kartuToken } = req.body || {};
   const tokenStr = kartuToken || crypto.randomBytes(16).toString("hex");
@@ -74,7 +94,16 @@ router.post("/:id/terbitkan", requireAuth, asyncHandler(async (req, res) => {
 // POST /api/kartu/set-pin - Set or reset santri PIN (4-6 digit)
 router.post("/set-pin", requireAuth, asyncHandler(async (req, res) => {
   const { santriId, pin } = req.body || {};
-  if (!santriId || typeof pin !== "string" || !/^\d{4,6}$/.test(pin.trim())) {
+  if (!santriId) throw new CashlessError(400, "santriId wajib diisi.");
+
+  const santri = await getSantriRow(santriId);
+  const isOwnerWali = req.user.role === "wali" && santri.waliId === req.user.id;
+  const isStaffManager = isAuthorizedKartuManager(req);
+  if (!isOwnerWali && !isStaffManager) {
+    return res.status(403).json({ error: "Akses ditolak. Anda tidak berwenang mengatur PIN santri ini." });
+  }
+
+  if (typeof pin !== "string" || !/^\d{4,6}$/.test(pin.trim())) {
     throw new CashlessError(400, "PIN harus berupa 4–6 digit angka.");
   }
 
@@ -90,8 +119,15 @@ router.post("/set-pin", requireAuth, asyncHandler(async (req, res) => {
 // POST /api/kartu/:id/pin - Set or reset santri PIN dengan santriId di param URL
 router.post("/:id/pin", requireAuth, asyncHandler(async (req, res) => {
   const santriId = req.params.id;
+  const santri = await getSantriRow(santriId);
+  const isOwnerWali = req.user.role === "wali" && santri.waliId === req.user.id;
+  const isStaffManager = isAuthorizedKartuManager(req);
+  if (!isOwnerWali && !isStaffManager) {
+    return res.status(403).json({ error: "Akses ditolak. Anda tidak berwenang mengatur PIN santri ini." });
+  }
+
   const { pin } = req.body || {};
-  if (!santriId || typeof pin !== "string" || !/^\d{4,6}$/.test(pin.trim())) {
+  if (typeof pin !== "string" || !/^\d{4,6}$/.test(pin.trim())) {
     throw new CashlessError(400, "PIN harus berupa 4–6 digit angka.");
   }
 

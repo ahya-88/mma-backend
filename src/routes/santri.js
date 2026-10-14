@@ -19,6 +19,9 @@ function isAuthorizedSantriManager(req) {
 
 // GET /api/santri/statistik - Statistik santri untuk dashboard skala 2.000 santri
 router.get("/statistik", requireAuth, asyncHandler(async (req, res) => {
+  if (req.user.role === "wali") {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf yang berwenang mengakses statistik sekolah." });
+  }
   const [totalRow, aktifRow, alumniRow, rombelRows, asramaRows] = await Promise.all([
     queryOne('SELECT COUNT(*) AS "total" FROM "Santri"'),
     queryOne('SELECT COUNT(*) AS "total" FROM "Santri" WHERE "is_deleted" = FALSE AND LOWER(COALESCE("statusSantri", \'Aktif\')) = \'aktif\''),
@@ -36,7 +39,7 @@ router.get("/statistik", requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
-// GET /api/santri - List santri dengan relasi data Wali
+// GET /api/santri - List santri dengan relasi data Wali (dengan isolasi data kepemilikan untuk Wali)
 router.get("/", requireAuth, asyncHandler(async (req, res) => {
   const page = req.query.page ? Number(req.query.page) : null;
   const limit = req.query.limit ? Number(req.query.limit) : null;
@@ -48,6 +51,13 @@ router.get("/", requireAuth, asyncHandler(async (req, res) => {
 
   const whereConditions = ['s."is_deleted" = FALSE'];
   const params = [];
+
+  // PENTING - Keamanan Otorisasi (UU PDP & BOLA Prevention):
+  // Jika pemanggil adalah akun Wali, batasi HANYA santri anak kandung wali yang bersangkutan.
+  if (req.user.role === "wali") {
+    params.push(req.user.id);
+    whereConditions.push(`s."waliId" = $${params.length}`);
+  }
 
   if (kelas && kelas !== "Semua") {
     params.push(kelas);
@@ -502,6 +512,10 @@ router.delete("/:id", requireAuth, asyncHandler(async (req, res) => {
 
 // POST /api/santri/:id/kartu/terbitkan
 router.post("/:id/kartu/terbitkan", requireAuth, asyncHandler(async (req, res) => {
+  if (!isAuthorizedSantriManager(req)) {
+    return res.status(403).json({ error: "Akses ditolak. Hanya staf berwenang atau Superadmin yang dapat menerbitkan kartu santri." });
+  }
+
   const santriId = req.params.id;
   const { kartuToken } = req.body || {};
   const tokenStr = kartuToken || crypto.randomBytes(16).toString("hex");
@@ -524,6 +538,14 @@ router.post("/:id/kartu/terbitkan", requireAuth, asyncHandler(async (req, res) =
 // POST /api/santri/:id/pin
 router.post("/:id/pin", requireAuth, asyncHandler(async (req, res) => {
   const santriId = req.params.id;
+  const santri = await getSantriRow(santriId);
+  const isOwnerWali = req.user.role === "wali" && santri.waliId === req.user.id;
+  const isStaffManager = isAuthorizedSantriManager(req);
+
+  if (!isOwnerWali && !isStaffManager) {
+    return res.status(403).json({ error: "Akses ditolak. Anda tidak berwenang mengatur PIN santri ini." });
+  }
+
   const { pin } = req.body || {};
   if (!santriId || typeof pin !== "string" || !/^\d{4,6}$/.test(pin.trim())) {
     throw new CashlessError(400, "PIN harus berupa 4–6 digit angka.");
